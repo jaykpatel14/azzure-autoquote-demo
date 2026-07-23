@@ -1,0 +1,266 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  ESTIMATOR
+  VIEWER
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum AnalysisStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Company {
+  id              String           @id @default(cuid())
+  name            String
+  slug            String           @unique
+  logoUrl         String?
+  quoteSequence   Int              @default(0)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  memberships     Membership[]
+  subscription    Subscription?
+  pricingProfile  PricingProfile?
+  analyses        AiAnalysis[]
+  quotes          Quote[]
+  usagePeriods    UsagePeriod[]
+  auditLogs       AuditLog[]
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String?
+  passwordHash String?
+  emailVerifiedAt DateTime?
+  sessionVersion Int       @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  memberships  Membership[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+  auditLogs     AuditLog[] @relation("AuditLogActor")
+}
+
+model Membership {
+  id        String         @id @default(cuid())
+  role      MembershipRole @default(ESTIMATOR)
+  companyId String
+  userId    String
+  company   Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+}
+
+model Plan {
+  id               String         @id @default(cuid())
+  code             String         @unique
+  name             String
+  monthlyPriceCents Int
+  monthlyLimit     Int
+  isConfigurable   Boolean        @default(false)
+  stripeProductId  String?
+  stripePriceId    String?
+  subscriptions    Subscription[]
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  companyId            String             @unique
+  planId               String
+  status               SubscriptionStatus @default(TRIALING)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  stripeProductId      String?
+  stripePriceId        String?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  overageEnabled       Boolean            @default(false)
+  overagePriceCents    Int?
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  company              Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  plan                 Plan               @relation(fields: [planId], references: [id])
+}
+
+model UsagePeriod {
+  id          String   @id @default(cuid())
+  companyId   String
+  periodStart DateTime
+  periodEnd   DateTime
+  limit       Int
+  used        Int      @default(0)
+  reserved    Int      @default(0)
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, periodStart, periodEnd])
+}
+
+model PricingProfile {
+  id                    String   @id @default(cuid())
+  companyId             String   @unique
+  goldSpotPerOz          Decimal  @default(4500)
+  platinumSpotPerOz      Decimal  @default(2000)
+  silverSpotPerOz        Decimal  @default(100)
+  cadCharge              Decimal  @default(25)
+  centerSettingPerCarat  Decimal  @default(15)
+  sideSettingPerStone    Decimal  @default(3)
+  sellingMarginDivisor   Decimal  @default(0.70)
+  finalMultiplier        Decimal  @default(2)
+  company                Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model AiAnalysis {
+  id                    String         @id @default(cuid())
+  companyId             String
+  provider              String         @default("openai")
+  model                 String         @default("gpt-5-mini")
+  modelVersion          String         @default("gpt-5-mini")
+  promptVersion         String         @default("jewelry-analysis-v1")
+  imageDataUrl          String?
+  sourceImageMimeType   String?
+  sourceImageSizeBytes  Int?
+  status                AnalysisStatus @default(PENDING)
+  selectedMetal         String
+  jewelryType           String?
+  centerShape           String?
+  assumptions           Json?
+  moderationModel       String?
+  moderationFlagged     Boolean        @default(false)
+  moderationResult      Json?
+  reviewCount           Int            @default(3)
+  metalWeightGrams      Decimal?
+  centerDiamondCarats   Decimal?
+  sideDiamondCarats     Decimal?
+  sideDiamondQuantity   Int?
+  confidence            String?
+  notes                 String?
+  output                Json?
+  errorMessage          String?
+  createdAt             DateTime       @default(now())
+  completedAt           DateTime?
+  company               Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attempts              AiAttempt[]
+  quote                 Quote?
+}
+
+model AiAttempt {
+  id                    String     @id @default(cuid())
+  analysisId            String
+  attemptNumber         Int
+  provider              String     @default("openai")
+  model                 String     @default("gpt-5-mini")
+  modelVersion          String     @default("gpt-5-mini")
+  promptVersion         String     @default("jewelry-analysis-v1")
+  responseId            String?
+  retryCount            Int        @default(0)
+  latencyMs             Int        @default(0)
+  promptTokens          Int?
+  completionTokens      Int?
+  totalTokens           Int?
+  metalWeightGrams      Decimal?
+  centerDiamondCarats   Decimal?
+  sideDiamondCarats     Decimal?
+  sideDiamondQuantity   Int?
+  confidence            String?
+  notes                 String?
+  output                Json?
+  rawResponse           Json?
+  errorMessage          String?
+  errorCode             String?
+  errorType             String?
+  createdAt              DateTime   @default(now())
+  analysis               AiAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@unique([analysisId, attemptNumber])
+}
+
+model Quote {
+  id                    String      @id @default(cuid())
+  companyId             String
+  analysisId            String?     @unique
+  quoteNumber           String
+  customerName          String?
+  metalType             String
+  metalWeightGrams      Decimal
+  centerDiamondCarats   Decimal
+  sideDiamondCarats     Decimal
+  sideDiamondQuantity   Int
+  estimatedPrice        Decimal
+  createdAt             DateTime    @default(now())
+  company               Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  analysis              AiAnalysis? @relation(fields: [analysisId], references: [id])
+
+  @@unique([companyId, quoteNumber])
+}
+
+model EmailVerificationToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model PasswordResetToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  companyId   String
+  actorUserId String?
+  action      String
+  targetType  String?
+  targetId    String?
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  actorUser   User?    @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model StripeWebhookEvent {
+  id           String   @id @default(cuid())
+  eventId      String   @unique
+  eventType    String
+  livemode     Boolean  @default(false)
+  payload      Json
+  processedAt  DateTime?
+  errorMessage String?
+  createdAt    DateTime @default(now())
+}

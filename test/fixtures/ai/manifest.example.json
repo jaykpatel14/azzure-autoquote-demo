@@ -1,0 +1,16 @@
+{
+  "fixtures": [
+    {
+      "file": "ring-01.jpg",
+      "description": "Representative solitaire ring from the product owner"
+    },
+    {
+      "file": "necklace-01.png",
+      "description": "Representative necklace from the product owner"
+    },
+    {
+      "file": "bracelet-01.webp",
+      "description": "Representative bracelet from the product owner"
+    }
+  ]
+}

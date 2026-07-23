@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: autoquote
+      POSTGRES_PASSWORD: autoquote
+      POSTGRES_DB: autoquote
+    ports:
+      - "5435:5432"
+    volumes:
+      - autoquote_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autoquote -d autoquote"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  autoquote_postgres:

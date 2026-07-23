@@ -1,0 +1,143 @@
+import OpenAI from "openai";
+import { zodTextFormat } from "openai/helpers/zod";
+import { isTransientAIError, serializeError } from "@/lib/ai/errors";
+import {
+  AI_ANALYSIS_PROMPT_VERSION,
+  jewelryAnalysisSchema,
+  type JewelryAnalysis
+} from "@/lib/ai/schema";
+import type {
+  JewelryAnalysisProvider,
+  JewelryReviewSnapshot,
+  ModerationSnapshot,
+  TokenUsageSnapshot
+} from "@/lib/ai/provider";
+import { METAL_TYPES } from "@/lib/pricing";
+
+function normalizeUsage(usage: unknown): TokenUsageSnapshot | undefined {
+  if (!usage || typeof usage !== "object") return undefined;
+
+  const record = usage as Record<string, unknown>;
+  const inputTokens =
+    typeof record.input_tokens === "number"
+      ? record.input_tokens
+      : typeof record.prompt_tokens === "number"
+        ? record.prompt_tokens
+        : undefined;
+  const outputTokens =
+    typeof record.output_tokens === "number" ? record.output_tokens : undefined;
+  const totalTokens =
+    typeof record.total_tokens === "number"
+      ? record.total_tokens
+      : typeof record.completion_tokens === "number" && typeof inputTokens === "number"
+        ? inputTokens + record.completion_tokens
+        : undefined;
+
+  return { inputTokens, outputTokens, totalTokens };
+}
+
+function buildPrompt(selectedMetal: string, attemptNumber: number) {
+  const metal = METAL_TYPES.includes(selectedMetal as (typeof METAL_TYPES)[number])
+    ? selectedMetal
+    : "14K";
+
+  return [
+    "You are a jewelry production estimator.",
+    `This is independent review ${attemptNumber}.`,
+    `The currently selected finished metal is ${metal}.`,
+    "Estimate the piece from the image and return a cautious preliminary assessment.",
+    "Never claim exact manufacturing precision.",
+    "Return jewelry_type, selected_metal, metal_weight_grams, center_diamond_weight_ct,",
+    "side_diamond_total_weight_ct, side_diamond_quantity, optional center_shape, confidence, and assumptions."
+  ].join(" ");
+}
+
+export function createOpenAIJewelryAnalysisProvider(
+  client: OpenAI = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+  overrides?: Partial<{
+    model: string;
+    modelVersion: string;
+    promptVersion: string;
+  }>
+): JewelryAnalysisProvider {
+  const model = overrides?.model || process.env.OPENAI_MODEL || "gpt-5-mini";
+  const modelVersion = overrides?.modelVersion || model;
+  const promptVersion = overrides?.promptVersion || AI_ANALYSIS_PROMPT_VERSION;
+
+  return {
+    name: "openai",
+    model,
+    modelVersion,
+    promptVersion,
+    async moderateImage({ imageDataUrl }): Promise<ModerationSnapshot> {
+      const response = await client.moderations.create({
+        model: "omni-moderation-latest",
+        input: [
+          {
+            type: "image_url",
+            image_url: { url: imageDataUrl }
+          }
+        ]
+      });
+
+      return {
+        model: response.model,
+        flagged: response.results.some((result) => result.flagged),
+        rawResponse: response
+      };
+    },
+    async analyzeImage({ imageDataUrl, selectedMetal, attemptNumber }): Promise<JewelryReviewSnapshot> {
+      const start = Date.now();
+      const response = await client.responses.parse({
+        model,
+        store: false,
+        input: [
+          {
+            role: "developer",
+            content:
+              "Return only structured jewelry analysis data. The estimate is approximate and editable."
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: buildPrompt(selectedMetal, attemptNumber)
+              },
+              {
+                type: "input_image",
+                image_url: imageDataUrl,
+                detail: "high"
+              }
+            ]
+          }
+        ],
+        text: {
+          format: zodTextFormat(jewelryAnalysisSchema, "jewelry_analysis")
+        }
+      });
+
+      if (!response.output_parsed) {
+        throw new Error("The model returned an incomplete analysis.");
+      }
+
+      const output = response.output_parsed as JewelryAnalysis;
+      return {
+        responseId: response.id,
+        output,
+        latencyMs: Date.now() - start,
+        retryCount: 0,
+        usage: normalizeUsage(response.usage),
+        rawResponse: response
+      };
+    }
+  };
+}
+
+export function isRetryableAnalysisError(error: unknown) {
+  return isTransientAIError(error);
+}
+
+export function serializeAnalysisError(error: unknown) {
+  return serializeError(error);
+}
