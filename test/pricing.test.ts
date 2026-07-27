@@ -79,6 +79,7 @@ describe("pricing", () => {
   });
 
   test("resolveMetalPricing falls back when no API key is configured", async () => {
+    vi.stubEnv("METALS_DEV_API_KEY", "");
     const fetchMock = vi.spyOn(globalThis, "fetch");
 
     const result = await resolveMetalPricing({
