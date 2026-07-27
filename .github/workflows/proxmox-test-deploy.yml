@@ -1,0 +1,42 @@
+name: Proxmox Test Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+
+concurrency:
+  group: proxmox-test-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to Proxmox test host
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          PROXMOX_APP_DIR: ${{ secrets.PROXMOX_APP_DIR }}
+        with:
+          host: ${{ secrets.PROXMOX_HOST }}
+          username: ${{ secrets.PROXMOX_USER }}
+          key: ${{ secrets.PROXMOX_SSH_KEY }}
+          envs: PROXMOX_APP_DIR
+          script: |
+            set -euo pipefail
+            cd "$PROXMOX_APP_DIR"
+            git fetch origin develop
+            git checkout develop
+            git pull --ff-only origin develop
+            docker compose -f docker-compose.proxmox.yml up -d db
+            until docker compose -f docker-compose.proxmox.yml exec -T db pg_isready -U autoquote -d autoquote >/dev/null 2>&1; do
+              sleep 2
+            done
+            docker compose -f docker-compose.proxmox.yml build app
+            docker compose -f docker-compose.proxmox.yml run --rm app npm run db:deploy
+            docker compose -f docker-compose.proxmox.yml up -d app
+            curl -fsS http://127.0.0.1:8585/api/health

@@ -143,6 +143,30 @@ npm run db:reset
 npm run db:seed
 ```
 
+## Proxmox Test Environment
+
+The repo includes a Proxmox-friendly Docker stack that runs the app on port `8585`.
+
+Files to use:
+
+- [`docker-compose.proxmox.yml`](/D:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/docker-compose.proxmox.yml)
+- [`.env.proxmox.example`](/D:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/.env.proxmox.example)
+- [`.github/workflows/ci.yml`](/D:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/.github/workflows/ci.yml)
+- [`.github/workflows/proxmox-test-deploy.yml`](/D:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/.github/workflows/proxmox-test-deploy.yml)
+
+Typical steps:
+
+1. Copy `.env.proxmox.example` to `.env.proxmox` on the Proxmox host.
+2. Fill in the production-like secrets you want to test.
+3. Run `docker compose -f docker-compose.proxmox.yml up -d --build`.
+4. Open `http://<proxmox-host>:8585`.
+5. Check health at `http://<proxmox-host>:8585/api/health`.
+
+GitHub Actions:
+
+- `CI` validates migrations, seed, lint, typecheck, tests, and the production build.
+- `Proxmox Test Deploy` pulls the `develop` branch on the Proxmox host, builds the app, applies migrations, and restarts the stack.
+
 ## Current MVP Limitations
 
 - Credentials auth is implemented first; SSO and magic links can be added later

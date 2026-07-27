@@ -1,0 +1,49 @@
+name: azzure-autoquote
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: autoquote
+      POSTGRES_PASSWORD: autoquote
+      POSTGRES_DB: autoquote
+    volumes:
+      - proxmox_autoquote_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autoquote -d autoquote"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env.proxmox
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: "8585"
+      APP_URL: ${APP_URL:-http://localhost:8585}
+      AUTH_URL: ${AUTH_URL:-http://localhost:8585}
+      DATABASE_URL: postgresql://autoquote:autoquote@db:5432/autoquote?schema=public
+    ports:
+      - "8585:8585"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:8585/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  proxmox_autoquote_postgres:

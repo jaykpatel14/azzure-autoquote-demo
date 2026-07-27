@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: autoquote
+          POSTGRES_PASSWORD: autoquote
+          POSTGRES_DB: autoquote
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U autoquote -d autoquote"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      AUTH_SECRET: ci-test-auth-secret
+      AUTH_URL: http://localhost:3000
+      AZZURE_ADMIN_EMAILS: admin@azzure.com
+      APP_SETTINGS_ENCRYPTION_KEY: ci-test-settings-key
+      DATABASE_URL: postgresql://autoquote:autoquote@127.0.0.1:5432/autoquote?schema=public
+      METALS_DEV_API_KEY: ci-test-metals-key
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_ci
+      OPENAI_API_KEY: ci-test-openai-key
+      STRIPE_SECRET_KEY: sk_test_ci
+      STRIPE_WEBHOOK_SECRET: whsec_ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply database migrations
+        run: npm run db:deploy
+
+      - name: Seed test data
+        run: npm run db:seed
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Production build
+        run: npm run build

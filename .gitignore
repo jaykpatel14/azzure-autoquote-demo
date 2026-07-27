@@ -2,6 +2,7 @@ node_modules
 .next
 .env
 .env.local
+.env.proxmox
 coverage
 dist
 *.log
