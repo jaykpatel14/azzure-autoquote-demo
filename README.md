@@ -146,6 +146,8 @@ npm run db:seed
 ## Proxmox Test Environment
 
 The repo includes a Proxmox-friendly Docker stack that runs the app on port `8585`.
+The Proxmox project directory is expected at `/opt/docker/projects/azzure-autoquote-mvp`, and
+`.env.proxmox` should live there.
 
 Files to use:
 
@@ -156,9 +158,9 @@ Files to use:
 
 Typical steps:
 
-1. Copy `.env.proxmox.example` to `.env.proxmox` on the Proxmox host.
+1. Copy `.env.proxmox.example` to `/opt/docker/projects/azzure-autoquote-mvp/.env.proxmox` on the Proxmox host.
 2. Fill in the production-like secrets you want to test.
-3. Run `docker compose -f docker-compose.proxmox.yml up -d --build`.
+3. Run `cd /opt/docker/projects/azzure-autoquote-mvp && docker compose -f docker-compose.proxmox.yml up -d --build`.
 4. Open `http://<proxmox-host>:8585`.
 5. Check health at `http://<proxmox-host>:8585/api/health`.
 
@@ -167,6 +169,7 @@ GitHub Actions:
 - `CI` validates migrations, seed, lint, typecheck, tests, and the production build.
 - `Proxmox Test Deploy` runs on a self-hosted GitHub runner that lives on the Proxmox machine, builds the app locally, applies migrations, and restarts the stack.
 - The self-hosted runner must have Docker and Docker Compose access, and the repository must allow that runner to pick up `develop` workflow jobs.
+- The workflow syncs the repository into `/opt/docker/projects/azzure-autoquote-mvp` before running Docker Compose there.
 
 ## Current MVP Limitations
 

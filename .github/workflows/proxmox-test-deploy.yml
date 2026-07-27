@@ -13,11 +13,24 @@ concurrency:
 jobs:
   deploy:
     runs-on: self-hosted
+    env:
+      PROXMOX_PROJECT_DIR: /opt/docker/projects/azzure-autoquote-mvp
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Sync project files to Proxmox directory
+        run: |
+          set -euo pipefail
+          mkdir -p "$PROXMOX_PROJECT_DIR"
+          rsync -a --delete \
+            --exclude '.git' \
+            --exclude '.env.proxmox' \
+            --exclude '.env.proxmox.example' \
+            ./ "$PROXMOX_PROJECT_DIR"/
+
       - name: Deploy stack on the self-hosted runner
+        working-directory: ${{ env.PROXMOX_PROJECT_DIR }}
         run: |
           set -euo pipefail
           docker compose -f docker-compose.proxmox.yml up -d db
