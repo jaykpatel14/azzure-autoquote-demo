@@ -33,7 +33,7 @@ describe("openai jewelry analysis provider", () => {
       ]
     });
 
-    const provider = createOpenAIJewelryAnalysisProvider(
+    const provider = await createOpenAIJewelryAnalysisProvider(
       {
         responses: { parse: parseMock },
         moderations: { create: moderationsMock }

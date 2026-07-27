@@ -192,7 +192,7 @@ export async function syncStripeCheckoutSession(
   options: SyncCheckoutSessionOptions = {}
 ) {
   const db = options.prisma ?? defaultPrisma;
-  const stripe = options.stripe ?? getStripeClient();
+  const stripe = options.stripe ?? (await getStripeClient());
 
   const session = await stripe.checkout.sessions.retrieve(sessionId);
 
@@ -270,7 +270,7 @@ export async function processStripeWebhookEvent(
   options: WebhookProcessorOptions = {}
 ) {
   const db = options.prisma ?? defaultPrisma;
-  const stripe = options.stripe ?? getStripeClient();
+  const stripe = options.stripe ?? (await getStripeClient());
 
   const insertedCount = await db.$executeRaw`
     INSERT INTO "StripeWebhookEvent" ("id", "eventId", "eventType", "livemode", "payload", "createdAt")

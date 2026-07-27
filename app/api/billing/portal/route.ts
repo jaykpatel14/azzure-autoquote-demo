@@ -23,7 +23,7 @@ export async function POST() {
       );
     }
 
-    const stripe = getStripeClient();
+    const stripe = await getStripeClient();
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: buildAppUrl("/settings")

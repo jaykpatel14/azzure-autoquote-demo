@@ -90,12 +90,28 @@ async function main() {
       id: "user_demo_acme",
       email: "test@acme.com",
       name: "Demo User",
-      passwordHash: hashPassword("demo-password"),
+      passwordHash: hashPassword("password123"),
       emailVerifiedAt: new Date("2026-07-01T00:00:00.000Z")
     },
     update: {
       name: "Demo User",
-      passwordHash: hashPassword("demo-password"),
+      passwordHash: hashPassword("password123"),
+      emailVerifiedAt: new Date("2026-07-01T00:00:00.000Z")
+    }
+  });
+
+  const adminUser = await prisma.user.upsert({
+    where: { email: "admin@azzure.com" },
+    create: {
+      id: "user_internal_admin",
+      email: "admin@azzure.com",
+      name: "Azzure Admin",
+      passwordHash: hashPassword("password123"),
+      emailVerifiedAt: new Date("2026-07-01T00:00:00.000Z")
+    },
+    update: {
+      name: "Azzure Admin",
+      passwordHash: hashPassword("password123"),
       emailVerifiedAt: new Date("2026-07-01T00:00:00.000Z")
     }
   });
@@ -176,6 +192,7 @@ async function main() {
   console.log(`Seeded demo company: ${company.id}`);
   console.log(`Seeded demo owner: ${owner.email}`);
   console.log(`Seeded demo user: ${demoUser.email}`);
+  console.log(`Seeded internal admin: ${adminUser.email}`);
   console.log("The demo company id can be used to inspect seeded data.");
 }
 

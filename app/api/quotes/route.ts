@@ -6,6 +6,7 @@ import { METAL_TYPES, calculateQuote } from "@/lib/pricing";
 import { allocateQuoteNumber } from "@/lib/quote-number";
 import { assertCompanyOwnership } from "@/lib/tenant";
 import { requireCompanyContext, AuthRequiredError, CompanyAccessError } from "@/lib/company";
+import { normalizePricingProfile, resolveMetalPricing } from "@/lib/metal-pricing";
 
 const quoteSchema = z.object({
   analysisId: z.string().optional(),
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
     }
 
     const pricingProfile = company.pricingProfile
-      ? {
+      ? normalizePricingProfile({
           goldSpotPerOz: Number(company.pricingProfile.goldSpotPerOz),
           platinumSpotPerOz: Number(company.pricingProfile.platinumSpotPerOz),
           silverSpotPerOz: Number(company.pricingProfile.silverSpotPerOz),
@@ -51,8 +52,10 @@ export async function POST(request: Request) {
           sideSettingPerStone: Number(company.pricingProfile.sideSettingPerStone),
           sellingMarginDivisor: Number(company.pricingProfile.sellingMarginDivisor),
           finalMultiplier: Number(company.pricingProfile.finalMultiplier)
-        }
+        })
       : undefined;
+
+    const livePricing = await resolveMetalPricing(pricingProfile);
 
     const pricing = calculateQuote(
       {
@@ -62,7 +65,7 @@ export async function POST(request: Request) {
         sideDiamondCarats: input.sideDiamondCarats,
         sideDiamondQuantity: input.sideDiamondQuantity
       },
-      pricingProfile
+      livePricing.pricingProfile
     );
 
     const quote = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -87,7 +90,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       id: quote.id,
       quoteNumber: quote.quoteNumber,
-      estimatedPrice: Number(quote.estimatedPrice)
+      estimatedPrice: Number(quote.estimatedPrice),
+      pricingSource: livePricing.source
     });
   } catch (error) {
     if (error instanceof AuthRequiredError) {

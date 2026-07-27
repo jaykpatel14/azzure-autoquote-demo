@@ -1,5 +1,11 @@
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { calculateQuote, convertMetalWeight } from "@/lib/pricing";
+import { resolveMetalPricing } from "@/lib/metal-pricing";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.restoreAllMocks();
+});
 
 describe("pricing", () => {
   test("convertMetalWeight scales by density ratio", () => {
@@ -32,5 +38,62 @@ describe("pricing", () => {
     const expected = Math.round((makingCost / 0.5) * 1.5 * 100) / 100;
 
     expect(quote.estimatedFinalPrice).toBe(expected);
+  });
+
+  test("resolveMetalPricing uses live Metals.dev rates when configured", async () => {
+    vi.stubEnv("METALS_DEV_API_KEY", "test-key");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          status: "success",
+          timestamp: "2026-07-27T12:00:00.000Z",
+          metals: {
+            gold: 3210.5,
+            platinum: 1450.25,
+            silver: 36.75
+          }
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        }
+      ) as Response
+    );
+
+    const result = await resolveMetalPricing({
+      goldSpotPerOz: 4500,
+      platinumSpotPerOz: 2000,
+      silverSpotPerOz: 100,
+      cadCharge: 25,
+      centerSettingPerCarat: 15,
+      sideSettingPerStone: 3,
+      sellingMarginDivisor: 0.7,
+      finalMultiplier: 2
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.source).toBe("metals.dev");
+    expect(result.pricingProfile.goldSpotPerOz).toBe(3210.5);
+    expect(result.pricingProfile.platinumSpotPerOz).toBe(1450.25);
+    expect(result.pricingProfile.silverSpotPerOz).toBe(36.75);
+  });
+
+  test("resolveMetalPricing falls back when no API key is configured", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+
+    const result = await resolveMetalPricing({
+      goldSpotPerOz: 3000,
+      platinumSpotPerOz: 2000,
+      silverSpotPerOz: 100,
+      cadCharge: 25,
+      centerSettingPerCarat: 15,
+      sideSettingPerStone: 3,
+      sellingMarginDivisor: 0.7,
+      finalMultiplier: 2
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.source).toBe("configured-default");
+    expect(result.pricingProfile.goldSpotPerOz).toBe(3000);
   });
 });

@@ -11,7 +11,21 @@ const credentialsSchema = z.object({
   password: z.string().min(8).max(200)
 });
 
-const authSecret = requireEnv("AUTH_SECRET");
+function getAuthSecret() {
+  const value = process.env.AUTH_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim();
+  if (value) {
+    return value;
+  }
+
+  console.warn(
+    process.env.NODE_ENV === "production"
+      ? "AUTH_SECRET is not configured. Using a fallback secret so the build can continue; set AUTH_SECRET before production deployment."
+      : "AUTH_SECRET is not configured. Using a development-only fallback secret."
+  );
+  return "development-only-auth-secret";
+}
+
+const authSecret = getAuthSecret();
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: authSecret,

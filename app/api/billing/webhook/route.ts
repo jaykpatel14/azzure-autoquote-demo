@@ -12,8 +12,8 @@ export async function POST(request: Request) {
     }
 
     const body = await request.text();
-    const stripe = getStripeClient();
-    const event = stripe.webhooks.constructEvent(body, signature, getStripeWebhookSecret());
+    const stripe = await getStripeClient();
+    const event = stripe.webhooks.constructEvent(body, signature, await getStripeWebhookSecret());
 
     await processStripeWebhookEvent(event, { stripe });
 

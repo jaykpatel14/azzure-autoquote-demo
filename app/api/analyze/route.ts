@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     reservation = await reserveMonthlyUsage(companyContext.company.id);
 
     const imageDataUrl = `data:${image.type};base64,${bytes.toString("base64")}`;
-    const provider = getJewelryAnalysisProvider();
+    const provider = await getJewelryAnalysisProvider();
     const configuredReviewCount = Number(process.env.AI_REVIEW_COUNT || 3);
     const reviewCount = Number.isFinite(configuredReviewCount)
       ? Math.max(1, Math.min(3, configuredReviewCount))

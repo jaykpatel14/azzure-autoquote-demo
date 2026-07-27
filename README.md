@@ -13,9 +13,11 @@ Production-oriented starter for an AI-assisted jewelry quotation SaaS.
 - Editable metal and diamond estimates
 - Metal density conversion
 - Server-side pricing
+- Live metal spot pricing with Metals.dev fallback
 - Atomic monthly usage reservation
 - Stripe Checkout and Customer Portal billing
 - Tenant-scoped quote persistence
+- Internal Azzure admin console for support and key rotation
 - Docker Compose for local PostgreSQL
 - Dockerfile for deployment
 - Vitest unit and integration tests
@@ -67,8 +69,16 @@ There is also a convenience demo login:
 - Email: `test@acme.com`
 - Password: `demo-password`
 
+Internal Azzure admin testing account:
+
+- Email: `admin@azzure.com`
+- Password: `password123`
+
 9. Add your OpenAI key to `OPENAI_API_KEY`.
-10. Start the app:
+10. Add `METALS_DEV_API_KEY` if you want live spot prices to flow into quotes.
+11. Add at least one email to `AZZURE_ADMIN_EMAILS` if you want to access the internal admin console.
+12. Add `APP_SETTINGS_ENCRYPTION_KEY` in production so secret runtime settings are stored encrypted.
+13. Start the app:
 
 ```bash
 npm run dev
@@ -102,6 +112,29 @@ npm run lint
 npm run test
 npm run build
 ```
+
+## Production Deployment Checklist
+
+Before shipping to production, make sure these are in place:
+
+1. Set a strong `AUTH_SECRET` and `AUTH_URL` that matches the production domain.
+2. Set `DATABASE_URL` to the production PostgreSQL instance.
+3. Set `OPENAI_API_KEY` and confirm `OPENAI_MODEL` is the model you want to use.
+4. Set `METALS_DEV_API_KEY` if you want live metal pricing in quotes.
+5. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and the Stripe price/product ids.
+6. Set `APP_SETTINGS_ENCRYPTION_KEY` so admin-managed secret settings are encrypted at rest.
+7. Set `AZZURE_ADMIN_EMAILS` to the internal Azzure team emails that should access `/admin`.
+8. Run `npm run db:migrate` against production before deploying code.
+9. Run `npm run db:seed` only for fresh demo environments, not on existing customer data.
+10. Run `npm run build` and confirm it passes before releasing.
+11. After deploy, verify `/api/health`, `/admin`, `/settings`, and a sample quote flow.
+
+Recommended runtime checks:
+
+- Confirm admin logins redirect to `/admin`.
+- Confirm customer logins land on the workspace dashboard.
+- Confirm live metals pricing falls back cleanly when `METALS_DEV_API_KEY` is absent.
+- Confirm Stripe checkout and webhook handling succeed in the target environment.
 
 ## Helpful Database Commands
 

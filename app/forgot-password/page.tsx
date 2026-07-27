@@ -27,11 +27,16 @@ export default function ForgotPasswordPage() {
     <div className="authShell">
       <section className="authCard">
         <h1 className="heading">Forgot password</h1>
-        <p className="muted">We’ll send a password reset link if the email is known.</p>
+        <p className="muted">We&apos;ll send a password reset link if the email is known.</p>
         <form className="authForm" onSubmit={handleSubmit}>
           <label className="field">
             <span>Email</span>
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
           </label>
           <button className="button primary" disabled={loading} type="submit">
             {loading ? "Sending..." : "Send reset link"}

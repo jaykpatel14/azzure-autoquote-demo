@@ -6,7 +6,7 @@ export async function analyzeJewelryImage(
   selectedMetal: string,
   attemptNumber: number
 ) {
-  const provider = createOpenAIJewelryAnalysisProvider();
+  const provider = await createOpenAIJewelryAnalysisProvider();
   const result = await provider.analyzeImage({
     imageDataUrl,
     selectedMetal,

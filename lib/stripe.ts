@@ -1,26 +1,32 @@
 import { loadEnvConfig } from "@next/env";
 import type { Plan } from "@prisma/client";
 import Stripe from "stripe";
+import { resolveRuntimeSetting } from "@/lib/app-settings";
 
 loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
 
-let stripeClient: Stripe | null = null;
+const stripeClients = new Map<string, Stripe>();
 
-export function getStripeClient() {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
+export async function getStripeClient() {
+  const secretKey =
+    (await resolveRuntimeSetting("STRIPE_SECRET_KEY", process.env.STRIPE_SECRET_KEY)) || null;
   if (!secretKey) {
     throw new Error("STRIPE_SECRET_KEY is not configured.");
   }
 
-  if (!stripeClient) {
-    stripeClient = new Stripe(secretKey);
+  const cached = stripeClients.get(secretKey);
+  if (cached) {
+    return cached;
   }
 
+  const stripeClient = new Stripe(secretKey);
+  stripeClients.set(secretKey, stripeClient);
   return stripeClient;
 }
 
-export function getStripeWebhookSecret() {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+export async function getStripeWebhookSecret() {
+  const secret =
+    (await resolveRuntimeSetting("STRIPE_WEBHOOK_SECRET", process.env.STRIPE_WEBHOOK_SECRET)) || null;
   if (!secret) {
     throw new Error("STRIPE_WEBHOOK_SECRET is not configured.");
   }
@@ -49,7 +55,7 @@ export async function resolveCheckoutPriceId(
   }
 
   if (candidate.startsWith("prod_")) {
-    const stripe = getStripeClient();
+    const stripe = await getStripeClient();
     const product = await stripe.products.retrieve(candidate);
     const defaultPrice = product.default_price;
 

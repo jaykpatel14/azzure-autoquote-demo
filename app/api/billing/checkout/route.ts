@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const stripe = getStripeClient();
+    const stripe = await getStripeClient();
     const stripeCustomerId = await resolveCheckoutCustomerId({
       stripe,
       stripeCustomerId: context.company.subscription.stripeCustomerId,

@@ -12,6 +12,7 @@ import type {
   ModerationSnapshot,
   TokenUsageSnapshot
 } from "@/lib/ai/provider";
+import { resolveRuntimeSetting } from "@/lib/app-settings";
 import { METAL_TYPES } from "@/lib/pricing";
 
 function normalizeUsage(usage: unknown): TokenUsageSnapshot | undefined {
@@ -52,17 +53,41 @@ function buildPrompt(selectedMetal: string, attemptNumber: number) {
   ].join(" ");
 }
 
-export function createOpenAIJewelryAnalysisProvider(
-  client: OpenAI = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+export async function createOpenAIJewelryAnalysisProvider(
+  clientOrOverrides?: OpenAI | Partial<{
+    model: string;
+    modelVersion: string;
+    promptVersion: string;
+  }>,
   overrides?: Partial<{
     model: string;
     modelVersion: string;
     promptVersion: string;
   }>
-): JewelryAnalysisProvider {
-  const model = overrides?.model || process.env.OPENAI_MODEL || "gpt-5-mini";
-  const modelVersion = overrides?.modelVersion || model;
-  const promptVersion = overrides?.promptVersion || AI_ANALYSIS_PROMPT_VERSION;
+): Promise<JewelryAnalysisProvider> {
+  const isClientLike =
+    typeof clientOrOverrides === "object" &&
+    clientOrOverrides !== null &&
+    ("responses" in clientOrOverrides || "moderations" in clientOrOverrides);
+  const maybeClient = isClientLike ? (clientOrOverrides as OpenAI) : undefined;
+  const runtimeOverrides = isClientLike ? overrides : clientOrOverrides;
+
+  let client = maybeClient;
+  if (!client) {
+    const apiKey =
+      (await resolveRuntimeSetting("OPENAI_API_KEY", process.env.OPENAI_API_KEY)) || null;
+    if (!apiKey) {
+      throw new Error("OPENAI_API_KEY is not configured.");
+    }
+
+    client = new OpenAI({ apiKey });
+  }
+  const model =
+    runtimeOverrides?.model ||
+    (await resolveRuntimeSetting("OPENAI_MODEL", process.env.OPENAI_MODEL)) ||
+    "gpt-5-mini";
+  const modelVersion = runtimeOverrides?.modelVersion || model;
+  const promptVersion = runtimeOverrides?.promptVersion || AI_ANALYSIS_PROMPT_VERSION;
 
   return {
     name: "openai",
