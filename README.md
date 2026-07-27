@@ -165,7 +165,8 @@ Typical steps:
 GitHub Actions:
 
 - `CI` validates migrations, seed, lint, typecheck, tests, and the production build.
-- `Proxmox Test Deploy` pulls the `develop` branch on the Proxmox host, builds the app, applies migrations, and restarts the stack.
+- `Proxmox Test Deploy` runs on a self-hosted GitHub runner that lives on the Proxmox machine, builds the app locally, applies migrations, and restarts the stack.
+- The self-hosted runner must have Docker and Docker Compose access, and the repository must allow that runner to pick up `develop` workflow jobs.
 
 ## Current MVP Limitations
 
