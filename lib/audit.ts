@@ -12,7 +12,8 @@ export type AuditAction =
   | "COMPANY_SWITCHED"
   | "COMPANY_CREATED"
   | "MEMBERSHIP_CREATED"
-  | "ROLE_UPDATED";
+  | "ROLE_UPDATED"
+  | "COMPANY_UPDATED";
 
 export type AuditContext = {
   action: AuditAction;

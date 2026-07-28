@@ -30,8 +30,8 @@ services:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
       PORT: "8585"
-      APP_URL: ${APP_URL:-http://192.168.2.89:8585}
-      AUTH_URL: ${AUTH_URL:-http://192.168.2.89:8585}
+      APP_URL: ${APP_URL:-https://autoquote-test.azzuresolutions.com}
+      AUTH_URL: ${AUTH_URL:-https://autoquote-test.azzuresolutions.com}
       DATABASE_URL: postgresql://autoquote:autoquote@db:5432/autoquote?schema=public
     ports:
       - "8585:8585"
@@ -39,7 +39,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "node -e \"fetch('http://127.0.0.1:8585/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""
+          "node -e \"fetch('https://autoquote-test.azzuresolutions.com/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""
         ]
       interval: 30s
       timeout: 10s

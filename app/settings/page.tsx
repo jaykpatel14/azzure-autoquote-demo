@@ -4,7 +4,7 @@ import type { MembershipRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import WorkspaceShell from "@/components/workspace-shell";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
-import { normalizePricingProfile, resolveMetalPricing } from "@/lib/metal-pricing";
+import { resolveMetalPricing, toPricingProfileInput } from "@/lib/metal-pricing";
 import { getCurrentUsagePeriod, getUsageRemaining, getUsageWarningMessage } from "@/lib/billing";
 import { syncStripeCheckoutSession } from "@/lib/billing-webhooks";
 import { hasMinimumRole } from "@/lib/tenant";
@@ -46,18 +46,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const subscription = context.company.subscription;
   const warning = usagePeriod ? getUsageWarningMessage(usagePeriod) : null;
   const remaining = usagePeriod ? getUsageRemaining(usagePeriod) : null;
-  const pricingProfile = context.company.pricingProfile
-    ? normalizePricingProfile({
-        goldSpotPerOz: Number(context.company.pricingProfile.goldSpotPerOz),
-        platinumSpotPerOz: Number(context.company.pricingProfile.platinumSpotPerOz),
-        silverSpotPerOz: Number(context.company.pricingProfile.silverSpotPerOz),
-        cadCharge: Number(context.company.pricingProfile.cadCharge),
-        centerSettingPerCarat: Number(context.company.pricingProfile.centerSettingPerCarat),
-        sideSettingPerStone: Number(context.company.pricingProfile.sideSettingPerStone),
-        sellingMarginDivisor: Number(context.company.pricingProfile.sellingMarginDivisor),
-        finalMultiplier: Number(context.company.pricingProfile.finalMultiplier)
-      })
-    : undefined;
+  const pricingProfile = toPricingProfileInput(context.company.pricingProfile);
   const livePricing = await resolveMetalPricing(pricingProfile);
   const memberCounts: Record<MembershipRole, number> = context.memberships.reduce(
     (acc, membership) => {
@@ -183,52 +172,107 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             <div>
               <h2>Pricing settings</h2>
               <p className="muted">
-                These are the server-side pricing inputs used when quotes are calculated.
+                Live metal spot prices are read-only. Customer admins can update the backend pricing
+                inputs below.
               </p>
             </div>
           </div>
           <div className="pricingGrid">
             <div className="detailCard">
               <span>Gold spot / oz</span>
-              <strong>{pricingProfile ? Number(pricingProfile.goldSpotPerOz).toFixed(2) : "$4,500.00"}</strong>
+              <strong>{Number(livePricing.pricingProfile.goldSpotPerOz ?? pricingProfile.goldSpotPerOz).toFixed(2)}</strong>
             </div>
             <div className="detailCard">
               <span>Platinum spot / oz</span>
-              <strong>{pricingProfile ? Number(pricingProfile.platinumSpotPerOz).toFixed(2) : "$2,000.00"}</strong>
+              <strong>{Number(livePricing.pricingProfile.platinumSpotPerOz ?? pricingProfile.platinumSpotPerOz).toFixed(2)}</strong>
             </div>
             <div className="detailCard">
               <span>Silver spot / oz</span>
-              <strong>{pricingProfile ? Number(pricingProfile.silverSpotPerOz).toFixed(2) : "$100.00"}</strong>
-            </div>
-            <div className="detailCard">
-              <span>CAD charge</span>
-              <strong>{pricingProfile ? Number(pricingProfile.cadCharge).toFixed(2) : "$25.00"}</strong>
-            </div>
-            <div className="detailCard">
-              <span>Center setting / ct</span>
-              <strong>{pricingProfile ? Number(pricingProfile.centerSettingPerCarat).toFixed(2) : "$15.00"}</strong>
-            </div>
-            <div className="detailCard">
-              <span>Side stone / piece</span>
-              <strong>{pricingProfile ? Number(pricingProfile.sideSettingPerStone).toFixed(2) : "$3.00"}</strong>
-            </div>
-            <div className="detailCard">
-              <span>Selling margin divisor</span>
-              <strong>{pricingProfile ? Number(pricingProfile.sellingMarginDivisor).toFixed(2) : "0.70"}</strong>
-            </div>
-            <div className="detailCard">
-              <span>Final multiplier</span>
-              <strong>{pricingProfile ? Number(pricingProfile.finalMultiplier).toFixed(2) : "2.00"}</strong>
+              <strong>{Number(livePricing.pricingProfile.silverSpotPerOz ?? pricingProfile.silverSpotPerOz).toFixed(2)}</strong>
             </div>
             <div className="detailCard">
               <span>Live price source</span>
-              <strong>{livePricing.source === "metals.dev" ? "Metals.dev" : "Fallback"}</strong>
+              <strong>{livePricing.source === "metals.dev" ? "Morning live feed" : "Fallback"}</strong>
               <p className="muted small">{livePricing.message}</p>
             </div>
           </div>
+
+          <form className="stack" action="/api/company/pricing" method="post">
+            <input type="hidden" name="redirectTo" value="/settings" />
+            <div className="sectionHeader" style={{ marginTop: 8 }}>
+              <div>
+                <h3>Editable backend pricing</h3>
+                <p className="muted">
+                  These values affect quote math, but they do not replace the live spot metal feed.
+                </p>
+              </div>
+            </div>
+            <div className="fields">
+              <div className="field">
+                <label htmlFor="cadCharge">CAD charge</label>
+                <input
+                  id="cadCharge"
+                  name="cadCharge"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={pricingProfile.cadCharge}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="centerSettingPerCarat">Center setting / ct</label>
+                <input
+                  id="centerSettingPerCarat"
+                  name="centerSettingPerCarat"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={pricingProfile.centerSettingPerCarat}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="sideSettingPerStone">Side stone / piece</label>
+                <input
+                  id="sideSettingPerStone"
+                  name="sideSettingPerStone"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={pricingProfile.sideSettingPerStone}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="sellingMarginDivisor">Selling margin divisor</label>
+                <input
+                  id="sellingMarginDivisor"
+                  name="sellingMarginDivisor"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  defaultValue={pricingProfile.sellingMarginDivisor}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="finalMultiplier">Final multiplier</label>
+                <input
+                  id="finalMultiplier"
+                  name="finalMultiplier"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={pricingProfile.finalMultiplier}
+                />
+              </div>
+            </div>
+            <div className="buttonRow">
+              <button className="button primary" type="submit">
+                Save backend pricing
+              </button>
+            </div>
+          </form>
           <p className="disclaimer">
-            Pricing is calculated on the server before persistence. Customer-facing quotes only
-            show the approved final price.
+            Gold, platinum, and silver are fetched from the live feed each Toronto morning and remain
+            read-only in this console.
           </p>
         </article>
       </section>
