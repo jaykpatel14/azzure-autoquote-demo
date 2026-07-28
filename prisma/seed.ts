@@ -1,56 +1,32 @@
 import { loadEnvConfig } from "@next/env";
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "../lib/password";
+import { ensureBasePlans } from "../lib/plan-bootstrap";
 
 loadEnvConfig(process.cwd(), true);
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const planIds = {
-    starter: "plan_starter",
-    professional: "plan_professional",
-    enterprise: "plan_enterprise"
-  } as const;
   const companyId = "company_demo_jewelry";
   const ownerUserId = "user_demo_owner";
+  const plans = await ensureBasePlans(prisma);
 
-  const plans = [
-    {
-      id: planIds.starter,
-      code: "starter",
-      name: "Starter",
-      monthlyPriceCents: 4900,
-      monthlyLimit: 100
-    },
-    {
-      id: planIds.professional,
-      code: "professional",
-      name: "Professional",
-      monthlyPriceCents: 9900,
-      monthlyLimit: 500,
+  await prisma.plan.update({
+    where: { code: "professional" },
+    data: {
       stripePriceId: process.env.STRIPE_PROFESSIONAL_PRICE_ID || null,
       stripeProductId: process.env.STRIPE_PROFESSIONAL_PRODUCT_ID || null
-    },
-    {
-      id: planIds.enterprise,
-      code: "enterprise",
-      name: "Enterprise",
-      monthlyPriceCents: 19900,
-      monthlyLimit: 2500,
-      isConfigurable: true,
+    }
+  });
+
+  await prisma.plan.update({
+    where: { code: "enterprise" },
+    data: {
       stripePriceId: process.env.STRIPE_ENTERPRISE_PRICE_ID || null,
       stripeProductId: process.env.STRIPE_ENTERPRISE_PRODUCT_ID || null
     }
-  ];
-
-  for (const plan of plans) {
-    await prisma.plan.upsert({
-      where: { code: plan.code },
-      create: plan,
-      update: plan
-    });
-  }
+  });
 
   const company = await prisma.company.upsert({
     where: { slug: "demo-jewelry" },
@@ -67,7 +43,7 @@ async function main() {
     }
   });
 
-  const professional = await prisma.plan.findUniqueOrThrow({ where: { code: "professional" } });
+  const professional = plans.professional;
   const owner = await prisma.user.upsert({
     where: { email: "owner@demojewelry.test" },
     create: {

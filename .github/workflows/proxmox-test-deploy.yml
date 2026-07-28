@@ -39,5 +39,6 @@ jobs:
           done
           docker compose -f docker-compose.proxmox.yml build app
           docker compose -f docker-compose.proxmox.yml run --rm app npm run db:deploy
+          docker compose -f docker-compose.proxmox.yml run --rm app npm run db:seed
           docker compose -f docker-compose.proxmox.yml up -d app
           curl -fsS http://127.0.0.1:8585/api/health

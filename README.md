@@ -167,7 +167,7 @@ Typical steps:
 GitHub Actions:
 
 - `CI` validates migrations, seed, lint, typecheck, tests, and the production build.
-- `Proxmox Test Deploy` runs on a self-hosted GitHub runner that lives on the Proxmox machine, builds the app locally, applies migrations, and restarts the stack.
+- `Proxmox Test Deploy` runs on a self-hosted GitHub runner that lives on the Proxmox machine, builds the app locally, applies migrations, seeds the base plans, and restarts the stack.
 - The self-hosted runner must have Docker and Docker Compose access, and the repository must allow that runner to pick up `develop` workflow jobs.
 - The workflow syncs the repository into `/opt/docker/projects/azzure-autoquote-mvp` before running Docker Compose there.
 

@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { ensureBasePlans } from "@/lib/plan-bootstrap";
 import { generateToken } from "@/lib/tokens";
 
 type OnboardingInput = {
@@ -30,9 +31,7 @@ export async function onboardCompanyOwner(
   tx: Prisma.TransactionClient,
   input: OnboardingInput
 ) {
-  const starterPlan = await tx.plan.findUniqueOrThrow({
-    where: { code: "starter" }
-  });
+  const { starter: starterPlan } = await ensureBasePlans(tx);
 
   const user = await tx.user.create({
     data: {
