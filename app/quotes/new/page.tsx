@@ -31,7 +31,7 @@ export default async function NewQuotePage() {
     <WorkspaceShell
       title="New estimate"
       description="Build a quote in a dedicated workspace, with live metal prices and a full AI review flow."
-      navItems={getWorkspaceNav("/quotes/new")}
+      navItems={getWorkspaceNav("/quotes/new", context.membership.role)}
     >
       <QuoteCalculator
         canEdit={canEdit}

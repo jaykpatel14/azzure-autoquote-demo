@@ -21,7 +21,7 @@ export default async function TeamPage() {
     <WorkspaceShell
       title="Team management"
       description="Review who has access to this company and what they can do."
-      navItems={getWorkspaceNav("/team")}
+      navItems={getWorkspaceNav("/team", context.membership.role)}
       actions={
         <Link className="button secondary" href="/settings">
           Back to settings

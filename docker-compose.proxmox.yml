@@ -39,7 +39,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "node -e \"fetch('https://autoquote-test.azzuresolutions.com/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""
+          "node -e \"fetch('http://127.0.0.1:8585/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""
         ]
       interval: 30s
       timeout: 10s

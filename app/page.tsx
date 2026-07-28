@@ -4,7 +4,6 @@ import WorkspaceShell from "@/components/workspace-shell";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { prisma } from "@/lib/prisma";
-import { normalizePricingProfile, resolveMetalPricing } from "@/lib/metal-pricing";
 import { getCurrentUsagePeriod, getUsageRemaining, getUsageWarningMessage } from "@/lib/billing";
 import { hasMinimumRole } from "@/lib/tenant";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
@@ -21,28 +20,15 @@ export default async function HomePage() {
   }
 
   const canEdit = hasMinimumRole(context.membership.role, "ESTIMATOR");
-  const basePricingProfile = context.company.pricingProfile
-    ? normalizePricingProfile({
-        goldSpotPerOz: Number(context.company.pricingProfile.goldSpotPerOz),
-        platinumSpotPerOz: Number(context.company.pricingProfile.platinumSpotPerOz),
-        silverSpotPerOz: Number(context.company.pricingProfile.silverSpotPerOz),
-        cadCharge: Number(context.company.pricingProfile.cadCharge),
-        centerSettingPerCarat: Number(context.company.pricingProfile.centerSettingPerCarat),
-        sideSettingPerStone: Number(context.company.pricingProfile.sideSettingPerStone),
-        sellingMarginDivisor: Number(context.company.pricingProfile.sellingMarginDivisor),
-        finalMultiplier: Number(context.company.pricingProfile.finalMultiplier)
-      })
-    : undefined;
 
-  const [usagePeriod, recentQuotes, quoteCount, livePricing] = await Promise.all([
+  const [usagePeriod, recentQuotes, quoteCount] = await Promise.all([
     getCurrentUsagePeriod(context.company.id),
     prisma.quote.findMany({
       where: { companyId: context.company.id },
       orderBy: { createdAt: "desc" },
       take: 3
     }),
-    prisma.quote.count({ where: { companyId: context.company.id } }),
-    resolveMetalPricing(basePricingProfile)
+    prisma.quote.count({ where: { companyId: context.company.id } })
   ]);
   const remaining = usagePeriod ? getUsageRemaining(usagePeriod) : null;
   const warning = usagePeriod ? getUsageWarningMessage(usagePeriod) : null;
@@ -50,16 +36,16 @@ export default async function HomePage() {
 
   return (
     <WorkspaceShell
-      title="Dashboard"
-      description="Track workspace health at a glance and jump into the area you need."
-      navItems={getWorkspaceNav("/")}
+      title="Workspace overview"
+      description="Start a quote, review recent approvals, and keep account details within reach."
+      navItems={getWorkspaceNav("/", context.membership.role)}
       actions={
         <div className="heroActions">
-          <Link className="button secondary" href="/quotes">
-            View history
-          </Link>
           <Link className="button primary" href="/quotes/new">
             New estimate
+          </Link>
+          <Link className="button secondary" href="/quotes">
+            View history
           </Link>
         </div>
       }
@@ -69,15 +55,13 @@ export default async function HomePage() {
           <span className="eyebrow">Current plan</span>
           <strong>{subscription?.plan.name ?? "No plan"}</strong>
           <p className="muted small">
-            {subscription
-              ? `${subscription.status.toLowerCase()} billing cycle`
-              : "Connect billing to unlock analysis and quoting"}
+            {subscription ? subscription.status.toLowerCase() : "Connect billing to unlock quoting"}
           </p>
         </article>
         <article className="statCard">
           <span className="eyebrow">Quotes saved</span>
           <strong>{quoteCount}</strong>
-          <p className="muted small">Tenant-scoped quote history for this company only.</p>
+          <p className="muted small">Saved quotes you can reopen, print, or share.</p>
         </article>
         <article className="statCard">
           <span className="eyebrow">Usage remaining</span>
@@ -87,9 +71,11 @@ export default async function HomePage() {
           </p>
         </article>
         <article className="statCard">
-          <span className="eyebrow">Team access</span>
-          <strong>{context.memberships.length}</strong>
-          <p className="muted small">Members can belong to multiple companies and switch safely.</p>
+          <span className="eyebrow">Your role</span>
+          <strong>{context.membership.role}</strong>
+          <p className="muted small">
+            {canEdit ? "You can create and refine estimates." : "You can view quote history and account details."}
+          </p>
         </article>
       </section>
 
@@ -97,27 +83,27 @@ export default async function HomePage() {
         <article className="card accentCard">
           <div className="sectionHeader">
             <div>
-              <h2>Workspace shortcuts</h2>
-              <p className="muted">
-                Jump straight to the main routes instead of keeping every workflow on the home page.
-              </p>
+              <h2>Get started</h2>
+              <p className="muted">Use the main routes instead of keeping every workflow on the dashboard.</p>
             </div>
           </div>
           <div className="stack">
-            <Link className="detailCard" href="/quotes/new">
-              <span>New estimate</span>
-              <strong>Open the quote builder</strong>
-              <p className="muted small">Upload an image, review the AI draft, and save a quote.</p>
-            </Link>
+            {canEdit ? (
+              <Link className="detailCard" href="/quotes/new">
+                <span>New estimate</span>
+                <strong>Open the quote builder</strong>
+                <p className="muted small">Upload a piece, review the draft, and save the approved price.</p>
+              </Link>
+            ) : null}
             <Link className="detailCard" href="/quotes">
               <span>Quote history</span>
-              <strong>Review saved quotes</strong>
-              <p className="muted small">See the full company history and approved prices.</p>
+              <strong>Review recent quotes</strong>
+              <p className="muted small">Reopen older quotes, check prices, and download PDFs.</p>
             </Link>
             <Link className="detailCard" href="/settings">
-              <span>Pricing and billing</span>
-              <strong>Manage live pricing and plans</strong>
-              <p className="muted small">Inspect live metals data, pricing inputs, and Stripe billing.</p>
+              <span>Billing & settings</span>
+              <strong>Manage plan and pricing</strong>
+              <p className="muted small">Update account details, billing, and pricing inputs when needed.</p>
             </Link>
           </div>
         </article>
@@ -126,9 +112,7 @@ export default async function HomePage() {
           <div className="sectionHeader">
             <div>
               <h2>Recent quotes</h2>
-              <p className="muted">
-                The three most recent quotes are still shown here as a quick snapshot.
-              </p>
+              <p className="muted">A quick list of your latest quotes, without the clutter.</p>
             </div>
             <Link href="/quotes" className="textLink">
               Open quote history
@@ -146,7 +130,7 @@ export default async function HomePage() {
                   <div>
                     <strong>{quote.quoteNumber}</strong>
                     <p className="muted small">
-                      {quote.customerName || "No customer"} | {quote.metalType}
+                      {quote.customerName || "No customer"} · {quote.metalType}
                     </p>
                   </div>
                   <strong>
@@ -161,6 +145,7 @@ export default async function HomePage() {
           {warning ? <p className="warningBanner">{warning}</p> : null}
         </article>
       </section>
+
     </WorkspaceShell>
   );
 }

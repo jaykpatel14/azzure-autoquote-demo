@@ -12,6 +12,7 @@ type AdminCompanyPageProps = {
 };
 
 export const dynamic = "force-dynamic";
+const memberRoles = ["OWNER", "ADMIN", "ESTIMATOR", "VIEWER"] as const;
 
 export default async function AdminCompanyPage({ params }: AdminCompanyPageProps) {
   const context = await getInternalAdminContext();
@@ -168,6 +169,54 @@ export default async function AdminCompanyPage({ params }: AdminCompanyPageProps
               </div>
             ))}
           </div>
+          <hr style={{ margin: "1.25rem 0", borderColor: "rgba(15, 23, 42, 0.08)" }} />
+          <div className="sectionHeader">
+            <div>
+              <h3>Add team member</h3>
+              <p className="muted">Attach an existing user or create a brand new one for this tenant.</p>
+            </div>
+          </div>
+          <form className="stack" action={`/api/admin/companies/${company.id}/members`} method="post">
+            <input type="hidden" name="redirectTo" value={`/admin/companies/${company.id}`} />
+            <div className="grid twoUp">
+              <label className="field">
+                <span>Name</span>
+                <input name="name" placeholder="New team member" />
+              </label>
+              <label className="field">
+                <span>Email</span>
+                <input name="email" type="email" placeholder="user@acme.com" required />
+              </label>
+            </div>
+            <div className="grid twoUp">
+              <label className="field">
+                <span>Password</span>
+                <input
+                  name="password"
+                  type="password"
+                  placeholder="Required for brand new users"
+                  minLength={8}
+                />
+              </label>
+              <label className="field">
+                <span>Role</span>
+                <select name="role" defaultValue="ESTIMATOR">
+                  {memberRoles.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p className="disclaimer">
+              Existing users are reused automatically. If the email does not exist yet, a password is
+              required so the admin team can hand off access securely.
+            </p>
+            <button className="button primary" type="submit" style={{ width: "fit-content" }}>
+              Add member
+            </button>
+          </form>
         </article>
 
         <article className="card">

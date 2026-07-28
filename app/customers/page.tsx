@@ -54,7 +54,7 @@ export default async function CustomersPage() {
     <WorkspaceShell
       title="Customers"
       description="Keep track of who has received quotes. Only company members can see this directory."
-      navItems={getWorkspaceNav("/customers")}
+      navItems={getWorkspaceNav("/customers", context.membership.role)}
       actions={
         <Link className="button primary" href="/quotes/new">
           New estimate

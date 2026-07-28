@@ -36,9 +36,14 @@ export default async function AdminCompaniesPage() {
       description="Inspect every tenant, their billing health, and the latest quote activity."
       navItems={getInternalAdminNav("/admin/companies")}
       actions={
-        <Link className="button secondary" href="/admin/settings">
-          API keys
-        </Link>
+        <>
+          <Link className="button secondary" href="/admin/settings">
+            API keys
+          </Link>
+          <Link className="button primary" href="/admin/companies/new">
+            Create company
+          </Link>
+        </>
       }
     >
       <section className="card">

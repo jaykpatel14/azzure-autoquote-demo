@@ -121,13 +121,14 @@ Before shipping to production, make sure these are in place:
 2. Set `DATABASE_URL` to the production PostgreSQL instance.
 3. Set `OPENAI_API_KEY` and confirm `OPENAI_MODEL` is the model you want to use.
 4. Set `METALS_DEV_API_KEY` if you want live metal pricing in quotes.
-5. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and the Stripe price/product ids.
-6. Set `APP_SETTINGS_ENCRYPTION_KEY` so admin-managed secret settings are encrypted at rest.
-7. Set `AZZURE_ADMIN_EMAILS` to the internal Azzure team emails that should access `/admin`.
-8. Run `npm run db:migrate` against production before deploying code.
-9. Run `npm run db:seed` only for fresh demo environments, not on existing customer data.
-10. Run `npm run build` and confirm it passes before releasing.
-11. After deploy, verify `/api/health`, `/admin`, `/settings`, and a sample quote flow.
+5. Set `S3_BUCKET` and AWS credentials if you want generated PDFs stored in S3.
+6. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and the Stripe price/product ids.
+7. Set `APP_SETTINGS_ENCRYPTION_KEY` so admin-managed secret settings are encrypted at rest.
+8. Set `AZZURE_ADMIN_EMAILS` to the internal Azzure team emails that should access `/admin`.
+9. Run `npm run db:migrate` against production before deploying code.
+10. Run `npm run db:seed` only for fresh demo environments, not on existing customer data.
+11. Run `npm run build` and confirm it passes before releasing.
+12. After deploy, verify `/api/health`, `/admin`, `/settings`, and a sample quote flow.
 
 Recommended runtime checks:
 
@@ -135,6 +136,7 @@ Recommended runtime checks:
 - Confirm customer logins land on the workspace dashboard.
 - Confirm live metals pricing falls back cleanly when `METALS_DEV_API_KEY` is absent.
 - Confirm Stripe checkout and webhook handling succeed in the target environment.
+- Confirm quote PDFs download successfully and persist to S3 when configured.
 
 ## Helpful Database Commands
 
@@ -176,5 +178,5 @@ GitHub Actions:
 - Credentials auth is implemented first; SSO and magic links can be added later
 - Uploaded images are converted to a data URL and are not persisted yet
 - Overages are architected but disabled by default
-- S3, email delivery, PDF generation, and AWS deployment automation are still future phases
+- Email delivery and AWS deployment automation are still future phases
 - AI visual estimates are approximate and not manufacturing specifications

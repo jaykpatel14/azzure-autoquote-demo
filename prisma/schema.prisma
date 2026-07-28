@@ -216,6 +216,9 @@ model Quote {
   sideDiamondCarats     Decimal
   sideDiamondQuantity   Int
   estimatedPrice        Decimal
+  pdfStorageKey         String?     @unique
+  pdfStoredAt           DateTime?
+  pdfContentType        String?     @default("application/pdf")
   createdAt             DateTime    @default(now())
   company               Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   analysis              AiAnalysis? @relation(fields: [analysisId], references: [id])

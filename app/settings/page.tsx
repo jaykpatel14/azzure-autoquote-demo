@@ -60,7 +60,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     <WorkspaceShell
       title="Billing and settings"
       description="Manage plans, inspect pricing inputs, and keep workspace controls in one place."
-      navItems={getWorkspaceNav("/settings")}
+      navItems={getWorkspaceNav("/settings", context.membership.role)}
       actions={
         <Link className="button secondary" href="/quotes/new">
           New estimate
@@ -333,33 +333,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         </article>
       </section>
 
-      <section className="card">
-        <div className="sectionHeader">
-          <div>
-            <h2>Admin support</h2>
-            <p className="muted">
-              Keep this area for billing support, webhook health, and operational notes.
-            </p>
-          </div>
-        </div>
-        <div className="supportGrid">
-          <div className="detailCard">
-            <span>Billing portal</span>
-            <strong>Managed by Stripe</strong>
-            <p className="muted small">Use the portal for card updates, invoices, and subscription changes.</p>
-          </div>
-          <div className="detailCard">
-            <span>Webhook health</span>
-            <strong>Server-verified</strong>
-            <p className="muted small">Duplicate events are idempotent and processed inside the database.</p>
-          </div>
-          <div className="detailCard">
-            <span>Data retention</span>
-            <strong>Tenant-isolated</strong>
-            <p className="muted small">Delete or archive company records from the database when required.</p>
-          </div>
-        </div>
-      </section>
     </WorkspaceShell>
   );
 }

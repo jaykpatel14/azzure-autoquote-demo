@@ -24,7 +24,7 @@ export default async function QuotesPage() {
     <WorkspaceShell
       title="Quote history"
       description="Review saved quotes for this company. Internal cost inputs remain inside the workspace."
-      navItems={getWorkspaceNav("/quotes")}
+      navItems={getWorkspaceNav("/quotes", context.membership.role)}
       actions={
         <Link className="button primary" href="/quotes/new">
           New estimate
@@ -71,6 +71,7 @@ export default async function QuotesPage() {
                   <th scope="col">Metal</th>
                   <th scope="col">Approved price</th>
                   <th scope="col">Created</th>
+                  <th scope="col">PDF</th>
                 </tr>
               </thead>
               <tbody>
@@ -87,6 +88,11 @@ export default async function QuotesPage() {
                       )}
                     </td>
                     <td>{quote.createdAt.toLocaleDateString()}</td>
+                    <td>
+                      <Link className="textLink" href={`/api/quotes/${quote.id}/pdf`} target="_blank">
+                        Download PDF
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

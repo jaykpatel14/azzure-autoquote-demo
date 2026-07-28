@@ -19,6 +19,11 @@ type Estimate = {
 
 type Phase = "idle" | "uploading" | "processing" | "ready" | "saving" | "saved" | "error";
 
+type SavedQuote = {
+  id: string;
+  quoteNumber: string;
+};
+
 const initialEstimate: Estimate = {
   jewelryType: "ring",
   metalWeightGrams: 5.2,
@@ -59,6 +64,7 @@ export default function QuoteCalculator({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savedQuote, setSavedQuote] = useState<SavedQuote | null>(null);
 
   const price = useMemo(
     () =>
@@ -100,6 +106,7 @@ export default function QuoteCalculator({
     setEstimate(initialEstimate);
     setCustomerName("");
     setFile(null);
+    setSavedQuote(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl("");
     setStatus("Draft estimate cleared.");
@@ -192,6 +199,7 @@ export default function QuoteCalculator({
       });
       setUploadProgress(100);
       setPhase("ready");
+      setSavedQuote(null);
       setStatus("Estimate applied. Review and edit every value before saving.");
     } catch (error) {
       setPhase("error");
@@ -227,6 +235,7 @@ export default function QuoteCalculator({
     const result = await response.json();
     if (response.ok) {
       setPhase("saved");
+      setSavedQuote({ id: result.id, quoteNumber: result.quoteNumber });
       setStatus(`Quote ${result.quoteNumber} saved.`);
     } else {
       setPhase("error");
@@ -438,6 +447,11 @@ export default function QuoteCalculator({
             <button className="button primary" disabled={!canEdit || loading || saving} onClick={saveQuote}>
               {saving ? "Saving..." : "Save quote"}
             </button>
+            {savedQuote ? (
+              <a className="button secondary" href={`/api/quotes/${savedQuote.id}/pdf`} target="_blank" rel="noreferrer">
+                Download PDF
+              </a>
+            ) : null}
             <button className="button secondary" onClick={() => window.print()}>
               Print preview
             </button>
