@@ -1,16 +1,70 @@
 import { loadEnvConfig } from "@next/env";
 import { PrismaClient } from "@prisma/client";
-import { hashPassword } from "../lib/password";
-import { ensureBasePlans } from "../lib/plan-bootstrap";
+import { randomBytes, scryptSync } from "node:crypto";
 
 loadEnvConfig(process.cwd(), true);
 
 const prisma = new PrismaClient();
 
+const BASE_PLAN_DEFINITIONS = [
+  {
+    id: "plan_starter",
+    code: "starter",
+    name: "Starter",
+    monthlyPriceCents: 4900,
+    monthlyLimit: 100
+  },
+  {
+    id: "plan_professional",
+    code: "professional",
+    name: "Professional",
+    monthlyPriceCents: 9900,
+    monthlyLimit: 500
+  },
+  {
+    id: "plan_enterprise",
+    code: "enterprise",
+    name: "Enterprise",
+    monthlyPriceCents: 19900,
+    monthlyLimit: 2500,
+    isConfigurable: true
+  }
+] as const;
+
+function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString("hex");
+  const derivedKey = scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${derivedKey}`;
+}
+
+async function ensureBasePlans() {
+  const plans = await Promise.all(
+    BASE_PLAN_DEFINITIONS.map((definition) =>
+      prisma.plan.upsert({
+        where: { code: definition.code },
+        create: {
+          ...definition,
+          stripePriceId: null,
+          stripeProductId: null
+        },
+        update: {
+          ...definition
+        }
+      })
+    )
+  );
+
+  return {
+    starter: plans[0],
+    professional: plans[1],
+    enterprise: plans[2]
+  };
+}
+
 async function main() {
   const companyId = "company_demo_jewelry";
   const ownerUserId = "user_demo_owner";
-  const plans = await ensureBasePlans(prisma);
+  const plans = await ensureBasePlans();
 
   await prisma.plan.update({
     where: { code: "professional" },
