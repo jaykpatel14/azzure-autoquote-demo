@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Session } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { calculateQuote } from "@/lib/pricing";
@@ -127,6 +127,13 @@ beforeAll(async () => {
   expect(process.env.DATABASE_URL).toBeTruthy();
 });
 
+beforeEach(async () => {
+  vi.stubEnv("METALS_DEV_API_KEY", "");
+  await prisma.appSetting.deleteMany({
+    where: { key: "METALS_LIVE_PRICING_CACHE_V1" }
+  });
+});
+
 afterAll(async () => {
   await prisma.company.deleteMany({
     where: {
@@ -243,5 +250,48 @@ describe("quote route integration", () => {
 
     expect(response.status).toBe(404);
     expect(await prisma.quote.count({ where: { companyId: companyA.companyId } })).toBe(0);
+  });
+
+  test("advances quote numbers when the stored sequence is behind existing quotes", async () => {
+    const company = await createCompanyFixture();
+    const analysis = await createAnalysis(company.companyId);
+
+    await prisma.quote.create({
+      data: {
+        companyId: company.companyId,
+        quoteNumber: "AQ-000009",
+        customerName: "Existing customer",
+        metalType: "14K",
+        metalWeightGrams: 4.5,
+        centerDiamondCarats: 1,
+        sideDiamondCarats: 0.2,
+        sideDiamondQuantity: 8,
+        estimatedPrice: 1500
+      }
+    });
+
+    authMock.mockResolvedValueOnce(mockSession(company));
+
+    const response = await createQuote(
+      new Request("http://localhost/api/quotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          analysisId: analysis.id,
+          metalType: "14K",
+          metalWeightGrams: 5,
+          centerDiamondCarats: 1,
+          sideDiamondCarats: 0.4,
+          sideDiamondQuantity: 10
+        })
+      })
+    );
+
+    expect(response.status).toBe(200);
+    const result = (await response.json()) as {
+      quoteNumber: string;
+    };
+
+    expect(result.quoteNumber).toBe("AQ-000010");
   });
 });

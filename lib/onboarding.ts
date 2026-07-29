@@ -57,7 +57,7 @@ export async function onboardCompanyOwner(
     data: {
       companyId: company.id,
       userId: user.id,
-      role: "OWNER"
+      role: "CUSTOMER"
     }
   });
 
@@ -82,7 +82,7 @@ export async function onboardCompanyOwner(
       targetType: "Membership",
       targetId: user.id,
       metadata: {
-        role: "OWNER"
+        role: "CUSTOMER"
       }
     }
   });

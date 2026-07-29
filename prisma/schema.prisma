@@ -8,10 +8,7 @@ datasource db {
 }
 
 enum MembershipRole {
-  OWNER
-  ADMIN
-  ESTIMATOR
-  VIEWER
+  CUSTOMER
 }
 
 enum SubscriptionStatus {
@@ -73,7 +70,7 @@ model User {
 
 model Membership {
   id        String         @id @default(cuid())
-  role      MembershipRole @default(ESTIMATOR)
+  role      MembershipRole @default(CUSTOMER)
   companyId String
   userId    String
   company   Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)

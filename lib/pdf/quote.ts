@@ -5,6 +5,7 @@ export type QuotePdfInput = {
   quoteNumber: string;
   createdAt: Date;
   customerName?: string | null;
+  customerImageDataUrl?: string | null;
   metalType: string;
   metalWeightGrams: number;
   centerDiamondCarats: number;
@@ -53,6 +54,36 @@ function drawLabelValue(
     });
 }
 
+function drawSectionTitle(doc: PDFKit.PDFDocument, title: string, x: number, y: number) {
+  doc.font("Helvetica-Bold").fontSize(11).fillColor("#6b7280").text(title.toUpperCase(), x, y, {
+    characterSpacing: 1.4
+  });
+}
+
+function drawMetric(
+  doc: PDFKit.PDFDocument,
+  label: string,
+  value: string,
+  x: number,
+  y: number,
+  width: number
+) {
+  doc
+    .roundedRect(x, y, width, 44, 10)
+    .fill("#ffffff");
+  doc
+    .roundedRect(x, y, width, 44, 10)
+    .lineWidth(1)
+    .stroke("#e5e7eb");
+  doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#6b7280").text(label.toUpperCase(), x + 12, y + 8, {
+    width: width - 24,
+    characterSpacing: 1.1
+  });
+  doc.font("Helvetica").fontSize(11).fillColor("#111827").text(value, x + 12, y + 20, {
+    width: width - 24
+  });
+}
+
 export async function generateQuotePdfBuffer(input: QuotePdfInput) {
   return await new Promise<Buffer>((resolve, reject) => {
     const doc = new PDFDocument({
@@ -93,36 +124,94 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
       .text("Approved estimate for customer review and approval.", 48, 208);
 
     const cardTop = 246;
-    const cardHeight = 130;
+    const cardHeight = 190;
     const cardWidth = doc.page.width - 96;
     doc.roundedRect(48, cardTop, cardWidth, cardHeight, 14).fill("#f8fafc");
     doc.roundedRect(48, cardTop, cardWidth, cardHeight, 14).lineWidth(1).stroke("#d1d5db");
 
-    const columnWidth = (cardWidth - 32) / 2;
-    drawLabelValue(doc, "Customer", input.customerName || "Unassigned", {
-      x: 64,
-      y: cardTop + 18,
-      width: columnWidth
-    });
-    drawLabelValue(doc, "Metal", input.metalType, {
-      x: 64 + columnWidth + 16,
-      y: cardTop + 18,
-      width: columnWidth
-    });
-    drawLabelValue(doc, "Jewelry type", input.jewelryType || "Not specified", {
-      x: 64,
-      y: cardTop + 70,
-      width: columnWidth
-    });
-    drawLabelValue(doc, "Prepared on", formatDate(input.createdAt), {
-      x: 64 + columnWidth + 16,
-      y: cardTop + 70,
-      width: columnWidth
-    });
+    const contentLeft = 64;
+    const contentTop = cardTop + 18;
+    const imageDataUrl = input.customerImageDataUrl?.trim() || null;
+    const customerName = input.customerName?.trim() || input.companyName?.trim() || "Customer";
+    const photoWidth = 168;
+    const photoHeight = 140;
+    const photoX = doc.page.width - 48 - photoWidth;
+    const photoY = cardTop + 18;
+    const detailsRightEdge = photoX - 18;
+    const detailsWidth = detailsRightEdge - contentLeft;
 
-    let y = 408;
+    drawSectionTitle(doc, "Customer", contentLeft, contentTop);
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(19)
+      .fillColor("#111827")
+      .text(customerName, contentLeft, contentTop + 16, {
+        width: detailsWidth,
+        lineGap: 2,
+        ellipsis: true,
+        height: 24
+      });
+    doc
+      .font("Helvetica")
+      .fontSize(9.5)
+      .fillColor("#6b7280")
+      .text(`Quote ${input.quoteNumber}`, contentLeft, contentTop + 40, {
+        width: detailsWidth
+      });
+
+    const summaryRowTop = contentTop + 68;
+    const metricGap = 10;
+    const metricWidth = Math.floor((detailsWidth - metricGap) / 2);
+    drawMetric(doc, "Metal", input.metalType, contentLeft, summaryRowTop, metricWidth);
+    drawMetric(doc, "Prepared on", formatDate(input.createdAt), contentLeft + metricWidth + metricGap, summaryRowTop, metricWidth);
+    drawMetric(
+      doc,
+      "Jewelry type",
+      input.jewelryType || "Not specified",
+      contentLeft,
+      summaryRowTop + 58,
+      metricWidth
+    );
+    drawMetric(
+      doc,
+      "Review status",
+      "Ready for approval",
+      contentLeft + metricWidth + metricGap,
+      summaryRowTop + 58,
+      metricWidth
+    );
+
+    doc.roundedRect(photoX, photoY, photoWidth, photoHeight, 12).fill("#ffffff");
+    doc.roundedRect(photoX, photoY, photoWidth, photoHeight, 12).lineWidth(1).stroke("#d1d5db");
+    if (imageDataUrl) {
+      doc.image(imageDataUrl, photoX + 10, photoY + 10, {
+        fit: [photoWidth - 20, photoHeight - 32],
+        align: "center",
+        valign: "center"
+      });
+    } else {
+      doc
+        .font("Helvetica")
+        .fontSize(9)
+        .fillColor("#6b7280")
+        .text("Analysis photo unavailable", photoX + 12, photoY + 56, {
+          width: photoWidth - 32,
+          align: "center"
+        });
+    }
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(9)
+      .fillColor("#6b7280")
+      .text("Analysis photo", photoX, photoY + photoHeight + 6, {
+        width: photoWidth,
+        align: "center"
+      });
+
+    const detailsTop = cardTop + cardHeight + 24;
+    let y = detailsTop;
     doc.font("Helvetica-Bold").fontSize(16).fillColor("#111827").text("Quote details", 48, y);
-    y += 28;
+    y += 34;
 
     const details = [
       { label: "Metal weight", value: `${input.metalWeightGrams.toFixed(2)} g` },
@@ -133,18 +222,26 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
     ];
 
     for (const detail of details) {
-      doc.font("Helvetica-Bold").fontSize(10).fillColor("#6b7280").text(detail.label.toUpperCase(), 48, y);
-      doc.font("Helvetica").fontSize(12).fillColor("#111827").text(detail.value, 48, y + 14);
-      y += 42;
+      doc
+        .roundedRect(48, y - 4, doc.page.width - 96, 34, 8)
+        .fill("#ffffff");
+      doc
+        .roundedRect(48, y - 4, doc.page.width - 96, 34, 8)
+        .lineWidth(1)
+        .stroke("#e5e7eb");
+      doc.font("Helvetica-Bold").fontSize(9).fillColor("#6b7280").text(detail.label.toUpperCase(), 64, y);
+      doc.font("Helvetica").fontSize(12).fillColor("#111827").text(detail.value, 64, y + 12);
+      y += 40;
     }
 
-    doc.roundedRect(48, 640, doc.page.width - 96, 88, 12).fill("#eff6ff");
-    doc.roundedRect(48, 640, doc.page.width - 96, 88, 12).lineWidth(1).stroke("#bfdbfe");
+    const noteTop = y + 6;
+    doc.roundedRect(48, noteTop, doc.page.width - 96, 74, 12).fill("#eff6ff");
+    doc.roundedRect(48, noteTop, doc.page.width - 96, 74, 12).lineWidth(1).stroke("#bfdbfe");
     doc
       .font("Helvetica-Bold")
       .fontSize(11)
       .fillColor("#1f2937")
-      .text("Important note", 64, 656);
+      .text("Important note", 64, noteTop + 13);
     doc
       .font("Helvetica")
       .fontSize(10)
@@ -152,7 +249,7 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
       .text(
         "Final pricing is an approved estimate, not a manufacturing invoice. Production review may change the quote after CAD, stone verification, or metal confirmation.",
         64,
-        672,
+        noteTop + 29,
         { width: doc.page.width - 128 }
       );
 
@@ -163,7 +260,7 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
       .text(
         "Prepared by Azzure AutoQuote. This PDF is generated from saved quote data and is customer-safe.",
         48,
-        748,
+        noteTop + 84,
         { align: "center", width: doc.page.width - 96 }
       );
 

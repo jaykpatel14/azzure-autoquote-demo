@@ -24,12 +24,16 @@ type SavedQuote = {
   quoteNumber: string;
 };
 
+type SaveQuoteResult =
+  | { ok: true; id: string; quoteNumber: string }
+  | { ok: false; error: string };
+
 const initialEstimate: Estimate = {
-  jewelryType: "ring",
-  metalWeightGrams: 5.2,
-  centerDiamondCarats: 1,
-  sideDiamondCarats: 0.35,
-  sideDiamondQuantity: 18,
+  jewelryType: "",
+  metalWeightGrams: 0,
+  centerDiamondCarats: 0,
+  sideDiamondCarats: 0,
+  sideDiamondQuantity: 0,
   confidence: "manual"
 };
 
@@ -65,6 +69,7 @@ export default function QuoteCalculator({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedQuote, setSavedQuote] = useState<SavedQuote | null>(null);
+  const [draftIsFresh, setDraftIsFresh] = useState(true);
 
   const price = useMemo(
     () =>
@@ -77,12 +82,27 @@ export default function QuoteCalculator({
       }, pricingProfile ?? {}),
     [metalType, estimate, pricingProfile]
   );
+  const previewPrice = draftIsFresh ? 0 : price.estimatedFinalPrice;
 
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
+
+  function clearDraftState(message: string) {
+    setEstimate(initialEstimate);
+    setMetalType("14K");
+    setCustomerName("");
+    setFile(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl("");
+    setStatus(message);
+    setPhase("idle");
+    setUploadProgress(0);
+    setDraftIsFresh(true);
+    setSavedQuote(null);
+  }
 
   function updateNumber(key: keyof Estimate, value: number) {
     setEstimate((current) => ({ ...current, [key]: Math.max(0, value) }));
@@ -98,28 +118,18 @@ export default function QuoteCalculator({
     setMetalType(next);
   }
 
-  function resetEstimate() {
+  function resetEstimate(message = "Draft estimate cleared.") {
     if (!window.confirm("Clear the current draft estimate?")) {
       return;
     }
 
-    setEstimate(initialEstimate);
-    setCustomerName("");
-    setFile(null);
-    setSavedQuote(null);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl("");
-    setStatus("Draft estimate cleared.");
-    setPhase("idle");
-    setUploadProgress(0);
+    clearDraftState(message);
   }
 
   const statusMessage =
-    phase === "saved"
-      ? "Quote saved successfully."
-      : phase === "error"
-        ? status
-        : processingCopy[phase as Exclude<Phase, "saved" | "error">] || status;
+    phase === "error"
+      ? status
+      : status || processingCopy[phase as Exclude<Phase, "saved" | "error">] || "Ready to upload a jewelry image.";
 
   const progressCopy = (() => {
     if (phase === "saved" || phase === "error") {
@@ -162,6 +172,7 @@ export default function QuoteCalculator({
     setPhase("uploading");
     setUploadProgress(0);
     setStatus("Uploading image and preparing AI review.");
+    setSavedQuote(null);
 
     try {
       const response = await sendAnalysisRequest(file);
@@ -197,10 +208,10 @@ export default function QuoteCalculator({
         notes: result.notes,
         assumptions: result.assumptions
       });
+      setDraftIsFresh(false);
       setUploadProgress(100);
       setPhase("ready");
-      setSavedQuote(null);
-      setStatus("Estimate applied. Review and edit every value before saving.");
+      setStatus("Estimate applied. Review and edit the details, then save the quote.");
     } catch (error) {
       setPhase("error");
       setStatus(error instanceof Error ? error.message : "Analysis failed.");
@@ -209,9 +220,20 @@ export default function QuoteCalculator({
     }
   }
 
-  async function saveQuote() {
-    if (!window.confirm("Save this approved quote to company history?")) {
-      return;
+  async function persistQuote(
+    payload: {
+      analysisId?: string;
+      customerName: string;
+      metalType: MetalType;
+      metalWeightGrams: number;
+      centerDiamondCarats: number;
+      sideDiamondCarats: number;
+      sideDiamondQuantity: number;
+    },
+    options?: { resetDraftAfterSave?: boolean; confirm?: boolean }
+  ): Promise<SaveQuoteResult> {
+    if (options?.confirm !== false && !window.confirm("Save this approved quote to company history?")) {
+      return { ok: false, error: "Cancelled." };
     }
 
     setSaving(true);
@@ -221,28 +243,27 @@ export default function QuoteCalculator({
     const response = await fetch("/api/quotes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        analysisId: estimate.analysisId,
-        customerName,
-        metalType,
-        metalWeightGrams: estimate.metalWeightGrams,
-        centerDiamondCarats: estimate.centerDiamondCarats,
-        sideDiamondCarats: estimate.sideDiamondCarats,
-        sideDiamondQuantity: estimate.sideDiamondQuantity
-      })
+      body: JSON.stringify(payload)
     });
 
     const result = await response.json();
     if (response.ok) {
+      const savedId = result.id as string;
+      const savedQuoteNumber = result.quoteNumber as string;
       setPhase("saved");
-      setSavedQuote({ id: result.id, quoteNumber: result.quoteNumber });
-      setStatus(`Quote ${result.quoteNumber} saved.`);
+      setSavedQuote({ id: savedId, quoteNumber: savedQuoteNumber });
+      setStatus(`Quote ${savedQuoteNumber} saved. You can keep editing and save again if needed.`);
+      setSaving(false);
+      if (options?.resetDraftAfterSave) {
+        setDraftIsFresh(true);
+      }
+      return { ok: true, id: savedId, quoteNumber: savedQuoteNumber };
     } else {
       setPhase("error");
       setStatus(result.error || "Unable to save quote.");
+      setSaving(false);
+      return { ok: false, error: result.error || "Unable to save quote." };
     }
-
-    setSaving(false);
   }
 
   const processingSteps = [
@@ -264,7 +285,7 @@ export default function QuoteCalculator({
               </p>
             </div>
             <div className="buttonRow">
-              <button className="button secondary" disabled={!canEdit || loading || saving} onClick={resetEstimate}>
+              <button className="button secondary" disabled={!canEdit || loading || saving} onClick={() => resetEstimate()}>
                 Reset draft
               </button>
               <button className="button primary" disabled={loading || saving || !canEdit} onClick={analyze}>
@@ -415,11 +436,9 @@ export default function QuoteCalculator({
           <div className="quotePreview">
             <p className="eyebrow">Approved final price</p>
             {pricingSourceLabel ? <p className="muted small">{pricingSourceLabel}</p> : null}
-            <div className="quotePrice">
-              {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-                price.estimatedFinalPrice
-              )}
-            </div>
+          <div className="quotePrice">
+              {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(previewPrice)}
+          </div>
             <div className="quoteMeta">
               <div>
                 <span>Customer</span>
@@ -444,8 +463,25 @@ export default function QuoteCalculator({
           </div>
 
           <div className="buttonRow">
-            <button className="button primary" disabled={!canEdit || loading || saving} onClick={saveQuote}>
-              {saving ? "Saving..." : "Save quote"}
+            <button
+              className="button primary"
+              disabled={!canEdit || loading || saving || draftIsFresh}
+              onClick={() =>
+                persistQuote(
+                  {
+                    analysisId: estimate.analysisId,
+                    customerName,
+                    metalType,
+                    metalWeightGrams: estimate.metalWeightGrams,
+                    centerDiamondCarats: estimate.centerDiamondCarats,
+                    sideDiamondCarats: estimate.sideDiamondCarats,
+                    sideDiamondQuantity: estimate.sideDiamondQuantity
+                  },
+                  { resetDraftAfterSave: false }
+                )
+              }
+            >
+              {saving ? "Saving..." : "Save current draft"}
             </button>
             {savedQuote ? (
               <a className="button secondary" href={`/api/quotes/${savedQuote.id}/pdf`} target="_blank" rel="noreferrer">

@@ -3,7 +3,6 @@ import QuoteCalculator from "@/components/QuoteCalculator";
 import WorkspaceShell from "@/components/workspace-shell";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { normalizePricingProfile, resolveMetalPricing } from "@/lib/metal-pricing";
-import { hasMinimumRole } from "@/lib/tenant";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 
 export default async function NewQuotePage() {
@@ -12,7 +11,6 @@ export default async function NewQuotePage() {
     redirect("/signin");
   }
 
-  const canEdit = hasMinimumRole(context.membership.role, "ESTIMATOR");
   const basePricingProfile = context.company.pricingProfile
     ? normalizePricingProfile({
         goldSpotPerOz: Number(context.company.pricingProfile.goldSpotPerOz),
@@ -28,13 +26,13 @@ export default async function NewQuotePage() {
   const livePricing = await resolveMetalPricing(basePricingProfile);
 
   return (
-    <WorkspaceShell
-      title="New estimate"
-      description="Build a quote in a dedicated workspace, with live metal prices and a full AI review flow."
-      navItems={getWorkspaceNav("/quotes/new", context.membership.role)}
-    >
+      <WorkspaceShell
+        title="New estimate"
+        description="Build a quote in a dedicated workspace, with live metal prices and a full AI review flow."
+        navItems={getWorkspaceNav("/quotes/new")}
+      >
       <QuoteCalculator
-        canEdit={canEdit}
+        canEdit={true}
         pricingProfile={livePricing.pricingProfile}
         pricingSourceLabel={
           livePricing.source === "metals.dev"

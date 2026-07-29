@@ -22,12 +22,12 @@ export default async function AdminSettingsPage() {
 
   return (
     <InternalAdminShell
-      title="API keys"
-      description="Rotate shared provider keys from one place. Secret values are encrypted before storage."
+      title="System settings"
+      description="Rotate shared provider keys and runtime defaults from one place. Secret values are encrypted before storage."
       navItems={getInternalAdminNav("/admin/settings")}
       actions={
-        <Link className="button secondary" href="/admin">
-          Overview
+        <Link className="button secondary" href="/admin/billing">
+          Billing
         </Link>
       }
     >
@@ -65,9 +65,9 @@ export default async function AdminSettingsPage() {
           ))}
         </div>
         <p className="disclaimer">
-          <code>{ADMIN_SETTING_KEYS.join(", ")}</code> are the only values currently editable from this
-          console. <code>APP_SETTINGS_ENCRYPTION_KEY</code> must be configured in production to encrypt
-          secret values.
+          <code>{ADMIN_SETTING_KEYS.join(", ")}</code> are the only values editable from this console.
+          <code>APP_SETTINGS_ENCRYPTION_KEY</code> must be configured in production to encrypt secret
+          values.
         </p>
       </section>
     </InternalAdminShell>

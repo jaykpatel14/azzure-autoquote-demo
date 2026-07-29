@@ -12,7 +12,6 @@ type AdminCompanyPageProps = {
 };
 
 export const dynamic = "force-dynamic";
-const memberRoles = ["OWNER", "ADMIN", "ESTIMATOR", "VIEWER"] as const;
 
 export default async function AdminCompanyPage({ params }: AdminCompanyPageProps) {
   const context = await getInternalAdminContext();
@@ -163,7 +162,7 @@ export default async function AdminCompanyPage({ params }: AdminCompanyPageProps
           <div className="stack">
             {company.memberships.map((membership) => (
               <div className="detailCard" key={membership.id}>
-                <span>{membership.role}</span>
+                <span>Customer</span>
                 <strong>{membership.user.name || membership.user.email}</strong>
                 <p className="muted small">{membership.user.email}</p>
               </div>
@@ -188,27 +187,15 @@ export default async function AdminCompanyPage({ params }: AdminCompanyPageProps
                 <input name="email" type="email" placeholder="user@acme.com" required />
               </label>
             </div>
-            <div className="grid twoUp">
-              <label className="field">
-                <span>Password</span>
-                <input
-                  name="password"
-                  type="password"
-                  placeholder="Required for brand new users"
-                  minLength={8}
-                />
-              </label>
-              <label className="field">
-                <span>Role</span>
-                <select name="role" defaultValue="ESTIMATOR">
-                  {memberRoles.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            <label className="field">
+              <span>Password</span>
+              <input
+                name="password"
+                type="password"
+                placeholder="Required for brand new users"
+                minLength={8}
+              />
+            </label>
             <p className="disclaimer">
               Existing users are reused automatically. If the email does not exist yet, a password is
               required so the admin team can hand off access securely.

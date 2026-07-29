@@ -6,8 +6,6 @@ import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 
 export const dynamic = "force-dynamic";
 
-const roles = ["OWNER", "ADMIN", "ESTIMATOR", "VIEWER"] as const;
-
 export default async function AdminCreateCompanyPage() {
   const context = await getInternalAdminContext();
   if (!context) {
@@ -64,31 +62,19 @@ export default async function AdminCreateCompanyPage() {
             </label>
           </div>
 
-          <div className="grid twoUp">
-            <label className="field">
-              <span>First user password</span>
-              <input
-                name="memberPassword"
-                type="password"
-                placeholder="Set an initial password"
-                minLength={8}
-              />
-            </label>
-            <label className="field">
-              <span>Role</span>
-              <select name="memberRole" defaultValue="OWNER">
-                {roles.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <label className="field">
+            <span>First user password</span>
+            <input
+              name="memberPassword"
+              type="password"
+              placeholder="Set an initial password"
+              minLength={8}
+            />
+          </label>
 
           <p className="disclaimer">
             If the email already exists, the system will reuse that account and only add the
-            membership. When creating a brand new user, a password is required.
+            company membership. When creating a brand new user, a password is required.
           </p>
 
           <div className="heroActions">

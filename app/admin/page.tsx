@@ -52,9 +52,14 @@ export default async function AdminDashboardPage() {
       description="Support the Azzure platform, inspect customer billing health, and rotate shared API keys."
       navItems={getInternalAdminNav("/admin")}
       actions={
-        <Link className="button primary" href="/admin/settings">
-          Manage API keys
-        </Link>
+        <>
+          <Link className="button secondary" href="/admin/billing">
+            Billing
+          </Link>
+          <Link className="button primary" href="/admin/settings">
+            Manage settings
+          </Link>
+        </>
       }
     >
       <section className="statGrid">

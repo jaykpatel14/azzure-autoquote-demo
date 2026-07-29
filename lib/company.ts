@@ -2,7 +2,6 @@ import { cookies } from "next/headers";
 import type {
   Company,
   Membership,
-  MembershipRole,
   Plan,
   PricingProfile,
   Subscription,
@@ -10,7 +9,6 @@ import type {
 } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { hasMinimumRole } from "@/lib/tenant";
 
 export const ACTIVE_COMPANY_COOKIE = "azzure-active-company-id";
 
@@ -108,14 +106,10 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
   };
 }
 
-export async function requireCompanyContext(minimumRole?: MembershipRole) {
+export async function requireCompanyContext() {
   const context = await getAuthenticatedCompanyContext();
   if (!context) {
     throw new AuthRequiredError();
-  }
-
-  if (minimumRole && !hasMinimumRole(context.membership.role, minimumRole)) {
-    throw new CompanyAccessError("You do not have permission to access this area.");
   }
 
   return context;

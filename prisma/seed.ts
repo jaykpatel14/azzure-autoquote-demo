@@ -156,10 +156,10 @@ async function main() {
     create: {
       companyId: company.id,
       userId: owner.id,
-      role: "OWNER"
+      role: "CUSTOMER"
     },
     update: {
-      role: "OWNER"
+      role: "CUSTOMER"
     }
   });
 
@@ -173,10 +173,10 @@ async function main() {
     create: {
       companyId: company.id,
       userId: demoUser.id,
-      role: "ADMIN"
+      role: "CUSTOMER"
     },
     update: {
-      role: "ADMIN"
+      role: "CUSTOMER"
     }
   });
 

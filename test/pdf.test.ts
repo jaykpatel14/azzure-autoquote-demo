@@ -8,6 +8,8 @@ describe("quote pdf generation", () => {
       quoteNumber: "Q-2026-001",
       createdAt: new Date("2026-07-28T12:00:00.000Z"),
       customerName: "Acme",
+      customerImageDataUrl:
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO5o1e0AAAAASUVORK5CYII=",
       metalType: "14K",
       metalWeightGrams: 5.2,
       centerDiamondCarats: 1,
@@ -22,5 +24,6 @@ describe("quote pdf generation", () => {
     expect(pdfText.startsWith("%PDF")).toBe(true);
     expect(pdfText).toContain("Q-2026-001");
     expect(pdfText).toContain("Demo Jewelry");
+    expect(pdfText).toContain("/Subtype /Image");
   });
 });

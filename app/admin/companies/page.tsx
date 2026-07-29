@@ -37,8 +37,11 @@ export default async function AdminCompaniesPage() {
       navItems={getInternalAdminNav("/admin/companies")}
       actions={
         <>
+          <Link className="button secondary" href="/admin/billing">
+            Billing
+          </Link>
           <Link className="button secondary" href="/admin/settings">
-            API keys
+            Settings
           </Link>
           <Link className="button primary" href="/admin/companies/new">
             Create company

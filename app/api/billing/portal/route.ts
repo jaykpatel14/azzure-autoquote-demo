@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export async function POST() {
   try {
-    const context = await requireCompanyContext("ADMIN");
+    const context = await requireCompanyContext();
     if (!context.company.subscription) {
       return NextResponse.json(
         { error: "Billing is not initialized for this company yet." },

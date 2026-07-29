@@ -4,7 +4,6 @@ import { requireCompanyContext, AuthRequiredError, CompanyAccessError } from "@/
 import { generateQuotePdfBuffer } from "@/lib/pdf/quote";
 import {
   buildQuotePdfStorageKey,
-  loadQuotePdfFromS3,
   storeQuotePdfInS3
 } from "@/lib/quote-pdf-s3";
 
@@ -18,7 +17,7 @@ type RouteContext = {
 
 export async function GET(_request: Request, { params }: RouteContext) {
   try {
-    const context = await requireCompanyContext("ESTIMATOR");
+    const context = await requireCompanyContext();
     const { quoteId } = await params;
 
     const quote = await prisma.quote.findFirst({
@@ -35,7 +34,8 @@ export async function GET(_request: Request, { params }: RouteContext) {
         analysis: {
           select: {
             jewelryType: true,
-            centerShape: true
+            centerShape: true,
+            imageDataUrl: true
           }
         }
       }
@@ -45,24 +45,12 @@ export async function GET(_request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Quote not found." }, { status: 404 });
     }
 
-    if (quote.pdfStorageKey) {
-      const storedPdf = await loadQuotePdfFromS3(quote.pdfStorageKey);
-      if (storedPdf) {
-        return new NextResponse(new Uint8Array(storedPdf), {
-          headers: {
-            "Content-Type": quote.pdfContentType || "application/pdf",
-            "Content-Disposition": `attachment; filename="${quote.quoteNumber}.pdf"`,
-            "Cache-Control": "no-store"
-          }
-        });
-      }
-    }
-
     const pdfBuffer = await generateQuotePdfBuffer({
       companyName: quote.company.name,
       quoteNumber: quote.quoteNumber,
       createdAt: quote.createdAt,
-      customerName: quote.customerName,
+      customerName: quote.customerName?.trim() || quote.company.name || context.user.name || "Customer",
+      customerImageDataUrl: quote.analysis?.imageDataUrl,
       metalType: quote.metalType,
       metalWeightGrams: Number(quote.metalWeightGrams),
       centerDiamondCarats: Number(quote.centerDiamondCarats),

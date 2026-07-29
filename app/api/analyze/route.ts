@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   let reservation: { usagePeriodId: string } | undefined;
 
   try {
-    const companyContext = await requireCompanyContext("ESTIMATOR");
+    const companyContext = await requireCompanyContext();
     assertBillableSubscription(companyContext.company.subscription);
     const form = await request.formData();
     const image = form.get("image");

@@ -1,4 +1,3 @@
-import { MembershipRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { addAdminCompanyMember } from "@/lib/admin-companies";
@@ -11,7 +10,6 @@ const schema = z.object({
   email: z.string().trim().email("A valid email address is required."),
   name: z.string().optional(),
   password: z.string().optional(),
-  role: z.nativeEnum(MembershipRole).default(MembershipRole.ESTIMATOR),
   redirectTo: z.string().optional()
 });
 
@@ -26,7 +24,6 @@ async function parseInput(request: Request) {
     email: String(formData.get("email") || ""),
     name: String(formData.get("name") || ""),
     password: String(formData.get("password") || ""),
-    role: String(formData.get("role") || MembershipRole.ESTIMATOR),
     redirectTo: String(formData.get("redirectTo") || "")
   });
 }
@@ -47,8 +44,7 @@ export async function POST(request: Request, context: RouteContext) {
       await addAdminCompanyMember(client, admin.user.id, companyId, {
         email: input.email,
         name: input.name,
-        password: input.password,
-        role: input.role
+        password: input.password
       });
     });
 

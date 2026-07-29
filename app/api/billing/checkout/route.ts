@@ -29,7 +29,7 @@ async function parseInput(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const context = await requireCompanyContext("ADMIN");
+    const context = await requireCompanyContext();
     const input = await parseInput(request);
     if (!context.company.subscription) {
       return NextResponse.json(

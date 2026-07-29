@@ -7,7 +7,8 @@ export type InternalAdminNavItem = {
 const NAV_ITEMS = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/companies", label: "Companies" },
-  { href: "/admin/settings", label: "API Keys" }
+  { href: "/admin/billing", label: "Billing" },
+  { href: "/admin/settings", label: "Settings" }
 ] as const satisfies readonly InternalAdminNavItem[];
 
 export function getInternalAdminNav(activeHref: string): InternalAdminNavItem[] {

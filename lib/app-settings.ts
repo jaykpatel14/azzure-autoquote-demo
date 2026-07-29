@@ -4,10 +4,6 @@ import { prisma } from "@/lib/prisma";
 export const ADMIN_SETTING_KEYS = [
   "OPENAI_API_KEY",
   "OPENAI_MODEL",
-  "METALS_DEV_API_KEY",
-  "METALS_DEV_BASE_URL",
-  "METALS_DEV_CURRENCY",
-  "METALS_DEV_UNIT",
   "STRIPE_SECRET_KEY",
   "STRIPE_WEBHOOK_SECRET"
 ] as const;
@@ -16,7 +12,6 @@ export type AdminSettingKey = (typeof ADMIN_SETTING_KEYS)[number];
 
 const SECRET_SETTING_KEYS = new Set<AdminSettingKey>([
   "OPENAI_API_KEY",
-  "METALS_DEV_API_KEY",
   "STRIPE_SECRET_KEY",
   "STRIPE_WEBHOOK_SECRET"
 ]);
@@ -169,6 +164,7 @@ export async function upsertRuntimeSetting({ key, value, updatedByUserId }: Upse
 
 export async function listRuntimeSettings() {
   const records = (await prisma.appSetting.findMany({
+    where: { key: { in: ADMIN_SETTING_KEYS } },
     orderBy: { key: "asc" }
   })).map(({ key, value, updatedAt, updatedByUserId }) => ({
     key: normalizeAdminSettingKey(key),
@@ -199,14 +195,6 @@ export function getSettingLabel(key: AdminSettingKey) {
       return "OpenAI API key";
     case "OPENAI_MODEL":
       return "OpenAI model";
-    case "METALS_DEV_API_KEY":
-      return "Metals.dev API key";
-    case "METALS_DEV_BASE_URL":
-      return "Metals.dev base URL";
-    case "METALS_DEV_CURRENCY":
-      return "Metals.dev currency";
-    case "METALS_DEV_UNIT":
-      return "Metals.dev unit";
     case "STRIPE_SECRET_KEY":
       return "Stripe secret key";
     case "STRIPE_WEBHOOK_SECRET":
@@ -220,14 +208,6 @@ export function getSettingHelpText(key: AdminSettingKey) {
       return "Used for AI analysis and moderation requests.";
     case "OPENAI_MODEL":
       return "Controls the default model used for jewelry analysis.";
-    case "METALS_DEV_API_KEY":
-      return "Used to fetch live metal spot prices.";
-    case "METALS_DEV_BASE_URL":
-      return "Override only if Metals.dev changes its API base.";
-    case "METALS_DEV_CURRENCY":
-      return "Defaults to USD.";
-    case "METALS_DEV_UNIT":
-      return "Defaults to toz.";
     case "STRIPE_SECRET_KEY":
       return "Used for Stripe checkout and portal sessions.";
     case "STRIPE_WEBHOOK_SECRET":

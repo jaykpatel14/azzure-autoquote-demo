@@ -1,5 +1,6 @@
-import type { MembershipRole, Prisma, PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient, SubscriptionStatus } from "@prisma/client";
 import { generateToken } from "@/lib/tokens";
+import { ensureBasePlans } from "@/lib/plan-bootstrap";
 
 type PrismaCompanyClient = Pick<PrismaClient, "company" | "user" | "membership" | "pricingProfile" | "auditLog"> |
   Pick<Prisma.TransactionClient, "company" | "user" | "membership" | "pricingProfile" | "auditLog">;
@@ -8,12 +9,31 @@ type AdminMemberInput = {
   email: string;
   name?: string | null;
   password?: string | null;
-  role: MembershipRole;
 };
 
 type AdminCompanyInput = AdminMemberInput & {
   companyName: string;
   companySlug?: string | null;
+};
+
+type AdminBillingInput = {
+  companyName: string;
+  companySlug?: string | null;
+  logoUrl?: string | null;
+  quoteSequence: number;
+  subscription: {
+    planId?: string | null;
+    status: SubscriptionStatus;
+    stripeCustomerId?: string | null;
+    stripeSubscriptionId?: string | null;
+    stripeProductId?: string | null;
+    stripePriceId?: string | null;
+    cancelAtPeriodEnd: boolean;
+    overageEnabled: boolean;
+    overagePriceCents?: number | null;
+    currentPeriodStart: Date;
+    currentPeriodEnd: Date;
+  };
 };
 
 function slugifyCompanyName(name: string) {
@@ -130,7 +150,7 @@ export async function createAdminCompanyWithMember(
     data: {
       companyId: company.id,
       userId: user.id,
-      role: input.role
+      role: "CUSTOMER"
     }
   });
 
@@ -157,7 +177,7 @@ export async function createAdminCompanyWithMember(
       targetId: user.id,
       metadata: {
         email: input.email.trim().toLowerCase(),
-        role: input.role,
+        role: "CUSTOMER",
         userCreated: user.created
       }
     }
@@ -206,7 +226,7 @@ export async function addAdminCompanyMember(
     data: {
       companyId: company.id,
       userId: user.id,
-      role: input.role
+      role: "CUSTOMER"
     }
   });
 
@@ -219,11 +239,124 @@ export async function addAdminCompanyMember(
       targetId: user.id,
       metadata: {
         email,
-        role: input.role,
+        role: "CUSTOMER",
         userCreated: user.created
       }
     }
   });
 
   return { company, userId: user.id };
+}
+
+function normalizeOptionalText(value?: string | null) {
+  const trimmed = value?.trim() || "";
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+export async function updateAdminCompanyBilling(
+  client: PrismaCompanyClient,
+  adminUserId: string,
+  companyId: string,
+  input: AdminBillingInput
+) {
+  const company = await client.company.findUnique({
+    where: { id: companyId },
+    select: { id: true, name: true, slug: true, quoteSequence: true }
+  });
+
+  if (!company) {
+    throw new Error("Company not found.");
+  }
+
+  const plans = await ensureBasePlans(client);
+  const fallbackPlanId = plans.starter.id;
+  const selectedPlanId = input.subscription.planId?.trim() || fallbackPlanId;
+  const selectedPlan = await client.plan.findUnique({
+    where: { id: selectedPlanId }
+  });
+
+  if (!selectedPlan) {
+    throw new Error("Billing plan not found.");
+  }
+
+  const updatedCompany = await client.company.update({
+    where: { id: companyId },
+    data: {
+      name: input.companyName.trim(),
+      slug: input.companySlug?.trim()
+        ? buildAdminCompanySlug(input.companyName, input.companySlug)
+        : company.slug,
+      logoUrl: normalizeOptionalText(input.logoUrl),
+      quoteSequence: Math.max(0, Math.floor(input.quoteSequence))
+    }
+  });
+
+  const subscription = await client.subscription.upsert({
+    where: { companyId },
+    create: {
+      companyId,
+      planId: selectedPlan.id,
+      status: input.subscription.status,
+      stripeCustomerId: normalizeOptionalText(input.subscription.stripeCustomerId),
+      stripeSubscriptionId: normalizeOptionalText(input.subscription.stripeSubscriptionId),
+      stripeProductId: normalizeOptionalText(input.subscription.stripeProductId),
+      stripePriceId: normalizeOptionalText(input.subscription.stripePriceId),
+      cancelAtPeriodEnd: input.subscription.cancelAtPeriodEnd,
+      overageEnabled: input.subscription.overageEnabled,
+      overagePriceCents: input.subscription.overagePriceCents ?? null,
+      currentPeriodStart: input.subscription.currentPeriodStart,
+      currentPeriodEnd: input.subscription.currentPeriodEnd
+    },
+    update: {
+      planId: selectedPlan.id,
+      status: input.subscription.status,
+      stripeCustomerId: normalizeOptionalText(input.subscription.stripeCustomerId),
+      stripeSubscriptionId: normalizeOptionalText(input.subscription.stripeSubscriptionId),
+      stripeProductId: normalizeOptionalText(input.subscription.stripeProductId),
+      stripePriceId: normalizeOptionalText(input.subscription.stripePriceId),
+      cancelAtPeriodEnd: input.subscription.cancelAtPeriodEnd,
+      overageEnabled: input.subscription.overageEnabled,
+      overagePriceCents: input.subscription.overagePriceCents ?? null,
+      currentPeriodStart: input.subscription.currentPeriodStart,
+      currentPeriodEnd: input.subscription.currentPeriodEnd
+    }
+  });
+
+  await client.usagePeriod.upsert({
+    where: {
+      companyId_periodStart_periodEnd: {
+        companyId,
+        periodStart: input.subscription.currentPeriodStart,
+        periodEnd: input.subscription.currentPeriodEnd
+      }
+    },
+    create: {
+      companyId,
+      periodStart: input.subscription.currentPeriodStart,
+      periodEnd: input.subscription.currentPeriodEnd,
+      limit: selectedPlan.monthlyLimit
+    },
+    update: {
+      limit: selectedPlan.monthlyLimit
+    }
+  });
+
+  await client.auditLog.create({
+    data: {
+      action: "BILLING_ADMIN_UPDATED",
+      companyId,
+      actorUserId: adminUserId,
+      targetType: "Company",
+      targetId: companyId,
+      metadata: {
+        companyName: updatedCompany.name,
+        companySlug: updatedCompany.slug,
+        planCode: selectedPlan.code,
+        subscriptionStatus: subscription.status,
+        quoteSequence: updatedCompany.quoteSequence
+      }
+    }
+  });
+
+  return { company: updatedCompany, subscription, plan: selectedPlan };
 }
