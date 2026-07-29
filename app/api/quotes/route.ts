@@ -2,20 +2,37 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { ZodError, z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { METAL_TYPES, calculateQuote } from "@/lib/pricing";
+import { METAL_TYPES, calculateQuote, mergePricingProfiles, type PricingProfileInput } from "@/lib/pricing";
 import { allocateQuoteNumber } from "@/lib/quote-number";
 import { assertCompanyOwnership } from "@/lib/tenant";
 import { requireCompanyContext, AuthRequiredError, CompanyAccessError } from "@/lib/company";
 import { normalizePricingProfile, resolveMetalPricing } from "@/lib/metal-pricing";
 
+const quoteModes = ["normal", "without-center", "without-center-and-side"] as const;
+
+const pricingOverlaySchema = z
+  .object({
+    goldSpotPerOz: z.coerce.number().min(0).optional(),
+    platinumSpotPerOz: z.coerce.number().min(0).optional(),
+    silverSpotPerOz: z.coerce.number().min(0).optional(),
+    cadCharge: z.coerce.number().min(0).optional(),
+    centerSettingPerCarat: z.coerce.number().min(0).optional(),
+    sideSettingPerStone: z.coerce.number().min(0).optional(),
+    sellingMarginDivisor: z.coerce.number().min(0).optional(),
+    finalMultiplier: z.coerce.number().min(0).optional()
+  })
+  .partial();
+
 const quoteSchema = z.object({
   analysisId: z.string().optional(),
   customerName: z.union([z.string().trim().min(1).max(200), z.literal("")]).optional(),
+  quoteMode: z.enum(quoteModes).default("normal"),
   metalType: z.enum(METAL_TYPES),
   metalWeightGrams: z.coerce.number().min(0),
   centerDiamondCarats: z.coerce.number().min(0),
   sideDiamondCarats: z.coerce.number().min(0),
-  sideDiamondQuantity: z.coerce.number().int().min(0)
+  sideDiamondQuantity: z.coerce.number().int().min(0),
+  pricingOverlay: pricingOverlaySchema.optional()
 });
 
 export async function POST(request: Request) {
@@ -57,18 +74,24 @@ export async function POST(request: Request) {
 
     const livePricing = await resolveMetalPricing(pricingProfile);
 
-    const pricing = calculateQuote(
-      {
-        metalType: input.metalType,
-        metalWeightGrams: input.metalWeightGrams,
-        centerDiamondCarats: input.centerDiamondCarats,
-        sideDiamondCarats: input.sideDiamondCarats,
-        sideDiamondQuantity: input.sideDiamondQuantity
-      },
-      livePricing.pricingProfile
+    const adjustedInput = applyQuoteMode(input);
+    const effectivePricingProfile = mergePricingProfiles(
+      livePricing.pricingProfile,
+      input.pricingOverlay as Partial<PricingProfileInput> | undefined
     );
 
-    const quote = await createQuoteRecord(company.id, analysis?.id, input, pricing.estimatedFinalPrice);
+    const pricing = calculateQuote(
+      {
+        metalType: adjustedInput.metalType,
+        metalWeightGrams: adjustedInput.metalWeightGrams,
+        centerDiamondCarats: adjustedInput.centerDiamondCarats,
+        sideDiamondCarats: adjustedInput.sideDiamondCarats,
+        sideDiamondQuantity: adjustedInput.sideDiamondQuantity
+      },
+      effectivePricingProfile
+    );
+
+    const quote = await createQuoteRecord(company.id, analysis?.id, adjustedInput, pricing.estimatedFinalPrice);
 
     return NextResponse.json({
       id: quote.id,
@@ -147,4 +170,24 @@ async function createQuoteRecord(
   }
 
   throw new Error("Unable to save quote.");
+}
+
+function applyQuoteMode(input: z.infer<typeof quoteSchema>) {
+  if (input.quoteMode === "without-center-and-side") {
+    return {
+      ...input,
+      centerDiamondCarats: 0,
+      sideDiamondCarats: 0,
+      sideDiamondQuantity: 0
+    };
+  }
+
+  if (input.quoteMode === "without-center") {
+    return {
+      ...input,
+      centerDiamondCarats: 0
+    };
+  }
+
+  return input;
 }

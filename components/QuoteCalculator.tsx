@@ -2,7 +2,13 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { calculateQuote, convertMetalWeight, type MetalType, type PricingProfileInput } from "@/lib/pricing";
+import {
+  calculateQuote,
+  convertMetalWeight,
+  mergePricingProfiles,
+  type MetalType,
+  type PricingProfileInput
+} from "@/lib/pricing";
 
 type Estimate = {
   analysisId?: string;
@@ -18,6 +24,7 @@ type Estimate = {
 };
 
 type Phase = "idle" | "uploading" | "processing" | "ready" | "saving" | "saved" | "error";
+type QuoteMode = "normal" | "without-center" | "without-center-and-side";
 
 type SavedQuote = {
   id: string;
@@ -45,6 +52,35 @@ const processingCopy: Record<Exclude<Phase, "saved" | "error">, string> = {
   saving: "Saving the approved quote to company history."
 };
 
+const QUOTE_MODE_OPTIONS: Array<{ value: QuoteMode; label: string; description: string }> = [
+  {
+    value: "normal",
+    label: "Normal quote",
+    description: "Include the center stone and side stones in the estimate."
+  },
+  {
+    value: "without-center",
+    label: "Quote without center stone",
+    description: "Exclude the center stone while keeping side stones in the quote."
+  },
+  {
+    value: "without-center-and-side",
+    label: "Quote without center stone and side stone",
+    description: "Exclude all center and side stone pricing from the quote."
+  }
+];
+
+const initialCustomerPricingOverlay: PricingProfileInput = {
+  goldSpotPerOz: 0,
+  platinumSpotPerOz: 0,
+  silverSpotPerOz: 0,
+  cadCharge: 0,
+  centerSettingPerCarat: 0,
+  sideSettingPerStone: 0,
+  sellingMarginDivisor: 0,
+  finalMultiplier: 0
+};
+
 type QuoteCalculatorProps = {
   canEdit: boolean;
   pricingProfile?: PricingProfileInput;
@@ -59,7 +95,11 @@ export default function QuoteCalculator({
   pricingNote
 }: QuoteCalculatorProps) {
   const [metalType, setMetalType] = useState<MetalType>("14K");
+  const [quoteMode, setQuoteMode] = useState<QuoteMode>("normal");
   const [customerName, setCustomerName] = useState("");
+  const [customerPricingOverlay, setCustomerPricingOverlay] = useState<PricingProfileInput>(
+    initialCustomerPricingOverlay
+  );
   const [estimate, setEstimate] = useState<Estimate>(initialEstimate);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
@@ -71,18 +111,32 @@ export default function QuoteCalculator({
   const [savedQuote, setSavedQuote] = useState<SavedQuote | null>(null);
   const [draftIsFresh, setDraftIsFresh] = useState(true);
 
+  const quoteEstimate = useMemo(() => applyQuoteMode(estimate, quoteMode), [estimate, quoteMode]);
+  const effectivePricingProfile = useMemo(
+    () => mergePricingProfiles(pricingProfile ?? {}, customerPricingOverlay),
+    [pricingProfile, customerPricingOverlay]
+  );
   const price = useMemo(
     () =>
-      calculateQuote({
-        metalType,
-        metalWeightGrams: estimate.metalWeightGrams,
-        centerDiamondCarats: estimate.centerDiamondCarats,
-        sideDiamondCarats: estimate.sideDiamondCarats,
-        sideDiamondQuantity: estimate.sideDiamondQuantity
-      }, pricingProfile ?? {}),
-    [metalType, estimate, pricingProfile]
+      calculateQuote(
+        {
+          metalType,
+          metalWeightGrams: quoteEstimate.metalWeightGrams,
+          centerDiamondCarats: quoteEstimate.centerDiamondCarats,
+          sideDiamondCarats: quoteEstimate.sideDiamondCarats,
+          sideDiamondQuantity: quoteEstimate.sideDiamondQuantity
+        },
+        effectivePricingProfile
+      ),
+    [metalType, quoteEstimate, effectivePricingProfile]
   );
   const previewPrice = draftIsFresh ? 0 : price.estimatedFinalPrice;
+  const hasCustomerOverlay = useMemo(
+    () => Object.values(customerPricingOverlay).some((value) => Number(value) > 0),
+    [customerPricingOverlay]
+  );
+  const centerStoneDisabled = quoteMode !== "normal";
+  const sideStoneDisabled = quoteMode === "without-center-and-side";
 
   useEffect(() => {
     return () => {
@@ -93,7 +147,9 @@ export default function QuoteCalculator({
   function clearDraftState(message: string) {
     setEstimate(initialEstimate);
     setMetalType("14K");
+    setQuoteMode("normal");
     setCustomerName("");
+    setCustomerPricingOverlay(initialCustomerPricingOverlay);
     setFile(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl("");
@@ -108,6 +164,10 @@ export default function QuoteCalculator({
     setEstimate((current) => ({ ...current, [key]: Math.max(0, value) }));
   }
 
+  function updateOverlayNumber(key: keyof PricingProfileInput, value: number) {
+    setCustomerPricingOverlay((current) => ({ ...current, [key]: Math.max(0, value) }));
+  }
+
   function changeMetal(next: MetalType) {
     setEstimate((current) => ({
       ...current,
@@ -116,6 +176,10 @@ export default function QuoteCalculator({
       )
     }));
     setMetalType(next);
+  }
+
+  function changeQuoteMode(next: QuoteMode) {
+    setQuoteMode(next);
   }
 
   function resetEstimate(message = "Draft estimate cleared.") {
@@ -224,11 +288,13 @@ export default function QuoteCalculator({
     payload: {
       analysisId?: string;
       customerName: string;
+      quoteMode: QuoteMode;
       metalType: MetalType;
       metalWeightGrams: number;
       centerDiamondCarats: number;
       sideDiamondCarats: number;
       sideDiamondQuantity: number;
+      pricingOverlay: PricingProfileInput;
     },
     options?: { resetDraftAfterSave?: boolean; confirm?: boolean }
   ): Promise<SaveQuoteResult> {
@@ -347,6 +413,24 @@ export default function QuoteCalculator({
 
           <div className="fields">
             <div className="field">
+              <label htmlFor="quoteMode">Quote mode</label>
+              <select
+                id="quoteMode"
+                value={quoteMode}
+                disabled={!canEdit || loading || saving}
+                onChange={(event) => changeQuoteMode(event.target.value as QuoteMode)}
+              >
+                {QUOTE_MODE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <p className="muted small">
+                {QUOTE_MODE_OPTIONS.find((option) => option.value === quoteMode)?.description}
+              </p>
+            </div>
+            <div className="field">
               <label htmlFor="customerName">Customer name</label>
               <input
                 id="customerName"
@@ -389,20 +473,20 @@ export default function QuoteCalculator({
             <NumberField
               label="Center diamond (ct)"
               value={estimate.centerDiamondCarats}
-              disabled={!canEdit || loading || saving}
+              disabled={!canEdit || loading || saving || centerStoneDisabled}
               onChange={(value) => updateNumber("centerDiamondCarats", value)}
             />
             <NumberField
               label="Side diamonds (ct)"
               value={estimate.sideDiamondCarats}
-              disabled={!canEdit || loading || saving}
+              disabled={!canEdit || loading || saving || sideStoneDisabled}
               onChange={(value) => updateNumber("sideDiamondCarats", value)}
             />
             <NumberField
               label="Side stone quantity"
               value={estimate.sideDiamondQuantity}
               step={1}
-              disabled={!canEdit || loading || saving}
+              disabled={!canEdit || loading || saving || sideStoneDisabled}
               onChange={(value) => updateNumber("sideDiamondQuantity", value)}
             />
             <div className="field">
@@ -422,6 +506,66 @@ export default function QuoteCalculator({
           </div>
 
           {estimate.notes ? <p className="muted">{estimate.notes}</p> : null}
+
+          <div className="sectionHeader" style={{ marginTop: "1.25rem" }}>
+            <div>
+              <h3>Customer pricing overlay</h3>
+              <p className="muted">
+                Add editable pricing on top of the Azzure base pricing before the final quote is calculated.
+              </p>
+            </div>
+            {hasCustomerOverlay ? <span className="eyebrow">Overlay active</span> : null}
+          </div>
+          <div className="fields">
+            <NumberField
+              label="Gold spot / oz add-on"
+              value={customerPricingOverlay.goldSpotPerOz ?? 0}
+              disabled={!canEdit || loading || saving}
+              onChange={(value) => updateOverlayNumber("goldSpotPerOz", value)}
+            />
+            <NumberField
+              label="Platinum spot / oz add-on"
+              value={customerPricingOverlay.platinumSpotPerOz ?? 0}
+              disabled={!canEdit || loading || saving}
+              onChange={(value) => updateOverlayNumber("platinumSpotPerOz", value)}
+            />
+            <NumberField
+              label="Silver spot / oz add-on"
+              value={customerPricingOverlay.silverSpotPerOz ?? 0}
+              disabled={!canEdit || loading || saving}
+              onChange={(value) => updateOverlayNumber("silverSpotPerOz", value)}
+            />
+            <NumberField
+              label="CAD charge add-on"
+              value={customerPricingOverlay.cadCharge ?? 0}
+              disabled={!canEdit || loading || saving}
+              onChange={(value) => updateOverlayNumber("cadCharge", value)}
+            />
+            <NumberField
+              label="Center setting / carat add-on"
+              value={customerPricingOverlay.centerSettingPerCarat ?? 0}
+              disabled={!canEdit || loading || saving}
+              onChange={(value) => updateOverlayNumber("centerSettingPerCarat", value)}
+            />
+            <NumberField
+              label="Side setting / stone add-on"
+              value={customerPricingOverlay.sideSettingPerStone ?? 0}
+              disabled={!canEdit || loading || saving}
+              onChange={(value) => updateOverlayNumber("sideSettingPerStone", value)}
+            />
+            <NumberField
+              label="Selling margin divisor add-on"
+              value={customerPricingOverlay.sellingMarginDivisor ?? 0}
+              disabled={!canEdit || loading || saving}
+              onChange={(value) => updateOverlayNumber("sellingMarginDivisor", value)}
+            />
+            <NumberField
+              label="Final multiplier add-on"
+              value={customerPricingOverlay.finalMultiplier ?? 0}
+              disabled={!canEdit || loading || saving}
+              onChange={(value) => updateOverlayNumber("finalMultiplier", value)}
+            />
+          </div>
         </section>
 
         <section className="card previewCard">
@@ -436,9 +580,9 @@ export default function QuoteCalculator({
           <div className="quotePreview">
             <p className="eyebrow">Approved final price</p>
             {pricingSourceLabel ? <p className="muted small">{pricingSourceLabel}</p> : null}
-          <div className="quotePrice">
+            <div className="quotePrice">
               {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(previewPrice)}
-          </div>
+            </div>
             <div className="quoteMeta">
               <div>
                 <span>Customer</span>
@@ -449,12 +593,19 @@ export default function QuoteCalculator({
                 <strong>{metalType}</strong>
               </div>
               <div>
+                <span>Quote mode</span>
+                <strong>{QUOTE_MODE_OPTIONS.find((option) => option.value === quoteMode)?.label}</strong>
+              </div>
+              <div>
                 <span>Stone layout</span>
                 <strong>
-                  {estimate.centerDiamondCarats.toFixed(2)} ct center, {estimate.sideDiamondQuantity} side stones
+                  {quoteEstimate.centerDiamondCarats.toFixed(2)} ct center, {quoteEstimate.sideDiamondQuantity} side stones
                 </strong>
               </div>
             </div>
+            {hasCustomerOverlay ? (
+              <p className="muted small">Customer pricing overlay is added on top of Azzure pricing.</p>
+            ) : null}
             {pricingNote ? <p className="muted small">{pricingNote}</p> : null}
             <p className="disclaimer">
               Final pricing is an approved estimate, not a manufacturing invoice. Production review may
@@ -471,11 +622,13 @@ export default function QuoteCalculator({
                   {
                     analysisId: estimate.analysisId,
                     customerName,
+                    quoteMode,
                     metalType,
-                    metalWeightGrams: estimate.metalWeightGrams,
-                    centerDiamondCarats: estimate.centerDiamondCarats,
-                    sideDiamondCarats: estimate.sideDiamondCarats,
-                    sideDiamondQuantity: estimate.sideDiamondQuantity
+                    metalWeightGrams: quoteEstimate.metalWeightGrams,
+                    centerDiamondCarats: quoteEstimate.centerDiamondCarats,
+                    sideDiamondCarats: quoteEstimate.sideDiamondCarats,
+                    sideDiamondQuantity: quoteEstimate.sideDiamondQuantity,
+                    pricingOverlay: customerPricingOverlay
                   },
                   { resetDraftAfterSave: false }
                 )
@@ -500,6 +653,26 @@ export default function QuoteCalculator({
       </div>
     </div>
   );
+}
+
+function applyQuoteMode(estimate: Estimate, quoteMode: QuoteMode): Estimate {
+  if (quoteMode === "without-center-and-side") {
+    return {
+      ...estimate,
+      centerDiamondCarats: 0,
+      sideDiamondCarats: 0,
+      sideDiamondQuantity: 0
+    };
+  }
+
+  if (quoteMode === "without-center") {
+    return {
+      ...estimate,
+      centerDiamondCarats: 0
+    };
+  }
+
+  return estimate;
 }
 
 function NumberField({

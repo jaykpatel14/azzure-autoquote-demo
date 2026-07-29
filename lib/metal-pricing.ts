@@ -5,7 +5,7 @@ import { DEFAULT_PRICING_PROFILE, type PricingProfileInput } from "@/lib/pricing
 
 const METALS_DEV_BASE_URL = "https://api.metals.dev/v1";
 const TORONTO_TIME_ZONE = "America/Toronto";
-const TORONTO_MORNING_REFRESH_HOUR = 6;
+const TORONTO_DAILY_REFRESH_HOUR = 9;
 const LIVE_PRICING_CACHE_KEY = "METALS_LIVE_PRICING_CACHE_V1";
 
 type MetalsDevLatestResponse = {
@@ -94,7 +94,7 @@ function shouldRefreshLivePricing(cache: CachedLivePricing | null, now = new Dat
     return false;
   }
 
-  return getTorontoHour(now) >= TORONTO_MORNING_REFRESH_HOUR;
+  return getTorontoHour(now) >= TORONTO_DAILY_REFRESH_HOUR;
 }
 
 async function readCachedLivePricing() {
@@ -172,7 +172,7 @@ export async function resolveMetalPricing(
       timestamp: cachedPricing.timestamp,
       message:
         cachedPricing.message ||
-        `Live market spot prices loaded from the Toronto morning cache${cachedPricing.timestamp ? ` at ${cachedPricing.timestamp}` : "."}`
+        `Live market spot prices loaded from the Toronto 9:00 AM cache${cachedPricing.timestamp ? ` at ${cachedPricing.timestamp}` : "."}`
     };
   }
 
@@ -187,7 +187,7 @@ export async function resolveMetalPricing(
       source: cachedPricing ? "metals.dev" : "configured-default",
       message: cachedPricing
         ? cachedPricing.message ||
-          `Live metal pricing is disabled because METALS_DEV_API_KEY is not set. Using the Toronto morning cache instead.`
+          `Live metal pricing is disabled because METALS_DEV_API_KEY is not set. Using the Toronto 9:00 AM cache instead.`
         : "Live metal pricing is disabled because METALS_DEV_API_KEY is not set."
     };
   }
@@ -245,8 +245,8 @@ export async function resolveMetalPricing(
         timestamp: cachedPricing.timestamp,
         message:
           error instanceof Error
-            ? `Live metal pricing unavailable, using the Toronto morning cache instead: ${error.message}`
-            : "Live metal pricing unavailable, using the Toronto morning cache instead."
+            ? `Live metal pricing unavailable, using the Toronto 9:00 AM cache instead: ${error.message}`
+            : "Live metal pricing unavailable, using the Toronto 9:00 AM cache instead."
       };
     }
 

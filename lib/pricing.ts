@@ -68,6 +68,25 @@ function resolvePricingProfile(profile: PricingProfileInput = {}) {
   };
 }
 
+export function mergePricingProfiles(
+  baseProfile?: PricingProfileInput | null,
+  overlay?: Partial<PricingProfileInput> | null
+): PricingProfileInput {
+  const base = resolvePricingProfile(baseProfile ?? {});
+  const extra = overlay ?? {};
+
+  return {
+    goldSpotPerOz: base.goldSpotPerOz + (extra.goldSpotPerOz ?? 0),
+    platinumSpotPerOz: base.platinumSpotPerOz + (extra.platinumSpotPerOz ?? 0),
+    silverSpotPerOz: base.silverSpotPerOz + (extra.silverSpotPerOz ?? 0),
+    cadCharge: base.cadCharge + (extra.cadCharge ?? 0),
+    centerSettingPerCarat: base.centerSettingPerCarat + (extra.centerSettingPerCarat ?? 0),
+    sideSettingPerStone: base.sideSettingPerStone + (extra.sideSettingPerStone ?? 0),
+    sellingMarginDivisor: base.sellingMarginDivisor + (extra.sellingMarginDivisor ?? 0),
+    finalMultiplier: base.finalMultiplier + (extra.finalMultiplier ?? 0)
+  };
+}
+
 function metalRatePerGram(type: MetalType, profile: PricingProfileInput = {}): number {
   const config = resolvePricingProfile(profile);
   const ozToGram = 31.1034768;
