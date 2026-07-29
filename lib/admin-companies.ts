@@ -2,8 +2,15 @@ import type { Prisma, PrismaClient, SubscriptionStatus } from "@prisma/client";
 import { generateToken } from "@/lib/tokens";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
 
-type PrismaCompanyClient = Pick<PrismaClient, "company" | "user" | "membership" | "pricingProfile" | "auditLog"> |
-  Pick<Prisma.TransactionClient, "company" | "user" | "membership" | "pricingProfile" | "auditLog">;
+type PrismaCompanyClient =
+  | Pick<
+      PrismaClient,
+      "company" | "user" | "membership" | "pricingProfile" | "auditLog" | "plan" | "subscription" | "usagePeriod"
+    >
+  | Pick<
+      Prisma.TransactionClient,
+      "company" | "user" | "membership" | "pricingProfile" | "auditLog" | "plan" | "subscription" | "usagePeriod"
+    >;
 
 type AdminMemberInput = {
   email: string;

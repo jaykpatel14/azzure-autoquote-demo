@@ -113,8 +113,12 @@ export function isSecretSettingKey(key: string): key is AdminSettingKey {
   return SECRET_SETTING_KEYS.has(key as AdminSettingKey);
 }
 
+export function isAdminSettingKey(key: string): key is AdminSettingKey {
+  return ADMIN_SETTING_KEYS.includes(key as AdminSettingKey);
+}
+
 export function normalizeAdminSettingKey(key: string): AdminSettingKey {
-  if (!ADMIN_SETTING_KEYS.includes(key as AdminSettingKey)) {
+  if (!isAdminSettingKey(key)) {
     throw new Error(`Unsupported admin setting key: ${key}`);
   }
 
@@ -130,10 +134,12 @@ export async function getRuntimeSetting(key: AdminSettingKey) {
   return decryptValue(record.value);
 }
 
-export async function resolveRuntimeSetting(key: AdminSettingKey, fallback?: string | null) {
-  const stored = await getRuntimeSetting(key);
-  if (stored && stored.trim().length > 0) {
-    return stored;
+export async function resolveRuntimeSetting(key: string, fallback?: string | null) {
+  if (isAdminSettingKey(key)) {
+    const stored = await getRuntimeSetting(key);
+    if (stored && stored.trim().length > 0) {
+      return stored;
+    }
   }
 
   const envValue = process.env[key]?.trim();
@@ -164,7 +170,7 @@ export async function upsertRuntimeSetting({ key, value, updatedByUserId }: Upse
 
 export async function listRuntimeSettings() {
   const records = (await prisma.appSetting.findMany({
-    where: { key: { in: ADMIN_SETTING_KEYS } },
+    where: { key: { in: [...ADMIN_SETTING_KEYS] } },
     orderBy: { key: "asc" }
   })).map(({ key, value, updatedAt, updatedByUserId }) => ({
     key: normalizeAdminSettingKey(key),

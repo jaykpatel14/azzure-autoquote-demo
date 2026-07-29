@@ -24,7 +24,7 @@ export default async function QuotesPage() {
     <WorkspaceShell
       title="Quote history"
       description="Review saved quotes for this company. Internal cost inputs remain inside the workspace."
-      navItems={getWorkspaceNav("/quotes", context.membership.role)}
+      navItems={getWorkspaceNav("/quotes")}
       actions={
         <Link className="button primary" href="/quotes/new">
           New estimate
