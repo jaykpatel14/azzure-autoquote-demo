@@ -102,9 +102,7 @@ jobs:
       - name: Deploy to EC2 through SSM
         shell: bash
         run: |
-          COMMANDS=$(cat <<EOF
-          ["cd /opt/azzure-autoquote","AWS_REGION=${AWS_REGION} ECR_REPOSITORY=${ECR_REPOSITORY} ./deploy.sh ${GITHUB_SHA}"] EOF
-          )
+          COMMANDS='["cd /opt/azzure-autoquote","AWS_REGION='"${AWS_REGION}"' ECR_REPOSITORY='"${ECR_REPOSITORY}"' ./deploy.sh '"${GITHUB_SHA}"'"]'
 
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
