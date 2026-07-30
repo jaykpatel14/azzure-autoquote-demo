@@ -77,6 +77,13 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Show GitHub repository IDs
+        run: |
+          echo "Organization ID: ${{ github.repository_owner_id }}"
+          echo "Repository ID: ${{ github.repository_id }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref }}"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
