@@ -1,0 +1,100 @@
+name: Deploy to EC2
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ec2-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      EC2_HOST: ${{ vars.EC2_HOST }}
+      EC2_USER: ${{ vars.EC2_USER }}
+      EC2_PORT: ${{ vars.EC2_PORT }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Production build
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: AzzureAutoquoteEC2
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image URI
+        run: echo "IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${ECR_REPOSITORY}:${GITHUB_SHA}" >> "$GITHUB_ENV"
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t "$IMAGE_URI" \
+            -t "${{ steps.login-ecr.outputs.registry }}/${ECR_REPOSITORY}:latest" \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker push "$IMAGE_URI"
+          docker push "${{ steps.login-ecr.outputs.registry }}/${ECR_REPOSITORY}:latest"
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Add EC2 host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${EC2_PORT:-22}" -H "${EC2_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Sync repo to EC2
+        run: |
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude '.next' \
+            --exclude 'node_modules' \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            -e "ssh -p ${EC2_PORT:-22}" \
+            ./ "${EC2_USER}@${EC2_HOST}:/opt/azzure-autoquote/"
+
+      - name: Run deploy script on EC2
+        run: |
+          ssh -p "${EC2_PORT:-22}" "${EC2_USER}@${EC2_HOST}" \
+            "cd /opt/azzure-autoquote && chmod +x deploy.sh && ./deploy.sh ${GITHUB_SHA}"
