@@ -31,9 +31,10 @@ docker pull "${IMAGE_URI}"
 echo "Running Prisma migrations..."
 
 docker run --rm \
-  --entrypoint /app/node_modules/.bin/prisma \
+  --entrypoint node \
   --env-file "${ENV_FILE}" \
   "${IMAGE_URI}" \
+  /app/node_modules/prisma/build/index.js \
   migrate deploy \
   --schema=/app/prisma/schema.prisma
 
