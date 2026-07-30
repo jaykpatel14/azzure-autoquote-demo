@@ -28,14 +28,14 @@ aws ecr get-login-password --region "${AWS_REGION}" | docker login \
 
 docker pull "${IMAGE_URI}"
 
-# Run migrations using the newly pulled image.
-# The repo source must be present on the EC2 host so Prisma can read prisma/schema.prisma.
+echo "Running Prisma migrations..."
+
 docker run --rm \
-  -v "${APP_DIR}:/app" \
-  -w /app \
+  --entrypoint /app/node_modules/.bin/prisma \
   --env-file "${ENV_FILE}" \
   "${IMAGE_URI}" \
-  npx prisma migrate deploy
+  migrate deploy \
+  --schema=/app/prisma/schema.prisma
 
 # Preserve the current container temporarily for rollback.
 if docker ps -a --format '{{.Names}}' | grep -qx "${CONTAINER_NAME}"; then
