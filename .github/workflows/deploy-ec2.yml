@@ -103,8 +103,7 @@ jobs:
         shell: bash
         run: |
           COMMANDS=$(cat <<EOF
-["cd /opt/azzure-autoquote","AWS_REGION=${AWS_REGION} ECR_REPOSITORY=${ECR_REPOSITORY} ./deploy.sh ${GITHUB_SHA}"]
-EOF
+          ["cd /opt/azzure-autoquote","AWS_REGION=${AWS_REGION} ECR_REPOSITORY=${ECR_REPOSITORY} ./deploy.sh ${GITHUB_SHA}"] EOF
           )
 
           COMMAND_ID=$(aws ssm send-command \
