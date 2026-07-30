@@ -13,6 +13,20 @@ concurrency:
 jobs:
   validate-and-push:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: autoquote
+          POSTGRES_PASSWORD: autoquote
+          POSTGRES_DB: autoquote
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U autoquote -d autoquote"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     permissions:
       contents: read
       id-token: write
@@ -44,6 +58,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Apply database migrations
+        run: npm run db:deploy
+
+      - name: Seed test data
+        run: npm run db:seed
 
       - name: Lint
         run: npm run lint
