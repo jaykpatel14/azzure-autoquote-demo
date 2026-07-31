@@ -89,6 +89,42 @@ function buildSubscriptionEvent(companyId: string, eventId: string) {
   } as const;
 }
 
+function buildTrialSubscriptionEvent(companyId: string, eventId: string) {
+  const { start, end } = currentMonthRange();
+
+  return {
+    id: eventId,
+    type: "customer.subscription.updated",
+    livemode: false,
+    data: {
+      object: {
+        id: `sub_${companyId}`,
+        customer: `cus_${companyId}`,
+        status: "trialing",
+        cancel_at_period_end: false,
+        current_period_start: Math.floor(start.getTime() / 1000),
+        current_period_end: Math.floor(end.getTime() / 1000),
+        metadata: {
+          companyId,
+          planCode: "starter"
+        },
+        items: {
+          data: [
+            {
+              current_period_start: Math.floor(start.getTime() / 1000),
+              current_period_end: Math.floor(end.getTime() / 1000),
+              price: {
+                id: "price_starter",
+                product: "prod_starter"
+              }
+            }
+          ]
+        }
+      }
+    }
+  } as const;
+}
+
 beforeAll(async () => {
   expect(process.env.DATABASE_URL).toBeTruthy();
 });
@@ -152,6 +188,33 @@ describe("billing webhook integration", () => {
     expect(subscription.stripePriceId).toBe("price_professional");
     expect(subscription.stripeProductId).toBe("prod_professional");
     expect(usagePeriod.limit).toBe(500);
+  });
+
+  test("caps trialing subscriptions at 40 requests", { timeout: 15000 }, async () => {
+    const company = await createCompanyFixture();
+    const eventId = `evt_${randomUUID().slice(0, 8)}`;
+    const event = buildTrialSubscriptionEvent(company.companyId, eventId);
+    createdWebhookEventIds.push(eventId);
+
+    stripeMock.webhooks.constructEvent.mockReturnValue(event);
+
+    const response = await billingWebhook(
+      new Request("http://localhost/api/billing/webhook", {
+        method: "POST",
+        headers: {
+          "stripe-signature": "sig_test"
+        },
+        body: "raw-body"
+      })
+    );
+
+    expect(response.status).toBe(200);
+
+    const usagePeriod = await prisma.usagePeriod.findFirstOrThrow({
+      where: { companyId: company.companyId }
+    });
+
+    expect(usagePeriod.limit).toBe(40);
   });
 
   test("syncs an upgraded checkout session back into the database immediately", { timeout: 15000 }, async () => {

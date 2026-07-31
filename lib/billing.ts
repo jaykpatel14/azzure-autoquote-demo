@@ -1,7 +1,8 @@
-import type { Subscription, SubscriptionStatus, UsagePeriod } from "@prisma/client";
+import type { Plan, Subscription, SubscriptionStatus, UsagePeriod } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export const BILLABLE_SUBSCRIPTION_STATUSES: SubscriptionStatus[] = ["TRIALING", "ACTIVE"];
+export const TRIAL_MONTHLY_LIMIT = 40;
 
 export class BillingAccessError extends Error {
   constructor(message = "Your subscription is inactive. Update billing to continue.") {
@@ -62,6 +63,14 @@ export function getUsageWarningMessage(usage: UsageSnapshot) {
   return `You have ${remaining} estimates left in the current billing period.`;
 }
 
+export function getEffectiveMonthlyLimit(
+  subscription: Pick<Subscription, "status"> & {
+    plan: Pick<Plan, "monthlyLimit">;
+  }
+) {
+  return subscription.status === "TRIALING" ? TRIAL_MONTHLY_LIMIT : subscription.plan.monthlyLimit;
+}
+
 export async function getCurrentUsagePeriod(companyId: string) {
   const now = new Date();
   return prisma.usagePeriod.findFirst({
@@ -73,4 +82,3 @@ export async function getCurrentUsagePeriod(companyId: string) {
     orderBy: { periodStart: "desc" }
   });
 }
-

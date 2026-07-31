@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient, Subscription as PrismaSubscription } from "@prisma/client";
 import type Stripe from "stripe";
 import { prisma as defaultPrisma } from "@/lib/prisma";
-import { mapStripeSubscriptionStatus } from "@/lib/billing";
+import { getEffectiveMonthlyLimit, mapStripeSubscriptionStatus } from "@/lib/billing";
 import { getStripeClient } from "@/lib/stripe";
 
 type Db = PrismaClient;
@@ -162,7 +162,7 @@ async function syncSubscriptionRecord(
     }
   });
 
-  await syncUsagePeriod(tx, companyId, plan.monthlyLimit, subscription);
+  await syncUsagePeriod(tx, companyId, getEffectiveMonthlyLimit({ status, plan }), subscription);
 
   await tx.auditLog.create({
     data: {

@@ -2,8 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import WorkspaceShell from "@/components/workspace-shell";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
+import {
+  getCurrentUsagePeriod,
+  getEffectiveMonthlyLimit,
+  getUsageRemaining,
+  getUsageWarningMessage
+} from "@/lib/billing";
 import { resolveMetalPricing, toPricingProfileInput } from "@/lib/metal-pricing";
-import { getCurrentUsagePeriod, getUsageRemaining, getUsageWarningMessage } from "@/lib/billing";
 import { syncStripeCheckoutSession } from "@/lib/billing-webhooks";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 
@@ -39,6 +44,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const subscription = context.company.subscription;
   const warning = usagePeriod ? getUsageWarningMessage(usagePeriod) : null;
   const remaining = usagePeriod ? getUsageRemaining(usagePeriod) : null;
+  const effectiveMonthlyLimit = subscription
+    ? getEffectiveMonthlyLimit({
+        status: subscription.status,
+        plan: subscription.plan
+      })
+    : null;
   const pricingProfile = toPricingProfileInput(context.company.pricingProfile);
   const livePricing = await resolveMetalPricing(pricingProfile);
 
@@ -110,7 +121,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               </div>
               <div className="detailRow">
                 <span>Monthly limit</span>
-                <strong>{subscription.plan.monthlyLimit}</strong>
+                <strong>{effectiveMonthlyLimit}</strong>
               </div>
               {usagePeriod ? (
                 <div className="usageMeter" aria-label="Usage meter">
@@ -140,9 +151,23 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   Manage billing in Stripe
                 </button>
               </form>
+              {subscription.status === "TRIALING" ? (
+                <form action="/api/billing/checkout" method="post">
+                  <input type="hidden" name="planCode" value="professional" />
+                  <button className="button secondary" type="submit">
+                    Request subscription
+                  </button>
+                </form>
+              ) : null}
               {!subscription.stripeCustomerId ? (
                 <p className="muted small">
                   The billing portal becomes available after the first Stripe checkout session.
+                </p>
+              ) : null}
+              {subscription.status === "TRIALING" ? (
+                <p className="muted small">
+                  Trial accounts are capped at {effectiveMonthlyLimit} requests. Request a subscription to unlock the
+                  Professional billing cycle.
                 </p>
               ) : null}
             </div>

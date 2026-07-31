@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { getEffectiveMonthlyLimit } from "@/lib/billing";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
 import { generateToken } from "@/lib/tokens";
 
@@ -102,7 +103,10 @@ export async function onboardCompanyOwner(
       companyId: company.id,
       periodStart,
       periodEnd,
-      limit: starterPlan.monthlyLimit
+      limit: getEffectiveMonthlyLimit({
+        status: "TRIALING",
+        plan: starterPlan
+      })
     }
   });
 
