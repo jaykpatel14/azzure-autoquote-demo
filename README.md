@@ -33,27 +33,29 @@ Production-oriented starter for an AI-assisted jewelry quotation SaaS.
 1. Copy `.env.example` to `.env.local`.
 2. Set `DATABASE_URL` for your local PostgreSQL instance.
 3. Add a strong `AUTH_SECRET` and confirm `AUTH_URL` matches your local app URL.
-4. Add your Stripe secret, webhook secret, and price/product ids in `.env.local` if you
+4. Add `RESEND_API_KEY` and a verified `RESEND_FROM_EMAIL` if you want signup and password-reset
+   emails to be delivered.
+5. Add your Stripe secret, webhook secret, and price/product ids in `.env.local` if you
    want billing checkout and portal flows to work locally.
-5. Start PostgreSQL:
+6. Start PostgreSQL:
 
 ```bash
 docker compose up -d
 ```
 
-6. Install dependencies:
+7. Install dependencies:
 
 ```bash
 npm install
 ```
 
-7. Apply migrations:
+8. Apply migrations:
 
 ```bash
 npm run db:migrate
 ```
 
-8. Seed the database:
+9. Seed the database:
 
 ```bash
 npm run db:seed
@@ -74,11 +76,11 @@ Internal Azzure admin testing account:
 - Email: `admin@azzure.com`
 - Password: `password123`
 
-9. Add your OpenAI key to `OPENAI_API_KEY`.
-10. Add `METALS_DEV_API_KEY` if you want live spot prices to flow into quotes.
-11. Add at least one email to `AZZURE_ADMIN_EMAILS` if you want to access the internal admin console.
-12. Add `APP_SETTINGS_ENCRYPTION_KEY` in production so secret runtime settings are stored encrypted.
-13. Start the app:
+10. Add your OpenAI key to `OPENAI_API_KEY`.
+11. Add `METALS_DEV_API_KEY` if you want live spot prices to flow into quotes.
+12. Add at least one email to `AZZURE_ADMIN_EMAILS` if you want to access the internal admin console.
+13. Add `APP_SETTINGS_ENCRYPTION_KEY` in production so secret runtime settings are stored encrypted.
+14. Start the app:
 
 ```bash
 npm run dev
@@ -121,14 +123,15 @@ Before shipping to production, make sure these are in place:
 2. Set `DATABASE_URL` to the production PostgreSQL instance.
 3. Set `OPENAI_API_KEY` and confirm `OPENAI_MODEL` is the model you want to use.
 4. Set `METALS_DEV_API_KEY` if you want live metal pricing in quotes.
-5. Set `S3_BUCKET` and AWS credentials if you want generated PDFs stored in S3.
-6. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and the Stripe price/product ids.
-7. Set `APP_SETTINGS_ENCRYPTION_KEY` so admin-managed secret settings are encrypted at rest.
-8. Set `AZZURE_ADMIN_EMAILS` to the internal Azzure team emails that should access `/admin`.
-9. Run `npm run db:migrate` against production before deploying code.
-10. Run `npm run db:seed` only for fresh demo environments, not on existing customer data.
-11. Run `npm run build` and confirm it passes before releasing.
-12. After deploy, verify `/api/health`, `/admin`, `/settings`, and a sample quote flow.
+5. Set `RESEND_API_KEY` and a verified `RESEND_FROM_EMAIL` for account verification and password resets.
+6. Set `S3_BUCKET` and AWS credentials if you want generated PDFs stored in S3.
+7. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and the Stripe price/product ids.
+8. Set `APP_SETTINGS_ENCRYPTION_KEY` so admin-managed secret settings are encrypted at rest.
+9. Set `AZZURE_ADMIN_EMAILS` to the internal Azzure team emails that should access `/admin`.
+10. Run `npm run db:migrate` against production before deploying code.
+11. Run `npm run db:seed` only for fresh demo environments, not on existing customer data.
+12. Run `npm run build` and confirm it passes before releasing.
+13. After deploy, verify `/api/health`, `/admin`, `/settings`, and a sample quote flow.
 
 Recommended runtime checks:
 
@@ -178,5 +181,6 @@ GitHub Actions:
 - Credentials auth is implemented first; SSO and magic links can be added later
 - Uploaded images are converted to a data URL and are not persisted yet
 - Overages are architected but disabled by default
-- Email delivery and AWS deployment automation are still future phases
+- Email delivery now uses Resend, but the sender address must be verified in Resend before
+  production mail will deliver
 - AI visual estimates are approximate and not manufacturing specifications

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import WorkspaceShell from "@/components/workspace-shell";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import {
@@ -26,6 +27,10 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function formatPlanPrice(monthlyPriceCents: number) {
+  return formatCurrency(monthlyPriceCents / 100);
+}
+
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const context = await getAuthenticatedCompanyContext();
@@ -50,6 +55,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         plan: subscription.plan
       })
     : null;
+  const availablePlans = await prisma.plan.findMany({
+    where: {
+      OR: [{ stripePriceId: { not: null } }, { stripeProductId: { not: null } }]
+    },
+    orderBy: { monthlyPriceCents: "asc" }
+  });
   const pricingProfile = toPricingProfileInput(context.company.pricingProfile);
   const livePricing = await resolveMetalPricing(pricingProfile);
 
@@ -152,22 +163,42 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 </button>
               </form>
               {subscription.status === "TRIALING" ? (
-                <form action="/api/billing/checkout" method="post">
-                  <input type="hidden" name="planCode" value="professional" />
-                  <button className="button secondary" type="submit">
-                    Request subscription
-                  </button>
-                </form>
+                <div className="stack">
+                  <div className="sectionHeader" style={{ marginTop: "1rem" }}>
+                    <div>
+                      <h3>Choose a subscription</h3>
+                      <p className="muted">
+                        Trial accounts are capped at {effectiveMonthlyLimit} requests. Pick a paid plan to upgrade.
+                      </p>
+                    </div>
+                  </div>
+                  {availablePlans.length > 0 ? (
+                    <div className="pricingGrid">
+                      {availablePlans.map((plan) => (
+                        <form key={plan.id} action="/api/billing/checkout" method="post" className="detailCard">
+                          <input type="hidden" name="planCode" value={plan.code} />
+                          <span>{plan.name}</span>
+                          <strong>{formatPlanPrice(plan.monthlyPriceCents)} / month</strong>
+                          <p className="muted small">{plan.monthlyLimit} requests per billing period.</p>
+                          <button className="button primary" type="submit">
+                            Choose {plan.name}
+                          </button>
+                        </form>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="emptyState">
+                      <strong>No subscription plans available</strong>
+                      <p className="muted">
+                        No Stripe-enabled plans are configured yet. Please contact support.
+                      </p>
+                    </div>
+                  )}
+                </div>
               ) : null}
               {!subscription.stripeCustomerId ? (
                 <p className="muted small">
                   The billing portal becomes available after the first Stripe checkout session.
-                </p>
-              ) : null}
-              {subscription.status === "TRIALING" ? (
-                <p className="muted small">
-                  Trial accounts are capped at {effectiveMonthlyLimit} requests. Request a subscription to unlock the
-                  Professional billing cycle.
                 </p>
               ) : null}
             </div>
