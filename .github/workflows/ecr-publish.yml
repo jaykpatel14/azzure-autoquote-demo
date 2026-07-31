@@ -90,21 +90,38 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
           role-session-name: AzzureAutoquoteECR
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set image URI
-        run: echo "IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${ECR_REPOSITORY}" >> "$GITHUB_ENV"
+        run: |
+          ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
 
-      - name: Build Docker image
+          echo "ECR_REGISTRY=${ECR_REGISTRY}" >> "$GITHUB_ENV"
+          echo "IMAGE_URI=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" >> "$GITHUB_ENV"
+
+      - name: Build application image
         run: |
           docker build \
-            -t "$IMAGE_URI:$IMAGE_TAG" \
-            -t "$IMAGE_URI:latest" \
+            --target runner \
+            -t "$IMAGE_URI" \
+            -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest" \
             .
 
-      - name: Push Docker image
+      - name: Build migration image
         run: |
-          docker push "$IMAGE_URI:$IMAGE_TAG"
-          docker push "$IMAGE_URI:latest"
+          docker build \
+            --target migrator \
+            -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}-migrator" \
+            -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest-migrator" \
+            .
+
+      - name: Push Docker images
+        run: |
+          docker push "$IMAGE_URI"
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
+
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}-migrator"
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest-migrator"

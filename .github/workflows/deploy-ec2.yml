@@ -1,6 +1,9 @@
 name: Deploy to EC2
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
@@ -31,6 +34,7 @@ jobs:
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+      IMAGE_TAG: ${{ github.sha }}
       AUTH_SECRET: ci-test-auth-secret
       AUTH_URL: http://localhost:3000
       AZZURE_ADMIN_EMAILS: admin@azzure.com
@@ -85,24 +89,39 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set image URI
-        run: echo "IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${ECR_REPOSITORY}:${GITHUB_SHA}" >> "$GITHUB_ENV"
+        run: |
+          ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
 
-      - name: Build Docker image
+          echo "ECR_REGISTRY=${ECR_REGISTRY}" >> "$GITHUB_ENV"
+          echo "IMAGE_URI=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" >> "$GITHUB_ENV"
+
+      - name: Build application image
         run: |
           docker build \
+            --target runner \
             -t "$IMAGE_URI" \
-            -t "${{ steps.login-ecr.outputs.registry }}/${ECR_REPOSITORY}:latest" \
+            -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest" \
             .
 
-      - name: Push Docker image
+      - name: Build migration image
+        run: |
+          docker build \
+            --target migrator \
+            -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}-migrator" \
+            -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest-migrator" \
+            .
+
+      - name: Push Docker images
         run: |
           docker push "$IMAGE_URI"
-          docker push "${{ steps.login-ecr.outputs.registry }}/${ECR_REPOSITORY}:latest"
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}-migrator"
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest-migrator"
 
       - name: Deploy to EC2 through SSM
         shell: bash
         run: |
-          COMMANDS='["cd /opt/azzure-autoquote","AWS_REGION='"${AWS_REGION}"' ECR_REPOSITORY='"${ECR_REPOSITORY}"' ./deploy.sh '"${GITHUB_SHA}"'"]'
+          COMMANDS='["cd /opt/azzure-autoquote","AWS_REGION='"${AWS_REGION}"' ECR_REPOSITORY='"${ECR_REPOSITORY}"' ./deploy.sh '"${IMAGE_TAG}"'"]'
 
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \

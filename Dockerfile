@@ -6,7 +6,7 @@ RUN apk add --no-cache openssl libc6-compat
 
 
 # ---------------------------------------------------------
-# Install all dependencies
+# Install dependencies
 # ---------------------------------------------------------
 FROM base AS deps
 
@@ -29,11 +29,25 @@ RUN npm run build
 
 
 # ---------------------------------------------------------
+# Migration image
+# Contains complete node_modules dependency tree
+# ---------------------------------------------------------
+FROM base AS migrator
+
+ENV NODE_ENV=production
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/package-lock.json ./package-lock.json
+
+CMD ["./node_modules/.bin/prisma", "migrate", "deploy", "--schema=/app/prisma/schema.prisma"]
+
+
+# ---------------------------------------------------------
 # Production runtime
 # ---------------------------------------------------------
 FROM base AS runner
-
-WORKDIR /app
 
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
@@ -41,21 +55,12 @@ ENV PORT=8585
 
 # Next.js standalone application
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
 # Prisma schema and migration history
 COPY --from=builder /app/prisma ./prisma
-
-# Prisma 6.19.3 CLI required for "prisma migrate deploy"
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
-
-# Files needed by the Prisma CLI
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/package-lock.json ./package-lock.json
-COPY --from=builder /app/node_modules/prisma/build/prisma_schema_build_bg.wasm ./node_modules/.bin/prisma_schema_build_bg.wasm
 
 EXPOSE 8585
 
