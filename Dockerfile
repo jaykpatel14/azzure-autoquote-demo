@@ -51,9 +51,8 @@ COPY --from=builder /app/.next/static ./.next/static
 # Prisma schema and migration files
 COPY --from=builder /app/prisma ./prisma
 
-# Copy the complete dependency tree.
-# This includes Prisma CLI dependencies such as "effect".
-COPY --from=builder /app/node_modules ./node_modules
+# Keep the full dependency tree available so prisma migrate deploy can run here.
+COPY --from=deps /app/node_modules ./node_modules
 
 EXPOSE 8585
 

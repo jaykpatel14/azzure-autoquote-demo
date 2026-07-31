@@ -20,10 +20,8 @@ ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 IMAGE_TAG="${1:-latest}"
 
 APP_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
-MIGRATOR_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}-migrator"
 
 echo "Application image: ${APP_IMAGE}"
-echo "Migration image: ${MIGRATOR_IMAGE}"
 
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "Environment file not found: ${ENV_FILE}"
@@ -38,14 +36,12 @@ aws ecr get-login-password --region "${AWS_REGION}" |
 echo "Pulling application image..."
 docker pull "${APP_IMAGE}"
 
-echo "Pulling migration image..."
-docker pull "${MIGRATOR_IMAGE}"
-
 echo "Running Prisma migrations..."
 
 docker run --rm \
   --env-file "${ENV_FILE}" \
-  "${MIGRATOR_IMAGE}"
+  "${APP_IMAGE}" \
+  ./node_modules/.bin/prisma migrate deploy --schema=/app/prisma/schema.prisma
 
 echo "Migrations completed."
 
