@@ -53,6 +53,8 @@ COPY --from=builder /app/prisma ./prisma
 
 # Keep the full dependency tree available so prisma migrate deploy can run here.
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 EXPOSE 8585
 
