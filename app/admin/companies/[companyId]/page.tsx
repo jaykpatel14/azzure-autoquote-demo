@@ -272,6 +272,44 @@ export default async function AdminCompanyPage({ params }: AdminCompanyPageProps
           </div>
         )}
       </section>
+
+      <section className="card">
+        <div className="sectionHeader">
+          <div>
+            <h2>Danger zone</h2>
+            <p className="muted">
+              Remove this company from the application when it no longer needs access. This deletes the
+              tenant record and related database data.
+            </p>
+          </div>
+        </div>
+        <form className="stack" action={`/api/admin/companies/${company.id}/delete`} method="post">
+          <input type="hidden" name="redirectTo" value="/admin/companies" />
+          <div className="detailCard" style={{ borderColor: "rgba(220, 38, 38, 0.22)", background: "rgba(254, 242, 242, 0.75)" }}>
+            <strong>Permanent deletion</strong>
+            <p className="muted small">
+              All company quotes, memberships, pricing profiles, usage periods, subscriptions, analyses,
+              and audit logs will be removed through cascading cleanup.
+            </p>
+            <label className="field" style={{ marginTop: "1rem" }}>
+              <span>Type the company name to confirm</span>
+              <input
+                name="confirmName"
+                placeholder={company.name}
+                required
+                autoComplete="off"
+              />
+            </label>
+            <button
+              className="button destructive"
+              type="submit"
+              style={{ width: "fit-content", marginTop: "1rem" }}
+            >
+              Delete company
+            </button>
+          </div>
+        </form>
+      </section>
     </InternalAdminShell>
   );
 }

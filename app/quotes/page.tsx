@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import type { Quote } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import WorkspaceShell from "@/components/workspace-shell";
+import QuoteHistoryActions from "@/components/quote-history-actions";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 
@@ -17,7 +17,17 @@ export default async function QuotesPage() {
   const quotes = await prisma.quote.findMany({
     where: { companyId: context.company.id },
     orderBy: { createdAt: "desc" },
-    take: 100
+    take: 100,
+    select: {
+      id: true,
+      quoteNumber: true,
+      customerName: true,
+      metalType: true,
+      estimatedPrice: true,
+      createdAt: true,
+      pdfStorageKey: true,
+      pdfStoredAt: true
+    }
   });
 
   return (
@@ -71,11 +81,11 @@ export default async function QuotesPage() {
                   <th scope="col">Metal</th>
                   <th scope="col">Approved price</th>
                   <th scope="col">Created</th>
-                  <th scope="col">PDF</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {quotes.map((quote: Quote) => (
+                {quotes.map((quote) => (
                   <tr key={quote.id}>
                     <td>
                       <strong>{quote.quoteNumber}</strong>
@@ -89,9 +99,11 @@ export default async function QuotesPage() {
                     </td>
                     <td>{quote.createdAt.toLocaleDateString()}</td>
                     <td>
-                      <Link className="textLink" href={`/api/quotes/${quote.id}/pdf`} target="_blank">
-                        Download PDF
-                      </Link>
+                      <QuoteHistoryActions
+                        quoteId={quote.id}
+                        quoteNumber={quote.quoteNumber}
+                        hasStoredPdf={Boolean(quote.pdfStoredAt || quote.pdfStorageKey)}
+                      />
                     </td>
                   </tr>
                 ))}

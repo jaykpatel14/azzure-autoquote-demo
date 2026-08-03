@@ -13,12 +13,16 @@ export function getRequestOrigin(request: Request | NextRequest) {
   return request.headers.get("origin") || request.headers.get("referer") || "";
 }
 
+export function getRequestUrlOrigin(request: Request | NextRequest) {
+  return "nextUrl" in request && request.nextUrl ? request.nextUrl.origin : new URL(request.url).origin;
+}
+
 export function isSameOriginRequest(request: Request | NextRequest) {
   const origin = getRequestOrigin(request);
   if (!origin) return true;
 
   try {
-    return new URL(origin).origin === getAppOrigin();
+    return new URL(origin).origin === getRequestUrlOrigin(request);
   } catch {
     return false;
   }

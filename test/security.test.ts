@@ -35,6 +35,19 @@ describe("security helpers", () => {
     expect(isSameOriginRequest(request)).toBe(false);
   });
 
+  test("allows same-origin requests even when APP_URL differs", () => {
+    vi.stubEnv("APP_URL", "https://app.example.com");
+
+    const request = new Request("http://localhost:3000/api/analyze", {
+      method: "POST",
+      headers: {
+        origin: "http://localhost:3000"
+      }
+    });
+
+    expect(isSameOriginRequest(request)).toBe(true);
+  });
+
   test("enforces a simple in-memory rate limit", () => {
     const first = checkRateLimit({ key: "analyze:127.0.0.1", limit: 2, windowMs: 60_000 });
     const second = checkRateLimit({ key: "analyze:127.0.0.1", limit: 2, windowMs: 60_000 });

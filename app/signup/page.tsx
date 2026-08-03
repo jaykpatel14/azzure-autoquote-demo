@@ -31,7 +31,15 @@ export default function SignUpPage() {
       return;
     }
 
-    router.push(`/verify-email?email=${encodeURIComponent(result.email)}`);
+    if (result.emailSent === false && result.verificationToken) {
+      router.push(
+        `/verify-email?token=${encodeURIComponent(result.verificationToken)}&email=${encodeURIComponent(
+          result.email
+        )}`
+      );
+    } else {
+      router.push(`/verify-email?email=${encodeURIComponent(result.email)}`);
+    }
     router.refresh();
   }
 

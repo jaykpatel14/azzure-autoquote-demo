@@ -45,14 +45,29 @@ export async function POST(request: Request) {
     const token = await createEmailVerificationToken(user.id, company.id);
     const verificationUrl = buildAppUrl(`/verify-email?token=${token}`);
 
-    await sendAuthMail({
-      to: user.email,
-      subject: "Verify your Azzure AutoQuote account",
-      text: `Verify your email address: ${verificationUrl}`,
-      html: `<p>Verify your email address: <a href="${verificationUrl}">${verificationUrl}</a></p>`
-    });
+    let emailSent = true;
+    try {
+      await sendAuthMail({
+        to: user.email,
+        subject: "Verify your Azzure AutoQuote account",
+        text: `Verify your email address: ${verificationUrl}`,
+        html: `<p>Verify your email address: <a href="${verificationUrl}">${verificationUrl}</a></p>`
+      });
+    } catch (mailError) {
+      emailSent = false;
+      console.warn(
+        `[auth] verification email delivery failed for ${user.email}: ${
+          mailError instanceof Error ? mailError.message : "unknown error"
+        }`
+      );
+    }
 
-    return NextResponse.json({ ok: true, email: user.email });
+    return NextResponse.json({
+      ok: true,
+      email: user.email,
+      emailSent,
+      verificationToken: emailSent ? undefined : token
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unable to create account." },

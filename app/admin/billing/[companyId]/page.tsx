@@ -75,6 +75,7 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
   const defaultPeriodStart = subscription?.currentPeriodStart ?? startOfCurrentMonth();
   const defaultPeriodEnd = subscription?.currentPeriodEnd ?? startOfNextMonth();
   const livePricing = await resolveMetalPricing(pricingProfile);
+  const editablePricingProfile = livePricing.pricingProfile;
 
   return (
     <InternalAdminShell
@@ -257,13 +258,19 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
             <div className="sectionHeader">
               <div>
                 <h3>Pricing profile</h3>
-                <p className="muted">Override the tenant pricing inputs used by the quote calculator.</p>
+                <p className="muted">Edit the resolved pricing inputs used by the quote calculator.</p>
               </div>
             </div>
             <div className="grid twoUp">
               <label className="field">
                 <span>Gold spot / oz</span>
-                <input name="goldSpotPerOz" type="number" min={0} step="0.01" defaultValue={pricingProfile.goldSpotPerOz} />
+                <input
+                  name="goldSpotPerOz"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  defaultValue={editablePricingProfile.goldSpotPerOz}
+                />
               </label>
               <label className="field">
                 <span>Platinum spot / oz</span>
@@ -272,7 +279,7 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
                   type="number"
                   min={0}
                   step="0.01"
-                  defaultValue={pricingProfile.platinumSpotPerOz}
+                  defaultValue={editablePricingProfile.platinumSpotPerOz}
                 />
               </label>
             </div>
@@ -280,11 +287,23 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
             <div className="grid twoUp">
               <label className="field">
                 <span>Silver spot / oz</span>
-                <input name="silverSpotPerOz" type="number" min={0} step="0.01" defaultValue={pricingProfile.silverSpotPerOz} />
+                <input
+                  name="silverSpotPerOz"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  defaultValue={editablePricingProfile.silverSpotPerOz}
+                />
               </label>
               <label className="field">
                 <span>CAD charge</span>
-                <input name="cadCharge" type="number" min={0} step="0.01" defaultValue={pricingProfile.cadCharge} />
+                <input
+                  name="cadCharge"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  defaultValue={editablePricingProfile.cadCharge}
+                />
               </label>
             </div>
 
@@ -296,7 +315,7 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
                   type="number"
                   min={0}
                   step="0.01"
-                  defaultValue={pricingProfile.centerSettingPerCarat}
+                  defaultValue={editablePricingProfile.centerSettingPerCarat}
                 />
               </label>
               <label className="field">
@@ -306,7 +325,7 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
                   type="number"
                   min={0}
                   step="0.01"
-                  defaultValue={pricingProfile.sideSettingPerStone}
+                  defaultValue={editablePricingProfile.sideSettingPerStone}
                 />
               </label>
             </div>
@@ -319,7 +338,7 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
                   type="number"
                   min={0.01}
                   step="0.01"
-                  defaultValue={pricingProfile.sellingMarginDivisor}
+                  defaultValue={editablePricingProfile.sellingMarginDivisor}
                 />
               </label>
               <label className="field">
@@ -329,7 +348,7 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
                   type="number"
                   min={0}
                   step="0.01"
-                  defaultValue={pricingProfile.finalMultiplier}
+                  defaultValue={editablePricingProfile.finalMultiplier}
                 />
               </label>
             </div>
