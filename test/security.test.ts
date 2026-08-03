@@ -48,6 +48,21 @@ describe("security helpers", () => {
     expect(isSameOriginRequest(request)).toBe(true);
   });
 
+  test("respects forwarded host and proto headers on a reverse proxy", () => {
+    vi.stubEnv("APP_URL", "https://app.example.com");
+
+    const request = new Request("http://127.0.0.1:3000/api/analyze", {
+      method: "POST",
+      headers: {
+        origin: "https://app.example.com",
+        "x-forwarded-host": "app.example.com",
+        "x-forwarded-proto": "https"
+      }
+    });
+
+    expect(isSameOriginRequest(request)).toBe(true);
+  });
+
   test("enforces a simple in-memory rate limit", () => {
     const first = checkRateLimit({ key: "analyze:127.0.0.1", limit: 2, windowMs: 60_000 });
     const second = checkRateLimit({ key: "analyze:127.0.0.1", limit: 2, windowMs: 60_000 });

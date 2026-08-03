@@ -25,25 +25,35 @@ export default function SignInForm({
     setLoading(true);
     setStatus("");
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-      callbackUrl: "/"
-    });
+    let keepLoading = true;
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl: "/"
+      });
 
-    if (result?.error) {
-      setStatus(
-        result.error === "CredentialsSignin"
-          ? "Invalid credentials or unverified email."
-          : result.error
-      );
-      setLoading(false);
+      if (result?.error) {
+        setStatus(
+          result.error === "CredentialsSignin"
+            ? "Invalid credentials or unverified email."
+            : result.error
+        );
+        return;
+      }
+
+      keepLoading = false;
+      router.push(result?.url || "/");
+      router.refresh();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to sign in right now.");
       return;
+    } finally {
+      if (keepLoading) {
+        setLoading(false);
+      }
     }
-
-    router.push(result?.url || "/");
-    router.refresh();
   }
 
   return (
