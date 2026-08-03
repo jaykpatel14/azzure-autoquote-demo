@@ -56,7 +56,7 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
     const redirectTo = input.redirectTo?.trim() || "/admin/companies";
-    return NextResponse.redirect(redirectTo, 303);
+    return NextResponse.redirect(new URL(redirectTo, request.url), 303);
   } catch (error) {
     if (error instanceof InternalAdminAccessError) {
       return NextResponse.json({ error: error.message }, { status: 403 });
