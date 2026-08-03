@@ -38,8 +38,8 @@ export function getAppUrl() {
   return process.env.APP_URL || "http://localhost:3000";
 }
 
-export function buildAppUrl(path: string) {
-  return new URL(path, getAppUrl()).toString();
+export function buildAppUrl(path: string, baseUrl = getAppUrl()) {
+  return new URL(path, baseUrl).toString();
 }
 
 export async function resolveCheckoutPriceId(

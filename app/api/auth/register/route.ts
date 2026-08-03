@@ -5,6 +5,7 @@ import { hashPassword } from "@/lib/password";
 import { onboardCompanyOwner } from "@/lib/onboarding";
 import { createEmailVerificationToken } from "@/lib/auth-tokens";
 import { sendAuthMail } from "@/lib/mailer";
+import { getRequestBaseUrl } from "@/lib/security";
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -13,8 +14,8 @@ const registerSchema = z.object({
   companyName: z.string().trim().min(2).max(120)
 });
 
-function buildAppUrl(path: string) {
-  return new URL(path, process.env.APP_URL || "http://localhost:3000").toString();
+function buildAppUrl(path: string, baseUrl: string) {
+  return new URL(path, baseUrl).toString();
 }
 
 export async function POST(request: Request) {
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
     });
 
     const token = await createEmailVerificationToken(user.id, company.id);
-    const verificationUrl = buildAppUrl(`/verify-email?token=${token}`);
+    const verificationUrl = buildAppUrl(`/verify-email?token=${token}`, getRequestBaseUrl(request));
 
     let emailSent = true;
     try {

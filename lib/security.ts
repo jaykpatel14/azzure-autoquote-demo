@@ -36,6 +36,25 @@ export function getEffectiveRequestOrigin(request: Request | NextRequest) {
   return getRequestUrlOrigin(request);
 }
 
+export function getRequestBaseUrl(request: Request | NextRequest) {
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  if (forwardedHost) {
+    const host = forwardedHost.split(",")[0]?.trim();
+    if (host) {
+      const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
+      return `${forwardedProto}://${host}`;
+    }
+  }
+
+  const host = request.headers.get("host");
+  if (host) {
+    const protocol = "nextUrl" in request && request.nextUrl ? request.nextUrl.protocol : new URL(request.url).protocol;
+    return `${protocol}//${host}`;
+  }
+
+  return getRequestUrlOrigin(request);
+}
+
 export function isSameOriginRequest(request: Request | NextRequest) {
   const origin = getRequestOrigin(request);
   if (!origin) return true;

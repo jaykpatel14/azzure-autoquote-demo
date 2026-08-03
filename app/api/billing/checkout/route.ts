@@ -8,6 +8,7 @@ import {
   resolveCheckoutCustomerId,
   resolveCheckoutPriceId
 } from "@/lib/stripe";
+import { getRequestBaseUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -82,8 +83,11 @@ export async function POST(request: Request) {
         }
       ],
       allow_promotion_codes: true,
-      success_url: buildAppUrl("/settings?billing=success&session_id={CHECKOUT_SESSION_ID}"),
-      cancel_url: buildAppUrl("/settings?billing=cancel"),
+      success_url: buildAppUrl(
+        "/settings?billing=success&session_id={CHECKOUT_SESSION_ID}",
+        getRequestBaseUrl(request)
+      ),
+      cancel_url: buildAppUrl("/settings?billing=cancel", getRequestBaseUrl(request)),
       metadata: {
         companyId: context.company.id,
         planCode: plan.code

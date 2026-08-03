@@ -3,13 +3,14 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createPasswordResetToken } from "@/lib/auth-tokens";
 import { sendAuthMail } from "@/lib/mailer";
+import { getRequestBaseUrl } from "@/lib/security";
 
 const schema = z.object({
   email: z.string().email()
 });
 
-function buildAppUrl(path: string) {
-  return new URL(path, process.env.APP_URL || "http://localhost:3000").toString();
+function buildAppUrl(path: string, baseUrl: string) {
+  return new URL(path, baseUrl).toString();
 }
 
 export async function POST(request: Request) {
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
 
     if (user?.memberships[0]) {
       const token = await createPasswordResetToken(user.id, user.memberships[0].companyId);
-      const resetUrl = buildAppUrl(`/reset-password?token=${token}`);
+      const resetUrl = buildAppUrl(`/reset-password?token=${token}`, getRequestBaseUrl(request));
 
       await sendAuthMail({
         to: user.email,

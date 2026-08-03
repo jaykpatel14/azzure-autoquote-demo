@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireCompanyContext, AuthRequiredError, CompanyAccessError } from "@/lib/company";
 import { buildAppUrl, getStripeClient } from "@/lib/stripe";
+import { getRequestBaseUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const context = await requireCompanyContext();
     if (!context.company.subscription) {
@@ -26,7 +27,7 @@ export async function POST() {
     const stripe = await getStripeClient();
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: buildAppUrl("/settings")
+      return_url: buildAppUrl("/settings", getRequestBaseUrl(request))
     });
 
     return NextResponse.redirect(session.url, 303);

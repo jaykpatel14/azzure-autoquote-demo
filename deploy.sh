@@ -61,6 +61,9 @@ docker run -d \
   -p "${APP_PORT}:${APP_PORT}" \
   "${APP_IMAGE}"
 
+echo "Running container image:"
+docker inspect --format '{{.Config.Image}}' "${CONTAINER_NAME}"
+
 echo "Waiting for application health check..."
 
 HEALTHY=false
