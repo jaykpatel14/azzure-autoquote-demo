@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireInternalAdminContext, InternalAdminAccessError } from "@/lib/internal-admin";
 import { prisma } from "@/lib/prisma";
+import { getRequestBaseUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -56,7 +57,7 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
     const redirectTo = input.redirectTo?.trim() || "/admin/companies";
-    return NextResponse.redirect(new URL(redirectTo, request.url), 303);
+    return NextResponse.redirect(new URL(redirectTo, getRequestBaseUrl(request)), 303);
   } catch (error) {
     if (error instanceof InternalAdminAccessError) {
       return NextResponse.json({ error: error.message }, { status: 403 });

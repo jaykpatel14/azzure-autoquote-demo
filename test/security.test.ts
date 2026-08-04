@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { clearRateLimitState, checkRateLimit } from "@/lib/rate-limit";
-import { hasAllowedImageSignature, isSameOriginRequest } from "@/lib/security";
+import {
+  getRequestBaseUrl,
+  hasAllowedImageSignature,
+  isSameOriginRequest
+} from "@/lib/security";
 import { requireEnv } from "@/lib/env";
 
 afterEach(() => {
@@ -61,6 +65,17 @@ describe("security helpers", () => {
     });
 
     expect(isSameOriginRequest(request)).toBe(true);
+  });
+
+  test("builds the public base url from forwarded headers", () => {
+    const request = new Request("http://127.0.0.1:3000/api/admin/companies", {
+      headers: {
+        "x-forwarded-host": "autoquote.everyfacets.com",
+        "x-forwarded-proto": "https"
+      }
+    });
+
+    expect(getRequestBaseUrl(request)).toBe("https://autoquote.everyfacets.com");
   });
 
   test("enforces a simple in-memory rate limit", () => {

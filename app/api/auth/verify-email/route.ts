@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { consumeEmailVerificationToken } from "@/lib/auth-tokens";
+import { getRequestBaseUrl } from "@/lib/security";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -10,8 +11,10 @@ export async function GET(request: Request) {
 
   const user = await consumeEmailVerificationToken(token);
   if (!user) {
-    return NextResponse.redirect(new URL("/verify-email?error=invalid", url.origin));
+    return NextResponse.redirect(new URL("/verify-email?error=invalid", getRequestBaseUrl(request)));
   }
 
-  return NextResponse.redirect(new URL(`/signin?verified=1&email=${encodeURIComponent(user.email)}`, url.origin));
+  return NextResponse.redirect(
+    new URL(`/signin?verified=1&email=${encodeURIComponent(user.email)}`, getRequestBaseUrl(request))
+  );
 }
