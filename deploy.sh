@@ -58,6 +58,8 @@ docker run -d \
   --name "${CONTAINER_NAME}" \
   --restart unless-stopped \
   --env-file "${ENV_FILE}" \
+  -e HOSTNAME=0.0.0.0 \
+  -e PORT="${APP_PORT}" \
   -p "${APP_PORT}:${APP_PORT}" \
   "${APP_IMAGE}"
 
