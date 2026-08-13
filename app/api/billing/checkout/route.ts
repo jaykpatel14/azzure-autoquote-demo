@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { getEffectiveMonthlyLimit } from "@/lib/billing";
+import { ensureBasePlans } from "@/lib/plan-bootstrap";
 import { requireCompanyContext, AuthRequiredError, CompanyAccessError } from "@/lib/company";
 import {
   buildAppUrl,
@@ -14,6 +16,14 @@ export const runtime = "nodejs";
 const schema = z.object({
   planCode: z.string().trim().min(1).max(50)
 });
+
+function startOfCurrentMonth(date = new Date()) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+}
+
+function startOfNextMonth(date = new Date()) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+}
 
 async function parseInput(request: Request) {
   const contentType = request.headers.get("content-type") || "";
@@ -31,17 +41,59 @@ export async function POST(request: Request) {
   try {
     const context = await requireCompanyContext();
     const input = await parseInput(request);
-    if (!context.company.subscription) {
-      return NextResponse.json(
-        { error: "Billing is not initialized for this company yet." },
-        { status: 400 }
-      );
-    }
-
     const plan = await prisma.plan.findUnique({ where: { code: input.planCode } });
 
     if (!plan) {
       return NextResponse.json({ error: "Unknown billing plan." }, { status: 404 });
+    }
+
+    let subscription = context.company.subscription;
+    if (!subscription) {
+      const { starter: starterPlan } = await ensureBasePlans(prisma);
+      const periodStart = startOfCurrentMonth();
+      const periodEnd = startOfNextMonth();
+
+      subscription = (await prisma.subscription.upsert({
+        where: { companyId: context.company.id },
+        create: {
+          companyId: context.company.id,
+          planId: plan.id,
+          status: "TRIALING",
+          currentPeriodStart: periodStart,
+          currentPeriodEnd: periodEnd
+        },
+        update: {
+          planId: plan.id,
+          status: "TRIALING",
+          currentPeriodStart: periodStart,
+          currentPeriodEnd: periodEnd
+        }
+      })) as NonNullable<typeof context.company.subscription>;
+
+      await prisma.usagePeriod.upsert({
+        where: {
+          companyId_periodStart_periodEnd: {
+            companyId: context.company.id,
+            periodStart,
+            periodEnd
+          }
+        },
+        create: {
+          companyId: context.company.id,
+          periodStart,
+          periodEnd,
+          limit: getEffectiveMonthlyLimit({
+            status: "TRIALING",
+            plan: starterPlan
+          })
+        },
+        update: {
+          limit: getEffectiveMonthlyLimit({
+            status: "TRIALING",
+            plan: starterPlan
+          })
+        }
+      });
     }
 
     const checkoutPriceId = await resolveCheckoutPriceId(plan);
@@ -59,7 +111,7 @@ export async function POST(request: Request) {
     const stripe = await getStripeClient();
     const stripeCustomerId = await resolveCheckoutCustomerId({
       stripe,
-      stripeCustomerId: context.company.subscription.stripeCustomerId,
+      stripeCustomerId: subscription.stripeCustomerId,
       email: context.user.email,
       companyName: context.company.name,
       companyId: context.company.id,

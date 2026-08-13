@@ -41,6 +41,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const remaining = usagePeriod ? getUsageRemaining(usagePeriod) : null;
   const pricingProfile = toPricingProfileInput(context.company.pricingProfile);
   const livePricing = await resolveMetalPricing(pricingProfile);
+  const canRequestSubscription = !subscription || subscription.status !== "ACTIVE";
+  const subscriptionRequestTitle = subscription ? "Choose a subscription" : "Request a subscription";
+  const subscriptionRequestDescription = subscription
+    ? `Trial accounts are capped at ${effectiveMonthlyLimit} requests. Pick a paid plan to upgrade.`
+    : "Choose a plan to create your billing record and start Stripe checkout.";
+  const planActionLabel = subscription ? "Choose" : "Request";
 
   return (
     <WorkspaceShell
@@ -152,6 +158,38 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               <p className="muted">Choose a plan to activate billing and usage enforcement.</p>
             </div>
           )}
+          {canRequestSubscription ? (
+            <div className="stack">
+              <div className="sectionHeader" style={{ marginTop: "1rem" }}>
+                <div>
+                  <h3>{subscriptionRequestTitle}</h3>
+                  <p className="muted">{subscriptionRequestDescription}</p>
+                </div>
+              </div>
+              {availablePlans.length > 0 ? (
+                <div className="pricingGrid">
+                  {availablePlans.map((plan) => (
+                    <form key={plan.id} action="/api/billing/checkout" method="post" className="detailCard">
+                      <input type="hidden" name="planCode" value={plan.code} />
+                      <span>{plan.name}</span>
+                      <strong>{formatPlanPrice(plan.monthlyPriceCents)} / month</strong>
+                      <p className="muted small">{plan.monthlyLimit} requests per billing period.</p>
+                      <button className="button primary" type="submit">
+                        {planActionLabel} {plan.name}
+                      </button>
+                    </form>
+                  ))}
+                </div>
+              ) : (
+                <div className="emptyState">
+                  <strong>No subscription plans available</strong>
+                  <p className="muted">
+                    No Stripe-enabled plans are configured yet. Please contact support.
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : null}
         </article>
 
         <article className="card">
