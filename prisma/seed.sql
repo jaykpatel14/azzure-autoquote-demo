@@ -127,9 +127,7 @@ INSERT INTO "Membership" (
 ) VALUES
   ('membership_demo_owner', 'CUSTOMER', 'company_demo_jewelry', 'user_demo_owner'),
   ('membership_demo_acme', 'CUSTOMER', 'company_demo_jewelry', 'user_demo_acme')
-ON CONFLICT ("id") DO UPDATE SET
-  "companyId" = EXCLUDED."companyId",
-  "userId" = EXCLUDED."userId",
+ON CONFLICT ("companyId","userId") DO UPDATE SET
   "role" = EXCLUDED."role";
 
 INSERT INTO "Subscription" (
