@@ -5,6 +5,7 @@ const prismaMock = vi.hoisted(() => ({
     findUnique: vi.fn()
   },
   subscription: {
+    findUnique: vi.fn(),
     upsert: vi.fn(),
     update: vi.fn()
   },
@@ -14,12 +15,10 @@ const prismaMock = vi.hoisted(() => ({
 }));
 
 const companyContextMock = vi.hoisted(() => vi.fn());
-const ensureBasePlansMock = vi.hoisted(() => vi.fn());
 const getStripeClientMock = vi.hoisted(() => vi.fn());
 const resolveCheckoutCustomerIdMock = vi.hoisted(() => vi.fn());
 const resolveCheckoutPriceIdMock = vi.hoisted(() => vi.fn());
 const buildAppUrlMock = vi.hoisted(() => vi.fn());
-const getRequestBaseUrlMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/prisma", () => ({
   prisma: prismaMock
@@ -28,11 +27,8 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@/lib/company", () => ({
   requireCompanyContext: companyContextMock,
   AuthRequiredError: class AuthRequiredError extends Error {},
-  CompanyAccessError: class CompanyAccessError extends Error {}
-}));
-
-vi.mock("@/lib/plan-bootstrap", () => ({
-  ensureBasePlans: ensureBasePlansMock
+  CompanyAccessError: class CompanyAccessError extends Error {},
+  canManageBilling: vi.fn(() => true)
 }));
 
 vi.mock("@/lib/stripe", () => ({
@@ -43,7 +39,7 @@ vi.mock("@/lib/stripe", () => ({
 }));
 
 vi.mock("@/lib/security", () => ({
-  getRequestBaseUrl: getRequestBaseUrlMock
+  getRequestBaseUrl: vi.fn()
 }));
 
 import { POST as checkoutBilling } from "@/app/api/billing/checkout/route";
@@ -52,13 +48,12 @@ describe("billing checkout route", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     companyContextMock.mockReset();
-    ensureBasePlansMock.mockReset();
     getStripeClientMock.mockReset();
     resolveCheckoutCustomerIdMock.mockReset();
     resolveCheckoutPriceIdMock.mockReset();
     buildAppUrlMock.mockReset();
-    getRequestBaseUrlMock.mockReset();
     prismaMock.plan.findUnique.mockReset();
+    prismaMock.subscription.findUnique.mockReset();
     prismaMock.subscription.upsert.mockReset();
     prismaMock.subscription.update.mockReset();
     prismaMock.usagePeriod.upsert.mockReset();
@@ -83,23 +78,30 @@ describe("billing checkout route", () => {
       }
     });
 
-    prismaMock.plan.findUnique.mockResolvedValue({
-      id: "plan_professional",
-      code: "professional",
-      name: "Professional",
-      monthlyPriceCents: 9900,
-      monthlyLimit: 500,
-      stripePriceId: "price_professional",
-      stripeProductId: null
-    });
-
-    ensureBasePlansMock.mockResolvedValue({
-      starter: {
-        id: "plan_starter",
-        code: "starter",
-        monthlyLimit: 100
+    prismaMock.plan.findUnique.mockImplementation(async ({ where }) => {
+      if (where.code === "starter") {
+        return {
+          id: "plan_starter",
+          code: "starter",
+          name: "Starter",
+          monthlyPriceCents: 4900,
+          monthlyLimit: 100,
+          stripePriceId: null,
+          stripeProductId: null
+        };
       }
+
+      return {
+        id: "plan_professional",
+        code: "professional",
+        name: "Professional",
+        monthlyPriceCents: 9900,
+        monthlyLimit: 500,
+        stripePriceId: "price_professional",
+        stripeProductId: null
+      };
     });
+    prismaMock.subscription.findUnique.mockResolvedValue(null);
 
     prismaMock.subscription.upsert.mockResolvedValue({
       companyId: "company_123",
@@ -126,16 +128,15 @@ describe("billing checkout route", () => {
       }
     };
     getStripeClientMock.mockResolvedValue(stripeMock);
-    getRequestBaseUrlMock.mockReturnValue("https://everyfacets.test");
-    buildAppUrlMock.mockImplementation((path: string, baseUrl: string) => new URL(path, baseUrl).toString());
+    buildAppUrlMock.mockImplementation((path: string) => new URL(path, "https://everyfacets.test").toString());
 
     const response = await checkoutBilling(
       new Request("https://everyfacets.test/api/billing/checkout", {
         method: "POST",
         headers: {
-          "content-type": "application/x-www-form-urlencoded"
+          "content-type": "application/json"
         },
-        body: new URLSearchParams({
+        body: JSON.stringify({
           planCode: "professional"
         })
       })
@@ -143,7 +144,6 @@ describe("billing checkout route", () => {
 
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe("https://checkout.stripe.test/session");
-    expect(ensureBasePlansMock).toHaveBeenCalledTimes(1);
     expect(prismaMock.subscription.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { companyId: "company_123" },
@@ -159,8 +159,8 @@ describe("billing checkout route", () => {
         where: {
           companyId_periodStart_periodEnd: {
             companyId: "company_123",
-            periodStart: new Date("2026-08-01T00:00:00.000Z"),
-            periodEnd: new Date("2026-09-01T00:00:00.000Z")
+            periodStart: new Date("2026-08-04T12:00:00.000Z"),
+            periodEnd: new Date("2026-08-18T12:00:00.000Z")
           }
         }
       })

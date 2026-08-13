@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import TrialBanner from "@/components/trial-banner";
+import TrialSidebarStatus from "@/components/trial-sidebar-status";
 import WorkspaceShell from "@/components/workspace-shell";
-import { getAuthenticatedCompanyContext } from "@/lib/company";
+import { getTrialDaysRemaining, getTrialQuotesRemaining } from "@/lib/billing";
+import { canManageBilling, getAuthenticatedCompanyContext } from "@/lib/company";
+import { prisma } from "@/lib/prisma";
+import { ensureBasePlans } from "@/lib/plan-bootstrap";
 import { resolveMetalPricing, toPricingProfileInput } from "@/lib/metal-pricing";
 import { getCurrentUsagePeriod, getUsageRemaining, getUsageWarningMessage } from "@/lib/billing";
 import { syncStripeCheckoutSession } from "@/lib/billing-webhooks";
@@ -21,6 +26,10 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function formatPlanPrice(monthlyPriceCents: number) {
+  return formatCurrency(monthlyPriceCents / 100);
+}
+
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const context = await getAuthenticatedCompanyContext();
@@ -37,11 +46,19 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
   const usagePeriod = await getCurrentUsagePeriod(context.company.id);
   const subscription = context.company.subscription;
+  const basePlans = await ensureBasePlans(prisma);
+  const availablePlans = Object.values(basePlans);
   const warning = usagePeriod ? getUsageWarningMessage(usagePeriod) : null;
   const remaining = usagePeriod ? getUsageRemaining(usagePeriod) : null;
   const pricingProfile = toPricingProfileInput(context.company.pricingProfile);
   const livePricing = await resolveMetalPricing(pricingProfile);
+  const billingAccess = canManageBilling(context.membership?.role ?? "CUSTOMER");
   const canRequestSubscription = !subscription || subscription.status !== "ACTIVE";
+  const effectiveMonthlyLimit =
+    subscription?.plan.monthlyLimit ?? basePlans.starter.monthlyLimit;
+  const trialDaysRemaining = getTrialDaysRemaining(subscription);
+  const trialQuotesRemaining = getTrialQuotesRemaining(subscription);
+  const onboardingComplete = subscription?.onboardingComplete ?? true;
   const subscriptionRequestTitle = subscription ? "Choose a subscription" : "Request a subscription";
   const subscriptionRequestDescription = subscription
     ? `Trial accounts are capped at ${effectiveMonthlyLimit} requests. Pick a paid plan to upgrade.`
@@ -53,6 +70,30 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       title="Subscription billing"
       description="Review billing, usage, and live metal pricing from the customer workspace."
       navItems={getWorkspaceNav("/settings")}
+      banner={
+        subscription?.status === "TRIALING" &&
+        trialDaysRemaining !== null &&
+        trialQuotesRemaining !== null ? (
+          <TrialBanner
+            companyId={context.company.id}
+            daysRemaining={trialDaysRemaining}
+            quoteCap={subscription.trialQuoteCap}
+            quotesRemaining={trialQuotesRemaining}
+          />
+        ) : null
+      }
+      sidebarExtra={
+        subscription?.status === "TRIALING" &&
+        trialDaysRemaining !== null &&
+        trialQuotesRemaining !== null ? (
+          <TrialSidebarStatus
+            daysRemaining={trialDaysRemaining}
+            quoteCap={subscription.trialQuoteCap}
+            quotesRemaining={trialQuotesRemaining}
+            urgent={trialDaysRemaining <= 3}
+          />
+        ) : null
+      }
       actions={
         <div className="heroActions">
           <Link className="button secondary" href="/quotes/new">
@@ -64,6 +105,24 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         </div>
       }
     >
+      {!onboardingComplete ? (
+        <section className="card accentCard onboardingReminder">
+          <div className="sectionHeader">
+            <div>
+              <p className="eyebrow">Finish setup</p>
+              <h2>Complete your onboarding to unlock the rest of the workspace</h2>
+              <p className="muted">
+                You can review billing now, but quote creation and the workspace homepage stay locked until you
+                finish the guided setup.
+              </p>
+            </div>
+            <Link className="button primary" href="/onboarding">
+              Continue onboarding
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
       <section className="statGrid">
         <article className="statCard">
           <span className="eyebrow">Usage window</span>
@@ -141,16 +200,24 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   </p>
                 </div>
               )}
-              <form action="/api/billing/portal" method="post">
-                <button className="button primary" type="submit" disabled={!subscription.stripeCustomerId}>
-                  Manage billing in Stripe
-                </button>
-              </form>
-              {!subscription.stripeCustomerId ? (
+              {billingAccess ? (
+                <>
+                  <form action="/api/billing/portal" method="post">
+                    <button className="button primary" type="submit" disabled={!subscription.stripeCustomerId}>
+                      Manage billing in Stripe
+                    </button>
+                  </form>
+                  {!subscription.stripeCustomerId ? (
+                    <p className="muted small">
+                      The billing portal becomes available after the first Stripe checkout session.
+                    </p>
+                  ) : null}
+                </>
+              ) : (
                 <p className="muted small">
-                  The billing portal becomes available after the first Stripe checkout session.
+                  Billing changes are restricted to billing managers. You can still review usage and pricing.
                 </p>
-              ) : null}
+              )}
             </div>
           ) : (
             <div className="emptyState">
@@ -158,7 +225,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               <p className="muted">Choose a plan to activate billing and usage enforcement.</p>
             </div>
           )}
-          {canRequestSubscription ? (
+          {canRequestSubscription && billingAccess ? (
             <div className="stack">
               <div className="sectionHeader" style={{ marginTop: "1rem" }}>
                 <div>
@@ -188,6 +255,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   </p>
                 </div>
               )}
+            </div>
+          ) : canRequestSubscription ? (
+            <div className="emptyState">
+              <strong>Billing access restricted</strong>
+              <p className="muted">A billing manager needs to choose or upgrade the subscription plan.</p>
             </div>
           ) : null}
         </article>

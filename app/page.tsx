@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import TrialBanner from "@/components/trial-banner";
+import TrialSidebarStatus from "@/components/trial-sidebar-status";
 import WorkspaceShell from "@/components/workspace-shell";
+import { getTrialDaysRemaining, getTrialQuotesRemaining } from "@/lib/billing";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { prisma } from "@/lib/prisma";
@@ -15,6 +18,68 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+const FEATURE_STEPS = [
+  {
+    step: "01",
+    title: "Drop in the image",
+    description: "Customers upload a jewelry photo and the system queues a moderated image analysis."
+  },
+  {
+    step: "02",
+    title: "Review the draft",
+    description: "Metal weight, stone assumptions, and pricing overlays stay editable before approval."
+  },
+  {
+    step: "03",
+    title: "Send the quote",
+    description: "Save the approved price, export the PDF, and share a public quote preview."
+  }
+] as const;
+
+const MARKETING_STATS = [
+  {
+    label: "AI-assisted pass",
+    value: "3-stage review",
+    detail: "Moderation, extraction, and pricing checks run before the estimate is saved."
+  },
+  {
+    label: "Pricing source",
+    value: "Live metals feed",
+    detail: "When available, live spot pricing keeps previews grounded in current market data."
+  },
+  {
+    label: "Quote surface",
+    value: "Customer-safe",
+    detail: "Public views show only the approved final price and high-level quote details."
+  },
+  {
+    label: "Brand tone",
+    value: "Editorial luxury",
+    detail: "Typography, spacing, and motion are tuned to feel elevated instead of generic."
+  }
+] as const;
+
+const PLAN_CARDS = [
+  {
+    name: "Starter",
+    price: "$49/mo",
+    description: "For a single storefront that wants clean quoting without the ops overhead.",
+    features: ["AI image analysis", "Saved quote history", "PDF export"]
+  },
+  {
+    name: "Professional",
+    price: "$149/mo",
+    description: "For teams who need more quotes, live pricing, and a more polished customer flow.",
+    features: ["Higher monthly limits", "Live metal pricing", "Brand-ready previews"]
+  },
+  {
+    name: "Enterprise",
+    price: "Custom",
+    description: "For multi-location operators that need controls, share links, and scale.",
+    features: ["Public quote surface", "Admin controls", "Support for multiple companies"]
+  }
+] as const;
+
 export default async function HomePage() {
   const adminContext = await getInternalAdminContext();
   if (adminContext) {
@@ -23,7 +88,11 @@ export default async function HomePage() {
 
   const context = await getAuthenticatedCompanyContext();
   if (!context) {
-    redirect("/signin");
+    return <MarketingPage />;
+  }
+
+  if (context.company.subscription && !context.company.subscription.onboardingComplete) {
+    redirect("/onboarding");
   }
 
   const basePricingProfile = context.company.pricingProfile
@@ -54,14 +123,40 @@ export default async function HomePage() {
   const warning = usagePeriod ? getUsageWarningMessage(usagePeriod) : null;
   const subscription = context.company.subscription;
   const pricing = livePricing.pricingProfile;
+  const trialDaysRemaining = getTrialDaysRemaining(subscription);
+  const trialQuotesRemaining = getTrialQuotesRemaining(subscription);
 
   return (
     <WorkspaceShell
       title="Workspace overview"
       description="Use this space to start quotes, review billing, and check the live pricing that drives every estimate."
       navItems={getWorkspaceNav("/")}
+      banner={
+        subscription?.status === "TRIALING" &&
+        trialDaysRemaining !== null &&
+        trialQuotesRemaining !== null ? (
+          <TrialBanner
+            companyId={context.company.id}
+            daysRemaining={trialDaysRemaining}
+            quoteCap={subscription.trialQuoteCap}
+            quotesRemaining={trialQuotesRemaining}
+          />
+        ) : null
+      }
+      sidebarExtra={
+        subscription?.status === "TRIALING" &&
+        trialDaysRemaining !== null &&
+        trialQuotesRemaining !== null ? (
+          <TrialSidebarStatus
+            daysRemaining={trialDaysRemaining}
+            quoteCap={subscription.trialQuoteCap}
+            quotesRemaining={trialQuotesRemaining}
+            urgent={trialDaysRemaining <= 3}
+          />
+        ) : null
+      }
       actions={
-        <div className="heroActions">
+        <>
           <Link className="button primary" href="/quotes/new">
             New estimate
           </Link>
@@ -71,7 +166,7 @@ export default async function HomePage() {
           <Link className="button secondary" href="/settings">
             Subscription billing
           </Link>
-        </div>
+        </>
       }
     >
       <section className="statGrid" aria-label="Workspace overview">
@@ -194,5 +289,118 @@ export default async function HomePage() {
         </div>
       </section>
     </WorkspaceShell>
+  );
+}
+
+function MarketingPage() {
+  return (
+    <main className="marketingPage">
+      <section className="marketingHero">
+        <div className="marketingHeroInner">
+          <div>
+            <p className="eyebrow">Azzure AutoQuote</p>
+            <h1 className="marketingHeadline">Luxury quote workflows for modern jewelers.</h1>
+            <p className="marketingSubheadline">
+              Turn a jewelry photo into a polished estimate with AI-assisted analysis, live pricing,
+              and a customer-ready quote surface that feels premium from first upload to final approval.
+            </p>
+          </div>
+          <div className="marketingActions">
+            <Link className="button primary button--lg" href="/pricing">
+              Start free trial
+            </Link>
+            <Link className="button secondary button--lg" href="/signin">
+              Sign in
+            </Link>
+            <Link className="marketingLink" href="#pricing">
+              View pricing
+            </Link>
+          </div>
+
+          <section className="statGrid">
+            {MARKETING_STATS.map((item) => (
+              <article key={item.label} className="statCard">
+                <span className="eyebrow">{item.label}</span>
+                <strong>{item.value}</strong>
+                <p className="muted small">{item.detail}</p>
+              </article>
+            ))}
+          </section>
+        </div>
+      </section>
+
+      <section className="marketingSection">
+        <div className="sectionHeader">
+          <div>
+            <p className="eyebrow">Workflow</p>
+            <h2 className="heading">A calm, three-step path from image upload to approved price.</h2>
+          </div>
+        </div>
+        <div className="featureSteps">
+          {FEATURE_STEPS.map((item) => (
+            <article key={item.step} className="featureStep" data-step={item.step}>
+              <h3>{item.title}</h3>
+              <p className="muted">{item.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="marketingSection" id="pricing">
+        <div className="sectionHeader">
+          <div>
+            <p className="eyebrow">Plans</p>
+            <h2 className="heading">Choose the level of control your shop needs.</h2>
+          </div>
+        </div>
+        <div className="planGrid">
+          {PLAN_CARDS.map((plan, index) => (
+            <article
+              key={plan.name}
+              className={`planCard${index === 2 ? " enterprise" : ""}`}
+            >
+              {index === 0 ? <span className="trialBanner">Popular starter option</span> : null}
+              <div className="planName">{plan.name}</div>
+              <div className="planPrice">{plan.price}</div>
+              <p className="muted">{plan.description}</p>
+              <ul className="featureList">
+                {plan.features.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="marketingSection">
+        <div className="card">
+          <div className="sectionHeader">
+            <div>
+              <p className="eyebrow">Why Azzure</p>
+              <h2 className="heading">Built to feel premium, without making the operator do more work.</h2>
+            </div>
+          </div>
+          <div className="twoUp">
+            <div className="detailCard">
+              <span>Quote preview</span>
+              <strong>Customer-safe by design</strong>
+              <p className="muted small">
+                Public quotes can show only the approved final price, so clients get clarity without
+                seeing your internal cost structure.
+              </p>
+            </div>
+            <div className="detailCard">
+              <span>Workspace</span>
+              <strong>Operational and focused</strong>
+              <p className="muted small">
+                The dashboard keeps analysis, billing, and quote history in one place so your team can
+                move quickly without losing the thread.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }

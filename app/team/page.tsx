@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import TrialBanner from "@/components/trial-banner";
+import TrialSidebarStatus from "@/components/trial-sidebar-status";
 import WorkspaceShell from "@/components/workspace-shell";
-import { getAuthenticatedCompanyContext } from "@/lib/company";
+import { getTrialDaysRemaining, getTrialQuotesRemaining } from "@/lib/billing";
+import { canManageTeam, getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 
 export const dynamic = "force-dynamic";
@@ -12,11 +15,42 @@ export default async function TeamPage() {
     redirect("/signin");
   }
 
+  if (context.company.subscription && !context.company.subscription.onboardingComplete) {
+    redirect("/onboarding");
+  }
+
+  const trialDaysRemaining = getTrialDaysRemaining(context.company.subscription);
+  const trialQuotesRemaining = getTrialQuotesRemaining(context.company.subscription);
+
   return (
     <WorkspaceShell
       title="Company access"
-      description="Customer accounts share one permission level across the tenant."
+      description="Company access is role-based, with the active membership determining what the workspace can do."
       navItems={getWorkspaceNav("/team")}
+      banner={
+        context.company.subscription?.status === "TRIALING" &&
+        trialDaysRemaining !== null &&
+        trialQuotesRemaining !== null ? (
+          <TrialBanner
+            companyId={context.company.id}
+            daysRemaining={trialDaysRemaining}
+            quoteCap={context.company.subscription.trialQuoteCap}
+            quotesRemaining={trialQuotesRemaining}
+          />
+        ) : null
+      }
+      sidebarExtra={
+        context.company.subscription?.status === "TRIALING" &&
+        trialDaysRemaining !== null &&
+        trialQuotesRemaining !== null ? (
+          <TrialSidebarStatus
+            daysRemaining={trialDaysRemaining}
+            quoteCap={context.company.subscription.trialQuoteCap}
+            quotesRemaining={trialQuotesRemaining}
+            urgent={trialDaysRemaining <= 3}
+          />
+        ) : null
+      }
       actions={
         <Link className="button secondary" href="/settings">
           Back to settings
@@ -31,8 +65,8 @@ export default async function TeamPage() {
         </article>
         <article className="statCard">
           <span className="eyebrow">Access model</span>
-          <strong>Customer</strong>
-          <p className="muted small">All company users have the same customer permissions.</p>
+          <strong>{context.membership?.role ?? "CUSTOMER"}</strong>
+          <p className="muted small">Your active membership controls what you can access in this tenant.</p>
         </article>
       </section>
 
@@ -41,15 +75,17 @@ export default async function TeamPage() {
           <div>
             <h2>Access summary</h2>
             <p className="muted">
-              Team role tiers were removed. Every company user now has customer access, while Azzure admins
-              are handled separately through the internal admin allowlist.
+              Role tiers are now modeled in the database and onboarding creates the company owner membership
+              as <code>OWNER</code>.
             </p>
           </div>
         </div>
         <div className="emptyState">
-          <strong>No per-user roles</strong>
+          <strong>{canManageTeam(context.membership?.role ?? "CUSTOMER") ? "Team access enabled" : "View-only access"}</strong>
           <p className="muted">
-            The customer workspace no longer distinguishes between owner, admin, estimator, or viewer.
+            {canManageTeam(context.membership?.role ?? "CUSTOMER")
+              ? "This membership can manage company access and role-based workspace actions."
+              : "This membership can review company access but cannot manage team settings."}
           </p>
         </div>
       </section>

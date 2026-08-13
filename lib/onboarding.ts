@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
+import { DEFAULT_TRIAL_QUOTE_CAP, TRIAL_DAYS, isPlanCode } from "@/lib/subscription-plans";
 import { generateToken } from "@/lib/tokens";
 
 type OnboardingInput = {
@@ -7,6 +8,7 @@ type OnboardingInput = {
   name?: string | null;
   passwordHash: string;
   companyName: string;
+  planCode?: string | null;
 };
 
 function slugifyCompanyName(name: string) {
@@ -19,19 +21,18 @@ function slugifyCompanyName(name: string) {
   return `${normalized || "company"}-${generateToken().slice(0, 8)}`;
 }
 
-function startOfCurrentMonth(date = new Date()) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
-}
-
-function startOfNextMonth(date = new Date()) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+function addDays(date: Date, days: number) {
+  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
 export async function onboardCompanyOwner(
   tx: Prisma.TransactionClient,
   input: OnboardingInput
 ) {
-  const { starter: starterPlan } = await ensureBasePlans(tx);
+  const plans = await ensureBasePlans(tx);
+  const selectedPlan = input.planCode && isPlanCode(input.planCode) ? plans[input.planCode] : plans.professional;
+  const now = new Date();
+  const trialEndsAt = addDays(now, TRIAL_DAYS);
 
   const user = await tx.user.create({
     data: {
@@ -41,8 +42,8 @@ export async function onboardCompanyOwner(
     }
   });
 
-  const periodStart = startOfCurrentMonth();
-  const periodEnd = startOfNextMonth();
+  const periodStart = now;
+  const periodEnd = trialEndsAt;
 
   const company = await tx.company.create({
     data: {
@@ -57,7 +58,7 @@ export async function onboardCompanyOwner(
     data: {
       companyId: company.id,
       userId: user.id,
-      role: "CUSTOMER"
+      role: "OWNER"
     }
   });
 
@@ -82,7 +83,7 @@ export async function onboardCompanyOwner(
       targetType: "Membership",
       targetId: user.id,
       metadata: {
-        role: "CUSTOMER"
+        role: "OWNER"
       }
     }
   });
@@ -90,8 +91,14 @@ export async function onboardCompanyOwner(
   await tx.subscription.create({
     data: {
       companyId: company.id,
-      planId: starterPlan.id,
+      planId: selectedPlan.id,
       status: "TRIALING",
+      trialStartedAt: periodStart,
+      trialEndsAt,
+      trialQuoteCap: DEFAULT_TRIAL_QUOTE_CAP,
+      trialQuotesUsed: 0,
+      pendingPlanId: selectedPlan.id,
+      onboardingComplete: false,
       currentPeriodStart: periodStart,
       currentPeriodEnd: periodEnd
     }
@@ -102,7 +109,7 @@ export async function onboardCompanyOwner(
       companyId: company.id,
       periodStart,
       periodEnd,
-      limit: starterPlan.monthlyLimit
+      limit: DEFAULT_TRIAL_QUOTE_CAP
     }
   });
 

@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
-import { getEffectiveMonthlyLimit } from "@/lib/billing";
-import { ensureBasePlans } from "@/lib/plan-bootstrap";
-import { requireCompanyContext, AuthRequiredError, CompanyAccessError } from "@/lib/company";
 import {
-  buildAppUrl,
-  getStripeClient,
-  resolveCheckoutCustomerId,
-  resolveCheckoutPriceId
-} from "@/lib/stripe";
+  requireCompanyContext,
+  AuthRequiredError,
+  CompanyAccessError,
+  canManageBilling
+} from "@/lib/company";
+import { createCheckoutSession } from "@/src/services/subscriptions";
 
 export const runtime = "nodejs";
 
@@ -40,119 +37,25 @@ async function parseInput(request: Request) {
 export async function POST(request: Request) {
   try {
     const context = await requireCompanyContext();
+    if (!canManageBilling(context.membership?.role ?? "CUSTOMER")) {
+      throw new CompanyAccessError("You do not have permission to manage billing.");
+    }
     const input = await parseInput(request);
-    const plan = await prisma.plan.findUnique({ where: { code: input.planCode } });
+    const result = await createCheckoutSession({
+      companyId: context.company.id,
+      companyName: context.company.name,
+      email: context.user.email,
+      planCode: input.planCode
+    });
 
-    if (!plan) {
-      return NextResponse.json({ error: "Unknown billing plan." }, { status: 404 });
-    }
-
-    let subscription = context.company.subscription;
-    if (!subscription) {
-      const { starter: starterPlan } = await ensureBasePlans(prisma);
-      const periodStart = startOfCurrentMonth();
-      const periodEnd = startOfNextMonth();
-
-      subscription = (await prisma.subscription.upsert({
-        where: { companyId: context.company.id },
-        create: {
-          companyId: context.company.id,
-          planId: plan.id,
-          status: "TRIALING",
-          currentPeriodStart: periodStart,
-          currentPeriodEnd: periodEnd
-        },
-        update: {
-          planId: plan.id,
-          status: "TRIALING",
-          currentPeriodStart: periodStart,
-          currentPeriodEnd: periodEnd
-        }
-      })) as NonNullable<typeof context.company.subscription>;
-
-      await prisma.usagePeriod.upsert({
-        where: {
-          companyId_periodStart_periodEnd: {
-            companyId: context.company.id,
-            periodStart,
-            periodEnd
-          }
-        },
-        create: {
-          companyId: context.company.id,
-          periodStart,
-          periodEnd,
-          limit: getEffectiveMonthlyLimit({
-            status: "TRIALING",
-            plan: starterPlan
-          })
-        },
-        update: {
-          limit: getEffectiveMonthlyLimit({
-            status: "TRIALING",
-            plan: starterPlan
-          })
-        }
-      });
-    }
-
-    const checkoutPriceId = await resolveCheckoutPriceId(plan);
-
-    if (!checkoutPriceId) {
+    if ("error" in result) {
       return NextResponse.json(
-        {
-          error:
-            "This billing plan is not configured with a Stripe price. Use a price_ id, or attach a default recurring price to the product."
-        },
-        { status: 400 }
+        { error: result.error.userMessage },
+        { status: result.error.statusCode }
       );
     }
 
-    const stripe = await getStripeClient();
-    const stripeCustomerId = await resolveCheckoutCustomerId({
-      stripe,
-      stripeCustomerId: subscription.stripeCustomerId,
-      email: context.user.email,
-      companyName: context.company.name,
-      companyId: context.company.id,
-      planCode: plan.code,
-      persistStripeCustomerId: async (customerId) => {
-        await prisma.subscription.update({
-          where: { companyId: context.company.id },
-          data: { stripeCustomerId: customerId }
-        });
-      }
-    });
-
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      customer: stripeCustomerId,
-      line_items: [
-        {
-          price: checkoutPriceId,
-          quantity: 1
-        }
-      ],
-      allow_promotion_codes: true,
-      success_url: buildAppUrl("/settings?billing=success&session_id={CHECKOUT_SESSION_ID}"),
-      cancel_url: buildAppUrl("/settings?billing=cancel"),
-      metadata: {
-        companyId: context.company.id,
-        planCode: plan.code
-      },
-      subscription_data: {
-        metadata: {
-          companyId: context.company.id,
-          planCode: plan.code
-        }
-      }
-    });
-
-    if (!session.url) {
-      return NextResponse.json({ error: "Stripe did not return a checkout URL." }, { status: 502 });
-    }
-
-    return NextResponse.redirect(session.url, 303);
+    return NextResponse.redirect(result.data.url, 303);
   } catch (error) {
     if (error instanceof AuthRequiredError) {
       return NextResponse.json({ error: error.message }, { status: 401 });

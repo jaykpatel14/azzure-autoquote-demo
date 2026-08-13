@@ -1,35 +1,11 @@
 import { loadEnvConfig } from "@next/env";
 import { PrismaClient } from "@prisma/client";
 import { randomBytes, scryptSync } from "node:crypto";
+import { BASE_PLAN_DEFINITIONS } from "@/lib/subscription-plans";
 
 loadEnvConfig(process.cwd(), true);
 
 const prisma = new PrismaClient();
-
-const BASE_PLAN_DEFINITIONS = [
-  {
-    id: "plan_starter",
-    code: "starter",
-    name: "Starter",
-    monthlyPriceCents: 4900,
-    monthlyLimit: 100
-  },
-  {
-    id: "plan_professional",
-    code: "professional",
-    name: "Professional",
-    monthlyPriceCents: 9900,
-    monthlyLimit: 500
-  },
-  {
-    id: "plan_enterprise",
-    code: "enterprise",
-    name: "Enterprise",
-    monthlyPriceCents: 19900,
-    monthlyLimit: 2500,
-    isConfigurable: true
-  }
-] as const;
 
 function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -156,10 +132,10 @@ async function main() {
     create: {
       companyId: company.id,
       userId: owner.id,
-      role: "CUSTOMER"
+      role: "OWNER"
     },
     update: {
-      role: "CUSTOMER"
+      role: "OWNER"
     }
   });
 

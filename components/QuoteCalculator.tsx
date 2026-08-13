@@ -135,6 +135,7 @@ export default function QuoteCalculator({
     () => Object.values(customerPricingOverlay).some((value) => Number(value) > 0),
     [customerPricingOverlay]
   );
+  const publicQuoteUrl = savedQuote ? `/q/${savedQuote.id}` : "";
   const centerStoneDisabled = quoteMode !== "normal";
   const sideStoneDisabled = quoteMode === "without-center-and-side";
 
@@ -338,6 +339,23 @@ export default function QuoteCalculator({
     { label: "Review", state: phase === "ready" || phase === "saving" || phase === "saved" ? "active" : "idle" },
     { label: "Save", state: phase === "saving" || phase === "saved" ? "active" : "idle" }
   ] as const;
+  const analysisRows = [
+    {
+      label: "Image upload",
+      value: uploadProgress > 0 ? `${uploadProgress}% complete` : "Waiting for an image",
+      state: phase === "uploading" || uploadProgress === 100 ? "done" : "pending"
+    },
+    {
+      label: "Moderation pass",
+      value: phase === "processing" || phase === "ready" || phase === "saving" ? "Running" : "Queued",
+      state: phase === "processing" || phase === "ready" || phase === "saving" ? "pending" : "idle"
+    },
+    {
+      label: "Estimate review",
+      value: phase === "ready" || phase === "saving" || phase === "saved" ? "Ready" : "Waiting",
+      state: phase === "ready" || phase === "saving" || phase === "saved" ? "done" : "idle"
+    }
+  ] as const;
 
   return (
     <div className="estimateWorkspace">
@@ -388,27 +406,44 @@ export default function QuoteCalculator({
             )}
           </label>
 
-          <div className="progressShell" aria-live="polite">
-            <div className="progressHeader">
-              <strong>Image upload progress</strong>
-              <span className="muted small">{uploadProgress}%</span>
-            </div>
-            <div className="progressTrack" aria-hidden="true">
-              <div
-                className={`progressFill ${phase === "processing" ? "isPulsing" : ""}`}
-                style={{ width: `${uploadProgress}%` }}
-              />
-            </div>
-            <p className="muted small">{progressCopy}</p>
-          </div>
-
-          <div className="stepper" aria-label="AI processing states">
-            {processingSteps.map((step) => (
-              <div key={step.label} className={`step ${step.state}`}>
-                <span className="stepDot" aria-hidden="true" />
-                <span>{step.label}</span>
+          <div className="analysisPanel" aria-live="polite">
+            <div className="sectionHeader">
+              <div>
+                <h3>Analysis pipeline</h3>
+                <p className="muted">The image moves through moderation, extraction, and review before it is saved.</p>
               </div>
-            ))}
+              <span className="eyebrow">{phase === "saved" ? "Completed" : phase === "error" ? "Needs attention" : "Live"}</span>
+            </div>
+            <div className="analysisList">
+              {analysisRows.map((row) => (
+                <div key={row.label} className={`analysisRow is${row.state[0].toUpperCase()}${row.state.slice(1)}`}>
+                  <span className="analysisDot" aria-hidden="true" />
+                  <span>{row.label}</span>
+                  <span className="analysisValue">{row.value}</span>
+                </div>
+              ))}
+            </div>
+            <div className="progressShell">
+              <div className="progressHeader">
+                <strong>Upload progress</strong>
+                <span className="muted small">{uploadProgress}%</span>
+              </div>
+              <div className="progressTrack" aria-hidden="true">
+                <div
+                  className={`progressFill ${phase === "processing" ? "isPulsing" : ""}`}
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p className="muted small">{progressCopy}</p>
+            </div>
+            <div className="stepper" aria-label="AI processing states">
+              {processingSteps.map((step, index) => (
+                <div key={step.label} className={`step ${step.state}`}>
+                  <span className="stepNumber">0{index + 1}</span>
+                  <span className="stepLabel">{step.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="fields">
@@ -639,6 +674,11 @@ export default function QuoteCalculator({
             {savedQuote ? (
               <a className="button secondary" href={`/api/quotes/${savedQuote.id}/pdf`} target="_blank" rel="noreferrer">
                 Download PDF
+              </a>
+            ) : null}
+            {savedQuote ? (
+              <a className="button secondary" href={publicQuoteUrl} target="_blank" rel="noreferrer">
+                Open public quote
               </a>
             ) : null}
             <button className="button secondary" onClick={() => window.print()}>

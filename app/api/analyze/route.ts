@@ -3,7 +3,12 @@ import type { Prisma } from "@prisma/client";
 import { ZodError, z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { METAL_TYPES } from "@/lib/pricing";
-import { requireCompanyContext, AuthRequiredError, CompanyAccessError } from "@/lib/company";
+import {
+  requireCompanyContext,
+  AuthRequiredError,
+  CompanyAccessError,
+  canCreateQuotes
+} from "@/lib/company";
 import { assertBillableSubscription, BillingAccessError } from "@/lib/billing";
 import {
   releaseMonthlyUsage,
@@ -19,6 +24,10 @@ import {
 import { AttemptFailedError, ModerationRejectedError, serializeError } from "@/lib/ai/errors";
 import type { JewelryAnalysis } from "@/lib/ai/schema";
 import { hasAllowedImageSignature } from "@/lib/security";
+import {
+  buildAnalysisImageStorageKey,
+  storeAnalysisImageInS3
+} from "@/lib/quote-pdf-s3";
 
 export const runtime = "nodejs";
 
@@ -32,6 +41,9 @@ export async function POST(request: Request) {
 
   try {
     const companyContext = await requireCompanyContext();
+    if (!canCreateQuotes(companyContext.membership?.role ?? "CUSTOMER")) {
+      throw new CompanyAccessError("You do not have permission to create estimates.");
+    }
     assertBillableSubscription(companyContext.company.subscription);
     const form = await request.formData();
     const image = form.get("image");
@@ -71,15 +83,38 @@ export async function POST(request: Request) {
         model: provider.model,
         modelVersion: provider.modelVersion,
         promptVersion: provider.promptVersion,
+        imageDataUrl: null,
         sourceImageMimeType: image.type,
         sourceImageSizeBytes: image.size,
-        imageDataUrl,
         selectedMetal,
         reviewCount,
         status: "PROCESSING"
       }
     });
     analysisId = analysis.id;
+
+    const analysisImageStorageKey = buildAnalysisImageStorageKey(
+      companyContext.company.id,
+      analysis.id,
+      image.type
+    );
+    const storedImage = await storeAnalysisImageInS3({
+      key: analysisImageStorageKey,
+      buffer: bytes,
+      contentType: image.type
+    });
+
+    await prisma.aiAnalysis.update({
+      where: { id: analysis.id },
+      data: storedImage
+        ? {
+            sourceImageStorageKey: storedImage.key,
+            imageDataUrl: null
+          }
+        : {
+            imageDataUrl
+          }
+    });
 
     const moderation = await runModerationCheck({
       provider,

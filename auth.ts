@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
 import { logAuditEvent } from "@/lib/audit";
 import { requireEnv } from "@/lib/env";
+import { isPrismaConnectionError } from "@/lib/prisma-errors";
 
 const credentialsSchema = z.object({
   email: z.string().email().transform((value) => value.toLowerCase()),
@@ -45,17 +46,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = credentialsSchema.safeParse(rawCredentials);
         if (!parsed.success) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: parsed.data.email },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            passwordHash: true,
-            emailVerifiedAt: true,
-            sessionVersion: true
+        let user;
+        try {
+          user = await prisma.user.findUnique({
+            where: { email: parsed.data.email },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              passwordHash: true,
+              emailVerifiedAt: true,
+              sessionVersion: true
+            }
+          });
+        } catch (error) {
+          if (isPrismaConnectionError(error)) {
+            console.warn("Database is unavailable while authenticating credentials.");
+            return null;
           }
-        });
+
+          throw error;
+        }
 
         if (!user?.passwordHash || !user.emailVerifiedAt) {
           return null;
@@ -96,10 +107,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   events: {
     async signIn({ user }) {
-      const membership = await prisma.membership.findFirst({
-        where: { userId: user.id },
-        select: { companyId: true }
-      });
+      let membership;
+      try {
+        membership = await prisma.membership.findFirst({
+          where: { userId: user.id },
+          select: { companyId: true }
+        });
+      } catch (error) {
+        if (isPrismaConnectionError(error)) {
+          return;
+        }
+
+        throw error;
+      }
 
       if (!membership) return;
 
@@ -114,10 +134,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const token = "token" in event ? event.token : null;
       if (!token?.sub) return;
 
-      const membership = await prisma.membership.findFirst({
-        where: { userId: token.sub },
-        select: { companyId: true }
-      });
+      let membership;
+      try {
+        membership = await prisma.membership.findFirst({
+          where: { userId: token.sub },
+          select: { companyId: true }
+        });
+      } catch (error) {
+        if (isPrismaConnectionError(error)) {
+          return;
+        }
+
+        throw error;
+      }
 
       if (!membership) return;
 

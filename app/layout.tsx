@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Cormorant_Garamond, Inter, JetBrains_Mono } from "next/font/google";
+import "@/src/styles/design-tokens.css";
 import "./globals.css";
+
+const cormorantGaramond = Cormorant_Garamond({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["300", "400", "600"],
+  variable: "--font-cormorant"
+});
 
 const inter = Inter({
   subsets: ["latin"],
@@ -11,7 +19,7 @@ const inter = Inter({
 const jetBrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-mono"
+  variable: "--font-mono-face"
 });
 
 export const metadata: Metadata = {
@@ -22,7 +30,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${jetBrainsMono.variable}`}>{children}</body>
+      <body className={`${cormorantGaramond.variable} ${inter.variable} ${jetBrainsMono.variable}`}>
+        {children}
+      </body>
     </html>
   );
 }

@@ -8,6 +8,10 @@ datasource db {
 }
 
 enum MembershipRole {
+  OWNER
+  ADMIN
+  ESTIMATOR
+  VIEWER
   CUSTOMER
 }
 
@@ -30,6 +34,8 @@ model Company {
   name            String
   slug            String           @unique
   logoUrl         String?
+  websiteUrl      String?
+  aboutUs         String?
   quoteSequence   Int              @default(0)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -103,6 +109,15 @@ model Subscription {
   cancelAtPeriodEnd    Boolean            @default(false)
   overageEnabled       Boolean            @default(false)
   overagePriceCents    Int?
+  trialStartedAt       DateTime?
+  trialEndsAt          DateTime?
+  trialQuoteCap        Int                @default(25)
+  trialQuotesUsed      Int                @default(0)
+  pendingPlanId        String?
+  pendingPlanActiveAt  DateTime?
+  onboardingComplete   Boolean            @default(false)
+  reminderSentAt10     DateTime?
+  reminderSentAt13     DateTime?
   currentPeriodStart   DateTime
   currentPeriodEnd     DateTime
   company              Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -144,6 +159,7 @@ model AiAnalysis {
   modelVersion          String         @default("gpt-5-mini")
   promptVersion         String         @default("jewelry-analysis-v1")
   imageDataUrl          String?
+  sourceImageStorageKey String?
   sourceImageMimeType   String?
   sourceImageSizeBytes  Int?
   status                AnalysisStatus @default(PENDING)
@@ -213,6 +229,7 @@ model Quote {
   sideDiamondCarats     Decimal
   sideDiamondQuantity   Int
   estimatedPrice        Decimal
+  isOverage             Boolean     @default(false)
   pdfStorageKey         String?     @unique
   pdfStoredAt           DateTime?
   pdfContentType        String?     @default("application/pdf")

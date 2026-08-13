@@ -1,10 +1,14 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { calculateQuote, convertMetalWeight } from "@/lib/pricing";
 import { resolveMetalPricing } from "@/lib/metal-pricing";
+import { prisma } from "@/lib/prisma";
 
-afterEach(() => {
+afterEach(async () => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
+  await prisma.appSetting.deleteMany({
+    where: { key: "METALS_LIVE_PRICING_CACHE_V1" }
+  });
 });
 
 describe("pricing", () => {

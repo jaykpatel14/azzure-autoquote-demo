@@ -1,4 +1,5 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import type { Readable } from "node:stream";
 
 type QuotePdfStorageInput = {
   key: string;
@@ -31,6 +32,24 @@ function getS3Client() {
 export function buildQuotePdfStorageKey(companyId: string, quoteNumber: string) {
   const safeQuoteNumber = quoteNumber.replace(/[^a-zA-Z0-9._-]+/g, "_");
   return `quotes/${companyId}/${safeQuoteNumber}.pdf`;
+}
+
+function getFileExtensionForMimeType(mimeType: string) {
+  switch (mimeType) {
+    case "image/jpeg":
+      return "jpg";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+    default:
+      return "bin";
+  }
+}
+
+export function buildAnalysisImageStorageKey(companyId: string, analysisId: string, mimeType: string) {
+  const safeAnalysisId = analysisId.replace(/[^a-zA-Z0-9._-]+/g, "_");
+  return `analysis/${companyId}/${safeAnalysisId}.${getFileExtensionForMimeType(mimeType)}`;
 }
 
 export async function storeQuotePdfInS3({ key, buffer, contentType = "application/pdf" }: QuotePdfStorageInput) {
@@ -71,4 +90,71 @@ export async function loadQuotePdfFromS3(key: string) {
 
   const bytes = await body.transformToByteArray();
   return Buffer.from(bytes);
+}
+
+async function streamToBuffer(body: Readable | { transformToByteArray: () => Promise<Uint8Array> } | undefined) {
+  if (!body || typeof body !== "object") {
+    return null;
+  }
+
+  if ("transformToByteArray" in body) {
+    const bytes = await body.transformToByteArray();
+    return Buffer.from(bytes);
+  }
+
+  const chunks: Buffer[] = [];
+  for await (const chunk of body as Readable) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}
+
+export async function storeAnalysisImageInS3({
+  key,
+  buffer,
+  contentType
+}: QuotePdfStorageInput) {
+  const bucket = getQuotePdfBucketName();
+  if (!bucket) {
+    return null;
+  }
+
+  await getS3Client().send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType
+    })
+  );
+
+  return { bucket, key };
+}
+
+export async function loadAnalysisImageFromS3(key: string) {
+  const bucket = getQuotePdfBucketName();
+  if (!bucket) {
+    return null;
+  }
+
+  const response = await getS3Client().send(
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: key
+    })
+  );
+
+  return streamToBuffer(response.Body as never);
+}
+
+export async function loadAnalysisImageDataUrlFromS3(params: {
+  key: string;
+  mimeType: string;
+}) {
+  const buffer = await loadAnalysisImageFromS3(params.key);
+  if (!buffer) {
+    return null;
+  }
+
+  return `data:${params.mimeType};base64,${buffer.toString("base64")}`;
 }

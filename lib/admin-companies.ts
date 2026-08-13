@@ -157,7 +157,7 @@ export async function createAdminCompanyWithMember(
     data: {
       companyId: company.id,
       userId: user.id,
-      role: "CUSTOMER"
+      role: "OWNER"
     }
   });
 
@@ -184,7 +184,7 @@ export async function createAdminCompanyWithMember(
       targetId: user.id,
       metadata: {
         email: input.email.trim().toLowerCase(),
-        role: "CUSTOMER",
+        role: "OWNER",
         userCreated: user.created
       }
     }

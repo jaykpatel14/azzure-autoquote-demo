@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Quote } from "@prisma/client";
+import TrialBanner from "@/components/trial-banner";
+import TrialSidebarStatus from "@/components/trial-sidebar-status";
 import { prisma } from "@/lib/prisma";
 import WorkspaceShell from "@/components/workspace-shell";
+import { getTrialDaysRemaining, getTrialQuotesRemaining } from "@/lib/billing";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 
@@ -12,6 +15,10 @@ export default async function QuotesPage() {
   const context = await getAuthenticatedCompanyContext();
   if (!context) {
     redirect("/signin");
+  }
+
+  if (context.company.subscription && !context.company.subscription.onboardingComplete) {
+    redirect("/onboarding");
   }
 
   const quotes = await prisma.quote.findMany({
@@ -25,6 +32,26 @@ export default async function QuotesPage() {
       title="Quote history"
       description="Review saved quotes for this company. Internal cost inputs remain inside the workspace."
       navItems={getWorkspaceNav("/quotes")}
+      banner={
+        context.company.subscription?.status === "TRIALING" ? (
+          <TrialBanner
+            companyId={context.company.id}
+            daysRemaining={getTrialDaysRemaining(context.company.subscription) ?? 0}
+            quoteCap={context.company.subscription.trialQuoteCap}
+            quotesRemaining={getTrialQuotesRemaining(context.company.subscription) ?? 0}
+          />
+        ) : null
+      }
+      sidebarExtra={
+        context.company.subscription?.status === "TRIALING" ? (
+          <TrialSidebarStatus
+            daysRemaining={getTrialDaysRemaining(context.company.subscription) ?? 0}
+            quoteCap={context.company.subscription.trialQuoteCap}
+            quotesRemaining={getTrialQuotesRemaining(context.company.subscription) ?? 0}
+            urgent={(getTrialDaysRemaining(context.company.subscription) ?? 0) <= 3}
+          />
+        ) : null
+      }
       actions={
         <Link className="button primary" href="/quotes/new">
           New estimate
@@ -71,6 +98,7 @@ export default async function QuotesPage() {
                   <th scope="col">Metal</th>
                   <th scope="col">Approved price</th>
                   <th scope="col">Created</th>
+                  <th scope="col">Public</th>
                   <th scope="col">PDF</th>
                 </tr>
               </thead>
@@ -88,6 +116,11 @@ export default async function QuotesPage() {
                       )}
                     </td>
                     <td>{quote.createdAt.toLocaleDateString()}</td>
+                    <td>
+                      <Link className="textLink" href={`/q/${quote.id}`} target="_blank">
+                        View quote
+                      </Link>
+                    </td>
                     <td>
                       <Link className="textLink" href={`/api/quotes/${quote.id}/pdf`} target="_blank">
                         Download PDF

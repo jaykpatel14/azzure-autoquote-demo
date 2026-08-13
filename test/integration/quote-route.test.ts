@@ -82,7 +82,7 @@ async function createCompanyFixture(
       memberships: {
         create: {
           companyId,
-          role: "OWNER"
+          role: "CUSTOMER"
         }
       }
     }

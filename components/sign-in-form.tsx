@@ -49,38 +49,62 @@ export default function SignInForm({
   return (
     <div className="authShell">
       <section className="authCard">
-        <h1 className="heading">Sign in</h1>
-        <p className="muted">Use your email and password to access your company workspace.</p>
-        <form className="authForm" onSubmit={handleSubmit}>
-          <label className="field">
-            <span>Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </label>
-          <label className="field">
-            <span>Password</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </label>
-          <button className="button primary" disabled={loading} type="submit">
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
-        {status && <div className="status">{status}</div>}
-        <p className="muted">
-          New here? <Link href="/signup">Create an account</Link>
-        </p>
-        <p className="muted">
-          Forgot your password? <Link href="/forgot-password">Reset it here</Link>
-        </p>
+        <div className="authGrid">
+          <aside className="authAside">
+            <p className="eyebrow">Azzure AutoQuote</p>
+            <h1 className="heading">Sign in</h1>
+            <p className="muted">
+              Use your email and password to access the private workspace, quote history, and billing controls.
+            </p>
+            <div className="stack" style={{ marginTop: "1.5rem" }}>
+              <div className="detailCard">
+                <span>Workspace</span>
+                <strong>Luxury quote operations</strong>
+                <p className="muted small">Everything stays tenant-aware, so customer data and pricing stay scoped to your shop.</p>
+              </div>
+              <div className="detailCard">
+                <span>After sign-in</span>
+                <strong>Analyze, approve, and share</strong>
+                <p className="muted small">Move from image upload to approved price without switching tools.</p>
+              </div>
+            </div>
+          </aside>
+
+          <div>
+            <h2 className="heading">Welcome back</h2>
+            <p className="muted">Enter your workspace credentials to continue.</p>
+            <form className="authForm" onSubmit={handleSubmit}>
+              <label className="field">
+                <span>Email</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>Password</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+              </label>
+              <button className="button primary" disabled={loading} type="submit">
+                {loading ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
+            {status && <div className="status">{status}</div>}
+            <p className="muted">
+              New here? <Link href="/signup">Create an account</Link>
+            </p>
+            <p className="muted">
+              Forgot your password? <Link href="/forgot-password">Reset it here</Link>
+            </p>
+          </div>
+        </div>
       </section>
     </div>
   );

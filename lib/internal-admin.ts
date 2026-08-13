@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { isPrismaConnectionError } from "@/lib/prisma-errors";
 
 function parseAdminEmails() {
   const allowedEmails = new Set(
@@ -37,15 +38,25 @@ export async function getInternalAdminContext() {
     return null;
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      sessionVersion: true
+  let user;
+  try {
+    user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        sessionVersion: true
+      }
+    });
+  } catch (error) {
+    if (isPrismaConnectionError(error)) {
+      console.warn("Database is unavailable while loading the internal admin context.");
+      return null;
     }
-  });
+
+    throw error;
+  }
 
   if (!user || user.sessionVersion !== session?.user?.sessionVersion) {
     return null;

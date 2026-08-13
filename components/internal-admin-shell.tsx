@@ -28,10 +28,8 @@ export default function InternalAdminShell({
           <div className="brandMark">A</div>
           <div>
             <p className="eyebrow">Azzure Internal</p>
-            <strong>Operations console</strong>
-            <p className="muted small">
-              Internal support, billing recovery, and key rotation for the Azzure team.
-            </p>
+            <strong className="brand">Operations console</strong>
+            <p className="muted small">Internal support, billing recovery, and key rotation for the Azzure team.</p>
           </div>
         </div>
 

@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { ZodError, z } from "zod";
-import { prisma } from "@/lib/prisma";
-import { METAL_TYPES, calculateQuote, mergePricingProfiles, type PricingProfileInput } from "@/lib/pricing";
-import { allocateQuoteNumber } from "@/lib/quote-number";
-import { assertCompanyOwnership } from "@/lib/tenant";
-import { requireCompanyContext, AuthRequiredError, CompanyAccessError } from "@/lib/company";
+import {
+  METAL_TYPES,
+  calculateQuote,
+  mergePricingProfiles,
+  type PricingProfileInput
+} from "@/lib/pricing";
+import {
+  requireCompanyContext,
+  AuthRequiredError,
+  CompanyAccessError,
+  canCreateQuotes
+} from "@/lib/company";
 import { normalizePricingProfile, resolveMetalPricing } from "@/lib/metal-pricing";
+import { createQuote } from "@/src/services/quotes";
 
 const quoteModes = ["normal", "without-center", "without-center-and-side"] as const;
 
@@ -38,26 +45,11 @@ const quoteSchema = z.object({
 export async function POST(request: Request) {
   try {
     const companyContext = await requireCompanyContext();
+    if (!canCreateQuotes(companyContext.membership?.role ?? "CUSTOMER")) {
+      throw new CompanyAccessError("You do not have permission to create quotes.");
+    }
     const input = quoteSchema.parse(await request.json());
     const company = companyContext.company;
-
-    const analysis =
-      input.analysisId === undefined
-        ? null
-        : await prisma.aiAnalysis.findFirst({
-            where: { id: input.analysisId, companyId: company.id }
-          });
-
-    if (input.analysisId && !analysis) {
-      return NextResponse.json(
-        { error: "Selected estimate does not belong to this company." },
-        { status: 404 }
-      );
-    }
-
-    if (analysis) {
-      assertCompanyOwnership(analysis, company.id, "Selected estimate");
-    }
 
     const pricingProfile = company.pricingProfile
       ? normalizePricingProfile({
@@ -91,12 +83,29 @@ export async function POST(request: Request) {
       effectivePricingProfile
     );
 
-    const quote = await createQuoteRecord(company.id, analysis?.id, adjustedInput, pricing.estimatedFinalPrice);
+    const quoteResult = await createQuote({
+      companyId: company.id,
+      analysisId: input.analysisId,
+      customerName: adjustedInput.customerName,
+      metalType: adjustedInput.metalType,
+      metalWeightGrams: adjustedInput.metalWeightGrams,
+      centerDiamondCarats: adjustedInput.centerDiamondCarats,
+      sideDiamondCarats: adjustedInput.sideDiamondCarats,
+      sideDiamondQuantity: adjustedInput.sideDiamondQuantity,
+      estimatedPrice: pricing.estimatedFinalPrice
+    });
+
+    if ("error" in quoteResult) {
+      return NextResponse.json(
+        { error: quoteResult.error.userMessage },
+        { status: quoteResult.error.statusCode }
+      );
+    }
 
     return NextResponse.json({
-      id: quote.id,
-      quoteNumber: quote.quoteNumber,
-      estimatedPrice: Number(quote.estimatedPrice),
+      id: quoteResult.data.id,
+      quoteNumber: quoteResult.data.quoteNumber,
+      estimatedPrice: Number(quoteResult.data.estimatedPrice),
       pricingSource: livePricing.source
     });
   } catch (error) {
@@ -120,56 +129,6 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-}
-
-async function createQuoteRecord(
-  companyId: string,
-  analysisId: string | undefined,
-  input: {
-    customerName?: string | null;
-    metalType: (typeof METAL_TYPES)[number];
-    metalWeightGrams: number;
-    centerDiamondCarats: number;
-    sideDiamondCarats: number;
-    sideDiamondQuantity: number;
-  },
-  estimatedPrice: number
-) {
-  const maxAttempts = 3;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    try {
-      return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const quoteNumber = await allocateQuoteNumber(tx, companyId);
-
-        return tx.quote.create({
-          data: {
-            companyId,
-            quoteNumber,
-            analysisId,
-            customerName: input.customerName || null,
-            metalType: input.metalType,
-            metalWeightGrams: input.metalWeightGrams,
-            centerDiamondCarats: input.centerDiamondCarats,
-            sideDiamondCarats: input.sideDiamondCarats,
-            sideDiamondQuantity: input.sideDiamondQuantity,
-            estimatedPrice
-          }
-        });
-      });
-    } catch (error) {
-      const isUniqueQuoteNumberError =
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002" &&
-        (error.meta?.target as string[] | string | undefined)?.toString().includes("companyId,quoteNumber");
-
-      if (!isUniqueQuoteNumberError || attempt === maxAttempts) {
-        throw error;
-      }
-    }
-  }
-
-  throw new Error("Unable to save quote.");
 }
 
 function applyQuoteMode(input: z.infer<typeof quoteSchema>) {
