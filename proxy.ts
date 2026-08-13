@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getAppOrigin, getClientIp, isSameOriginRequest } from "@/lib/security";
 
@@ -29,8 +30,42 @@ function getRateLimitConfig(pathname: string) {
   return rateLimits.find((entry) => pathname.startsWith(entry.prefix));
 }
 
-export function proxy(request: NextRequest) {
+async function applyAdminAccessControl(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isAdminRoute = pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
+  if (!isAdminRoute) {
+    return null;
+  }
+
+  const session = await auth();
+  if (!session) {
+    if (pathname.startsWith("/api/admin")) {
+      return withSecurityHeaders(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+    }
+
+    const loginUrl = new URL("/signin", request.nextUrl.origin);
+    loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+    return withSecurityHeaders(NextResponse.redirect(loginUrl));
+  }
+
+  if (session.user?.role !== "AZZURE_ADMIN") {
+    if (pathname.startsWith("/api/admin")) {
+      return withSecurityHeaders(NextResponse.json({ error: "Forbidden" }, { status: 403 }));
+    }
+
+    return withSecurityHeaders(NextResponse.redirect(new URL("/", request.nextUrl.origin)));
+  }
+
+  return null;
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  const adminAccessResponse = await applyAdminAccessControl(request);
+  if (adminAccessResponse) {
+    return adminAccessResponse;
+  }
 
   if (
     request.method !== "GET" &&
