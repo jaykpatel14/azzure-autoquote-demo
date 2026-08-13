@@ -34,7 +34,7 @@ export default function UpgradeModal({
               Current plan: {currentPlanName}. Changes are applied immediately for upgrades and at the period end for downgrades.
             </p>
           </div>
-          <Link className="button secondary" href="/settings">
+          <Link className="button secondary" href="/settings/billing">
             Close
           </Link>
         </div>
@@ -67,7 +67,7 @@ export default function UpgradeModal({
             <button className="button primary button--lg" type="submit">
               Apply plan change
             </button>
-            <Link className="button secondary button--lg" href="/settings">
+            <Link className="button secondary button--lg" href="/settings/billing">
               Back to billing
             </Link>
           </div>

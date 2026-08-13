@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       });
 
       if ("error" in checkout) {
-        return NextResponse.json({ error: checkout.error.message }, { status: 409 });
+        return NextResponse.json({ error: checkout.error.userMessage }, { status: 409 });
       }
 
       return NextResponse.redirect(checkout.data.url, 303);
@@ -52,14 +52,15 @@ export async function POST(request: Request) {
       });
 
       if ("error" in checkout) {
-        return NextResponse.json({ error: checkout.error.message }, { status: 409 });
+        return NextResponse.json({ error: checkout.error.userMessage }, { status: 409 });
       }
 
       return NextResponse.redirect(checkout.data.url, 303);
     }
 
     const currentPlan = subscription.plan;
-    const targetRank = getPlanRank(targetPlan.code);
+    const targetPlanCode = input.planCode;
+    const targetRank = getPlanRank(targetPlanCode);
     const currentRank = getPlanRank(currentPlan.code);
 
     const stripeSubscriptionId = subscription.stripeSubscriptionId;
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Stripe subscription is not connected." }, { status: 409 });
     }
 
-    const priceId = PLAN_STRIPE_PRICE_IDS[targetPlan.code];
+    const priceId = PLAN_STRIPE_PRICE_IDS[targetPlanCode];
     if (!priceId) {
       return NextResponse.json(
         { error: "This plan is missing a Stripe price id. Configure the env var first." },
@@ -115,10 +116,17 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.redirect(new URL("/settings?billing=updated", request.url), 303);
+    return NextResponse.redirect(new URL("/settings/billing?billing=updated", request.url), 303);
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to change subscription." },
+      {
+        error:
+          error && typeof error === "object" && "userMessage" in error
+            ? String((error as { userMessage: string }).userMessage)
+            : error instanceof Error
+              ? error.message
+              : "Unable to change subscription."
+      },
       { status: 400 }
     );
   }

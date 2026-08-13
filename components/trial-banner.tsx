@@ -48,7 +48,7 @@ export default function TrialBanner({
         </p>
       </div>
       <div className="trialBannerActions">
-        <Link className="button primary button--sm" href="/settings?upgrade=1">
+        <Link className="button primary button--sm" href="/settings/billing?upgrade=1">
           Upgrade now
         </Link>
         <button className="button secondary button--sm" type="button" onClick={dismiss}>

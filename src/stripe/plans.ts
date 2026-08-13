@@ -8,7 +8,7 @@ export const PLAN_STRIPE_PRICE_IDS = {
 
 export { PLAN_FEATURES };
 
-export function getPlanRank(planCode: keyof typeof PLAN_STRIPE_PRICE_IDS) {
+export function getPlanRank(planCode: string) {
   switch (planCode) {
     case "starter":
       return 0;
@@ -16,5 +16,7 @@ export function getPlanRank(planCode: keyof typeof PLAN_STRIPE_PRICE_IDS) {
       return 1;
     case "enterprise":
       return 2;
+    default:
+      return 0;
   }
 }

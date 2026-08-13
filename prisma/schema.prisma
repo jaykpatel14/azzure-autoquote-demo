@@ -29,6 +29,14 @@ enum AnalysisStatus {
   FAILED
 }
 
+enum OrderStatus {
+  SUBMITTED
+  IN_REVIEW
+  IN_PRODUCTION
+  COMPLETED
+  CANCELED
+}
+
 model Company {
   id              String           @id @default(cuid())
   name            String
@@ -44,6 +52,7 @@ model Company {
   pricingProfile  PricingProfile?
   analyses        AiAnalysis[]
   quotes          Quote[]
+  orders          Order[]
   usagePeriods    UsagePeriod[]
   auditLogs       AuditLog[]
 }
@@ -62,6 +71,7 @@ model User {
   id           String       @id @default(cuid())
   email        String       @unique
   name         String?
+  avatarUrl    String?
   passwordHash String?
   emailVerifiedAt DateTime?
   sessionVersion Int       @default(0)
@@ -221,6 +231,7 @@ model Quote {
   id                    String      @id @default(cuid())
   companyId             String
   analysisId            String?     @unique
+  order                 Order?
   quoteNumber           String
   customerName          String?
   metalType             String
@@ -238,6 +249,25 @@ model Quote {
   analysis              AiAnalysis? @relation(fields: [analysisId], references: [id])
 
   @@unique([companyId, quoteNumber])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  companyId       String
+  quoteId         String      @unique
+  orderNumber     String      @unique
+  itemName        String
+  status          OrderStatus @default(SUBMITTED)
+  notes           String?
+  submittedAt     DateTime    @default(now())
+  reviewedAt      DateTime?
+  productionAt    DateTime?
+  completedAt     DateTime?
+  canceledAt      DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  quote           Quote       @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 }
 
 model EmailVerificationToken {

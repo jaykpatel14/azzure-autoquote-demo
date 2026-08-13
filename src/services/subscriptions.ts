@@ -132,8 +132,8 @@ export async function createCheckoutSession(params: {
       }
     ],
     allow_promotion_codes: true,
-    success_url: buildAppUrl("/settings?billing=success&session_id={CHECKOUT_SESSION_ID}"),
-    cancel_url: buildAppUrl("/settings?billing=cancel"),
+    success_url: buildAppUrl("/settings/billing?billing=success&session_id={CHECKOUT_SESSION_ID}"),
+    cancel_url: buildAppUrl("/settings/billing?billing=cancel"),
     metadata: {
       companyId: params.companyId,
       planCode: plan.code
@@ -180,7 +180,7 @@ export async function createBillingPortalSession(params: {
   const stripe = await getStripeClient();
   const session = await stripe.billingPortal.sessions.create({
     customer: company.subscription.stripeCustomerId,
-    return_url: buildAppUrl("/settings")
+    return_url: buildAppUrl("/settings/billing")
   });
 
   return { data: { url: session.url } };

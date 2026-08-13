@@ -85,6 +85,7 @@ export async function incrementUsage(companyId: string): Promise<AppResult<Usage
 export async function getUsageSummary(companyId: string): Promise<
   AppResult<{
     used: number;
+    reserved: number;
     limit: number;
     periodStart: Date;
     periodEnd: Date;
@@ -111,6 +112,7 @@ export async function getUsageSummary(companyId: string): Promise<
         take: 1,
         select: {
           used: true,
+          reserved: true,
           limit: true,
           periodStart: true,
           periodEnd: true
@@ -127,6 +129,7 @@ export async function getUsageSummary(companyId: string): Promise<
   return {
     data: {
       used: period.used,
+      reserved: period.reserved,
       limit: period.limit,
       periodStart: period.periodStart,
       periodEnd: period.periodEnd,
