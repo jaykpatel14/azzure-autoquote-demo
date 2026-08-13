@@ -45,5 +45,18 @@ services:
       timeout: 10s
       retries: 5
 
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    env_file:
+      - .env.proxmox
+    environment:
+      DATABASE_URL: postgresql://autoquote:autoquote@db:5432/autoquote?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   proxmox_autoquote_postgres:

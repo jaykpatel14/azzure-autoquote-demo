@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import QuoteRowActions from "@/components/quote-row-actions";
 import WorkspaceShell from "@/components/workspace-shell";
 import { StatusBadge } from "@/src/components/ui/StatusBadge";
+import { PlanGate } from "@/src/components/ui/PlanGate";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { deriveQuoteStatus, getQuotePublicUrl, getQuote } from "@/src/services/quotes";
@@ -168,21 +169,25 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
             <img className="quoteDetailImage" src={quote.analysis.imageDataUrl} alt="Quote source image" />
           ) : null}
 
-          {status === "sent" && context.company.subscription?.plan.code === "enterprise" && !quote.order ? (
-            <form className="stack" action="/api/orders" method="post" style={{ marginTop: "1rem" }}>
-              <input type="hidden" name="quoteId" value={quote.id} />
-              <label className="field">
-                <span>Item name</span>
-                <input name="itemName" defaultValue={`${quote.quoteNumber} manufacturing order`} />
-              </label>
-              <label className="field">
-                <span>Production notes</span>
-                <textarea name="notes" rows={3} placeholder="Optional notes for the production team." />
-              </label>
-              <button className="button primary" type="submit" style={{ width: "fit-content" }}>
-                Place order
-              </button>
-            </form>
+          {status === "sent" && !quote.order ? (
+            <div style={{ marginTop: "1rem" }}>
+              <PlanGate minimumPlan="enterprise" fallbackHref="/settings/billing?upgrade=1">
+                <form className="stack" action="/api/orders" method="post">
+                  <input type="hidden" name="quoteId" value={quote.id} />
+                  <label className="field">
+                    <span>Item name</span>
+                    <input name="itemName" defaultValue={`${quote.quoteNumber} manufacturing order`} />
+                  </label>
+                  <label className="field">
+                    <span>Production notes</span>
+                    <textarea name="notes" rows={3} placeholder="Optional notes for the production team." />
+                  </label>
+                  <button className="button primary" type="submit" style={{ width: "fit-content" }}>
+                    Place order
+                  </button>
+                </form>
+              </PlanGate>
+            </div>
           ) : null}
 
           {status === "ordered" && quote.order ? (

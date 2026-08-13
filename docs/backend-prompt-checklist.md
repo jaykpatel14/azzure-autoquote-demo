@@ -119,7 +119,7 @@ Status legend:
 - [x] Editable estimate form.
 - [x] Quote preview.
 - [x] Quote history.
-- [~] Customers.
+- [x] Customers.
 - [x] Pricing settings.
 - [x] Team management.
 - [x] Usage and billing.

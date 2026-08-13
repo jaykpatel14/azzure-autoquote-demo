@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import TrialBanner from "@/components/trial-banner";
 import TrialSidebarStatus from "@/components/trial-sidebar-status";
+import { PlanGate } from "@/src/components/ui/PlanGate";
 import WorkspaceShell from "@/components/workspace-shell";
 import { UsageBar } from "@/src/components/ui/UsageBar";
 import { StatusBadge } from "@/src/components/ui/StatusBadge";
@@ -288,32 +289,20 @@ export default async function HomePage() {
               <strong>Upload a photo to start</strong>
               <p className="muted small">Open the quote builder and start a new estimate.</p>
             </Link>
-            {currentPlanCode === "starter" ? (
-              <div className="detailCard isDisabled" title="Upgrade to share quotes">
-                <span>Share a Quote</span>
-                <strong>Send a quote to your customer</strong>
-                <p className="muted small">Upgrade to unlock shareable quote links.</p>
-              </div>
-            ) : (
+            <PlanGate minimumPlan="enterprise" fallbackHref="/settings/billing?upgrade=1">
               <Link className="detailCard" href="/quotes?status=sent">
                 <span>Share a Quote</span>
                 <strong>Send a quote to your customer</strong>
                 <p className="muted small">Open your sent quotes and copy the public link.</p>
               </Link>
-            )}
-            {currentPlanCode !== "enterprise" ? (
-              <div className="detailCard isDisabled" title="Enterprise only">
-                <span>Place an Order</span>
-                <strong>Submit for manufacturing</strong>
-                <p className="muted small">Manufacturing orders are reserved for Enterprise accounts.</p>
-              </div>
-            ) : (
+            </PlanGate>
+            <PlanGate minimumPlan="enterprise" fallbackHref="/settings/billing?upgrade=1">
               <Link className="detailCard" href="/orders">
                 <span>Place an Order</span>
                 <strong>Submit for manufacturing</strong>
                 <p className="muted small">Open the manufacturing workspace.</p>
               </Link>
-            )}
+            </PlanGate>
           </div>
         </article>
       </section>
