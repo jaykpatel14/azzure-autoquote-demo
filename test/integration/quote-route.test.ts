@@ -117,7 +117,8 @@ function mockSession(companyFixture: CompanyFixture, sessionVersion = 0): Sessio
       name: "Test Owner",
       email: companyFixture.email,
       image: null,
-      sessionVersion
+      sessionVersion,
+      role: "CUSTOMER"
     },
     expires: new Date(Date.now() + 60 * 60 * 1000).toISOString()
   };

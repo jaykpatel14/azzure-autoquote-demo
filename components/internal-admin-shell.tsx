@@ -8,6 +8,7 @@ type InternalAdminShellProps = {
   description?: string;
   navItems: InternalAdminNavItem[];
   actions?: ReactNode;
+  adminName?: string;
   children: ReactNode;
 };
 
@@ -16,6 +17,7 @@ export default function InternalAdminShell({
   description,
   navItems,
   actions,
+  adminName,
   children
 }: InternalAdminShellProps) {
   return (
@@ -23,13 +25,16 @@ export default function InternalAdminShell({
       <a className="skipLink" href="#content">
         Skip to content
       </a>
-      <aside className="workspaceSidebar">
+      <aside className="workspaceSidebar workspaceSidebar--admin">
         <div className="brandBlock">
           <div className="brandMark">A</div>
           <div>
             <p className="eyebrow">Azzure Internal</p>
             <strong className="brand">Operations console</strong>
-            <p className="muted small">Internal support, billing recovery, and key rotation for the Azzure team.</p>
+            <p className="adminBadge">ADMIN</p>
+            <p className="muted small">
+              Internal support, billing recovery, and key rotation for the Azzure team.
+            </p>
           </div>
         </div>
 
@@ -47,14 +52,26 @@ export default function InternalAdminShell({
         </nav>
 
         <section className="sidebarPanel sidebarFooter" aria-label="Admin session actions">
-          <p className="muted small">
-            Only the allowlisted Azzure team can access this console.
-          </p>
+          <p className="muted small">Only the allowlisted Azzure team can access this console.</p>
           <SignOutButton />
         </section>
       </aside>
 
-      <main className="workspaceMain" id="content">
+      <main className="workspaceMain workspaceMain--admin" id="content">
+        <header className="adminTopbar">
+          <div className="adminTopbarIdentity">
+            <span className="adminTopbarLabel">ADMIN</span>
+            <span className="adminTopbarDivider" aria-hidden="true" />
+            <span className="adminTopbarTitle">Azzure AutoQuote</span>
+          </div>
+          <div className="adminTopbarActions">
+            {adminName ? <span className="adminTopbarUser">{adminName}</span> : null}
+            <Link className="textLink" href="/">
+              Exit admin
+            </Link>
+          </div>
+        </header>
+
         <header className="pageHero">
           <div>
             <p className="eyebrow">Azzure team</p>

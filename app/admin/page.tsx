@@ -1,11 +1,47 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
-import { prisma } from "@/lib/prisma";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getAdminOverviewData } from "@/src/services/admin-overview";
 
 export const dynamic = "force-dynamic";
+
+function formatRelativeTime(date: Date) {
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.round(diffMs / (1000 * 60));
+  const diffHours = Math.round(diffMinutes / 60);
+  const diffDays = Math.round(diffHours / 24);
+
+  if (diffMinutes < 60) return `${Math.max(1, diffMinutes)}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 30) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
+
+function toneClass(tone: "success" | "warning" | "error" | "info") {
+  switch (tone) {
+    case "success":
+      return "adminTone adminTone--success";
+    case "warning":
+      return "adminTone adminTone--warning";
+    case "error":
+      return "adminTone adminTone--error";
+    default:
+      return "adminTone adminTone--info";
+  }
+}
+
+function healthToneClass(state: "operational" | "degraded" | "down") {
+  switch (state) {
+    case "operational":
+      return "adminTone adminTone--success";
+    case "degraded":
+      return "adminTone adminTone--warning";
+    case "down":
+      return "adminTone adminTone--error";
+  }
+}
 
 export default async function AdminDashboardPage() {
   const context = await getInternalAdminContext();
@@ -13,129 +49,112 @@ export default async function AdminDashboardPage() {
     redirect("/signin");
   }
 
-  const [companies, failedWebhookEvents, companyCount, subscriptionCount, pastDueCount, quoteCount] =
-    await Promise.all([
-    prisma.company.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 25,
-      include: {
-        subscription: {
-          include: { plan: true }
-        },
-        quotes: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { quoteNumber: true, estimatedPrice: true, createdAt: true }
-        },
-        _count: {
-          select: {
-            quotes: true,
-            memberships: true
-          }
-        }
-      }
-    }),
-    prisma.stripeWebhookEvent.findMany({
-      where: { errorMessage: { not: null } },
-      orderBy: { createdAt: "desc" },
-      take: 5
-    }),
-    prisma.company.count(),
-    prisma.subscription.count(),
-    prisma.subscription.count({ where: { status: "PAST_DUE" } }),
-    prisma.quote.count()
-  ]);
+  const overview = await getAdminOverviewData();
 
   return (
     <InternalAdminShell
       title="Operations dashboard"
-      description="Support the Azzure platform, inspect customer billing health, and rotate shared API keys."
+      description="Monitor platform health, live revenue, and the most important events across all tenants."
       navItems={getInternalAdminNav("/admin")}
+      adminName={context.user.name || context.user.email}
       actions={
         <>
-          <Link className="button secondary" href="/admin/billing">
-            Billing
+          <Link className="button secondary" href="/admin/tenants">
+            Tenants
           </Link>
-          <Link className="button primary" href="/admin/settings">
-            Manage settings
+          <Link className="button primary" href="/admin/platform/settings">
+            Platform settings
           </Link>
         </>
       }
     >
       <section className="statGrid">
-        <article className="statCard">
-          <span className="eyebrow">Companies</span>
-          <strong>{companyCount}</strong>
-          <p className="muted small">Customer tenants currently on the platform.</p>
-        </article>
-        <article className="statCard">
-          <span className="eyebrow">Active subscriptions</span>
-          <strong>{subscriptionCount}</strong>
-          <p className="muted small">Companies with billing records on file.</p>
-        </article>
-        <article className="statCard">
-          <span className="eyebrow">Past due</span>
-          <strong>{pastDueCount}</strong>
-          <p className="muted small">Accounts that need billing follow-up.</p>
-        </article>
-        <article className="statCard">
-          <span className="eyebrow">Quotes saved</span>
-          <strong>{quoteCount}</strong>
-          <p className="muted small">Aggregate quote volume across all companies.</p>
-        </article>
+        {overview.stats.map((stat) => (
+          <article className="statCard statCard--admin" key={stat.label}>
+            <span className="eyebrow">{stat.label}</span>
+            <strong>{stat.value}</strong>
+            <p className="muted small">{stat.subtext}</p>
+          </article>
+        ))}
       </section>
 
       <section className="grid twoUp">
         <article className="card">
           <div className="sectionHeader">
             <div>
-              <h2>Recent companies</h2>
-              <p className="muted">Use this list to jump into a customer account quickly.</p>
+              <h2>Platform activity feed</h2>
+              <p className="muted">The most recent events across tenants, billing, and system hooks.</p>
             </div>
-            <Link className="textLink" href="/admin/companies">
-              Full company list
-            </Link>
           </div>
-          <div className="compactList">
-            {companies.slice(0, 8).map((company) => (
-              <Link className="compactRow" href={`/admin/companies/${company.id}`} key={company.id}>
-                <div>
-                  <strong>{company.name}</strong>
-                  <p className="muted small">{company.slug}</p>
-                </div>
-                <div className="muted small" style={{ textAlign: "right" }}>
-                  <div>{company.subscription?.status.toLowerCase() ?? "no subscription"}</div>
-                  <div>{company._count.quotes} quotes</div>
-                </div>
-              </Link>
-            ))}
+          <div className="adminFeed" aria-label="Platform activity feed">
+            {overview.feed.length === 0 ? (
+              <div className="emptyState">
+                <strong>No activity yet</strong>
+                <p className="muted">Events will appear here as tenants sign up, quote, and place orders.</p>
+              </div>
+            ) : (
+              overview.feed.map((item) => (
+                <Link key={item.id} href={item.href ?? "/admin"} className="adminFeedItem">
+                  <span className={toneClass(item.tone)} aria-hidden="true" />
+                  <div>
+                    <div className="adminFeedMeta">
+                      <strong>{item.label}</strong>
+                      <span className="muted small">{formatRelativeTime(item.occurredAt)}</span>
+                    </div>
+                    <p className="muted">{item.description}</p>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </article>
 
         <article className="card">
           <div className="sectionHeader">
             <div>
-              <h2>Webhook issues</h2>
-              <p className="muted">Recent Stripe event failures that need review.</p>
+              <h2>Platform health</h2>
+              <p className="muted">Quick status checks for the services this console relies on.</p>
             </div>
           </div>
-          {failedWebhookEvents.length === 0 ? (
-            <div className="emptyState">
-              <strong>No failed webhooks</strong>
-              <p className="muted">Stripe events are processing cleanly right now.</p>
-            </div>
-          ) : (
-            <div className="stack">
-              {failedWebhookEvents.map((event) => (
-                <div className="detailCard" key={event.id}>
-                  <span>{event.eventType}</span>
-                  <strong>{event.eventId}</strong>
-                  <p className="muted small">{event.errorMessage}</p>
+          <div className="adminHealthList">
+            {overview.health.map((item) => (
+              <div key={item.label} className="adminHealthRow">
+                <div className={healthToneClass(item.state)} aria-hidden="true" />
+                <div>
+                  <strong>{item.label}</strong>
+                  <p className="muted small">{item.detail}</p>
                 </div>
-              ))}
-            </div>
-          )}
+                <span className="badge">{item.state}</span>
+              </div>
+            ))}
+          </div>
         </article>
+      </section>
+
+      <section className="card">
+        <div className="sectionHeader">
+          <div>
+            <h2>Admin shortcuts</h2>
+            <p className="muted">Common support routes for the Azzure team.</p>
+          </div>
+        </div>
+        <div className="pricingGrid">
+          <Link className="detailCard" href="/admin/tenants">
+            <span>Tenants</span>
+            <strong>Review all companies</strong>
+            <p className="muted small">Jump into a tenant record for billing, usage, or support work.</p>
+          </Link>
+          <Link className="detailCard" href="/admin/tenants/subscriptions">
+            <span>Subscriptions</span>
+            <strong>Billing health and pricing</strong>
+            <p className="muted small">Inspect plans, usage windows, and subscription records.</p>
+          </Link>
+          <Link className="detailCard" href="/admin/platform/api-keys">
+            <span>API keys</span>
+            <strong>Shared API keys</strong>
+            <p className="muted small">Rotate provider keys and update runtime defaults.</p>
+          </Link>
+        </div>
       </section>
     </InternalAdminShell>
   );

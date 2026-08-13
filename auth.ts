@@ -6,6 +6,7 @@ import { verifyPassword } from "@/lib/password";
 import { logAuditEvent } from "@/lib/audit";
 import { requireEnv } from "@/lib/env";
 import { isPrismaConnectionError } from "@/lib/prisma-errors";
+import { isInternalAdminEmail } from "@/lib/internal-admin";
 
 const credentialsSchema = z.object({
   email: z.string().email().transform((value) => value.toLowerCase()),
@@ -92,6 +93,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.email = user.email;
         token.name = user.name;
         token.sessionVersion = "sessionVersion" in user ? user.sessionVersion ?? 0 : 0;
+        token.role = isInternalAdminEmail(user.email) ? "AZZURE_ADMIN" : "CUSTOMER";
       }
 
       return token;
@@ -100,6 +102,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.sub ?? "";
         session.user.sessionVersion = typeof token.sessionVersion === "number" ? token.sessionVersion : 0;
+        session.user.role = token.role === "AZZURE_ADMIN" ? "AZZURE_ADMIN" : "CUSTOMER";
       }
 
       return session;

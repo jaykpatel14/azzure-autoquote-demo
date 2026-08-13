@@ -31,6 +31,7 @@ export default async function AdminBillingPage() {
       title="Billing"
       description="Edit every company billing record, pricing profile, and support identifier from one place."
       navItems={getInternalAdminNav("/admin/billing")}
+      adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/settings">
           System settings

@@ -81,6 +81,7 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
       title={`${company.name} billing`}
       description="Edit the company billing record, pricing profile, and subscription details from one screen."
       navItems={getInternalAdminNav("/admin/billing")}
+      adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/billing">
           Back to billing

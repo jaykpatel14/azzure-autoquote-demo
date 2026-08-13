@@ -117,6 +117,11 @@ textarea:disabled {
   border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.workspaceSidebar--admin {
+  background: linear-gradient(180deg, rgba(18, 18, 20, 0.99), rgba(10, 10, 12, 0.99));
+  border-right-color: rgba(255, 255, 255, 0.04);
+}
+
 .brandBlock {
   display: flex;
   align-items: flex-start;
@@ -214,6 +219,146 @@ textarea:disabled {
   overflow-x: hidden;
 }
 
+.workspaceMain--admin {
+  background:
+    radial-gradient(circle at top right, rgba(201, 168, 76, 0.06), transparent 26%),
+    var(--color-obsidian);
+}
+
+.adminTopbar {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  align-items: center;
+  margin-bottom: var(--space-5);
+  padding: 10px 0 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.adminTopbarIdentity {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.adminTopbarLabel,
+.adminBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  color: var(--color-obsidian);
+  background: var(--color-gold);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.adminTopbarDivider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.adminTopbarTitle {
+  color: rgba(235, 235, 245, 0.78);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.adminTopbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.adminFeed {
+  display: grid;
+  gap: 10px;
+  max-height: 400px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.adminFeedItem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.adminFeedItem:hover {
+  background: rgba(201, 168, 76, 0.05);
+}
+
+.adminFeedMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.adminHealthList {
+  display: grid;
+  gap: 12px;
+}
+
+.adminHealthRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.adminHealthRow:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.adminTone {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  border-radius: 999px;
+}
+
+.adminTone--success {
+  background: var(--color-success);
+  box-shadow: 0 0 0 4px rgba(48, 209, 88, 0.12);
+}
+
+.adminTone--warning {
+  background: var(--color-warning);
+  box-shadow: 0 0 0 4px rgba(255, 159, 67, 0.12);
+}
+
+.adminTone--error {
+  background: var(--color-error);
+  box-shadow: 0 0 0 4px rgba(255, 69, 58, 0.12);
+}
+
+.adminTone--info {
+  background: var(--color-gold);
+  box-shadow: 0 0 0 4px rgba(201, 168, 76, 0.12);
+}
+
+.statCard--admin strong {
+  font-size: clamp(1.5rem, 2.5vw, 2.4rem);
+}
+
 .pageHero {
   display: flex;
   justify-content: space-between;
@@ -222,6 +367,10 @@ textarea:disabled {
   margin-bottom: var(--space-10);
   padding-bottom: var(--space-6);
   border-bottom: 1px solid rgba(201, 168, 76, 0.4);
+}
+
+.workspaceMain--admin .pageHero {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
 }
 
 .pageTitle,

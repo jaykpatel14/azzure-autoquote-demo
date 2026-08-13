@@ -64,7 +64,7 @@ INSERT INTO "PricingProfile" (
   0.70,
   2
 )
-ON CONFLICT ("id") DO UPDATE SET
+ON CONFLICT ("companyId") DO UPDATE SET
   "companyId" = EXCLUDED."companyId",
   "goldSpotPerOz" = EXCLUDED."goldSpotPerOz",
   "platinumSpotPerOz" = EXCLUDED."platinumSpotPerOz",
@@ -153,7 +153,7 @@ INSERT INTO "Subscription" (
   false,
   NULL
 )
-ON CONFLICT ("id") DO UPDATE SET
+ON CONFLICT ("companyId") DO UPDATE SET
   "planId" = EXCLUDED."planId",
   "status" = EXCLUDED."status",
   "currentPeriodStart" = EXCLUDED."currentPeriodStart",
