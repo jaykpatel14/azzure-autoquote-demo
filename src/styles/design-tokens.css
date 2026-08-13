@@ -14,9 +14,9 @@
   --color-success: #30d158;
   --color-warning: #ffd60a;
 
-  --font-display: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
-  --font-ui: var(--font-inter), Inter, system-ui, sans-serif;
-  --font-mono: var(--font-mono-face), "JetBrains Mono", "Courier New", monospace;
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-ui: Inter, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Courier New", monospace;
 
   --text-xs: 0.6875rem;
   --text-sm: 0.8125rem;
