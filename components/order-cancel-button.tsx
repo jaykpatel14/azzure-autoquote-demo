@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useToast } from "@/components/toast-provider";
 
 type OrderCancelButtonProps = {
   orderId: string;
@@ -9,6 +10,7 @@ type OrderCancelButtonProps = {
 
 export default function OrderCancelButton({ orderId }: OrderCancelButtonProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [confirm, setConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -25,6 +27,10 @@ export default function OrderCancelButton({ orderId }: OrderCancelButtonProps) {
 
       router.refresh();
       setConfirm(false);
+      showToast({
+        message: "Order cancellation requested.",
+        variant: "success"
+      });
     } finally {
       setLoading(false);
     }

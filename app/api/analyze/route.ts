@@ -32,7 +32,7 @@ import {
 export const runtime = "nodejs";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const MAX_FILE_SIZE = 8 * 1024 * 1024;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const metalTypeSchema = z.enum(METAL_TYPES);
 
 export async function POST(request: Request) {
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     }
     if (!ALLOWED_TYPES.has(image.type) || image.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "Use a JPG, PNG, or WEBP image smaller than 8 MB." },
+        { error: "Use a JPG, PNG, or WEBP image smaller than 10 MB." },
         { status: 400 }
       );
     }

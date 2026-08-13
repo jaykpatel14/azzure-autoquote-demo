@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 
 const cancelSchema = z.object({
   reason: z.string().trim().max(500).optional(),
+  confirmCode: z.string().trim().optional(),
   returnTo: z.string().trim().optional()
 });
 
@@ -20,6 +21,7 @@ async function parseInput(request: Request) {
   const formData = await request.formData();
   return cancelSchema.parse({
     reason: String(formData.get("reason") || ""),
+    confirmCode: String(formData.get("confirmCode") || ""),
     returnTo: String(formData.get("returnTo") || "")
   });
 }
@@ -37,6 +39,13 @@ export async function POST(request: Request) {
     }
 
     const input = await parseInput(request);
+    if (input.confirmCode?.trim().toUpperCase() !== "CANCEL") {
+      return NextResponse.json(
+        { error: "Type CANCEL to confirm cancellation." },
+        { status: 400 }
+      );
+    }
+
     if (subscription.stripeSubscriptionId) {
       const stripe = await getStripeClient();
       await stripe.subscriptions.update(subscription.stripeSubscriptionId, {

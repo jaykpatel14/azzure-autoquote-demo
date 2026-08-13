@@ -32,6 +32,7 @@ type QuotePayload = Quote & {
     imageDataUrl: string | null;
     sourceImageStorageKey: string | null;
     sourceImageMimeType: string | null;
+    assumptions: Prisma.JsonValue | null;
   } | null;
 };
 
@@ -167,7 +168,8 @@ export async function getQuote(params: {
           notes: true,
           imageDataUrl: true,
           sourceImageStorageKey: true,
-          sourceImageMimeType: true
+          sourceImageMimeType: true,
+          assumptions: true
         }
       },
       order: {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useToast } from "@/components/toast-provider";
 
 type QuoteRowActionsProps = {
   quoteId: string;
@@ -13,6 +14,10 @@ type QuoteRowActionsProps = {
   copyLinkTitle?: string;
   canDelete?: boolean;
   deleteRedirectTo?: string;
+  showView?: boolean;
+  showPdf?: boolean;
+  showCopy?: boolean;
+  showDelete?: boolean;
 };
 
 export default function QuoteRowActions({
@@ -23,9 +28,14 @@ export default function QuoteRowActions({
   canCopyLink,
   copyLinkTitle = "Upgrade to share quotes",
   canDelete = true,
-  deleteRedirectTo = "/quotes"
+  deleteRedirectTo = "/quotes",
+  showView = true,
+  showPdf = true,
+  showCopy = true,
+  showDelete = true
 }: QuoteRowActionsProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -34,9 +44,18 @@ export default function QuoteRowActions({
     try {
       await navigator.clipboard.writeText(new URL(publicHref, window.location.origin).toString());
       setCopyState("copied");
+      showToast({
+        message: "Quote link copied.",
+        variant: "success"
+      });
       window.setTimeout(() => setCopyState("idle"), 1800);
     } catch {
       setCopyState("idle");
+      showToast({
+        message: "Unable to copy the quote link.",
+        variant: "error",
+        autoDismiss: false
+      });
     }
   }
 
@@ -56,6 +75,10 @@ export default function QuoteRowActions({
       if (deleteRedirectTo) {
         router.push(deleteRedirectTo);
       }
+      showToast({
+        message: "Quote deleted.",
+        variant: "success"
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -63,22 +86,28 @@ export default function QuoteRowActions({
 
   return (
     <div className="quoteActionGroup">
-      <Link className="textLink" href={viewHref}>
-        View
-      </Link>
-      <Link className="textLink" href={pdfHref} target="_blank">
-        PDF
-      </Link>
-      <button
-        className="textLink"
-        type="button"
-        onClick={handleCopyLink}
-        disabled={!canCopyLink}
-        title={canCopyLink ? "Copy public quote link" : copyLinkTitle}
-      >
-        {copyState === "copied" ? "Copied" : "Copy link"}
-      </button>
-      {canDelete ? (
+      {showView ? (
+        <Link className="textLink" href={viewHref}>
+          View
+        </Link>
+      ) : null}
+      {showPdf ? (
+        <Link className="textLink" href={pdfHref} target="_blank">
+          PDF
+        </Link>
+      ) : null}
+      {showCopy ? (
+        <button
+          className="textLink"
+          type="button"
+          onClick={handleCopyLink}
+          disabled={!canCopyLink}
+          title={canCopyLink ? "Copy public quote link" : copyLinkTitle}
+        >
+          {copyState === "copied" ? "Copied" : "Copy link"}
+        </button>
+      ) : null}
+      {showDelete && canDelete ? (
         <button
           className="textLink destructive"
           type="button"

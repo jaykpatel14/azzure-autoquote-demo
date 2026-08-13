@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useToast } from "@/components/toast-provider";
 
 type TeamMemberRowProps = {
   membershipId: string;
@@ -19,6 +20,7 @@ export default function TeamMemberRow({
   removable
 }: TeamMemberRowProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
 
@@ -33,6 +35,10 @@ export default function TeamMemberRow({
       }
 
       router.refresh();
+      showToast({
+        message: `${name} was removed from the team.`,
+        variant: "success"
+      });
     } finally {
       setIsRemoving(false);
     }

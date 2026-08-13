@@ -7,8 +7,15 @@ import { getTrialDaysRemaining, getTrialQuotesRemaining } from "@/lib/billing";
 import { getAuthenticatedCompanyContext, canCreateQuotes } from "@/lib/company";
 import { normalizePricingProfile, resolveMetalPricing } from "@/lib/metal-pricing";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
+import { getQuote } from "@/src/services/quotes";
 
-export default async function NewQuotePage() {
+type NewQuotePageProps = {
+  searchParams?: Promise<{
+    sourceQuoteId?: string;
+  }>;
+};
+
+export default async function NewQuotePage({ searchParams }: NewQuotePageProps) {
   const context = await getAuthenticatedCompanyContext();
   if (!context) {
     redirect("/signin");
@@ -18,6 +25,7 @@ export default async function NewQuotePage() {
     redirect("/onboarding");
   }
 
+  const params = searchParams ? await searchParams : undefined;
   const basePricingProfile = context.company.pricingProfile
     ? normalizePricingProfile({
         goldSpotPerOz: Number(context.company.pricingProfile.goldSpotPerOz),
@@ -34,6 +42,13 @@ export default async function NewQuotePage() {
   const canEdit = canCreateQuotes(context.membership?.role ?? "CUSTOMER");
   const trialDaysRemaining = getTrialDaysRemaining(context.company.subscription);
   const trialQuotesRemaining = getTrialQuotesRemaining(context.company.subscription);
+  const sourceQuoteId = params?.sourceQuoteId?.trim();
+  const sourceQuote = sourceQuoteId
+    ? await getQuote({
+        quoteId: sourceQuoteId,
+        companyId: context.company.id
+      }).then((result) => ("data" in result ? result.data : null))
+    : null;
 
   return (
     <WorkspaceShell
@@ -74,6 +89,29 @@ export default async function NewQuotePage() {
             : "Using stored pricing values because live metal pricing is unavailable."
         }
         pricingNote={livePricing.message}
+        initialQuote={
+          sourceQuote
+            ? {
+                quoteId: sourceQuote.id,
+                quoteNumber: sourceQuote.quoteNumber,
+                customerName: sourceQuote.customerName,
+                metalType: sourceQuote.metalType as "10K" | "14K" | "18K" | "Platinum" | "Silver",
+                metalWeightGrams: Number(sourceQuote.metalWeightGrams),
+                centerDiamondCarats: Number(sourceQuote.centerDiamondCarats),
+                sideDiamondCarats: Number(sourceQuote.sideDiamondCarats),
+                sideDiamondQuantity: sourceQuote.sideDiamondQuantity,
+                imageDataUrl: sourceQuote.analysis?.imageDataUrl ?? null,
+                analysisId: sourceQuote.analysisId ?? null,
+                jewelryType: sourceQuote.analysis?.jewelryType ?? null,
+                centerShape: sourceQuote.analysis?.centerShape ?? null,
+                confidence: sourceQuote.analysis?.confidence ?? null,
+                notes: sourceQuote.analysis?.notes ?? null,
+                assumptions: Array.isArray(sourceQuote.analysis?.assumptions)
+                  ? (sourceQuote.analysis?.assumptions as string[])
+                  : null
+              }
+            : undefined
+        }
       />
     </WorkspaceShell>
   );

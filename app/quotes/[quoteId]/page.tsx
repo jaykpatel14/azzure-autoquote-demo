@@ -95,6 +95,18 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
           </div>
 
           <div className="quoteDetailActions">
+            {status === "draft" ? (
+              <Link className="button secondary" href={`/quotes/new?sourceQuoteId=${quote.id}`}>
+                Edit in builder
+              </Link>
+            ) : null}
+            {status === "expired" ? (
+              <form action={`/api/quotes/${quote.id}/duplicate`} method="post">
+                <button className="button primary" type="submit">
+                  Regenerate
+                </button>
+              </form>
+            ) : null}
             <QuoteRowActions
               quoteId={quote.id}
               viewHref={`/quotes/${quote.id}`}
@@ -107,6 +119,10 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
                   : "Upgrade to share quotes"
               }
               deleteRedirectTo="/quotes"
+              showView={false}
+              showPdf={status !== "expired"}
+              showCopy={status === "sent"}
+              showDelete={status === "draft"}
             />
           </div>
         </article>
@@ -152,7 +168,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
             <img className="quoteDetailImage" src={quote.analysis.imageDataUrl} alt="Quote source image" />
           ) : null}
 
-          {context.company.subscription?.plan.code === "enterprise" && !quote.order ? (
+          {status === "sent" && context.company.subscription?.plan.code === "enterprise" && !quote.order ? (
             <form className="stack" action="/api/orders" method="post" style={{ marginTop: "1rem" }}>
               <input type="hidden" name="quoteId" value={quote.id} />
               <label className="field">
@@ -169,7 +185,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
             </form>
           ) : null}
 
-          {quote.order ? (
+          {status === "ordered" && quote.order ? (
             <div className="detailCard detailCard--stacked" style={{ marginTop: "1rem" }}>
               <span>Manufacturing order</span>
               <strong>{quote.order.orderNumber}</strong>

@@ -185,3 +185,61 @@ export async function createBillingPortalSession(params: {
 
   return { data: { url: session.url } };
 }
+
+export async function getBillingHistory(params: {
+  companyId: string;
+}): Promise<
+  AppResult<{
+    invoices: Array<{
+      id: string;
+      number: string | null;
+      createdAt: Date;
+      amountPaid: number;
+      currency: string;
+      status: string;
+      hostedInvoiceUrl: string | null;
+      invoicePdf: string | null;
+      planName: string | null;
+    }>;
+  }>
+> {
+  const subscription = await prisma.subscription.findUnique({
+    where: { companyId: params.companyId },
+    select: {
+      stripeCustomerId: true
+    }
+  });
+
+  if (!subscription?.stripeCustomerId) {
+    return {
+      data: {
+        invoices: []
+      }
+    };
+  }
+
+  const stripe = await getStripeClient();
+  const invoices = await stripe.invoices.list({
+    customer: subscription.stripeCustomerId,
+    limit: 6
+  });
+
+  return {
+    data: {
+      invoices: invoices.data.map((invoice) => ({
+        id: invoice.id,
+        number: invoice.number,
+        createdAt: new Date(invoice.created * 1000),
+        amountPaid: invoice.amount_paid / 100,
+        currency: invoice.currency.toUpperCase(),
+        status: invoice.status ?? "unknown",
+        hostedInvoiceUrl: invoice.hosted_invoice_url ?? null,
+        invoicePdf: invoice.invoice_pdf ?? null,
+        planName:
+          typeof invoice.lines.data[0]?.description === "string" && invoice.lines.data[0].description.length > 0
+            ? invoice.lines.data[0].description
+            : null
+      }))
+    }
+  };
+}

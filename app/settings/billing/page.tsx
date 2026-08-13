@@ -13,6 +13,7 @@ import { resolveMetalPricing, toPricingProfileInput } from "@/lib/metal-pricing"
 import { getCurrentUsagePeriod, getUsageRemaining, getUsageWarningMessage } from "@/lib/billing";
 import { syncStripeCheckoutSession } from "@/lib/billing-webhooks";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
+import { getBillingHistory } from "@/src/services/subscriptions";
 
 type BillingSettingsPageProps = {
   searchParams?: Promise<{
@@ -49,13 +50,9 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
 
   const usagePeriod = await getCurrentUsagePeriod(context.company.id);
   const subscription = context.company.subscription;
+  const billingHistoryResult = await getBillingHistory({ companyId: context.company.id });
   const basePlans = await ensureBasePlans(prisma);
   const availablePlans = Object.values(basePlans).sort((a, b) => a.monthlyPriceCents - b.monthlyPriceCents);
-  const recentUsagePeriods = await prisma.usagePeriod.findMany({
-    where: { companyId: context.company.id },
-    orderBy: { periodStart: "desc" },
-    take: 3
-  });
   const warning = usagePeriod ? getUsageWarningMessage(usagePeriod) : null;
   const remaining = usagePeriod ? getUsageRemaining(usagePeriod) : null;
   const pricingProfile = toPricingProfileInput(context.company.pricingProfile);
@@ -75,6 +72,7 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
     ? `Trial accounts are capped at ${effectiveMonthlyLimit} requests. Pick a paid plan to upgrade.`
     : "Choose a plan to create your billing record and start Stripe checkout.";
   const planActionLabel = subscription ? "Choose" : "Request";
+  const billingInvoices = "data" in billingHistoryResult ? billingHistoryResult.data.invoices : [];
 
   return (
     <WorkspaceShell
@@ -181,6 +179,11 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
                 <span>Status</span>
                 <strong>{subscription.status.toLowerCase()}</strong>
               </div>
+              {subscription.status === "PAST_DUE" ? (
+                <div className="warningBanner">
+                  Your last payment failed. Update your payment method to avoid losing access.
+                </div>
+              ) : null}
               <div className="detailRow">
                 <span>Trial / cancellation</span>
                 <strong>
@@ -332,31 +335,40 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
         <div className="sectionHeader">
           <div>
             <h2>Billing history</h2>
-            <p className="muted">
-              A quick view of recent billing windows and usage so support can see the tenant&apos;s current rhythm.
-            </p>
+            <p className="muted">Recent Stripe invoices for this company.</p>
           </div>
         </div>
-        {recentUsagePeriods.length > 0 ? (
+        {billingInvoices.length > 0 ? (
           <div className="historyList">
-            {recentUsagePeriods.map((period) => (
-              <div key={period.id} className="historyRow">
+            {billingInvoices.map((invoice) => (
+              <div key={invoice.id} className="historyRow historyRow--invoice">
                 <div>
                   <strong>
-                    {period.periodStart.toLocaleDateString()} to {period.periodEnd.toLocaleDateString()}
+                    {invoice.number ? `Invoice ${invoice.number}` : "Invoice"} · {invoice.planName ?? "Subscription"}
                   </strong>
                   <p className="muted small">
-                    {period.used} used, {period.reserved} reserved, {period.limit} limit
+                    {invoice.createdAt.toLocaleDateString()} · {invoice.status}
                   </p>
                 </div>
-                <strong>{period.limit}</strong>
+                <div className="historyRowActions">
+                  <strong>{formatCurrency(invoice.amountPaid)}</strong>
+                  {invoice.hostedInvoiceUrl ? (
+                    <a className="textLink" href={invoice.hostedInvoiceUrl} target="_blank" rel="noreferrer">
+                      Receipt
+                    </a>
+                  ) : invoice.invoicePdf ? (
+                    <a className="textLink" href={invoice.invoicePdf} target="_blank" rel="noreferrer">
+                      Receipt
+                    </a>
+                  ) : null}
+                </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="emptyState">
             <strong>No billing history yet</strong>
-            <p className="muted">The current billing window will appear here after the first synced period.</p>
+            <p className="muted">Stripe invoices will appear here after the first billing cycle closes.</p>
           </div>
         )}
       </section>

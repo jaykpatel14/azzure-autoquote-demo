@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import BillingCancelForm from "@/components/billing-cancel-form";
 import { canManageBilling, getAuthenticatedCompanyContext } from "@/lib/company";
 
 function formatCurrency(value: number) {
@@ -93,25 +94,7 @@ export default async function CancelSubscriptionPage() {
             </div>
           </div>
 
-          <form className="onboardingForm" action="/api/subscription/cancel" method="post">
-            <input type="hidden" name="returnTo" value="/settings/billing?billing=canceled" />
-            <label className="field">
-              <span>Optional reason</span>
-              <textarea
-                name="reason"
-                rows={4}
-                placeholder="Tell us why you are cancelling, or leave this blank."
-              />
-            </label>
-            <div className="onboardingStepActions">
-              <button className="button destructive button--lg" type="submit">
-                Cancel at period end
-              </button>
-              <Link className="button secondary button--lg" href="/settings/billing">
-                Keep plan
-              </Link>
-            </div>
-          </form>
+          <BillingCancelForm returnTo="/settings/billing?billing=canceled" />
         </section>
       </main>
     </div>
