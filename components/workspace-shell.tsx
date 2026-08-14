@@ -21,7 +21,7 @@ type WorkspaceShellProps = {
 };
 
 export default function WorkspaceShell({
-  eyebrow = "Azzure AutoQuote",
+  eyebrow = "AI AutoQuote",
   title,
   description,
   navItems,

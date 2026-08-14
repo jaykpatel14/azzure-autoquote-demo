@@ -9,7 +9,7 @@ const uiFont = Inter({ subsets: ["latin"], variable: "--font-ui-loaded", display
 const monoFont = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono-loaded", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Azzure AutoQuote",
+  title: "AI AutoQuote",
   description: "AI-assisted jewelry quote estimation."
 };
 

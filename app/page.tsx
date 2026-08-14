@@ -478,7 +478,7 @@ function MarketingPage() {
       <section className="marketingHero">
         <div className="marketingHeroInner">
           <div>
-            <p className="eyebrow">Azzure AutoQuote</p>
+            <p className="eyebrow">AI AutoQuote</p>
             <h1 className="marketingHeadline">Luxury quote workflows for modern jewelers.</h1>
             <p className="marketingSubheadline">
               Turn a jewelry photo into a polished estimate with AI-assisted analysis, live pricing,

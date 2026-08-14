@@ -136,7 +136,7 @@ export default function SignUpPage() {
     <main className="signupShell">
       <section className="signupCard">
         <div className="signupHeader">
-          <p className="eyebrow">Azzure AutoQuote</p>
+          <p className="eyebrow">AI AutoQuote</p>
           <h1 className="signupTitle">Start your free 14-day trial</h1>
           <p className="signupLead">Full Professional features - No charge today</p>
         </div>

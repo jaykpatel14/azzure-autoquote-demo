@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
       await sendAuthMail({
         to: user.email,
-        subject: "Reset your Azzure AutoQuote password",
+        subject: "Reset your AI AutoQuote password",
         text: `Reset your password: ${resetUrl}`,
         html: `<p>Reset your password: <a href="${resetUrl}">${resetUrl}</a></p>`
       });

@@ -104,7 +104,7 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
     doc.on("error", reject);
 
     const branding = input.branding ?? "azzure_watermark";
-    doc.info.Title = `${input.quoteNumber}${branding === "white_label" ? "" : " - Azzure AutoQuote"}`;
+    doc.info.Title = `${input.quoteNumber}${branding === "white_label" ? "" : " - AI AutoQuote"}`;
     doc.info.Author = input.companyName;
     doc.info.Subject = "Customer quote";
 
@@ -114,7 +114,7 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
     if (branding === "azzure_watermark") {
       doc.save().fillColor("#c5a03a").opacity(0.12).font("Helvetica-Bold").fontSize(54)
         .rotate(-32, { origin: [doc.page.width / 2, doc.page.height / 2] })
-        .text("AZZURE AUTOQUOTE", 80, doc.page.height / 2, { width: doc.page.width - 160, align: "center" }).restore();
+        .text("AI AUTOQUOTE", 80, doc.page.height / 2, { width: doc.page.width - 160, align: "center" }).restore();
     }
     doc
       .font("Helvetica")
@@ -279,8 +279,8 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
         branding === "white_label"
           ? `Prepared by ${input.companyName}.`
           : branding === "custom_logo"
-            ? `Prepared for ${input.companyName}. Powered by Azzure AutoQuote.`
-            : "Prepared by Azzure AutoQuote. This PDF is generated from saved quote data and is customer-safe.",
+            ? `Prepared for ${input.companyName}. Powered by AI AutoQuote.`
+            : "Prepared by AI AutoQuote. This PDF is generated from saved quote data and is customer-safe.",
         48,
         noteTop + 84,
         { align: "center", width: doc.page.width - 96 }

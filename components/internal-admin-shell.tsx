@@ -86,7 +86,7 @@ export default async function InternalAdminShell({
           <div className="adminTopbarIdentity">
             <span className="adminTopbarLabel">ADMIN</span>
             <span className="adminTopbarDivider" aria-hidden="true" />
-            <span className="adminTopbarTitle">Azzure AutoQuote</span>
+            <span className="adminTopbarTitle">AI AutoQuote</span>
           </div>
           <div className="adminTopbarActions">
             {adminName ? <span className="adminTopbarUser">{adminName}</span> : null}

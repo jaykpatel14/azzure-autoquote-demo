@@ -27,14 +27,14 @@ describe("quote pdf generation", () => {
     expect(pdfText).toContain("/Subtype /Image");
   });
 
-  test("Starter PDFs contain the Azzure watermark and white-label PDFs do not", async () => {
+  test("Starter PDFs contain the AI AutoQuote watermark and white-label PDFs do not", async () => {
     const common = {
       companyName: "Demo Jewelry", quoteNumber: "Q-2026-002", createdAt: new Date("2026-07-28T12:00:00.000Z"),
       metalType: "14K", metalWeightGrams: 5, centerDiamondCarats: 1, sideDiamondCarats: 0.2, sideDiamondQuantity: 10, estimatedPrice: 2000
     };
     const starter = (await generateQuotePdfBuffer({ ...common, branding: "azzure_watermark" })).toString("latin1");
     const enterprise = (await generateQuotePdfBuffer({ ...common, branding: "white_label" })).toString("latin1");
-    expect(starter).toContain("<415a5a55524520>");
-    expect(enterprise).not.toContain("<415a5a55524520>");
+    expect(starter).toContain("AI AutoQuote");
+    expect(enterprise).not.toContain("AI AutoQuote");
   });
 });

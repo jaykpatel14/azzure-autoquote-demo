@@ -1,4 +1,4 @@
-# Azzure AutoQuote MVP
+# AI AutoQuote MVP
 
 Production-oriented starter for an AI-assisted jewelry quotation SaaS.
 

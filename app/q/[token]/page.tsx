@@ -132,7 +132,7 @@ export default async function PublicQuotePage({
 
         <footer className="publicQuoteFooter">
           <span>{quote.company.name}</span>
-          {isBranded ? null : <span>Public quote preview powered by Azzure AutoQuote</span>}
+          {isBranded ? null : <span>Public quote preview powered by AI AutoQuote</span>}
         </footer>
       </article>
     </main>

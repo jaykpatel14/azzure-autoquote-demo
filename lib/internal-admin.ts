@@ -18,7 +18,7 @@ function parseAdminEmails() {
 }
 
 export class InternalAdminAccessError extends Error {
-  constructor(message = "You do not have access to the Azzure admin console.") {
+  constructor(message = "You do not have access to the admin console.") {
     super(message);
     this.name = "InternalAdminAccessError";
   }
