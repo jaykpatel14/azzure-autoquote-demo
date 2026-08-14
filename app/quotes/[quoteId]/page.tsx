@@ -90,6 +90,24 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <strong>{formatCurrency(Number(quote.estimatedPrice))}</strong>
             </div>
             <div className="detailRow">
+              <span>Pricing tier</span>
+              <strong>{quote.pricingTierSnapshot ?? "Not assigned"}</strong>
+            </div>
+            <div className="detailRow">
+              <span>Making price</span>
+              <strong>
+                {quote.makingPrice ? formatCurrency(Number(quote.makingPrice)) : "Not recorded"}
+              </strong>
+            </div>
+            <div className="detailRow">
+              <span>Selling price</span>
+              <strong>
+                {quote.estimatedSellingPrice
+                  ? formatCurrency(Number(quote.estimatedSellingPrice))
+                  : "Not recorded"}
+              </strong>
+            </div>
+            <div className="detailRow">
               <span>Created</span>
               <strong title={quote.createdAt.toLocaleString()}>{formatRelativeTime(quote.createdAt)}</strong>
             </div>
@@ -135,11 +153,11 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <h2>Quote inputs</h2>
             </div>
           </div>
-          <div className="pricingGrid">
-            <div className="detailCard">
-              <span>Metal weight</span>
-              <strong>{Number(quote.metalWeightGrams).toFixed(2)} g</strong>
-            </div>
+            <div className="pricingGrid">
+              <div className="detailCard">
+                <span>Metal weight</span>
+                <strong>{Number(quote.metalWeightGrams).toFixed(2)} g</strong>
+              </div>
             <div className="detailCard">
               <span>Center stone</span>
               <strong>{Number(quote.centerDiamondCarats).toFixed(2)} ct</strong>
@@ -150,13 +168,17 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
                 {Number(quote.sideDiamondCarats).toFixed(2)} ct · {quote.sideDiamondQuantity} stones
               </strong>
             </div>
-            <div className="detailCard">
-              <span>Public link</span>
-              <Link className="textLink" href={getQuotePublicUrl(quote.id)} target="_blank">
-                Open customer view
-              </Link>
+              <div className="detailCard">
+                <span>Public link</span>
+                <Link className="textLink" href={getQuotePublicUrl(quote.id)} target="_blank">
+                  Open customer view
+                </Link>
+              </div>
+              <div className="detailCard">
+                <span>Tier divisor</span>
+                <strong>{quote.tierDivisorSnapshot ? Number(quote.tierDivisorSnapshot).toFixed(2) : "Not set"}</strong>
+              </div>
             </div>
-          </div>
 
           {quote.analysis?.notes ? (
             <div className="detailCard detailCard--stacked">

@@ -6,6 +6,11 @@ declare module "next-auth" {
       id: string;
       sessionVersion: number;
       role: "AZZURE_ADMIN" | "CUSTOMER";
+      companyId: string;
+      companyName: string;
+      planId: string;
+      accountStatus: "PENDING_APPROVAL" | "APPROVED" | "SUSPENDED";
+      pricingTier: "TIER_1" | "TIER_2" | "TIER_3" | null;
     };
   }
 }
@@ -14,6 +19,10 @@ declare module "next-auth/jwt" {
   interface JWT {
     sessionVersion?: number;
     companyId?: string;
+    companyName?: string;
+    planId?: string;
+    accountStatus?: "PENDING_APPROVAL" | "APPROVED" | "SUSPENDED";
+    pricingTier?: "TIER_1" | "TIER_2" | "TIER_3" | null;
     role?: "AZZURE_ADMIN" | "CUSTOMER";
   }
 }

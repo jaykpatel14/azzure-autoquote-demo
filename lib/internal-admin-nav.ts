@@ -7,6 +7,7 @@ export type InternalAdminNavItem = {
 const NAV_ITEMS = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/tenants", label: "Tenants" },
+  { href: "/admin/tenants/pending", label: "Pending approvals" },
   { href: "/admin/tenants/subscriptions", label: "Subscriptions" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/analytics", label: "Analytics" },

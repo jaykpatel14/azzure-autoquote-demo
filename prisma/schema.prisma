@@ -37,6 +37,18 @@ enum OrderStatus {
   CANCELED
 }
 
+enum AccountStatus {
+  PENDING_APPROVAL
+  APPROVED
+  SUSPENDED
+}
+
+enum PricingTier {
+  TIER_1
+  TIER_2
+  TIER_3
+}
+
 model Company {
   id              String           @id @default(cuid())
   name            String
@@ -45,6 +57,15 @@ model Company {
   websiteUrl      String?
   aboutUs         String?
   quoteSequence   Int              @default(0)
+  accountStatus   AccountStatus    @default(PENDING_APPROVAL)
+  pricingTier     PricingTier?
+  approvedAt      DateTime?
+  approvedBy      String?
+  tierChangedAt   DateTime?
+  tierChangedBy   String?
+  suspendedAt     DateTime?
+  suspendedReason String?
+  adminNotes      String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   memberships     Membership[]
@@ -240,6 +261,10 @@ model Quote {
   sideDiamondCarats     Decimal
   sideDiamondQuantity   Int
   estimatedPrice        Decimal
+  makingPrice           Decimal?
+  pricingTierSnapshot   PricingTier?
+  tierDivisorSnapshot   Decimal?
+  estimatedSellingPrice Decimal?
   isOverage             Boolean     @default(false)
   pdfStorageKey         String?     @unique
   pdfStoredAt           DateTime?

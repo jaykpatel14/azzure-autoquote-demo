@@ -10,10 +10,13 @@ import {
   requireCompanyContext,
   AuthRequiredError,
   CompanyAccessError,
-  canCreateQuotes
+  canCreateQuotes,
+  isCompanyApproved,
+  isCompanySuspended
 } from "@/lib/company";
 import { normalizePricingProfile, resolveMetalPricing } from "@/lib/metal-pricing";
 import { createQuote } from "@/src/services/quotes";
+import { calculateTierPrice } from "@/src/services/pricing";
 
 const quoteModes = ["normal", "without-center", "without-center-and-side"] as const;
 
@@ -47,6 +50,12 @@ export async function POST(request: Request) {
     const companyContext = await requireCompanyContext();
     if (!canCreateQuotes(companyContext.membership?.role ?? "CUSTOMER")) {
       throw new CompanyAccessError("You do not have permission to create quotes.");
+    }
+    if (isCompanySuspended(companyContext.company)) {
+      throw new CompanyAccessError("Your account has been suspended. Contact Azzure support.");
+    }
+    if (!isCompanyApproved(companyContext.company)) {
+      throw new CompanyAccessError("Your account is pending approval. You cannot create quotes yet.");
     }
     const input = quoteSchema.parse(await request.json());
     const company = companyContext.company;
@@ -83,6 +92,12 @@ export async function POST(request: Request) {
       effectivePricingProfile
     );
 
+    if (!company.pricingTier) {
+      throw new CompanyAccessError("Your account does not have a pricing tier assigned.");
+    }
+
+    const tierPricing = calculateTierPrice(pricing.makingCost, company.pricingTier);
+
     const quoteResult = await createQuote({
       companyId: company.id,
       analysisId: input.analysisId,
@@ -92,7 +107,11 @@ export async function POST(request: Request) {
       centerDiamondCarats: adjustedInput.centerDiamondCarats,
       sideDiamondCarats: adjustedInput.sideDiamondCarats,
       sideDiamondQuantity: adjustedInput.sideDiamondQuantity,
-      estimatedPrice: pricing.estimatedFinalPrice
+      estimatedPrice: tierPricing.estimatedSellingPrice,
+      makingPrice: tierPricing.makingPrice,
+      pricingTierSnapshot: tierPricing.tier,
+      tierDivisorSnapshot: tierPricing.divisor,
+      estimatedSellingPrice: tierPricing.estimatedSellingPrice
     });
 
     if ("error" in quoteResult) {
@@ -106,6 +125,8 @@ export async function POST(request: Request) {
       id: quoteResult.data.id,
       quoteNumber: quoteResult.data.quoteNumber,
       estimatedPrice: Number(quoteResult.data.estimatedPrice),
+      makingPrice: Number(quoteResult.data.makingPrice ?? 0),
+      pricingTier: quoteResult.data.pricingTierSnapshot,
       pricingSource: livePricing.source
     });
   } catch (error) {

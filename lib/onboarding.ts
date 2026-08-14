@@ -50,6 +50,8 @@ export async function onboardCompanyOwner(
       name: input.companyName,
       slug: slugifyCompanyName(input.companyName),
       quoteSequence: 0,
+      accountStatus: "PENDING_APPROVAL",
+      pricingTier: null,
       pricingProfile: { create: {} }
     }
   });

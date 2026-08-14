@@ -148,6 +148,11 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
           <p className="muted small">{subscription?.plan.name ?? "No active plan"}</p>
         </article>
         <article className="statCard">
+          <span className="eyebrow">Account review</span>
+          <strong>{context.company.accountStatus.toLowerCase().replaceAll("_", " ")}</strong>
+          <p className="muted small">{context.company.pricingTier ?? "No pricing tier assigned"}</p>
+        </article>
+        <article className="statCard">
           <span className="eyebrow">Company access</span>
           <strong>
             {context.memberships.length} customer account{context.memberships.length === 1 ? "" : "s"}

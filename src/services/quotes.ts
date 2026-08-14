@@ -1,4 +1,4 @@
-import { Prisma, type Quote } from "@prisma/client";
+import { Prisma, type PricingTier, type Quote } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { allocateQuoteNumber } from "@/lib/quote-number";
 import { NotFoundError, ConflictError, type AppResult } from "@/src/lib/errors";
@@ -13,6 +13,10 @@ type CreateQuoteInput = {
   sideDiamondCarats: number;
   sideDiamondQuantity: number;
   estimatedPrice: number;
+  makingPrice?: number;
+  pricingTierSnapshot?: PricingTier | null;
+  tierDivisorSnapshot?: number | null;
+  estimatedSellingPrice?: number | null;
 };
 
 type QuotePayload = Quote & {
@@ -120,7 +124,11 @@ export async function createQuote(
             centerDiamondCarats: input.centerDiamondCarats,
             sideDiamondCarats: input.sideDiamondCarats,
             sideDiamondQuantity: input.sideDiamondQuantity,
-            estimatedPrice: input.estimatedPrice
+            estimatedPrice: input.estimatedPrice,
+            makingPrice: input.makingPrice ?? null,
+            pricingTierSnapshot: input.pricingTierSnapshot ?? null,
+            tierDivisorSnapshot: input.tierDivisorSnapshot ?? null,
+            estimatedSellingPrice: input.estimatedSellingPrice ?? null
           }
         });
       });

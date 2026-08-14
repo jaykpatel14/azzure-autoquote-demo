@@ -5,6 +5,8 @@ import type {
   Plan,
   MembershipRole,
   PricingProfile,
+  AccountStatus,
+  PricingTier,
   Subscription,
   User
 } from "@prisma/client";
@@ -41,6 +43,8 @@ const COMPANY_ROLE_RANK: Record<CompanyRole, number> = {
 type CompanyMembershipCompany = Company & {
   pricingProfile: PricingProfile | null;
   subscription: (Subscription & { plan: Plan }) | null;
+  accountStatus: AccountStatus;
+  pricingTier: PricingTier | null;
 };
 
 type CompanyMembership = Membership & {
@@ -88,6 +92,14 @@ export function canViewQuotes(role: CompanyRole | null | undefined) {
   return hasCompanyRole(role, "VIEWER");
 }
 
+export function isCompanyApproved(company: Pick<CompanyMembershipCompany, "accountStatus">) {
+  return company.accountStatus === "APPROVED";
+}
+
+export function isCompanySuspended(company: Pick<CompanyMembershipCompany, "accountStatus">) {
+  return company.accountStatus === "SUSPENDED";
+}
+
 export function assertCompanyRole(
   role: CompanyRole | null | undefined,
   minimumRole: CompanyRole,
@@ -129,6 +141,15 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
                 websiteUrl: true,
                 aboutUs: true,
                 quoteSequence: true,
+                accountStatus: true,
+                pricingTier: true,
+                approvedAt: true,
+                approvedBy: true,
+                tierChangedAt: true,
+                tierChangedBy: true,
+                suspendedAt: true,
+                suspendedReason: true,
+                adminNotes: true,
                 createdAt: true,
                 updatedAt: true,
                 pricingProfile: true,

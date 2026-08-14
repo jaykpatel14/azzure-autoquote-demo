@@ -14,6 +14,9 @@ type AdminTenantListCompany = {
   id: string;
   name: string;
   slug: string;
+  accountStatus: string;
+  pricingTier: string | null;
+  createdAt: Date;
   subscription: {
     status: string;
     plan: { id: string; name: string; code: string; monthlyLimit: number };
@@ -84,15 +87,15 @@ export async function getAdminTenants() {
   const companies = (await prisma.company.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      subscription: {
-        include: { plan: true }
-      },
       memberships: {
         select: {
           id: true,
           role: true,
           user: { select: { email: true, name: true } }
         }
+      },
+      subscription: {
+        include: { plan: true }
       },
       quotes: {
         orderBy: { createdAt: "desc" },
@@ -135,6 +138,7 @@ export async function getAdminTenants() {
   const activeSubscriptions = companies.filter((company) =>
     ["TRIALING", "ACTIVE", "PAST_DUE"].includes(company.subscription?.status ?? "")
   ).length;
+  const pendingApprovals = companies.filter((company) => company.accountStatus === "PENDING_APPROVAL").length;
 
   const recentActivity = companies
     .flatMap((company) =>
@@ -159,6 +163,7 @@ export async function getAdminTenants() {
     stats: {
       totalCompanies: companies.length,
       activeSubscriptions,
+      pendingApprovals,
       totalQuotes,
       totalOrders,
       trialingCompanies: companies.filter((company) => company.subscription?.status === "TRIALING").length
@@ -288,4 +293,35 @@ export async function getAdminSubscriptions() {
 
 export function formatAdminMoney(value: unknown) {
   return toMoney(value);
+}
+
+export async function getPendingApprovalCompanies() {
+  const companies = await prisma.company.findMany({
+    where: { accountStatus: "PENDING_APPROVAL" },
+    orderBy: { createdAt: "asc" },
+    include: {
+      memberships: {
+        orderBy: { role: "desc" },
+        take: 1,
+        select: {
+          id: true,
+          role: true,
+          user: { select: { id: true, email: true, name: true } }
+        }
+      },
+      subscription: {
+        include: { plan: true }
+      }
+    }
+  });
+
+  return companies.map((company) => ({
+    id: company.id,
+    name: company.name,
+    slug: company.slug,
+    createdAt: company.createdAt,
+    pricingTier: company.pricingTier,
+    membership: company.memberships[0] ?? null,
+    subscription: company.subscription
+  }));
 }

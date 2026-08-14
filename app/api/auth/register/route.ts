@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { onboardCompanyOwner } from "@/lib/onboarding";
 import { createEmailVerificationToken } from "@/lib/auth-tokens";
+import { sendSignupApprovalAlert } from "@/lib/account-workflow";
 import { sendAuthMail } from "@/lib/mailer";
 
 const registerSchema = z.object({
@@ -50,6 +51,13 @@ export async function POST(request: Request) {
       subject: "Verify your Azzure AutoQuote account",
       text: `Verify your email address: ${verificationUrl}`,
       html: `<p>Verify your email address: <a href="${verificationUrl}">${verificationUrl}</a></p>`
+    });
+
+    await sendSignupApprovalAlert({
+      companyName: company.name,
+      ownerName: input.name?.trim() || user.name || user.email,
+      ownerEmail: user.email,
+      signedUpAt: company.createdAt
     });
 
     return NextResponse.json({ ok: true, email: user.email });

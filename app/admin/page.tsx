@@ -144,14 +144,19 @@ export default async function AdminDashboardPage() {
             <strong>Review all companies</strong>
             <p className="muted small">Jump into a tenant record for billing, usage, or support work.</p>
           </Link>
-          <Link className="detailCard" href="/admin/tenants/subscriptions">
-            <span>Subscriptions</span>
-            <strong>Billing health and pricing</strong>
-            <p className="muted small">Inspect plans, usage windows, and subscription records.</p>
-          </Link>
-          <Link className="detailCard" href="/admin/platform/api-keys">
-            <span>API keys</span>
-            <strong>Shared API keys</strong>
+        <Link className="detailCard" href="/admin/tenants/subscriptions">
+          <span>Subscriptions</span>
+          <strong>Billing health and pricing</strong>
+          <p className="muted small">Inspect plans, usage windows, and subscription records.</p>
+        </Link>
+        <Link className="detailCard" href="/admin/tenants/pending">
+          <span>Approvals</span>
+          <strong>Review new signups</strong>
+          <p className="muted small">Approve pending companies and assign their pricing tier.</p>
+        </Link>
+        <Link className="detailCard" href="/admin/platform/api-keys">
+          <span>API keys</span>
+          <strong>Shared API keys</strong>
             <p className="muted small">Rotate provider keys and update runtime defaults.</p>
           </Link>
         </div>

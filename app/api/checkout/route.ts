@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { onboardCompanyOwner } from "@/lib/onboarding";
 import { createEmailVerificationToken } from "@/lib/auth-tokens";
+import { sendSignupApprovalAlert } from "@/lib/account-workflow";
 import { sendAuthMail } from "@/lib/mailer";
 import { buildAppUrl, getStripeClient, resolveCheckoutPriceId } from "@/lib/stripe";
 import { isPlanCode } from "@/lib/subscription-plans";
@@ -118,6 +119,13 @@ export async function POST(request: Request) {
     if ("error" in checkout) {
       return NextResponse.json({ error: checkout.error }, { status: 409 });
     }
+
+    await sendSignupApprovalAlert({
+      companyName: company.name,
+      ownerName: input.name?.trim() || user.name || user.email,
+      ownerEmail: user.email,
+      signedUpAt: company.createdAt
+    });
 
     return NextResponse.json({
       ok: true,

@@ -51,6 +51,11 @@ export default async function AdminTenantsPage() {
           <p className="muted small">Trialing and live billing records.</p>
         </article>
         <article className="statCard statCard--admin">
+          <span className="eyebrow">Pending approvals</span>
+          <strong>{data.stats.pendingApprovals}</strong>
+          <p className="muted small">New companies waiting for review.</p>
+        </article>
+        <article className="statCard statCard--admin">
           <span className="eyebrow">Quotes</span>
           <strong>{data.stats.totalQuotes}</strong>
           <p className="muted small">All tenant quotes in the system.</p>
@@ -69,12 +74,16 @@ export default async function AdminTenantsPage() {
               <h2>Tenant roster</h2>
               <p className="muted">Use this view to open billing, review activity, or start a support session.</p>
             </div>
+            <Link className="button secondary" href="/admin/tenants/pending">
+              Review approvals
+            </Link>
           </div>
           <div className="tableShell">
             <table className="dataTable">
               <thead>
                 <tr>
                   <th scope="col">Tenant</th>
+                  <th scope="col">Approval</th>
                   <th scope="col">Plan</th>
                   <th scope="col">Status</th>
                   <th scope="col">Members</th>
@@ -89,6 +98,10 @@ export default async function AdminTenantsPage() {
                         <Link href={`/admin/tenants/${company.id}`}>{company.name}</Link>
                       </strong>
                       <p className="muted small">{company.slug}</p>
+                    </td>
+                    <td>
+                      <span className="badge">{company.accountStatus.toLowerCase().replaceAll("_", " ")}</span>
+                      <p className="muted small">{company.pricingTier ?? "No tier"}</p>
                     </td>
                     <td>{company.subscription?.plan.name ?? "No plan"}</td>
                     <td>

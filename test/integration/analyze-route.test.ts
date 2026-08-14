@@ -114,7 +114,12 @@ function mockSession(companyFixture: CompanyFixture, sessionVersion = 0): Sessio
       email: companyFixture.email,
       image: null,
       sessionVersion,
-      role: "CUSTOMER"
+      role: "CUSTOMER",
+      companyId: companyFixture.companyId,
+      companyName: "Analysis Company",
+      planId: "plan_starter",
+      accountStatus: "APPROVED",
+      pricingTier: "TIER_3"
     },
     expires: new Date(Date.now() + 60 * 60 * 1000).toISOString()
   };
