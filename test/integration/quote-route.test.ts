@@ -50,8 +50,8 @@ async function createCompanyFixture(
   const userId = `user_${randomUUID().slice(0, 8)}`;
   const email = `${userId}@example.test`;
   const slug = makeSlug("tenant");
-  const starterPlan = await prisma.plan.findUniqueOrThrow({
-    where: { code: "starter" }
+  const plan = await prisma.plan.findUniqueOrThrow({
+    where: { code: "professional" }
   });
   const now = new Date();
   const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -100,7 +100,7 @@ async function createCompanyFixture(
   await prisma.subscription.create({
     data: {
       companyId,
-      planId: starterPlan.id,
+      planId: plan.id,
       status: "ACTIVE",
       currentPeriodStart: periodStart,
       currentPeriodEnd: periodEnd

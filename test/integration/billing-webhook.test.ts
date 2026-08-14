@@ -106,7 +106,8 @@ function buildTrialSubscriptionEvent(companyId: string, eventId: string) {
         current_period_end: Math.floor(end.getTime() / 1000),
         metadata: {
           companyId,
-          planCode: "starter"
+          planCode: "starter",
+          trialQuoteCap: "40"
         },
         items: {
           data: [
