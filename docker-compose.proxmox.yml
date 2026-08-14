@@ -34,6 +34,9 @@ services:
       # the externally reachable HTTPS origin.
       APP_URL: https://autoquote-test.azzuresolutions.com
       AUTH_URL: https://autoquote-test.azzuresolutions.com
+      # Branded customer share links use this apex domain (demo-jewelry.azzuresolutions.com)
+      # instead of nesting under autoquote-test, so Cloudflare's default wildcard cert covers them.
+      BRAND_ROOT_DOMAIN: azzuresolutions.com
       DATABASE_URL: postgresql://autoquote:autoquote@db:5432/autoquote?schema=public
     ports:
       - "8585:8585"

@@ -17,20 +17,27 @@ export function getAppHostname() {
   return new URL(getAppOrigin()).hostname;
 }
 
+// Branded tenant links use this as the root instead of the app's own hostname, so a
+// nested app host (e.g. autoquote-test.azzuresolutions.com) can still hand out
+// apex-level links (demo-jewelry.azzuresolutions.com) covered by a single wildcard cert.
+export function getBrandRootDomain() {
+  return process.env.BRAND_ROOT_DOMAIN || getAppHostname();
+}
+
 export function buildBrandedPublicUrl(companySlug: string, path: string) {
   const url = new URL(getAppOrigin());
-  url.hostname = `${companySlug}.${url.hostname}`;
+  url.hostname = `${companySlug}.${getBrandRootDomain()}`;
   url.pathname = path;
   return url.toString();
 }
 
 export function extractTenantSlugFromHost(hostname: string) {
-  const appHostname = getAppHostname();
-  if (hostname === appHostname || !hostname.endsWith(`.${appHostname}`)) {
+  const rootDomain = getBrandRootDomain();
+  if (hostname === rootDomain || !hostname.endsWith(`.${rootDomain}`)) {
     return null;
   }
 
-  const prefix = hostname.slice(0, hostname.length - appHostname.length - 1);
+  const prefix = hostname.slice(0, hostname.length - rootDomain.length - 1);
   if (!prefix || prefix.includes(".") || prefix === "www") {
     return null;
   }
