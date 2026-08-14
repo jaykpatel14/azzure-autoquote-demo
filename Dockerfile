@@ -20,6 +20,7 @@ COPY tsconfig.json ./
 COPY prisma ./prisma
 COPY src ./src
 COPY lib ./lib
+RUN npx prisma generate
 
 FROM base AS runner
 ENV NODE_ENV=production
