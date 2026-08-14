@@ -559,13 +559,6 @@ textarea:disabled {
   text-transform: uppercase;
 }
 
-.publicQuoteCard .detailCard > span,
-.pricingCard .detailCard > span,
-.onboardingCard .detailCard > span,
-.signupCard .detailCard > span {
-  color: var(--color-muted-light);
-}
-
 .sectionHeader {
   display: flex;
   justify-content: space-between;
@@ -2655,11 +2648,127 @@ select:focus,
   font-weight: 700;
 }
 
+.onboardingStepHeader h2 {
+  color: var(--color-obsidian);
+  margin: 0 0 4px;
+}
+
+.onboardingShell .muted,
+.signupShell .muted,
+.pricingShell .muted,
+.publicQuoteShell .muted,
+.onboardingStep .muted,
+.onboardingCard .muted {
+  color: var(--color-muted-light);
+  line-height: 1.6;
+}
+
+.onboardingShell .eyebrow,
+.signupShell .eyebrow,
+.pricingShell .eyebrow,
+.publicQuoteShell .eyebrow {
+  color: var(--color-gold);
+  font-weight: 700;
+}
+
+.onboardingShell .field label,
+.onboardingShell .field span,
+.signupShell .field label,
+.signupShell .field span,
+.pricingShell .field label,
+.pricingShell .field span,
+.publicQuoteShell .field label,
+.publicQuoteShell .field span {
+  color: #18181b;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.onboardingShell .field input,
+.onboardingShell .field textarea,
+.onboardingShell .field select,
+.signupShell .field input,
+.signupShell .field textarea,
+.signupShell .field select,
+.pricingShell .field input,
+.pricingShell .field textarea,
+.pricingShell .field select,
+.publicQuoteShell .field input,
+.publicQuoteShell .field textarea,
+.publicQuoteShell .field select {
+  color: #09090b;
+  background-color: #ffffff;
+  border: 1.5px solid rgba(28, 28, 30, 0.22);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+}
+
+.onboardingShell .field input::placeholder,
+.onboardingShell .field textarea::placeholder,
+.signupShell .field input::placeholder,
+.signupShell .field textarea::placeholder,
+.pricingShell .field input::placeholder,
+.pricingShell .field textarea::placeholder,
+.publicQuoteShell .field input::placeholder,
+.publicQuoteShell .field textarea::placeholder {
+  color: #71717a;
+}
+
+.onboardingShell .field input:focus,
+.onboardingShell .field textarea:focus,
+.onboardingShell .field select:focus,
+.signupShell .field input:focus,
+.signupShell .field textarea:focus,
+.signupShell .field select:focus,
+.pricingShell .field input:focus,
+.pricingShell .field textarea:focus,
+.pricingShell .field select:focus,
+.publicQuoteShell .field input:focus,
+.publicQuoteShell .field textarea:focus,
+.publicQuoteShell .field select:focus {
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.24);
+  outline: none;
+}
+
+.onboardingShell .button.secondary,
+.signupShell .button.secondary,
+.pricingShell .button.secondary,
+.publicQuoteShell .button.secondary {
+  color: #18181b;
+  background: #ffffff;
+  border-color: rgba(28, 28, 30, 0.28);
+}
+
+.onboardingShell .button.secondary:hover,
+.signupShell .button.secondary:hover,
+.pricingShell .button.secondary:hover,
+.publicQuoteShell .button.secondary:hover {
+  color: #000000;
+  border-color: #18181b;
+  background: rgba(28, 28, 30, 0.04);
+}
+
 .trialOverview {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-4);
   margin-top: var(--space-4);
+}
+
+.trialOverview .detailCard {
+  background: linear-gradient(180deg, rgba(28, 28, 30, 0.98), rgba(20, 20, 22, 0.98));
+  border: 1px solid rgba(201, 168, 76, 0.24);
+}
+
+.trialOverview .detailCard > span {
+  color: rgba(244, 244, 248, 0.82);
+}
+
+.trialOverview .detailCard strong {
+  color: #ffffff;
 }
 
 .onboardingForm {
