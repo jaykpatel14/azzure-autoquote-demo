@@ -11,6 +11,8 @@ import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getQuoteHistoryPage, type QuoteHistoryFilter } from "@/src/services/quotes";
 import { getUsageSummary } from "@/src/services/usage";
+import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
+import { PlanGate } from "@/src/components/ui/PlanGate";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +94,14 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
     redirect("/onboarding");
   }
 
+  const subscription = context.company.subscription;
+  const planFeatures = subscription ? getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status)) : null;
+  if (!planFeatures?.canViewQuoteHistory) {
+    return <WorkspaceShell title="Quote history" description="Review saved quotes and persisted images." navItems={getWorkspaceNav("/quotes")}>
+      <PlanGate feature="canViewQuoteHistory" fallbackHref="/settings/billing?upgrade=1"><div /></PlanGate>
+    </WorkspaceShell>;
+  }
+
   const params = searchParams ? await searchParams : undefined;
   const query = params?.query?.trim() ?? "";
   const status = (FILTERS.find((item) => item.key === params?.status)?.key ?? "all") as QuoteHistoryFilter;
@@ -109,10 +119,9 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
   ]);
 
   const usage = "data" in usageResult ? usageResult.data : null;
-  const subscription = context.company.subscription;
   const trialDaysRemaining = getTrialDaysRemaining(subscription);
   const trialQuotesRemaining = getTrialQuotesRemaining(subscription);
-  const canShare = subscription?.plan.code === "enterprise";
+  const canShare = Boolean(subscription && getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status)).canShareQuoteLink);
   const emptyFilterState = history.totalQuotes === 0;
   const isFilteredEmpty = history.totalQuotes === 0 && (query.length > 0 || status !== "all");
   const currentListHref = buildHref({ query, status, page: history.currentPage });
@@ -173,12 +182,14 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
       </section>
 
       <section className="quotesToolbar">
-        <nav className="quoteTabs" aria-label="Quote filters">
+        <nav className="quoteTabs" aria-label="Quote filters" role="tablist">
           {FILTERS.map((filter) => (
             <Link
               key={filter.key}
               href={buildHref({ query, status: filter.key, page: 1 })}
               className={`quoteTab${status === filter.key ? " isActive" : ""}`}
+              role="tab"
+              aria-selected={status === filter.key}
             >
               {filter.label} ({filter.key === "all" ? history.totalQuotes : history.counts[filter.key] ?? 0})
             </Link>
@@ -235,7 +246,7 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
                   <th scope="col">Customer</th>
                   <th scope="col">Metal</th>
                   <th scope="col" className="alignRight">
-                    Est. Value
+                    Quote price
                   </th>
                   <th scope="col">Status</th>
                   <th scope="col">Created</th>
@@ -253,14 +264,14 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
                     <td>
                       {quote.recordType === "quote" ? <Link className="quoteThumbLink" href={`/quotes/${quote.id}`}>
                         {quote.thumbnailUrl ? (
-                          <img className="quoteThumbnail quoteThumbnail--small" src={quote.thumbnailUrl} alt="" />
+                          <img className="quoteThumbnail quoteThumbnail--small" src={quote.thumbnailUrl} alt={`${quote.metalType} jewelry for quote ${quote.quoteNumber}`} />
                         ) : (
                           <div className="quoteThumbnail quoteThumbnail--small quoteThumbnail--fallback">
                             <span>{quote.quoteNumber.slice(-2)}</span>
                           </div>
                         )}
                       </Link> : quote.thumbnailUrl ? (
-                        <img className="quoteThumbnail quoteThumbnail--small" src={quote.thumbnailUrl} alt="" />
+                        <img className="quoteThumbnail quoteThumbnail--small" src={quote.thumbnailUrl} alt={`${quote.metalType} jewelry analysis`} />
                       ) : (
                         <div className="quoteThumbnail quoteThumbnail--small quoteThumbnail--fallback"><span>AI</span></div>
                       )}

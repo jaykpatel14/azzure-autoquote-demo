@@ -68,6 +68,20 @@ export default async function AdminDashboardPage() {
         </>
       }
     >
+      {overview.pendingApprovals > 0 ? (
+        <section className="warningBanner">
+          <strong>{overview.pendingApprovals} account{overview.pendingApprovals === 1 ? " is" : "s are"} waiting for approval</strong>
+          <p>Jewelers cannot use AutoQuote until approved.</p>
+          <Link className="textLink" href="/admin/tenants/pending">Review pending accounts</Link>
+        </section>
+      ) : null}
+      {overview.ordersNeedingCkId > 0 ? (
+        <section className="warningBanner">
+          <strong>{overview.ordersNeedingCkId} order{overview.ordersNeedingCkId === 1 ? " is" : "s are"} waiting for a CK Order ID</strong>
+          <p>Jewelers cannot track Custom King production until an ID is assigned.</p>
+          <Link className="textLink" href="/admin/orders">Go to order queue</Link>
+        </section>
+      ) : null}
       <section className="statGrid">
         {overview.stats.map((stat) => (
           <article className="statCard statCard--admin" key={stat.label}>

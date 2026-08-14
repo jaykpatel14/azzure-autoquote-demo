@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 
@@ -19,7 +18,7 @@ export default async function PublicQuotePage({
   const { token } = await params;
 
   const quote = await prisma.quote.findUnique({
-    where: { id: token },
+    where: { publicShareToken: token },
     select: {
       id: true,
       quoteNumber: true,
@@ -30,11 +29,14 @@ export default async function PublicQuotePage({
       sideDiamondCarats: true,
       sideDiamondQuantity: true,
       estimatedPrice: true,
+      estimatedSellingPrice: true,
+      sharedAt: true,
       createdAt: true,
       company: {
         select: {
           name: true,
           logoUrl: true
+          ,websiteUrl: true
         }
       }
     }
@@ -44,12 +46,22 @@ export default async function PublicQuotePage({
     notFound();
   }
 
+  const expiresAt = quote.sharedAt ? new Date(quote.sharedAt.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
+  if (!expiresAt || expiresAt <= new Date()) {
+    return <main className="publicQuoteShell"><article className="publicQuoteCard card publicQuoteExpired">
+      <p className="eyebrow">Quote link expired</p>
+      <h1 className="publicQuoteTitle">Request an updated quote</h1>
+      <p className="publicQuoteBlurb">This quote link is no longer active. Contact {quote.company.name} for a current estimate.</p>
+      {quote.company.websiteUrl ? <a className="publicQuoteCta" href={quote.company.websiteUrl}>Visit {quote.company.name}</a> : null}
+    </article></main>;
+  }
+
   return (
     <main className="publicQuoteShell">
       <article className="publicQuoteCard card">
         <header className="publicQuoteHeader">
           {quote.company.logoUrl ? (
-            <img className="publicQuoteLogo" src={quote.company.logoUrl} alt={quote.company.name} />
+            <img className="publicQuoteLogo" src={quote.company.logoUrl} alt={`${quote.company.name} logo`} />
           ) : (
             <p className="publicQuoteTitle">{quote.company.name}</p>
           )}
@@ -60,10 +72,10 @@ export default async function PublicQuotePage({
         </header>
 
         <section className="publicQuoteBody">
-          <div className="quotePreview" style={{ position: "relative", top: 0 }}>
-            <p className="eyebrow">Approved final price</p>
-            <p className="publicQuotePrice">{formatCurrency(Number(quote.estimatedPrice))}</p>
-            <div className="quoteMeta" style={{ background: "rgba(255,255,255,0.06)" }}>
+          <div className="quotePreview publicQuotePreview">
+            <p className="eyebrow">Estimated price</p>
+            <p className="publicQuotePrice">{formatCurrency(Number(quote.estimatedSellingPrice ?? quote.estimatedPrice))}</p>
+            <div className="quoteMeta publicQuoteMeta">
               <div>
                 <span>Customer</span>
                 <strong>{quote.customerName || "Unassigned"}</strong>
@@ -82,17 +94,11 @@ export default async function PublicQuotePage({
                 <span>Quote date</span>
                 <strong>{quote.createdAt.toLocaleDateString()}</strong>
               </div>
+              <div><span>Valid until</span><strong>{expiresAt.toLocaleDateString()}</strong></div>
             </div>
           </div>
 
-          <div className="publicQuoteActions">
-            <Link className="button primary publicQuoteButton" href="/signin">
-              Sign in for revisions
-            </Link>
-            <Link className="button secondary publicQuoteButton" href="/">
-              Return home
-            </Link>
-          </div>
+          {quote.company.websiteUrl ? <a className="publicQuoteCta" href={quote.company.websiteUrl}>Visit {quote.company.name}</a> : null}
 
           <p className="disclaimer">
             Final pricing is an approved estimate, not a manufacturing invoice. Production review may

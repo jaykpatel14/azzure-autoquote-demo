@@ -7,6 +7,7 @@ import { PlanGate } from "@/src/components/ui/PlanGate";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { deriveQuoteStatus, getQuotePublicUrl, getQuote } from "@/src/services/quotes";
+import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -55,6 +56,8 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
 
   const quote = result.data;
   const status = deriveQuoteStatus(quote);
+  const subscription = context.company.subscription;
+  const canShare = Boolean(subscription && getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status)).canShareQuoteLink);
 
   return (
     <WorkspaceShell
@@ -85,16 +88,10 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <span>Metal</span>
               <strong>{quote.metalType}</strong>
             </div>
-            <div className="detailRow">
-              <span>Estimated price</span>
-              <strong>{formatCurrency(Number(quote.estimatedPrice))}</strong>
-            </div>
-            <div className="detailRow">
-              <span>Final selling price</span>
-              <strong>
-                {quote.estimatedSellingPrice
-                  ? formatCurrency(Number(quote.estimatedSellingPrice))
-                  : "Not recorded"}
+            <div className="quotePreview">
+              <span className="muted small">Quote price</span>
+              <strong className="quotePrice">
+                {formatCurrency(Number(quote.estimatedSellingPrice ?? quote.estimatedPrice))}
               </strong>
             </div>
             <div className="detailRow">
@@ -121,9 +118,9 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               viewHref={`/quotes/${quote.id}`}
               pdfHref={`/api/quotes/${quote.id}/pdf`}
               publicHref={getQuotePublicUrl(quote.id)}
-              canCopyLink={status === "sent" && context.company.subscription?.plan.code === "enterprise"}
+              canCopyLink={status === "sent" && canShare}
               copyLinkTitle={
-                context.company.subscription?.plan.code === "enterprise"
+                canShare
                   ? "Generate a PDF before sharing"
                   : "Upgrade to share quotes"
               }
@@ -158,12 +155,10 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
                 {Number(quote.sideDiamondCarats).toFixed(2)} ct · {quote.sideDiamondQuantity} stones
               </strong>
             </div>
-              <div className="detailCard">
+              {quote.publicShareToken ? <div className="detailCard">
                 <span>Public link</span>
-                <Link className="textLink" href={getQuotePublicUrl(quote.id)} target="_blank">
-                  Open customer view
-                </Link>
-              </div>
+                <Link className="textLink" href={getQuotePublicUrl(quote.publicShareToken)} target="_blank">Open customer view</Link>
+              </div> : null}
             </div>
 
           {quote.analysis?.notes ? (
@@ -174,13 +169,14 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
           ) : null}
 
           {quote.analysis?.imageDataUrl ? (
-            <img className="quoteDetailImage" src={quote.analysis.imageDataUrl} alt="Quote source image" />
+            <img className="quoteDetailImage" src={quote.analysis.imageDataUrl} alt={`${quote.metalType} jewelry for quote ${quote.quoteNumber}`} />
           ) : null}
 
           {status === "sent" && !quote.order ? (
             <div style={{ marginTop: "1rem" }}>
-              <PlanGate requireCkVerification fallbackHref="/settings/billing?upgrade=1">
-                <form className="stack" action="/api/orders" method="post">
+              <PlanGate feature="canPlaceManufacturingOrder" fallbackHref="/settings/billing?upgrade=1">
+                <PlanGate requireCkVerification fallbackHref="/settings/billing?upgrade=1">
+                  <form className="stack" action="/api/orders" method="post">
                   <input type="hidden" name="quoteId" value={quote.id} />
                   <label className="field">
                     <span>Item name</span>
@@ -193,7 +189,8 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
                   <button className="button primary" type="submit" style={{ width: "fit-content" }}>
                     Place order
                   </button>
-                </form>
+                  </form>
+                </PlanGate>
               </PlanGate>
             </div>
           ) : null}

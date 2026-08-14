@@ -33,6 +33,8 @@ export type AdminOverviewData = {
   stats: AdminOverviewStat[];
   feed: AdminOverviewFeedItem[];
   health: AdminHealthCheck[];
+  pendingApprovals: number;
+  ordersNeedingCkId: number;
 };
 
 function formatCurrency(value: number) {
@@ -112,6 +114,20 @@ function describeAuditAction(action: string, metadata: unknown) {
       return `Role updated`;
     case "COMPANY_UPDATED":
       return `Company profile updated`;
+    case "ACCOUNT_APPROVED":
+      return `Account approved as ${String(payload.pricingTier ?? "assigned tier")}`;
+    case "ACCOUNT_SUSPENDED":
+      return `Account declined or suspended`;
+    case "PRICING_TIER_UPDATED":
+      return `Tier changed from ${String(payload.previousTier ?? "unassigned")} to ${String(payload.newTier ?? "unassigned")}`;
+    case "CK_CUSTOMER_VERIFIED":
+      return "Verified as Custom King customer";
+    case "CK_VERIFICATION_REVOKED":
+      return "Custom King verification revoked";
+    case "CK_ORDER_ID_ASSIGNED":
+      return "Custom King order ID assigned";
+    case "ORDER_COMPLETED":
+      return "Manufacturing order completed";
     case "BILLING_SUBSCRIPTION_SYNCED":
       return `Subscription synced`;
     case "BILLING_CANCELLATION_REQUESTED":
@@ -140,6 +156,7 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
         id: true,
         name: true,
         createdAt: true,
+        accountStatus: true,
         subscription: {
           select: {
             status: true
@@ -240,6 +257,10 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
   const activeTenantCount = companies.filter((company) =>
     ["ACTIVE", "TRIALING", "PAST_DUE"].includes(company.subscription?.status ?? "")
   ).length;
+  const pendingApprovals = companies.filter((company) => company.accountStatus === "PENDING_APPROVAL").length;
+  const ordersNeedingCkId = await prisma.order.count({
+    where: { status: "SUBMITTED", ckOrderId: null }
+  });
   const trialTenantCount = companies.filter((company) => company.subscription?.status === "TRIALING").length;
   const paidTenantCount = companies.filter((company) => company.subscription?.status === "ACTIVE").length;
   const mrr = activeStripeSubscriptions
@@ -317,7 +338,7 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
 
   const health = await buildHealthChecks();
 
-  return { stats, feed, health };
+  return { stats, feed, health, pendingApprovals, ordersNeedingCkId };
 }
 
 async function buildHealthChecks(): Promise<AdminHealthCheck[]> {

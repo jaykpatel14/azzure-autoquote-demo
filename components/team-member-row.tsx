@@ -39,6 +39,8 @@ export default function TeamMemberRow({
         message: `${name} was removed from the team.`,
         variant: "success"
       });
+    } catch {
+      showToast({ message: "We couldn't remove this team member. Try again.", variant: "error", autoDismiss: false });
     } finally {
       setIsRemoving(false);
     }

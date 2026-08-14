@@ -3,6 +3,8 @@ import { z } from "zod";
 import { requireCompanyContext } from "@/lib/company";
 import { sendOrderSubmittedEmail } from "@/lib/order-workflow";
 import { submitOrder } from "@/src/services/orders";
+import { buildPublicUrl } from "@/lib/security";
+import { PlanError } from "@/src/stripe/plans";
 
 export const runtime = "nodejs";
 
@@ -48,11 +50,14 @@ export async function POST(request: Request) {
       orderNumber: result.data.orderNumber,
       quoteNumber: result.data.quote.quoteNumber,
       itemName: result.data.itemName,
-      orderUrl: new URL(`/orders/${result.data.id}`, request.url).toString()
+      orderUrl: buildPublicUrl(`/orders/${result.data.id}`).toString()
     });
 
-    return NextResponse.redirect(new URL(`/orders/${result.data.id}`, request.url), 303);
+    return NextResponse.redirect(buildPublicUrl(`/orders/${result.data.id}`), 303);
   } catch (error) {
+    if (error instanceof PlanError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues[0]?.message || "Invalid order payload." },

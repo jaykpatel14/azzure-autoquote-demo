@@ -53,6 +53,11 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
     >
       <section className="statGrid">
         <article className="statCard statCard--admin">
+          <span className="eyebrow">Pricing tier</span>
+          <strong>{company.pricingTier?.replace("TIER_", "Tier ") ?? "Unassigned"}</strong>
+          <p className="muted small">Since {formatDate(company.tierChangedAt ?? company.approvedAt)}</p>
+        </article>
+        <article className="statCard statCard--admin">
           <span className="eyebrow">Subscription</span>
           <strong>{subscription?.status.toLowerCase() ?? "inactive"}</strong>
           <p className="muted small">{subscription?.plan.name ?? "No plan assigned"}</p>
@@ -148,6 +153,32 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
       <section className="card">
         <div className="sectionHeader">
           <div>
+            <h2>Pricing tier</h2>
+            <p className="muted">Changes apply to future quotes only. Existing quote snapshots remain unchanged.</p>
+          </div>
+        </div>
+        <form className="stack" action={`/api/admin/tenants/${company.id}/status`} method="post">
+          <input type="hidden" name="accountStatus" value="APPROVED" />
+          <input type="hidden" name="next" value={`/admin/tenants/${company.id}`} />
+          <label className="field">
+            <span>New pricing tier</span>
+            <select name="pricingTier" defaultValue={company.pricingTier ?? ""} required>
+              <option value="TIER_1" disabled={company.pricingTier === "TIER_1"}>Tier 1 - Premium (divide by 0.6, then multiply by 2)</option>
+              <option value="TIER_2" disabled={company.pricingTier === "TIER_2"}>Tier 2 - Standard (divide by 0.7, then multiply by 2)</option>
+              <option value="TIER_3" disabled={company.pricingTier === "TIER_3"}>Tier 3 - Basic (divide by 0.8, then multiply by 2)</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>Reason (internal, required)</span>
+            <textarea name="tierChangeReason" required rows={2} />
+          </label>
+          <button className="button primary" type="submit">Save tier change</button>
+        </form>
+      </section>
+
+      <section className="card">
+        <div className="sectionHeader">
+          <div>
             <h2>Custom King access</h2>
             <p className="muted">Approve this tenant for manufacturing orders or revoke access if needed.</p>
           </div>
@@ -155,12 +186,14 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
         <div className="heroActions">
           <form action={`/api/admin/tenants/${company.id}/ck-verification`} method="post">
             <input type="hidden" name="action" value="verify" />
+            <label className="field"><span>CK notes (internal)</span><input name="notes" /></label>
             <button className="button primary" type="submit" disabled={company.ckCustomerVerified}>
               Verify customer
             </button>
           </form>
           <form action={`/api/admin/tenants/${company.id}/ck-verification`} method="post">
             <input type="hidden" name="action" value="revoke" />
+            <label className="field"><span>Revocation reason (required)</span><input name="notes" required /></label>
             <button className="button secondary" type="submit" disabled={!company.ckCustomerVerified}>
               Revoke verification
             </button>
@@ -231,8 +264,12 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
             ) : (
               data.recentQuotes.map((quote) => (
                 <div className="detailCard" key={quote.id}>
-                  <span>{quote.quoteNumber}</span>
-                  <strong>{formatAdminMoney(quote.estimatedPrice)}</strong>
+                  <span><Link href={`/admin/quotes/${quote.id}`}>{quote.quoteNumber}</Link></span>
+                  <strong>Customer: {formatAdminMoney(quote.estimatedSellingPrice ?? quote.estimatedPrice)}</strong>
+                  <p className="muted small">Making: {formatAdminMoney(quote.makingPrice)}</p>
+                  <p className="muted small">
+                    {quote.pricingTierSnapshot ?? "No tier snapshot"} · divisor {quote.tierDivisorSnapshot?.toString() ?? "n/a"}
+                  </p>
                   <p className="muted small">{formatDate(quote.createdAt)}</p>
                 </div>
               ))

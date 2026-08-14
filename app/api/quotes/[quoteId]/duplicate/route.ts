@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCompanyContext, AuthRequiredError, CompanyAccessError, canCreateQuotes } from "@/lib/company";
 import { createQuote, getQuote } from "@/src/services/quotes";
+import { buildPublicUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -48,7 +49,7 @@ export async function POST(_request: Request, { params }: RouteContext) {
       );
     }
 
-    return NextResponse.redirect(new URL(`/quotes/${created.data.id}`, _request.url), 303);
+    return NextResponse.redirect(buildPublicUrl(`/quotes/${created.data.id}`), 303);
   } catch (error) {
     if (error instanceof AuthRequiredError) {
       return NextResponse.json({ error: error.message }, { status: 401 });

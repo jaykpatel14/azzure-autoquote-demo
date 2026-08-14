@@ -2,6 +2,14 @@ import { Prisma, type PricingTier, type Quote } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { allocateQuoteNumber } from "@/lib/quote-number";
 import { NotFoundError, ConflictError, type AppResult } from "@/src/lib/errors";
+import { assertPlanFeature } from "@/src/stripe/plans";
+import { CompanyAccessError } from "@/lib/company";
+
+async function assertApprovedCompany(companyId: string) {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { accountStatus: true, pricingTier: true } });
+  if (!company || company.accountStatus !== "APPROVED" || !company.pricingTier) throw new CompanyAccessError("Account approval and a pricing tier are required.");
+  return company;
+}
 
 type CreateQuoteInput = {
   companyId: string;
@@ -97,6 +105,14 @@ export function getQuotePublicUrl(quoteId: string) {
 export async function createQuote(
   input: CreateQuoteInput
 ): Promise<AppResult<Quote>> {
+  const company = await prisma.company.findUnique({ where: { id: input.companyId }, select: { accountStatus: true, pricingTier: true } });
+  if (!company || company.accountStatus !== "APPROVED" || !company.pricingTier) {
+    return { error: ConflictError("Account approval and a pricing tier are required to create quotes.") };
+  }
+  const usage = await prisma.usagePeriod.findFirst({
+    where: { companyId: input.companyId, periodStart: { lte: new Date() }, periodEnd: { gt: new Date() } },
+    orderBy: { periodStart: "desc" }, select: { used: true, limit: true }
+  });
   const analysis =
     input.analysisId === undefined
       ? null
@@ -131,6 +147,7 @@ export async function createQuote(
             pricingTierSnapshot: input.pricingTierSnapshot ?? null,
             tierDivisorSnapshot: input.tierDivisorSnapshot ?? null,
             estimatedSellingPrice: input.estimatedSellingPrice ?? null
+            ,isOverage: Boolean(usage && usage.used > usage.limit)
           }
         });
       });
@@ -159,6 +176,7 @@ export async function getQuote(params: {
   quoteId: string;
   companyId: string;
 }): Promise<AppResult<QuotePayload>> {
+  await assertApprovedCompany(params.companyId);
   const quote = await prisma.quote.findFirst({
     where: {
       id: params.quoteId,
@@ -167,7 +185,8 @@ export async function getQuote(params: {
     include: {
       company: {
         select: {
-          name: true
+          name: true,
+          logoUrl: true
         }
       },
       analysis: {
@@ -206,6 +225,8 @@ export async function getQuoteHistoryPage(params: {
   query?: string;
   status?: QuoteHistoryFilter;
 }): Promise<QuoteHistoryPage> {
+  await assertApprovedCompany(params.companyId);
+  await assertPlanFeature(params.companyId, "canViewQuoteHistory");
   const pageSize = params.pageSize ?? 20;
   const query = (params.query ?? "").trim();
   const status = params.status ?? "all";
@@ -221,6 +242,7 @@ export async function getQuoteHistoryPage(params: {
       customerName: true,
       metalType: true,
       estimatedPrice: true,
+      estimatedSellingPrice: true,
       createdAt: true,
       pdfStoredAt: true,
       analysis: {
@@ -256,7 +278,7 @@ export async function getQuoteHistoryPage(params: {
       quoteNumber: quote.quoteNumber,
       customerName: quote.customerName,
       metalType: quote.metalType,
-      estimatedPrice: Number(quote.estimatedPrice),
+      estimatedPrice: Number(quote.estimatedSellingPrice ?? quote.estimatedPrice),
       createdAt: quote.createdAt,
       pdfStoredAt: quote.pdfStoredAt,
       thumbnailUrl: quote.analysis?.imageDataUrl ?? null,

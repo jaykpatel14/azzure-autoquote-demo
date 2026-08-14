@@ -5,6 +5,7 @@ import WorkspaceShell from "@/components/workspace-shell";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getSettingsProfileData } from "@/src/services/settings";
+import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 
 export default async function BrandingSettingsPage() {
   const context = await getAuthenticatedCompanyContext();
@@ -17,7 +18,8 @@ export default async function BrandingSettingsPage() {
     redirect("/settings");
   }
 
-  const isEnterprise = context.company.subscription?.plan.code === "enterprise";
+  const subscription = context.company.subscription;
+  const canUseLogo = Boolean(subscription && getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status)).pdfBranding !== "azzure_watermark");
 
   return (
     <WorkspaceShell
@@ -63,12 +65,12 @@ export default async function BrandingSettingsPage() {
             <input
               name="logoUrl"
               defaultValue={data.company.logoUrl ?? ""}
-              placeholder={isEnterprise ? "https://..." : "Enterprise only"}
-              disabled={!isEnterprise}
+              placeholder={canUseLogo ? "https://..." : "Professional or Enterprise only"}
+              disabled={!canUseLogo}
             />
           </label>
-          {!isEnterprise ? (
-            <p className="muted small">Upload your logo on the Enterprise plan. The website URL remains editable on all plans.</p>
+          {!canUseLogo ? (
+            <p className="muted small">Upload your logo on the Professional or Enterprise plan. The website URL remains editable on all plans.</p>
           ) : null}
           <div className="card logoPreviewCard" style={{ background: "var(--color-ivory)" }}>
             <p className="eyebrow" style={{ color: "rgba(28,28,30,0.58)" }}>

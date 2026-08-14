@@ -175,7 +175,8 @@ describe("billing checkout route", () => {
         customer: "cus_new",
         metadata: {
           companyId: "company_123",
-          planCode: "professional"
+          planCode: "professional",
+          planId: "plan_professional"
         }
       })
     );

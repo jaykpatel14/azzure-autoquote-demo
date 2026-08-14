@@ -16,7 +16,11 @@ export type AuditAction =
   | "COMPANY_UPDATED"
   | "ACCOUNT_APPROVED"
   | "ACCOUNT_SUSPENDED"
-  | "PRICING_TIER_UPDATED";
+  | "PRICING_TIER_UPDATED"
+  | "CK_CUSTOMER_VERIFIED"
+  | "CK_VERIFICATION_REVOKED"
+  | "CK_ORDER_ID_ASSIGNED"
+  | "ORDER_COMPLETED";
 
 export type AuditContext = {
   action: AuditAction;

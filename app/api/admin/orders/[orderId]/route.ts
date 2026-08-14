@@ -5,6 +5,7 @@ import { requireInternalAdminContext, InternalAdminAccessError } from "@/lib/int
 import { sendOrderCompletedEmail, sendOrderPlacedEmail } from "@/lib/order-workflow";
 import { prisma } from "@/lib/prisma";
 import { assignCkOrderId, cancelOrder, completeOrder } from "@/src/services/orders";
+import { buildPublicUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -88,7 +89,7 @@ export async function POST(request: Request, context: RouteContext) {
         orderNumber: order.orderNumber,
         ckOrderId: input.ckOrderId?.trim() || order.orderNumber,
         ckOrderUrl: input.ckOrderUrl?.trim() || null,
-        orderUrl: new URL(`/admin/orders/${order.id}`, request.url).toString()
+        orderUrl: buildPublicUrl(`/admin/orders/${order.id}`).toString()
       });
     } else if (input.status === OrderStatus.COMPLETED) {
       const result = await completeOrder({
@@ -105,7 +106,7 @@ export async function POST(request: Request, context: RouteContext) {
       await sendOrderCompletedEmail({
         companyName: order.company.name,
         orderNumber: order.orderNumber,
-        orderUrl: new URL(`/admin/orders/${order.id}`, request.url).toString()
+        orderUrl: buildPublicUrl(`/admin/orders/${order.id}`).toString()
       });
     } else if (input.status === OrderStatus.CANCELLED || input.status === OrderStatus.CANCELED) {
       const result = await cancelOrder({
@@ -137,7 +138,12 @@ export async function POST(request: Request, context: RouteContext) {
       data: {
         companyId: order.companyId,
         actorUserId: admin.user.id,
-        action: "ORDER_STATUS_UPDATED",
+        action:
+          input.status === OrderStatus.CK_ORDER_PLACED
+            ? "CK_ORDER_ID_ASSIGNED"
+            : input.status === OrderStatus.COMPLETED
+              ? "ORDER_COMPLETED"
+              : "ORDER_STATUS_UPDATED",
         targetType: "Order",
         targetId: order.id,
         metadata: {
@@ -148,7 +154,7 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
     const redirectTo = input.redirectTo?.trim() || `/admin/orders/${order.id}`;
-    return NextResponse.redirect(new URL(redirectTo, request.url), 303);
+    return NextResponse.redirect(buildPublicUrl(redirectTo), 303);
   } catch (error) {
     if (error instanceof InternalAdminAccessError) {
       return NextResponse.json({ error: error.message }, { status: 403 });

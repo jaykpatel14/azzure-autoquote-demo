@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireCompanyContext } from "@/lib/company";
 import { prisma } from "@/lib/prisma";
+import { buildPublicUrl } from "@/lib/security";
 
 const onboardingSchema = z.object({
   companyName: z.string().trim().min(2).max(120).optional(),
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
         : input.action === "finish"
           ? "/quotes/new"
           : "/onboarding";
-    return NextResponse.redirect(new URL(destination, request.url), 303);
+    return NextResponse.redirect(buildPublicUrl(destination), 303);
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unable to save onboarding." },

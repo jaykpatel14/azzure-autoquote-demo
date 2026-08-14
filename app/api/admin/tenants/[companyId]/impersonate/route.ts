@@ -4,6 +4,7 @@ import { logAuditEvent } from "@/lib/audit";
 import { setActiveCompanyCookie } from "@/lib/company";
 import { requireInternalAdminContext, InternalAdminAccessError } from "@/lib/internal-admin";
 import { prisma } from "@/lib/prisma";
+import { buildPublicUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -44,7 +45,7 @@ export async function POST(request: Request, context: RouteContext) {
       metadata: { fromAdminConsole: true, supportContext: true }
     }).catch(() => undefined);
 
-    return NextResponse.redirect(new URL("/", request.url), 303);
+    return NextResponse.redirect(buildPublicUrl("/"), 303);
   } catch (error) {
     if (error instanceof InternalAdminAccessError) {
       return NextResponse.json({ error: error.message }, { status: 403 });

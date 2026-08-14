@@ -1,6 +1,7 @@
 import type { Company, Order, OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ConflictError, NotFoundError, type AppError, type AppResult } from "@/src/lib/errors";
+import { assertPlanFeature } from "@/src/stripe/plans";
 
 export type OrderTimelineStep = {
   status: OrderStatus | "SUBMITTED" | "CK_ORDER_PLACED" | "CANCELLED";
@@ -17,6 +18,7 @@ export type OrderPayload = Order & {
     customerName: string | null;
     metalType: string;
     estimatedPrice: any;
+    estimatedSellingPrice: any;
   };
   timeline?: Array<{
     id: string;
@@ -140,6 +142,7 @@ export async function submitOrder(params: {
   notes?: string | null;
   createdBy?: string | null;
 }): Promise<AppResult<OrderPayload>> {
+  await assertPlanFeature(params.companyId, "canPlaceManufacturingOrder");
   const quote = await prisma.quote.findFirst({
     where: { id: params.quoteId, companyId: params.companyId },
     include: {
@@ -153,6 +156,10 @@ export async function submitOrder(params: {
 
   if (quote.order) {
     return { error: ConflictError("That quote already has a manufacturing order.") };
+  }
+
+  if (!quote.pdfStoredAt) {
+    return { error: ConflictError("The quote must be finalized by generating its PDF before placing an order.") };
   }
 
   const company = await prisma.company.findUnique({
@@ -192,7 +199,8 @@ export async function submitOrder(params: {
             quoteNumber: true,
             customerName: true,
             metalType: true,
-            estimatedPrice: true
+            estimatedPrice: true,
+            estimatedSellingPrice: true
           }
         },
         timeline: true
@@ -238,7 +246,8 @@ export async function getOrder(params: { companyId: string; orderId: string }): 
           quoteNumber: true,
           customerName: true,
           metalType: true,
-          estimatedPrice: true
+          estimatedPrice: true,
+          estimatedSellingPrice: true
         }
       },
       timeline: {
@@ -274,7 +283,8 @@ export async function assignCkOrderId(params: {
           quoteNumber: true,
           customerName: true,
           metalType: true,
-          estimatedPrice: true
+          estimatedPrice: true,
+          estimatedSellingPrice: true
         }
       },
       timeline: {
@@ -312,7 +322,8 @@ export async function assignCkOrderId(params: {
             quoteNumber: true,
             customerName: true,
             metalType: true,
-            estimatedPrice: true
+            estimatedPrice: true,
+            estimatedSellingPrice: true
           }
         },
         timeline: {
@@ -356,7 +367,8 @@ export async function completeOrder(params: {
           quoteNumber: true,
           customerName: true,
           metalType: true,
-          estimatedPrice: true
+          estimatedPrice: true,
+          estimatedSellingPrice: true
         }
       },
       timeline: {
@@ -388,7 +400,8 @@ export async function completeOrder(params: {
             quoteNumber: true,
             customerName: true,
             metalType: true,
-            estimatedPrice: true
+            estimatedPrice: true,
+            estimatedSellingPrice: true
           }
         },
         timeline: {

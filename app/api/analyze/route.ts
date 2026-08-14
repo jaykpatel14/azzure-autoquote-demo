@@ -29,11 +29,12 @@ import {
 } from "@/lib/ai/errors";
 import type { JewelryAnalysis } from "@/lib/ai/schema";
 import { hasAllowedImageSignature } from "@/lib/security";
-import { getPlanFeature, isPlanCode } from "@/lib/subscription-plans";
+import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 import {
   buildAnalysisImageStorageKey,
   storeAnalysisImageInS3
 } from "@/lib/quote-pdf-s3";
+import { recordQuoteOverage } from "@/lib/stripe-metering";
 
 export const runtime = "nodejs";
 
@@ -43,12 +44,15 @@ const metalTypeSchema = z.enum(METAL_TYPES);
 
 export async function POST(request: Request) {
   let analysisId: string | undefined;
-  let reservation: { usagePeriodId: string } | undefined;
+  let reservation: { usagePeriodId: string; isOverage: boolean } | undefined;
 
   try {
     const companyContext = await requireCompanyContext();
     if (!canCreateQuotes(companyContext.membership?.role ?? "CUSTOMER")) {
       throw new CompanyAccessError("You do not have permission to create estimates.");
+    }
+    if (companyContext.company.accountStatus !== "APPROVED" || !companyContext.company.pricingTier) {
+      throw new CompanyAccessError("Account approval and a pricing tier are required to create quotes.");
     }
     assertBillableSubscription(companyContext.company.subscription);
     const form = await request.formData();
@@ -81,12 +85,10 @@ export async function POST(request: Request) {
     const configuredLimit = Number.isFinite(configuredReviewCount)
       ? Math.max(1, Math.min(3, configuredReviewCount))
       : 3;
-    const planCode = companyContext.company.subscription?.plan.code;
-    const normalizedPlanCode = planCode && isPlanCode(planCode) ? planCode : "starter";
-    const entitledReviewCount =
-      companyContext.company.subscription?.status === "TRIALING"
-        ? 3
-        : Number(getPlanFeature(normalizedPlanCode, "aiPasses"));
+    const subscription = companyContext.company.subscription;
+    if (!subscription) throw new BillingAccessError("An active subscription is required.");
+    const features = getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status));
+    const entitledReviewCount = features.aiPasses;
     const reviewCount = Math.min(configuredLimit, entitledReviewCount);
 
     const analysis = await prisma.aiAnalysis.create({
@@ -106,16 +108,10 @@ export async function POST(request: Request) {
     });
     analysisId = analysis.id;
 
-    const analysisImageStorageKey = buildAnalysisImageStorageKey(
-      companyContext.company.id,
-      analysis.id,
-      image.type
-    );
-    const storedImage = await storeAnalysisImageInS3({
-      key: analysisImageStorageKey,
-      buffer: bytes,
-      contentType: image.type
-    });
+    const analysisImageStorageKey = buildAnalysisImageStorageKey(companyContext.company.id, analysis.id, image.type);
+    const storedImage = features.s3ImagePersistence
+      ? await storeAnalysisImageInS3({ key: analysisImageStorageKey, buffer: bytes, contentType: image.type })
+      : null;
 
     await prisma.aiAnalysis.update({
       where: { id: analysis.id },
@@ -124,9 +120,7 @@ export async function POST(request: Request) {
             sourceImageStorageKey: storedImage.key,
             imageDataUrl: null
           }
-        : {
-            imageDataUrl
-          }
+        : { imageDataUrl: features.s3ImagePersistence ? imageDataUrl : null }
     });
 
     const moderation = await runModerationCheck({
@@ -217,6 +211,9 @@ export async function POST(request: Request) {
 
     const merged = aggregateJewelryAnalysis(reviews, selectedMetal);
     const usagePeriodId = reservation.usagePeriodId;
+    if (reservation.isOverage) {
+      await recordQuoteOverage({ stripeCustomerId: subscription.stripeCustomerId, analysisId: analysis.id });
+    }
 
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.aiAnalysis.update({
@@ -244,6 +241,9 @@ export async function POST(request: Request) {
           used: { increment: 1 }
         }
       });
+      if (subscription.status === "TRIALING") {
+        await tx.subscription.update({ where: { companyId: companyContext.company.id }, data: { trialQuotesUsed: { increment: 1 } } });
+      }
     });
     reservation = undefined;
 

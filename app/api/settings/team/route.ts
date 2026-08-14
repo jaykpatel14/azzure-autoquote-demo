@@ -5,6 +5,8 @@ import { logAuditEvent } from "@/lib/audit";
 import { sendAuthMail } from "@/lib/mailer";
 import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
+import { buildPublicUrl } from "@/lib/security";
+import { getCompanyPlanFeatures, PlanError } from "@/src/stripe/plans";
 
 export const runtime = "nodejs";
 
@@ -33,6 +35,12 @@ export async function POST(request: Request) {
     const context = await requireCompanyContext();
     if (!canManageTeam(context.membership?.role ?? "CUSTOMER")) {
       return NextResponse.json({ error: "You do not have permission to manage team members." }, { status: 403 });
+    }
+
+    const { features } = await getCompanyPlanFeatures(context.company.id);
+    const occupiedSeats = await prisma.membership.count({ where: { companyId: context.company.id } });
+    if (occupiedSeats >= features.maxSeats) {
+      throw new PlanError("maxSeats", "You have reached your seat limit. Upgrade to add more team members.");
     }
 
     const input = await parseInput(request);
@@ -97,12 +105,15 @@ export async function POST(request: Request) {
     await sendAuthMail({
       to: email,
       subject: `You now have access to ${context.company.name}`,
-      text: `You've been added to ${context.company.name}. Sign in at ${new URL("/signin", request.url).toString()}`,
-      html: `<p>You've been added to <strong>${context.company.name}</strong>.</p><p><a href="${new URL("/signin", request.url).toString()}">Sign in</a></p>`
+      text: `You've been added to ${context.company.name}. Sign in at ${buildPublicUrl("/signin").toString()}`,
+      html: `<p>You've been added to <strong>${context.company.name}</strong>.</p><p><a href="${buildPublicUrl("/signin").toString()}">Sign in</a></p>`
     });
 
-    return NextResponse.redirect(new URL("/settings/team?updated=1", request.url), 303);
+    return NextResponse.redirect(buildPublicUrl("/settings/team?updated=1"), 303);
   } catch (error) {
+    if (error instanceof PlanError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues[0]?.message || "Invalid team payload." },

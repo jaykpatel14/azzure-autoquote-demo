@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getStripeClient } from "@/lib/stripe";
 import { createCheckoutSession } from "@/src/services/subscriptions";
 import { getPlanRank, PLAN_STRIPE_PRICE_IDS } from "@/src/stripe/plans";
+import { buildPublicUrl } from "@/lib/security";
 
 const changeSchema = z.object({
   planCode: z.enum(["starter", "professional", "enterprise"])
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.redirect(new URL("/settings/billing?billing=updated", request.url), 303);
+    return NextResponse.redirect(buildPublicUrl("/settings/billing?billing=updated"), 303);
   } catch (error) {
     return NextResponse.json(
       {

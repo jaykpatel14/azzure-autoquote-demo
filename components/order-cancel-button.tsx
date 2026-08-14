@@ -31,6 +31,8 @@ export default function OrderCancelButton({ orderId }: OrderCancelButtonProps) {
         message: "Order cancellation requested.",
         variant: "success"
       });
+    } catch {
+      showToast({ message: "We couldn't cancel this order. Try again.", variant: "error", autoDismiss: false });
     } finally {
       setLoading(false);
     }

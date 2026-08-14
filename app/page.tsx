@@ -11,7 +11,7 @@ import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getDashboardData } from "@/src/services/dashboard";
-import { getQuotePublicUrl } from "@/src/services/quotes";
+import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -186,7 +186,7 @@ export default async function HomePage() {
   const subscription = context.company.subscription;
   const trialDaysRemaining = getTrialDaysRemaining(subscription);
   const trialQuotesRemaining = getTrialQuotesRemaining(subscription);
-  const currentPlanCode = subscription?.plan.code ?? "starter";
+  const planFeatures = subscription ? getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status)) : null;
 
   return (
     <WorkspaceShell
@@ -250,7 +250,7 @@ export default async function HomePage() {
           <span className="eyebrow">Pending orders</span>
           <strong>{dashboard.pendingOrders}</strong>
           <p className="muted small">
-            {currentPlanCode === "enterprise" ? "No orders in production yet" : "Upgrade for orders"}
+            {planFeatures?.canPlaceManufacturingOrder ? "No orders in production yet" : "Upgrade for orders"}
           </p>
         </article>
         <article className="statCard">
@@ -295,19 +295,21 @@ export default async function HomePage() {
               <strong>Upload a photo to start</strong>
               <p className="muted small">Open the quote builder and start a new estimate.</p>
             </Link>
-            <PlanGate minimumPlan="enterprise" fallbackHref="/settings/billing?upgrade=1">
+            <PlanGate feature="canShareQuoteLink" fallbackHref="/settings/billing?upgrade=1">
               <Link className="detailCard" href="/quotes?status=sent">
                 <span>Share a Quote</span>
                 <strong>Send a quote to your customer</strong>
                 <p className="muted small">Open your sent quotes and copy the public link.</p>
               </Link>
             </PlanGate>
-            <PlanGate requireCkVerification fallbackHref="/settings/billing?upgrade=1">
-              <Link className="detailCard" href="/orders">
-                <span>Place an Order</span>
-                <strong>Submit for manufacturing</strong>
-                <p className="muted small">Open the manufacturing workspace.</p>
-              </Link>
+            <PlanGate feature="canPlaceManufacturingOrder" fallbackHref="/settings/billing?upgrade=1">
+              <PlanGate requireCkVerification fallbackHref="/settings/billing?upgrade=1">
+                <Link className="detailCard" href="/orders">
+                  <span>Place an Order</span>
+                  <strong>Submit for manufacturing</strong>
+                  <p className="muted small">Open the manufacturing workspace.</p>
+                </Link>
+              </PlanGate>
             </PlanGate>
           </div>
         </article>
@@ -351,7 +353,7 @@ export default async function HomePage() {
                     <td>
                       <Link className="quoteThumbLink" href={`/quotes/${quote.id}`}>
                         {quote.thumbnailUrl ? (
-                          <img className="quoteThumbnail" src={quote.thumbnailUrl} alt="" />
+                          <img className="quoteThumbnail" src={quote.thumbnailUrl} alt={`${quote.metalType} jewelry for quote ${quote.quoteNumber}`} />
                         ) : (
                           <div className="quoteThumbnail quoteThumbnail--fallback">
                             <span>{quote.quoteNumber.slice(-2)}</span>
@@ -382,9 +384,6 @@ export default async function HomePage() {
                         <Link className="textLink" href={`/api/quotes/${quote.id}/pdf`} target="_blank">
                           PDF
                         </Link>
-                        <Link className="textLink" href={getQuotePublicUrl(quote.id)} target="_blank">
-                          Public
-                        </Link>
                       </div>
                     </td>
                   </tr>
@@ -403,7 +402,7 @@ export default async function HomePage() {
               <p className="muted">Enterprise-only manufacturing orders will show up here once enabled.</p>
             </div>
           </div>
-          {currentPlanCode === "enterprise" ? (
+          {planFeatures?.canPlaceManufacturingOrder ? (
             dashboard.recentOrders.length === 0 ? (
               <div className="emptyState">
                 <strong>No orders submitted yet</strong>

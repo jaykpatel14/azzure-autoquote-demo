@@ -11,13 +11,24 @@ function formatDate(date: Date | null | undefined) {
   return date ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(date) : "Never";
 }
 
-export default async function AdminTenantsPage() {
+export default async function AdminTenantsPage({ searchParams }: { searchParams?: Promise<{ plan?: string; status?: string; tier?: string; ck?: string }> }) {
   const context = await getInternalAdminContext();
   if (!context) {
     redirect("/signin");
   }
 
   const data = await getAdminTenants();
+  const filters = (await searchParams) ?? {};
+  const companies = data.companies.filter((company) => {
+    if (filters.plan && filters.plan !== "all" && company.subscription?.plan.code !== filters.plan) return false;
+    if (filters.status === "pending" && company.accountStatus !== "PENDING_APPROVAL") return false;
+    if (filters.status && !["all", "pending"].includes(filters.status) && company.subscription?.status !== filters.status) return false;
+    if (filters.tier === "unassigned" && company.pricingTier !== null) return false;
+    if (filters.tier && !["all", "unassigned"].includes(filters.tier) && company.pricingTier !== filters.tier) return false;
+    if (filters.ck === "verified" && !company.ckCustomerVerified) return false;
+    if (filters.ck === "unverified" && company.ckCustomerVerified) return false;
+    return true;
+  });
 
   return (
     <InternalAdminShell
@@ -69,6 +80,13 @@ export default async function AdminTenantsPage() {
 
       <section className="grid twoUp">
         <article className="card">
+          <form className="quotesToolbar" method="get">
+            <label>Plan <select name="plan" defaultValue={filters.plan ?? "all"}><option value="all">All</option><option value="starter">Starter</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option></select></label>
+            <label>Status <select name="status" defaultValue={filters.status ?? "all"}><option value="all">All</option><option value="ACTIVE">Active</option><option value="TRIALING">Trial</option><option value="PAST_DUE">Past due</option><option value="CANCELED">Cancelled</option><option value="pending">Pending approval</option></select></label>
+            <label>Tier <select name="tier" defaultValue={filters.tier ?? "all"}><option value="all">All</option><option value="TIER_1">Tier 1</option><option value="TIER_2">Tier 2</option><option value="TIER_3">Tier 3</option><option value="unassigned">Unassigned</option></select></label>
+            <label>CK <select name="ck" defaultValue={filters.ck ?? "all"}><option value="all">All</option><option value="verified">Verified</option><option value="unverified">Not verified</option></select></label>
+            <button className="button secondary button--sm" type="submit">Apply filters</button>
+          </form>
           <div className="sectionHeader">
             <div>
               <h2>Tenant roster</h2>
@@ -85,13 +103,15 @@ export default async function AdminTenantsPage() {
                   <th scope="col">Tenant</th>
                   <th scope="col">Approval</th>
                   <th scope="col">Plan</th>
+                  <th scope="col">Tier</th>
+                  <th scope="col">CK verified</th>
                   <th scope="col">Status</th>
                   <th scope="col">Members</th>
                   <th scope="col">Recent value</th>
                 </tr>
               </thead>
               <tbody>
-                {data.companies.map((company) => (
+                {companies.map((company) => (
                   <tr key={company.id}>
                     <td>
                       <strong>
@@ -104,6 +124,8 @@ export default async function AdminTenantsPage() {
                       <p className="muted small">{company.pricingTier ?? "No tier"}</p>
                     </td>
                     <td>{company.subscription?.plan.name ?? "No plan"}</td>
+                    <td><span className="badge">{company.pricingTier?.replace("TIER_", "Tier ") ?? "Unassigned"}</span></td>
+                    <td>{company.ckCustomerVerified ? "✓" : <span className="muted">—</span>}</td>
                     <td>
                       <span className="badge">{company.subscription?.status.toLowerCase() ?? "inactive"}</span>
                     </td>

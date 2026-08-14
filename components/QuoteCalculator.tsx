@@ -169,58 +169,6 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
-function estimateBreakdown(
-  input: FacetOutput,
-  metalType: MetalType,
-  profile: PricingProfileInput = {}
-): {
-  metalCost: number;
-  diamondCost: number;
-  labourAndMargin: number;
-  total: number;
-} {
-  const config = { ...EMPTY_PROFILE, ...profile };
-  const totalDiamondCarats = input.centerDiamondCarats + input.sideDiamondCarats;
-  const purity: Record<"10K" | "14K" | "18K", number> = {
-    "10K": 0.417,
-    "14K": 0.585,
-    "18K": 0.75
-  };
-  const density: Record<MetalType, number> = {
-    "10K": 11.6,
-    "14K": 13.1,
-    "18K": 15.6,
-    Platinum: 21.45,
-    Silver: 10.49
-  };
-  const ozToGram = 31.1034768;
-  const metalRate =
-    metalType === "Platinum"
-      ? (Number(config.platinumSpotPerOz ?? 0) / ozToGram) * 1.3
-      : metalType === "Silver"
-        ? (Number(config.silverSpotPerOz ?? 0) / ozToGram) * 3.5
-        : ((Number(config.goldSpotPerOz ?? 0) / ozToGram) * purity[metalType]) * 1.15;
-  const diamondRate = 125;
-  const metalCost = metalRate * Number(input.metalWeightGrams || 0);
-  const diamondCost = diamondRate * totalDiamondCarats;
-  const makingCost =
-    metalCost +
-    diamondCost +
-    Number(config.cadCharge ?? 0) +
-    input.centerDiamondCarats * Number(config.centerSettingPerCarat ?? 0) +
-    input.sideDiamondQuantity * Number(config.sideSettingPerStone ?? 0);
-  const sellingPrice = makingCost / Math.max(Number(config.sellingMarginDivisor ?? 0.7), 0.01);
-  const total = sellingPrice * Math.max(Number(config.finalMultiplier ?? 2), 0);
-  const labourAndMargin = Math.max(total - metalCost - diamondCost, 0);
-
-  return {
-    metalCost: Math.round(metalCost * 100) / 100,
-    diamondCost: Math.round(diamondCost * 100) / 100,
-    labourAndMargin: Math.round(labourAndMargin * 100) / 100,
-    total: Math.round(total * 100) / 100
-  };
-}
-
 function mergeAssumptions(outputs: FacetOutput[]) {
   return Array.from(
     new Set(outputs.flatMap((output) => output.assumptions ?? []).map((value) => value.trim()).filter(Boolean))
@@ -343,26 +291,7 @@ export default function QuoteCalculator({
     );
   }, [aggregateQuote, metalType, effectivePricingProfile]);
 
-  const breakdown = aggregateQuote
-    ? estimateBreakdown(
-        {
-          jewelryType: aggregateQuote.jewelryType,
-          centerShape: aggregateQuote.centerShape,
-          metalWeightGrams: aggregateQuote.metalWeightGrams,
-          centerDiamondCarats: aggregateQuote.centerDiamondCarats,
-          sideDiamondCarats: aggregateQuote.sideDiamondCarats,
-          sideDiamondQuantity: aggregateQuote.sideDiamondQuantity,
-          confidence: aggregateQuote.confidence,
-          notes: aggregateQuote.notes,
-          assumptions: aggregateQuote.assumptions
-        },
-        metalType,
-        effectivePricingProfile
-      )
-    : null;
-
   const previewPrice = computedPrice?.estimatedFinalPrice ?? 0;
-  const publicQuoteUrl = savedQuote ? `/q/${savedQuote.id}` : "";
   const canAnalyse = canEdit && facets.some((facet) => facet.status === "pending" || facet.status === "error");
 
   function updateFacet(id: string, updater: (facet: FacetDraft) => FacetDraft) {
@@ -657,7 +586,7 @@ export default function QuoteCalculator({
             </div>
           </div>
 
-          <label
+          <div
             className="dropzone dropzone--multi"
             onDragOver={(event) => {
               event.preventDefault();
@@ -668,19 +597,13 @@ export default function QuoteCalculator({
               handleFiles(Array.from(event.dataTransfer.files).filter(Boolean));
             }}
           >
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              disabled={!canEdit}
-              onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
-              onClick={(event) => {
-                (event.currentTarget as HTMLInputElement).value = "";
-              }}
-            />
-            <strong>Click to select jewelry images</strong>
-            <span className="muted small">JPG, PNG, or WEBP up to 10 MB.</span>
-          </label>
+            <strong>Add jewelry photos</strong>
+            <span className="muted small">Use your camera or choose JPG, PNG, or WEBP images up to 10 MB.</span>
+            <div className="dropzoneActions">
+              <label className="button primary"><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} />Take a photo</label>
+              <label className="button secondary"><input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} />Choose from library</label>
+            </div>
+          </div>
 
           {facets.length ? (
             <div className="facetThumbRail" aria-label="Uploaded photos">
@@ -692,7 +615,7 @@ export default function QuoteCalculator({
                   onClick={() => setActiveFacetId(facet.id)}
                 >
                   {facet.previewUrl ? (
-                    <img src={facet.previewUrl} alt="" className="facetThumbImage" />
+                    <img src={facet.previewUrl} alt={`${facet.title} jewelry preview`} className="facetThumbImage" />
                   ) : (
                     <div className="facetThumbImage facetThumbImage--fallback">
                       <span>{facet.title}</span>
@@ -775,7 +698,7 @@ export default function QuoteCalculator({
                 >
                   <div className="facetCardHeader">
                     {facet.previewUrl ? (
-                      <img src={facet.previewUrl} alt="" className="facetCardImage" />
+                      <img src={facet.previewUrl} alt={`${facet.title} jewelry analysis`} className="facetCardImage" />
                     ) : (
                       <div className="facetCardImage facetCardImage--fallback">
                         <span>{facet.title}</span>
@@ -945,7 +868,7 @@ export default function QuoteCalculator({
           <div className="sectionHeader">
             <div>
               <h2>Step 3 - Review and generate</h2>
-              <p className="muted">Approve the final price, collapse the breakdown, and save the quote when ready.</p>
+              <p className="muted">Approve the final customer price and save the quote when ready.</p>
             </div>
           </div>
 
@@ -977,35 +900,6 @@ export default function QuoteCalculator({
             </p>
           </div>
 
-          <details className="breakdownDetails" hidden>
-            <summary>Price breakdown</summary>
-            {breakdown ? (
-              <div className="breakdownList">
-                <div className="breakdownRow">
-                  <span>Metal cost ({metalType}, {aggregateQuote?.metalWeightGrams.toFixed(2)}g)</span>
-                  <strong>{formatCurrency(breakdown.metalCost)}</strong>
-                </div>
-                <div className="breakdownRow">
-                  <span>Diamond cost</span>
-                  <strong>{formatCurrency(breakdown.diamondCost)}</strong>
-                </div>
-                <div className="breakdownRow">
-                  <span>Labour &amp; margin</span>
-                  <strong>{formatCurrency(breakdown.labourAndMargin)}</strong>
-                </div>
-                <div className="breakdownRow breakdownRow--total">
-                  <span>Total estimate</span>
-                  <strong>{formatCurrency(breakdown.total)}</strong>
-                </div>
-              </div>
-            ) : (
-              <div className="emptyState emptyState--compact">
-                <strong>No estimate yet</strong>
-                <p className="muted small">Analyse at least one photo to generate the price breakdown.</p>
-              </div>
-            )}
-          </details>
-
           <div className="buttonRow">
             <button
               className="button primary"
@@ -1018,11 +912,6 @@ export default function QuoteCalculator({
             {savedQuote ? (
               <a className="button secondary" href={`/api/quotes/${savedQuote.id}/pdf`} target="_blank" rel="noreferrer">
                 Download PDF
-              </a>
-            ) : null}
-            {savedQuote ? (
-              <a className="button secondary" href={publicQuoteUrl} target="_blank" rel="noreferrer">
-                Open public quote
               </a>
             ) : null}
             <button className="button secondary" type="button" onClick={() => window.print()}>

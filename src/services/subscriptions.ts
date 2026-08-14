@@ -136,11 +136,13 @@ export async function createCheckoutSession(params: {
     cancel_url: buildAppUrl("/settings/billing?billing=cancel"),
     metadata: {
       companyId: params.companyId,
+      planId: plan.id,
       planCode: plan.code
     },
     subscription_data: {
       metadata: {
         companyId: params.companyId,
+        planId: plan.id,
         planCode: plan.code
       }
     }

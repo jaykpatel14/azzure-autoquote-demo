@@ -53,6 +53,7 @@ async function createStripeCheckoutSession(input: {
       trial_period_days: 14,
       metadata: {
         companyId: input.companyId,
+        planId: plan.id,
         planCode: input.planCode,
         trialQuoteCap: "25",
         onboardingComplete: "false"
@@ -60,6 +61,7 @@ async function createStripeCheckoutSession(input: {
     },
     metadata: {
       companyId: input.companyId,
+      planId: plan.id,
       planCode: input.planCode
     },
     success_url: buildAppUrl("/onboarding?session_id={CHECKOUT_SESSION_ID}"),

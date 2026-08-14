@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthenticatedCompanyContext, isCompanyMember, setActiveCompanyCookie } from "@/lib/company";
 import { logAuditEvent } from "@/lib/audit";
+import { buildPublicUrl } from "@/lib/security";
 
 const schema = z.object({
   companyId: z.string().min(1)
@@ -37,5 +38,5 @@ export async function POST(request: Request) {
     metadata: { fromCompanyId: context.company.id }
   }).catch(() => undefined);
 
-  return NextResponse.redirect(new URL("/", request.url));
+  return NextResponse.redirect(buildPublicUrl("/"));
 }

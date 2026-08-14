@@ -9,6 +9,10 @@ export function getAppOrigin() {
   return new URL(process.env.APP_URL || "http://localhost:3000").origin;
 }
 
+export function buildPublicUrl(path: string) {
+  return new URL(path, getAppOrigin());
+}
+
 export function getRequestOrigin(request: Request | NextRequest) {
   return request.headers.get("origin") || request.headers.get("referer") || "";
 }

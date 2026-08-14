@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireInternalAdminContext, InternalAdminAccessError } from "@/lib/internal-admin";
 import { revokeCkVerification, verifyCkCustomer } from "@/src/services/admin-tenants";
+import { buildPublicUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -42,6 +43,9 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const input = await parseInput(request);
+    if (input.action === "revoke" && !input.notes?.trim()) {
+      return NextResponse.json({ error: "A revocation reason is required." }, { status: 400 });
+    }
     if (input.action === "verify") {
       await verifyCkCustomer({
         companyId: parsedParams.data.companyId,
@@ -56,7 +60,7 @@ export async function POST(request: Request, context: RouteContext) {
       });
     }
 
-    return NextResponse.redirect(new URL(`/admin/tenants/${parsedParams.data.companyId}`, request.url), 303);
+    return NextResponse.redirect(buildPublicUrl(`/admin/tenants/${parsedParams.data.companyId}`), 303);
   } catch (error) {
     if (error instanceof InternalAdminAccessError) {
       return NextResponse.json({ error: error.message }, { status: 403 });

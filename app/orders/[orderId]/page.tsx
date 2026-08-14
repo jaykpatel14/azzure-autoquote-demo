@@ -76,7 +76,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
             </div>
             <div className="detailRow">
               <span>Estimate</span>
-              <strong>{formatCurrency(Number(order.quote.estimatedPrice))}</strong>
+              <strong>{formatCurrency(Number(order.quote.estimatedSellingPrice ?? order.quote.estimatedPrice))}</strong>
             </div>
             <div className="detailRow">
               <span>Submitted</span>
@@ -123,9 +123,9 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
               <h2>Order progress</h2>
             </div>
           </div>
-          <div className="orderTimeline">
+          <div className="orderTimeline" role="list" aria-label="Order progress">
             {timeline.map((step) => (
-              <div key={step.status} className={`orderTimelineStep${step.completed ? " isComplete" : ""}`}>
+              <div key={step.status} className={`orderTimelineStep${step.completed ? " isComplete" : ""}`} role="listitem">
                 <div className="orderTimelineMarker" />
                 <div>
                   <strong>{step.label}</strong>

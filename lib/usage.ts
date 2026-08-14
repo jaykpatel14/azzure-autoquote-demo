@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { canReserveUsage } from "@/lib/usage-policy";
+import { getCompanyPlanFeatures } from "@/src/stripe/plans";
 
 export class UsageLimitError extends Error {
   constructor(message = "Monthly estimate limit reached.") {
@@ -18,6 +19,8 @@ type UsageRow = {
 
 export async function reserveMonthlyUsage(companyId: string) {
   const now = new Date();
+  const { company, features } = await getCompanyPlanFeatures(companyId);
+  const permitsOverage = company.subscription?.status !== "TRIALING" && features.overageEnabled;
 
   return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const [usage] = await tx.$queryRaw<UsageRow[]>`
@@ -35,7 +38,7 @@ export async function reserveMonthlyUsage(companyId: string) {
       throw new Error("No active usage period found for this company.");
     }
 
-    if (!canReserveUsage(usage)) {
+    if (!canReserveUsage(usage) && !permitsOverage) {
       throw new UsageLimitError();
     }
 
@@ -44,7 +47,7 @@ export async function reserveMonthlyUsage(companyId: string) {
       data: { reserved: { increment: 1 } }
     });
 
-    return { usagePeriodId: usage.id };
+    return { usagePeriodId: usage.id, isOverage: !canReserveUsage(usage) };
   });
 }
 

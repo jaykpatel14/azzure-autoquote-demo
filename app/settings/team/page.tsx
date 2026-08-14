@@ -6,6 +6,7 @@ import WorkspaceShell from "@/components/workspace-shell";
 import { getAuthenticatedCompanyContext, canManageTeam } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getSettingsTeamData } from "@/src/services/settings";
+import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 
 export default async function TeamSettingsPage() {
   const context = await getAuthenticatedCompanyContext();
@@ -19,8 +20,9 @@ export default async function TeamSettingsPage() {
   }
 
   const hasManageAccess = canManageTeam(context.membership?.role ?? "CUSTOMER");
-  const starterLocked = context.company.subscription?.plan.code === "starter";
-  const professionalSeats = context.company.subscription?.plan.code === "professional" ? 5 : null;
+  const subscription = context.company.subscription;
+  const maxSeats = subscription ? getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status)).maxSeats : 1;
+  const atSeatLimit = company.memberships.length >= maxSeats;
 
   return (
     <WorkspaceShell
@@ -41,11 +43,7 @@ export default async function TeamSettingsPage() {
             <div>
               <h2>Team members</h2>
               <p className="muted">
-                {starterLocked
-                  ? "Your plan supports 1 user. Upgrade to add team members."
-                  : professionalSeats
-                    ? `Your plan supports up to ${professionalSeats} seats.`
-                    : "Enterprise supports unlimited seats."}
+                {Number.isFinite(maxSeats) ? `Your plan supports up to ${maxSeats} seats.` : "Your plan supports unlimited seats."}
               </p>
             </div>
           </div>
@@ -70,9 +68,9 @@ export default async function TeamSettingsPage() {
               <p className="muted">Add a teammate by email. They can sign in with their existing account or set up a new one.</p>
             </div>
           </div>
-          {starterLocked ? (
+          {atSeatLimit ? (
             <div className="emptyState">
-              <strong>Your plan supports 1 user. Upgrade to add team members.</strong>
+              <strong>Your plan seat limit has been reached. Upgrade to add team members.</strong>
               <p className="muted">Professional unlocks 5 seats, and Enterprise removes the seat cap entirely.</p>
               <Link className="button primary" href="/settings/billing?upgrade=1">
                 Review plans

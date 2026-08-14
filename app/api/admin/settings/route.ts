@@ -6,6 +6,7 @@ import {
   upsertRuntimeSetting
 } from "@/lib/app-settings";
 import { requireInternalAdminContext, InternalAdminAccessError } from "@/lib/internal-admin";
+import { buildPublicUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
     }
 
     const redirectTo = input.redirectTo?.trim() || "/admin/settings";
-    return NextResponse.redirect(new URL(redirectTo, request.url), 303);
+    return NextResponse.redirect(buildPublicUrl(redirectTo), 303);
   } catch (error) {
     if (error instanceof InternalAdminAccessError) {
       return NextResponse.json({ error: error.message }, { status: 403 });

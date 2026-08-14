@@ -8,6 +8,7 @@ import {
   canViewQuotes
 } from "@/lib/company";
 import { deleteQuote, getQuote } from "@/src/services/quotes";
+import { assertPlanFeature, PlanError } from "@/src/stripe/plans";
 
 export const runtime = "nodejs";
 
@@ -24,6 +25,7 @@ type RouteContext = {
 export async function GET(_request: Request, { params }: RouteContext) {
   try {
     const context = await requireCompanyContext();
+    await assertPlanFeature(context.company.id, "canViewQuoteHistory");
     if (!canViewQuotes(context.membership?.role ?? "CUSTOMER")) {
       throw new CompanyAccessError("You do not have permission to view quotes.");
     }
@@ -58,6 +60,9 @@ export async function GET(_request: Request, { params }: RouteContext) {
       analysis: result.data.analysis
     });
   } catch (error) {
+    if (error instanceof PlanError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     if (error instanceof AuthRequiredError) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }

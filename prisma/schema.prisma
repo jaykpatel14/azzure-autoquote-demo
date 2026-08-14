@@ -272,6 +272,8 @@ model Quote {
   pricingTierSnapshot   PricingTier?
   tierDivisorSnapshot   Decimal?
   estimatedSellingPrice Decimal?
+  publicShareToken      String?     @unique
+  sharedAt              DateTime?
   isOverage             Boolean     @default(false)
   pdfStorageKey         String?     @unique
   pdfStoredAt           DateTime?

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { canManageBilling, requireCompanyContext } from "@/lib/company";
 import { logAuditEvent } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
+import { buildPublicUrl } from "@/lib/security";
+import { getCompanyPlanFeatures } from "@/src/stripe/plans";
 
 export const runtime = "nodejs";
 
@@ -36,11 +38,12 @@ export async function POST(request: Request) {
     }
 
     const input = await parseInput(request);
-    const isEnterprise = context.company.subscription?.plan.code === "enterprise";
+    const { features } = await getCompanyPlanFeatures(context.company.id);
+    const canUseLogo = features.pdfBranding !== "azzure_watermark";
 
-    if (input.logoUrl && !isEnterprise) {
+    if (input.logoUrl && !canUseLogo) {
       return NextResponse.json(
-        { error: "Upload your logo on the Enterprise plan." },
+        { error: "Upload your logo on the Professional or Enterprise plan." },
         { status: 403 }
       );
     }
@@ -66,7 +69,7 @@ export async function POST(request: Request) {
       }
     }).catch(() => undefined);
 
-    return NextResponse.redirect(new URL("/settings/branding?updated=1", request.url), 303);
+    return NextResponse.redirect(buildPublicUrl("/settings/branding?updated=1"), 303);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

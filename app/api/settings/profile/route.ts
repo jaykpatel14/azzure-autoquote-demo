@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { logAuditEvent } from "@/lib/audit";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
+import { buildPublicUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
       }).catch(() => undefined);
     }
 
-    return NextResponse.redirect(new URL("/settings/profile?updated=1", request.url), 303);
+    return NextResponse.redirect(buildPublicUrl("/settings/profile?updated=1"), 303);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

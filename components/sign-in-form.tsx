@@ -33,8 +33,8 @@ export default function SignInForm({
     if (result?.error) {
       setStatus(
         result.error === "CredentialsSignin"
-          ? "Invalid credentials or unverified email."
-          : result.error
+          ? "Check your email and password, then try again. If you recently registered, verify your email first."
+          : "We couldn't sign you in right now. Try again in a moment."
       );
       setLoading(false);
       return;

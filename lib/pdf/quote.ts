@@ -18,6 +18,7 @@ export type QuotePdfInput = {
   estimatedSellingPrice?: number | null;
   jewelryType?: string | null;
   centerShape?: string | null;
+  branding?: "azzure_watermark" | "custom_logo" | "white_label";
 };
 
 function formatCurrency(value: number) {
@@ -102,13 +103,19 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    doc.info.Title = `${input.quoteNumber} - Azzure AutoQuote`;
+    const branding = input.branding ?? "azzure_watermark";
+    doc.info.Title = `${input.quoteNumber}${branding === "white_label" ? "" : " - Azzure AutoQuote"}`;
     doc.info.Author = input.companyName;
     doc.info.Subject = "Customer quote";
 
     doc.rect(0, 0, doc.page.width, 110).fill("#10172a");
     doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(10).text(input.companyName, 48, 60);
     doc.fontSize(26).text("Customer Quote", 48, 74);
+    if (branding === "azzure_watermark") {
+      doc.save().fillColor("#c5a03a").opacity(0.12).font("Helvetica-Bold").fontSize(54)
+        .rotate(-32, { origin: [doc.page.width / 2, doc.page.height / 2] })
+        .text("AZZURE AUTOQUOTE", 80, doc.page.height / 2, { width: doc.page.width - 160, align: "center" }).restore();
+    }
     doc
       .font("Helvetica")
       .fontSize(10)
@@ -269,7 +276,11 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
       .fontSize(9)
       .fillColor("#6b7280")
       .text(
-        "Prepared by Azzure AutoQuote. This PDF is generated from saved quote data and is customer-safe.",
+        branding === "white_label"
+          ? `Prepared by ${input.companyName}.`
+          : branding === "custom_logo"
+            ? `Prepared for ${input.companyName}. Powered by Azzure AutoQuote.`
+            : "Prepared by Azzure AutoQuote. This PDF is generated from saved quote data and is customer-safe.",
         48,
         noteTop + 84,
         { align: "center", width: doc.page.width - 96 }

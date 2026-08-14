@@ -96,7 +96,8 @@ function formatPrice(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: 0
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   }).format(value);
 }
 
@@ -114,8 +115,8 @@ export default function PricingPage() {
   return (
     <main className="pricingShell">
       <section className="pricingHero">
-        <p className="eyebrow">Simple pricing. Powerful quoting.</p>
-        <h1 className="pricingTitle">14-day free trial on every plan. No setup fees.</h1>
+        <p className="eyebrow">AI-powered jewelry quoting</p>
+        <h1 className="pricingTitle">Quote any piece. In seconds.</h1>
         <p className="pricingLead">
           Start with the plan that matches your shop today, compare features side by side, and move into
           checkout only when you are ready to collect a card.
@@ -130,6 +131,7 @@ export default function PricingPage() {
             <article key={code} className={plan.featured ? "pricingCard pricingCard--featured" : "pricingCard"}>
               {plan.badge ? <span className="pricingBadge">{plan.badge}</span> : null}
               <div className="pricingCardTop">
+                <p className="pricingTrial">14-day free trial</p>
                 <p className="pricingCardName">{plan.name}</p>
                 <p className="pricingCardPrice">
                   {formatPrice(plan.price)} <span>/ month</span>

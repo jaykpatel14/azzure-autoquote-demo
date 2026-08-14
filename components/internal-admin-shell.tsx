@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import SignOutButton from "@/components/sign-out-button";
 import type { InternalAdminNavItem } from "@/lib/internal-admin-nav";
+import { prisma } from "@/lib/prisma";
 
 type InternalAdminShellProps = {
   title: string;
@@ -12,7 +13,7 @@ type InternalAdminShellProps = {
   children: ReactNode;
 };
 
-export default function InternalAdminShell({
+export default async function InternalAdminShell({
   title,
   description,
   navItems,
@@ -20,6 +21,7 @@ export default function InternalAdminShell({
   adminName,
   children
 }: InternalAdminShellProps) {
+  const pendingCount = await prisma.company.count({ where: { accountStatus: "PENDING_APPROVAL" } });
   return (
     <div className="workspaceShell">
       <a className="skipLink" href="#content">
@@ -46,7 +48,10 @@ export default function InternalAdminShell({
               href={item.href}
               aria-current={item.active ? "page" : undefined}
             >
-              {item.label}
+              <span>{item.label}</span>
+              {item.href === "/admin/tenants" && pendingCount > 0 ? (
+                <span className="badge">{pendingCount}</span>
+              ) : null}
             </Link>
           ))}
         </nav>

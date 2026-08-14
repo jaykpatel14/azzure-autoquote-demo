@@ -13,6 +13,7 @@ import {
   storeQuotePdfInS3
 } from "@/lib/quote-pdf-s3";
 import { getQuote } from "@/src/services/quotes";
+import { assertPlanFeature, getCompanyPlanFeatures, PlanError } from "@/src/stripe/plans";
 
 export const runtime = "nodejs";
 
@@ -25,6 +26,8 @@ type RouteContext = {
 export async function GET(_request: Request, { params }: RouteContext) {
   try {
     const context = await requireCompanyContext();
+    await assertPlanFeature(context.company.id, "canDownloadPDF");
+    const { features } = await getCompanyPlanFeatures(context.company.id);
     if (!canViewQuotes(context.membership?.role ?? "CUSTOMER")) {
       throw new CompanyAccessError("You do not have permission to view quote PDFs.");
     }
@@ -66,13 +69,14 @@ export async function GET(_request: Request, { params }: RouteContext) {
         : null,
       jewelryType: quoteResult.data.analysis?.jewelryType,
       centerShape: quoteResult.data.analysis?.centerShape
+      ,branding: features.pdfBranding
     });
 
     const storageKey = buildQuotePdfStorageKey(context.company.id, quoteResult.data.quoteNumber);
-    const stored = await storeQuotePdfInS3({
+    const stored = features.s3ImagePersistence ? await storeQuotePdfInS3({
       key: storageKey,
       buffer: pdfBuffer
-    });
+    }) : null;
 
     if (stored) {
       await prisma.quote
@@ -95,6 +99,9 @@ export async function GET(_request: Request, { params }: RouteContext) {
       }
     });
   } catch (error) {
+    if (error instanceof PlanError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     if (error instanceof AuthRequiredError) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }

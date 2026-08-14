@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createAdminCompanyWithMember } from "@/lib/admin-companies";
 import { requireInternalAdminContext, InternalAdminAccessError } from "@/lib/internal-admin";
 import { prisma } from "@/lib/prisma";
+import { buildPublicUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     });
 
     const redirectTo = input.redirectTo?.trim() || `/admin/companies/${result.company.id}`;
-    return NextResponse.redirect(new URL(redirectTo, request.url), 303);
+    return NextResponse.redirect(buildPublicUrl(redirectTo), 303);
   } catch (error) {
     if (error instanceof InternalAdminAccessError) {
       return NextResponse.json({ error: error.message }, { status: 403 });

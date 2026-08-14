@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { clearRateLimitState, checkRateLimit } from "@/lib/rate-limit";
-import { hasAllowedImageSignature, isSameOriginRequest } from "@/lib/security";
+import { buildPublicUrl, hasAllowedImageSignature, isSameOriginRequest } from "@/lib/security";
 import { requireEnv } from "@/lib/env";
 
 afterEach(() => {
@@ -33,6 +33,14 @@ describe("security helpers", () => {
     });
 
     expect(isSameOriginRequest(request)).toBe(false);
+  });
+
+  test("builds redirects from the configured public origin", () => {
+    vi.stubEnv("APP_URL", "https://autoquote-test.azzuresolutions.com");
+
+    expect(buildPublicUrl("/admin/settings?updated=1").toString()).toBe(
+      "https://autoquote-test.azzuresolutions.com/admin/settings?updated=1"
+    );
   });
 
   test("enforces a simple in-memory rate limit", () => {

@@ -1,5 +1,4 @@
 import type { Prisma } from "@prisma/client";
-import { logAuditEvent } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { toPricingProfileInput } from "@/lib/metal-pricing";
 
@@ -22,6 +21,10 @@ type AdminTenantListCompany = {
   ckCustomerVerifiedBy: string | null;
   ckCustomerRevokedAt: Date | null;
   ckCustomerNotes: string | null;
+  approvedAt: Date | null;
+  approvedBy: string | null;
+  tierChangedAt: Date | null;
+  tierChangedBy: string | null;
   createdAt: Date;
   subscription: {
     status: string;
@@ -42,6 +45,10 @@ type AdminTenantListCompany = {
     id: string;
     quoteNumber: string;
     estimatedPrice: Prisma.Decimal;
+    makingPrice?: Prisma.Decimal | null;
+    estimatedSellingPrice?: Prisma.Decimal | null;
+    pricingTierSnapshot?: string | null;
+    tierDivisorSnapshot?: Prisma.Decimal | null;
     createdAt: Date;
   }[];
   orders: {
@@ -110,6 +117,10 @@ export async function getAdminTenants() {
           id: true,
           quoteNumber: true,
           estimatedPrice: true,
+          makingPrice: true,
+          estimatedSellingPrice: true,
+          pricingTierSnapshot: true,
+          tierDivisorSnapshot: true,
           createdAt: true
         }
       },
@@ -261,27 +272,23 @@ export async function verifyCkCustomer(params: {
   adminUserId: string;
   notes?: string | null;
 }) {
-  const company = await prisma.company.update({
-    where: { id: params.companyId },
-    data: {
-      ckCustomerVerified: true,
-      ckCustomerVerifiedAt: new Date(),
-      ckCustomerVerifiedBy: params.adminUserId,
-      ckCustomerRevokedAt: null,
-      ckCustomerNotes: params.notes?.trim() || null
-    }
-  });
-
-  await logAuditEvent({
-    action: "COMPANY_UPDATED",
-    companyId: company.id,
-    actorUserId: params.adminUserId,
-    targetType: "Company",
-    targetId: company.id,
-    metadata: {
-      message: "Custom King customer verification approved",
-      ckCustomerVerified: true
-    }
+  const company = await prisma.$transaction(async (tx) => {
+    const updated = await tx.company.update({
+      where: { id: params.companyId },
+      data: {
+        ckCustomerVerified: true,
+        ckCustomerVerifiedAt: new Date(),
+        ckCustomerVerifiedBy: params.adminUserId,
+        ckCustomerRevokedAt: null,
+        ckCustomerNotes: params.notes?.trim() || null
+      }
+    });
+    await tx.auditLog.create({ data: {
+      action: "CK_CUSTOMER_VERIFIED", companyId: updated.id, actorUserId: params.adminUserId,
+      targetType: "Company", targetId: updated.id,
+      metadata: { message: "Custom King customer verification approved", ckCustomerVerified: true }
+    } });
+    return updated;
   });
 
   return company;
@@ -292,27 +299,23 @@ export async function revokeCkVerification(params: {
   adminUserId: string;
   notes?: string | null;
 }) {
-  const company = await prisma.company.update({
-    where: { id: params.companyId },
-    data: {
-      ckCustomerVerified: false,
-      ckCustomerVerifiedAt: null,
-      ckCustomerVerifiedBy: null,
-      ckCustomerRevokedAt: new Date(),
-      ckCustomerNotes: params.notes?.trim() || null
-    }
-  });
-
-  await logAuditEvent({
-    action: "COMPANY_UPDATED",
-    companyId: company.id,
-    actorUserId: params.adminUserId,
-    targetType: "Company",
-    targetId: company.id,
-    metadata: {
-      message: "Custom King customer verification revoked",
-      ckCustomerVerified: false
-    }
+  const company = await prisma.$transaction(async (tx) => {
+    const updated = await tx.company.update({
+      where: { id: params.companyId },
+      data: {
+        ckCustomerVerified: false,
+        ckCustomerVerifiedAt: null,
+        ckCustomerVerifiedBy: null,
+        ckCustomerRevokedAt: new Date(),
+        ckCustomerNotes: params.notes?.trim() || null
+      }
+    });
+    await tx.auditLog.create({ data: {
+      action: "CK_VERIFICATION_REVOKED", companyId: updated.id, actorUserId: params.adminUserId,
+      targetType: "Company", targetId: updated.id,
+      metadata: { message: "Custom King verification revoked", reason: params.notes?.trim() || null }
+    } });
+    return updated;
   });
 
   return company;
@@ -387,6 +390,7 @@ export async function getPendingApprovalCompanies() {
     id: company.id,
     name: company.name,
     slug: company.slug,
+    websiteUrl: company.websiteUrl,
     createdAt: company.createdAt,
     pricingTier: company.pricingTier,
     membership: company.memberships[0] ?? null,

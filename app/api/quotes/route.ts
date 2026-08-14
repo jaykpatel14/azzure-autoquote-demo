@@ -17,6 +17,8 @@ import {
 import { normalizePricingProfile, resolveMetalPricing } from "@/lib/metal-pricing";
 import { createQuote } from "@/src/services/quotes";
 import { calculateTierPrice } from "@/src/services/pricing";
+import { assertBillableSubscription, BillingAccessError } from "@/lib/billing";
+import { assertPlanFeature, getCompanyPlanFeatures, PlanError } from "@/src/stripe/plans";
 
 const quoteModes = ["normal", "without-center", "without-center-and-side"] as const;
 
@@ -48,6 +50,8 @@ const quoteSchema = z.object({
 export async function POST(request: Request) {
   try {
     const companyContext = await requireCompanyContext();
+    assertBillableSubscription(companyContext.company.subscription);
+    await assertPlanFeature(companyContext.company.id, "canCreateQuotes");
     if (!canCreateQuotes(companyContext.membership?.role ?? "CUSTOMER")) {
       throw new CompanyAccessError("You do not have permission to create quotes.");
     }
@@ -59,8 +63,9 @@ export async function POST(request: Request) {
     }
     const input = quoteSchema.parse(await request.json());
     const company = companyContext.company;
+    const { features } = await getCompanyPlanFeatures(company.id);
 
-    const pricingProfile = company.pricingProfile
+    const pricingProfile = features.canUseCustomPricingProfile && company.pricingProfile
       ? normalizePricingProfile({
           goldSpotPerOz: Number(company.pricingProfile.goldSpotPerOz),
           platinumSpotPerOz: Number(company.pricingProfile.platinumSpotPerOz),
@@ -78,7 +83,7 @@ export async function POST(request: Request) {
     const adjustedInput = applyQuoteMode(input);
     const effectivePricingProfile = mergePricingProfiles(
       livePricing.pricingProfile,
-      input.pricingOverlay as Partial<PricingProfileInput> | undefined
+      features.canUseCustomPricingProfile ? input.pricingOverlay as Partial<PricingProfileInput> | undefined : undefined
     );
 
     const pricing = calculateQuote(
@@ -127,6 +132,9 @@ export async function POST(request: Request) {
       estimatedPrice: Number(quoteResult.data.estimatedPrice)
     });
   } catch (error) {
+    if (error instanceof PlanError || error instanceof BillingAccessError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     if (error instanceof AuthRequiredError) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }

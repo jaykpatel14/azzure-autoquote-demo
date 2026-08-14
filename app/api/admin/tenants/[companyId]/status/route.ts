@@ -4,6 +4,7 @@ import { logAuditEvent } from "@/lib/audit";
 import { sendAccountApprovedMail, sendAccountSuspendedMail, sendTierChangeMail } from "@/lib/account-workflow";
 import { requireInternalAdminContext, InternalAdminAccessError } from "@/lib/internal-admin";
 import { prisma } from "@/lib/prisma";
+import { buildPublicUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,10 @@ const paramsSchema = z.object({
 const bodySchema = z.object({
   accountStatus: z.enum(["APPROVED", "SUSPENDED"]),
   pricingTier: z.enum(["TIER_1", "TIER_2", "TIER_3"]).optional(),
+  ckCustomerVerified: z.enum(["true", "false"]).optional(),
+  ckCustomerNotes: z.string().trim().max(500).optional(),
+  adminNotes: z.string().trim().max(1000).optional(),
+  tierChangeReason: z.string().trim().max(500).optional(),
   suspendedReason: z.string().trim().max(500).optional(),
   next: z.string().optional()
 });
@@ -36,12 +41,22 @@ export async function POST(request: Request, context: RouteContext) {
     const parsedBody = bodySchema.safeParse({
       accountStatus: String(formData.get("accountStatus") || ""),
       pricingTier: String(formData.get("pricingTier") || "") || undefined,
+      ckCustomerVerified: String(formData.get("ckCustomerVerified") || "") || undefined,
+      ckCustomerNotes: String(formData.get("ckCustomerNotes") || "") || undefined,
+      adminNotes: String(formData.get("adminNotes") || "") || undefined,
+      tierChangeReason: String(formData.get("tierChangeReason") || "") || undefined,
       suspendedReason: String(formData.get("suspendedReason") || "") || undefined,
       next: String(formData.get("next") || "") || undefined
     });
 
     if (!parsedBody.success) {
       return NextResponse.json({ error: "Invalid account status payload." }, { status: 400 });
+    }
+    if (parsedBody.data.accountStatus === "APPROVED" && !parsedBody.data.pricingTier) {
+      return NextResponse.json({ error: "Select a pricing tier before approving the account." }, { status: 400 });
+    }
+    if (parsedBody.data.accountStatus === "SUSPENDED" && !parsedBody.data.suspendedReason) {
+      return NextResponse.json({ error: "A decline reason is required." }, { status: 400 });
     }
 
     const company = await prisma.company.findUnique({
@@ -75,6 +90,9 @@ export async function POST(request: Request, context: RouteContext) {
         : previousTier;
     const approvedTier = nextTier ?? "TIER_3";
     const now = new Date();
+    if (previousTier && previousTier !== nextTier && !parsedBody.data.tierChangeReason) {
+      return NextResponse.json({ error: "A reason is required when changing pricing tier." }, { status: 400 });
+    }
 
     const updated = await prisma.company.update({
       where: { id: company.id },
@@ -89,7 +107,21 @@ export async function POST(request: Request, context: RouteContext) {
         suspendedReason:
           parsedBody.data.accountStatus === "SUSPENDED"
             ? parsedBody.data.suspendedReason || "Manually suspended by the admin team."
-            : null
+            : null,
+        ckCustomerVerified:
+          parsedBody.data.accountStatus === "APPROVED"
+            ? parsedBody.data.ckCustomerVerified === "true"
+            : company.ckCustomerVerified,
+        ckCustomerVerifiedAt:
+          parsedBody.data.accountStatus === "APPROVED" && parsedBody.data.ckCustomerVerified === "true"
+            ? now
+            : company.ckCustomerVerifiedAt,
+        ckCustomerVerifiedBy:
+          parsedBody.data.accountStatus === "APPROVED" && parsedBody.data.ckCustomerVerified === "true"
+            ? admin.user.id
+            : company.ckCustomerVerifiedBy,
+        ckCustomerNotes: parsedBody.data.ckCustomerNotes ?? company.ckCustomerNotes,
+        adminNotes: parsedBody.data.adminNotes ?? company.adminNotes
       }
     });
 
@@ -115,7 +147,8 @@ export async function POST(request: Request, context: RouteContext) {
           targetId: company.id,
           metadata: {
             previousTier,
-            newTier: nextTier
+            newTier: nextTier,
+            reason: parsedBody.data.tierChangeReason
           }
         });
       }
@@ -167,7 +200,7 @@ export async function POST(request: Request, context: RouteContext) {
       });
     }
 
-    return NextResponse.redirect(new URL(redirectTarget, request.url), 303);
+    return NextResponse.redirect(buildPublicUrl(redirectTarget), 303);
   } catch (error) {
     if (error instanceof InternalAdminAccessError) {
       return NextResponse.json({ error: error.message }, { status: 403 });

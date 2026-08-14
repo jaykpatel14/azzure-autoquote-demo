@@ -66,8 +66,15 @@ async function resolvePlan(
   subscription: Stripe.Subscription,
   existingSubscription: PrismaSubscription | null
 ) {
+  const metadataPlanId = subscription.metadata?.planId;
   const metadataPlanCode = subscription.metadata?.planCode;
   const { stripePriceId, stripeProductId } = getPriceSnapshot(subscription);
+
+  if (metadataPlanId) {
+    const plan = await tx.plan.findUnique({ where: { id: metadataPlanId } });
+    if (!plan) throw new Error(`Unknown planId in Stripe subscription: ${metadataPlanId}`);
+    return plan;
+  }
 
   if (metadataPlanCode) {
     const plan = await tx.plan.findUnique({ where: { code: metadataPlanCode } });

@@ -42,7 +42,10 @@ export default function QuoteRowActions({
 
   async function handleCopyLink() {
     try {
-      await navigator.clipboard.writeText(new URL(publicHref, window.location.origin).toString());
+      const response = await fetch(`/api/quotes/${quoteId}/share`, { method: "POST" });
+      if (!response.ok) throw new Error("Unable to create quote link.");
+      const payload = (await response.json()) as { url: string };
+      await navigator.clipboard.writeText(new URL(payload.url || publicHref, window.location.origin).toString());
       setCopyState("copied");
       showToast({
         message: "Quote link copied.",
@@ -79,6 +82,8 @@ export default function QuoteRowActions({
         message: "Quote deleted.",
         variant: "success"
       });
+    } catch {
+      showToast({ message: "We couldn't delete this quote. Try again.", variant: "error", autoDismiss: false });
     } finally {
       setIsDeleting(false);
     }

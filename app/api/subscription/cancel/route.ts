@@ -3,6 +3,7 @@ import { z } from "zod";
 import { canManageBilling, requireCompanyContext } from "@/lib/company";
 import { prisma } from "@/lib/prisma";
 import { getStripeClient } from "@/lib/stripe";
+import { buildPublicUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
     });
 
     const redirectTo = input.returnTo && input.returnTo.startsWith("/") ? input.returnTo : "/settings/billing?billing=canceled";
-    return NextResponse.redirect(new URL(redirectTo, request.url), 303);
+    return NextResponse.redirect(buildPublicUrl(redirectTo), 303);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

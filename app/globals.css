@@ -14,7 +14,7 @@ body {
   background:
     radial-gradient(circle at 0% 0%, rgba(201, 168, 76, 0.12), transparent 28%),
     radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.06), transparent 30%),
-    linear-gradient(180deg, #0d0d0d 0%, var(--color-obsidian) 42%, #090909 100%);
+    linear-gradient(180deg, var(--color-dark-deep) 0%, var(--color-obsidian) 42%, var(--color-darkest) 100%);
   font-family: var(--font-ui);
   color-scheme: dark;
   overflow-x: hidden;
@@ -405,7 +405,7 @@ textarea:disabled {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 42px;
+  min-height: 44px;
   padding: 10px 20px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
@@ -418,7 +418,7 @@ textarea:disabled {
 }
 
 .button--sm {
-  min-height: 36px;
+  min-height: 44px;
   padding: 8px 14px;
   font-size: 0.75rem;
 }
@@ -563,7 +563,8 @@ textarea:disabled {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 0;
+  min-height: 44px;
+  padding: 0 6px;
   background: none;
   border: 0;
   font: inherit;
@@ -858,6 +859,9 @@ textarea:disabled {
 }
 
 .quoteTab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: 10px 14px;
   color: var(--color-muted);
   text-decoration: none;
@@ -1005,6 +1009,9 @@ textarea:disabled {
 }
 
 .settingsTab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: 10px 14px;
   color: var(--color-muted);
   text-decoration: none;
@@ -1091,6 +1098,13 @@ textarea:disabled {
 
 .dropzone input {
   display: none;
+}
+
+.dropzoneActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
 }
 
 .preview {
@@ -1886,6 +1900,21 @@ textarea:disabled {
   gap: var(--space-6);
 }
 
+.publicQuoteMeta {
+  background: rgba(28, 28, 30, 0.04);
+}
+
+.publicQuotePreview {
+  position: relative;
+  top: 0;
+}
+
+.publicQuoteExpired {
+  display: grid;
+  gap: var(--space-5);
+  text-align: center;
+}
+
 .publicQuoteImage {
   width: 100%;
   display: block;
@@ -1920,7 +1949,7 @@ textarea:disabled {
   background: var(--color-obsidian);
   border-radius: var(--radius-sm);
   text-decoration: none;
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: var(--text-lg);
   font-weight: 500;
 }
@@ -2064,6 +2093,13 @@ textarea:disabled {
   gap: 6px;
 }
 
+.pricingTrial {
+  margin: 0;
+  color: var(--color-obsidian);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
 .pricingCardName {
   margin: 0;
   color: rgba(28, 28, 30, 0.6);
@@ -2157,7 +2193,7 @@ textarea:disabled {
 .featureTable tbody th {
   width: 34%;
   color: var(--color-obsidian);
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: 1rem;
   font-weight: 500;
 }
@@ -2294,20 +2330,20 @@ textarea:disabled {
 }
 
 .strengthFill--weak {
-  background: #d97706;
+  background: var(--color-signup-warning);
 }
 
 .strengthFill--good {
-  background: #c9a84c;
+  background: var(--color-gold);
 }
 
 .strengthFill--strong {
-  background: #15803d;
+  background: var(--color-signup-success);
 }
 
 .fieldError {
   margin: 0;
-  color: #b42318;
+  color: var(--color-signup-error);
   font-size: var(--text-sm);
 }
 
@@ -2324,7 +2360,7 @@ textarea:disabled {
 
 .signupStatus {
   padding: 12px 14px;
-  color: #7f1d1d;
+  color: var(--color-signup-error-strong);
   background: rgba(185, 28, 28, 0.08);
   border-radius: var(--radius-md);
 }
@@ -2354,7 +2390,7 @@ textarea:disabled {
 
 .trialBannerCard--urgent {
   border-color: rgba(255, 159, 67, 0.45);
-  color: var(--color-warning, #d97706);
+  color: var(--color-warning);
 }
 
 .trialBannerLabel {
@@ -2769,7 +2805,7 @@ hr.goldRule {
 
   .workspaceNavItem {
     justify-content: center;
-    min-height: 36px;
+    min-height: 44px;
     white-space: nowrap;
     padding: 0 12px;
   }
