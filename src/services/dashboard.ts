@@ -121,6 +121,7 @@ export async function getDashboardData(companyId: string): Promise<DashboardData
 
   const recentQuotes = quotes.slice(0, 5).map((quote) => ({
     id: quote.id,
+    recordType: "quote" as const,
     quoteNumber: quote.quoteNumber,
     customerName: quote.customerName,
     metalType: quote.metalType,
@@ -128,7 +129,8 @@ export async function getDashboardData(companyId: string): Promise<DashboardData
     createdAt: quote.createdAt,
     pdfStoredAt: quote.pdfStoredAt,
     thumbnailUrl: quote.analysis?.imageDataUrl ?? null,
-    status: deriveQuoteStatus(quote)
+    status: deriveQuoteStatus(quote),
+    displayStatus: deriveQuoteStatus(quote)
   }));
 
   return {

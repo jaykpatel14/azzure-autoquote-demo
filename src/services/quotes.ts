@@ -44,14 +44,16 @@ export type QuoteHistoryFilter = "all" | "draft" | "sent" | "ordered" | "expired
 
 export type QuoteHistoryRow = {
   id: string;
+  recordType: "quote" | "analysis";
   quoteNumber: string;
   customerName: string | null;
   metalType: string;
-  estimatedPrice: number;
+  estimatedPrice: number | null;
   createdAt: Date;
   pdfStoredAt: Date | null;
   thumbnailUrl: string | null;
   status: Exclude<QuoteHistoryFilter, "all">;
+  displayStatus: string;
 };
 
 export type QuoteHistoryPage = {
@@ -209,10 +211,11 @@ export async function getQuoteHistoryPage(params: {
   const status = params.status ?? "all";
   const page = Math.max(1, params.page ?? 1);
 
-  const quotes = await prisma.quote.findMany({
-    where: { companyId: params.companyId },
-    orderBy: { createdAt: "desc" },
-    select: {
+  const [quotes, unsavedAnalyses] = await Promise.all([
+    prisma.quote.findMany({
+      where: { companyId: params.companyId },
+      orderBy: { createdAt: "desc" },
+      select: {
       id: true,
       quoteNumber: true,
       customerName: true,
@@ -230,22 +233,67 @@ export async function getQuoteHistoryPage(params: {
           id: true
         }
       }
-    }
-  });
+      }
+    }),
+    prisma.aiAnalysis.findMany({
+      where: { companyId: params.companyId, quote: null },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        selectedMetal: true,
+        status: true,
+        errorMessage: true,
+        createdAt: true,
+        imageDataUrl: true
+      }
+    })
+  ]);
+
+  const historyRows: QuoteHistoryRow[] = [
+    ...quotes.map((quote) => ({
+      id: quote.id,
+      recordType: "quote" as const,
+      quoteNumber: quote.quoteNumber,
+      customerName: quote.customerName,
+      metalType: quote.metalType,
+      estimatedPrice: Number(quote.estimatedPrice),
+      createdAt: quote.createdAt,
+      pdfStoredAt: quote.pdfStoredAt,
+      thumbnailUrl: quote.analysis?.imageDataUrl ?? null,
+      status: deriveQuoteStatus(quote),
+      displayStatus: deriveQuoteStatus(quote)
+    })),
+    ...unsavedAnalyses.map((analysis) => ({
+      id: analysis.id,
+      recordType: "analysis" as const,
+      quoteNumber: `Analysis ${analysis.id.slice(-6).toUpperCase()}`,
+      customerName: null,
+      metalType: analysis.selectedMetal,
+      estimatedPrice: null,
+      createdAt: analysis.createdAt,
+      pdfStoredAt: null,
+      thumbnailUrl: analysis.imageDataUrl,
+      status: "draft" as const,
+      displayStatus:
+        analysis.status === "FAILED"
+          ? "Analysis failed"
+          : analysis.status === "COMPLETED"
+            ? "Unsaved"
+            : analysis.status.toLowerCase()
+    }))
+  ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   const normalizedQuery = query.toLowerCase();
-  const filtered = quotes.filter((quote) => {
-    const quoteStatus = deriveQuoteStatus(quote);
-    const matchesStatus = status === "all" || quoteStatus === status;
-    if (!matchesStatus) return false;
-
+  const statusFiltered = historyRows.filter((row) => status === "all" || row.status === status);
+  const filtered = statusFiltered.filter((row) => {
     if (!normalizedQuery) return true;
 
     const haystack = [
-      quote.quoteNumber,
-      quote.customerName ?? "",
-      quote.metalType,
-      quote.estimatedPrice.toString()
+      row.quoteNumber,
+      row.customerName ?? "",
+      row.metalType,
+      row.estimatedPrice?.toString() ?? "",
+      row.displayStatus
     ]
       .join(" ")
       .toLowerCase();
@@ -253,10 +301,9 @@ export async function getQuoteHistoryPage(params: {
     return haystack.includes(normalizedQuery);
   });
 
-  const counts = filtered.reduce(
-    (acc, quote) => {
-      const quoteStatus = deriveQuoteStatus(quote);
-      acc[quoteStatus] += 1;
+  const counts = historyRows.reduce(
+    (acc, row) => {
+      acc[row.status] += 1;
       return acc;
     },
     { draft: 0, sent: 0, ordered: 0, expired: 0 }
@@ -266,17 +313,7 @@ export async function getQuoteHistoryPage(params: {
   const totalPages = Math.max(1, Math.ceil(totalQuotes / pageSize));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
-  const pageQuotes = filtered.slice(start, start + pageSize).map((quote) => ({
-    id: quote.id,
-    quoteNumber: quote.quoteNumber,
-    customerName: quote.customerName,
-    metalType: quote.metalType,
-    estimatedPrice: Number(quote.estimatedPrice),
-    createdAt: quote.createdAt,
-    pdfStoredAt: quote.pdfStoredAt,
-    thumbnailUrl: quote.analysis?.imageDataUrl ?? null,
-    status: deriveQuoteStatus(quote)
-  }));
+  const pageQuotes = filtered.slice(start, start + pageSize);
 
   return {
     quotes: pageQuotes,

@@ -230,8 +230,6 @@ function mergeAssumptions(outputs: FacetOutput[]) {
 export default function QuoteCalculator({
   canEdit,
   pricingProfile,
-  pricingSourceLabel,
-  pricingNote,
   initialQuote
 }: QuoteCalculatorProps) {
   const [metalType, setMetalType] = useState<MetalType>(initialQuote?.metalType ?? "14K");
@@ -953,7 +951,6 @@ export default function QuoteCalculator({
 
           <div className="quotePreview">
             <p className="eyebrow">Approved final price</p>
-            {pricingSourceLabel ? <p className="muted small">{pricingSourceLabel}</p> : null}
             <div className="quotePrice">{formatCurrency(previewPrice)}</div>
             <div className="quoteMeta">
               <div>
@@ -973,7 +970,6 @@ export default function QuoteCalculator({
                 <strong>{completedFacets.length} analysed</strong>
               </div>
             </div>
-            {pricingNote ? <p className="muted small">{pricingNote}</p> : null}
             {aggregateQuote?.notes ? <p className="muted small">{aggregateQuote.notes}</p> : null}
             <p className="disclaimer">
               Final pricing is an approved estimate, not a manufacturing invoice. Production review may change the
@@ -981,7 +977,7 @@ export default function QuoteCalculator({
             </p>
           </div>
 
-          <details className="breakdownDetails">
+          <details className="breakdownDetails" hidden>
             <summary>Price breakdown</summary>
             {breakdown ? (
               <div className="breakdownList">

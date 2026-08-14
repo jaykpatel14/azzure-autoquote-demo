@@ -90,17 +90,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <strong>{formatCurrency(Number(quote.estimatedPrice))}</strong>
             </div>
             <div className="detailRow">
-              <span>Pricing tier</span>
-              <strong>{quote.pricingTierSnapshot ?? "Not assigned"}</strong>
-            </div>
-            <div className="detailRow">
-              <span>Making price</span>
-              <strong>
-                {quote.makingPrice ? formatCurrency(Number(quote.makingPrice)) : "Not recorded"}
-              </strong>
-            </div>
-            <div className="detailRow">
-              <span>Selling price</span>
+              <span>Final selling price</span>
               <strong>
                 {quote.estimatedSellingPrice
                   ? formatCurrency(Number(quote.estimatedSellingPrice))
@@ -173,10 +163,6 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
                 <Link className="textLink" href={getQuotePublicUrl(quote.id)} target="_blank">
                   Open customer view
                 </Link>
-              </div>
-              <div className="detailCard">
-                <span>Tier divisor</span>
-                <strong>{quote.tierDivisorSnapshot ? Number(quote.tierDivisorSnapshot).toFixed(2) : "Not set"}</strong>
               </div>
             </div>
 

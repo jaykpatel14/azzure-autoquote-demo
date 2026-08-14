@@ -124,10 +124,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       id: quoteResult.data.id,
       quoteNumber: quoteResult.data.quoteNumber,
-      estimatedPrice: Number(quoteResult.data.estimatedPrice),
-      makingPrice: Number(quoteResult.data.makingPrice ?? 0),
-      pricingTier: quoteResult.data.pricingTierSnapshot,
-      pricingSource: livePricing.source
+      estimatedPrice: Number(quoteResult.data.estimatedPrice)
     });
   } catch (error) {
     if (error instanceof AuthRequiredError) {

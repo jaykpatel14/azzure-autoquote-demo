@@ -30,8 +30,10 @@ services:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
       PORT: "8585"
-      APP_URL: ${APP_URL:-https://autoquote-test.azzuresolutions.com}
-      AUTH_URL: ${AUTH_URL:-https://autoquote-test.azzuresolutions.com}
+      # HOSTNAME is the container bind address; public redirects must always use
+      # the externally reachable HTTPS origin.
+      APP_URL: https://autoquote-test.azzuresolutions.com
+      AUTH_URL: https://autoquote-test.azzuresolutions.com
       DATABASE_URL: postgresql://autoquote:autoquote@db:5432/autoquote?schema=public
     ports:
       - "8585:8585"

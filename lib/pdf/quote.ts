@@ -223,10 +223,8 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
       { label: "Side diamonds", value: `${input.sideDiamondCarats.toFixed(2)} ct total` },
       { label: "Side stone quantity", value: `${input.sideDiamondQuantity}` },
       { label: "Center shape", value: input.centerShape || "Not specified" },
-      { label: "Pricing tier", value: input.pricingTier || "Not assigned" },
-      { label: "Making price", value: input.makingPrice != null ? formatCurrency(input.makingPrice) : "Not recorded" },
       {
-        label: "Selling price",
+        label: "Final selling price",
         value:
           input.estimatedSellingPrice != null
             ? formatCurrency(input.estimatedSellingPrice)

@@ -246,12 +246,12 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
                 {history.quotes.map((quote) => (
                   <tr key={quote.id}>
                     <td className="monoCell">
-                      <Link className="rowLink" href={`/quotes/${quote.id}`}>
-                        {quote.quoteNumber}
-                      </Link>
+                      {quote.recordType === "quote" ? (
+                        <Link className="rowLink" href={`/quotes/${quote.id}`}>{quote.quoteNumber}</Link>
+                      ) : quote.quoteNumber}
                     </td>
                     <td>
-                      <Link className="quoteThumbLink" href={`/quotes/${quote.id}`}>
+                      {quote.recordType === "quote" ? <Link className="quoteThumbLink" href={`/quotes/${quote.id}`}>
                         {quote.thumbnailUrl ? (
                           <img className="quoteThumbnail quoteThumbnail--small" src={quote.thumbnailUrl} alt="" />
                         ) : (
@@ -259,21 +259,27 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
                             <span>{quote.quoteNumber.slice(-2)}</span>
                           </div>
                         )}
-                      </Link>
+                      </Link> : quote.thumbnailUrl ? (
+                        <img className="quoteThumbnail quoteThumbnail--small" src={quote.thumbnailUrl} alt="" />
+                      ) : (
+                        <div className="quoteThumbnail quoteThumbnail--small quoteThumbnail--fallback"><span>AI</span></div>
+                      )}
                     </td>
                     <td>
-                      <Link className="rowLink" href={`/quotes/${quote.id}`}>
+                      {quote.recordType === "quote" ? <Link className="rowLink" href={`/quotes/${quote.id}`}>
                         <strong>{quote.customerName || "Unassigned"}</strong>
-                      </Link>
+                      </Link> : <strong>Unsaved analysis</strong>}
                     </td>
                     <td>{quote.metalType}</td>
-                    <td className="alignRight quoteValue">{formatCurrency(quote.estimatedPrice)}</td>
+                    <td className="alignRight quoteValue">
+                      {quote.estimatedPrice === null ? "Not generated" : formatCurrency(quote.estimatedPrice)}
+                    </td>
                     <td>
-                      <StatusBadge status={quote.status} />
+                      <StatusBadge status={quote.displayStatus} />
                     </td>
                     <td title={quote.createdAt.toLocaleString()}>{formatRelativeTime(quote.createdAt)}</td>
                     <td>
-                      <QuoteRowActions
+                      {quote.recordType === "quote" ? <QuoteRowActions
                         quoteId={quote.id}
                         viewHref={`/quotes/${quote.id}`}
                         pdfHref={`/api/quotes/${quote.id}/pdf`}
@@ -281,7 +287,7 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
                         canCopyLink={canShare && quote.status === "sent"}
                         copyLinkTitle={canShare ? "Generate a PDF before sharing" : "Upgrade to share quotes"}
                         deleteRedirectTo={currentListHref}
-                      />
+                      /> : <span className="muted small">No saved quote actions</span>}
                     </td>
                   </tr>
                 ))}

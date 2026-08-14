@@ -10,7 +10,6 @@ import { getTrialDaysRemaining, getTrialQuotesRemaining } from "@/lib/billing";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
-import { normalizePricingProfile, resolveMetalPricing } from "@/lib/metal-pricing";
 import { getDashboardData } from "@/src/services/dashboard";
 import { getQuotePublicUrl } from "@/src/services/quotes";
 
@@ -126,20 +125,44 @@ const PLAN_CARDS = [
   {
     name: "Starter",
     price: "$49/mo",
-    description: "For a single storefront that wants clean quoting without the ops overhead.",
-    features: ["AI image analysis", "Saved quote history", "PDF export"]
+    description: "For solo jewelers and occasional quoting.",
+    features: [
+      "100 quotes per month",
+      "1-pass AI estimate",
+      "Fixed Azzure pricing profile",
+      "PDFs with Azzure branding",
+      "1 user seat",
+      "Standard email support"
+    ]
   },
   {
     name: "Professional",
-    price: "$149/mo",
-    description: "For teams who need more quotes, live pricing, and a polished customer flow.",
-    features: ["Higher monthly limits", "Live metal pricing", "Brand-ready previews"]
+    price: "$99/mo",
+    description: "For growing shops that quote every day.",
+    features: [
+      "500 quotes per month",
+      "Full 3-pass AI analysis",
+      "Editable pricing profile",
+      "Custom logo and branded PDFs",
+      "Full image and quote history",
+      "Up to 5 user seats",
+      "Priority email support"
+    ]
   },
   {
     name: "Enterprise",
-    price: "Custom",
-    description: "For multi-location operators that need controls, share links, and scale.",
-    features: ["Public quote surface", "Admin controls", "Support for multiple companies"]
+    price: "$199/mo",
+    description: "For high-volume and multi-location jewelers.",
+    features: [
+      "2,500 quotes per month",
+      "3-pass AI with manual override",
+      "Multi-location pricing controls",
+      "White-label PDF templates",
+      "Unlimited role-based users",
+      "Manufacturing orders from quotes",
+      "Branded customer quote links",
+      "Dedicated support and onboarding"
+    ]
   }
 ] as const;
 
@@ -158,34 +181,17 @@ export default async function HomePage() {
     redirect("/onboarding");
   }
 
-  const basePricingProfile = context.company.pricingProfile
-    ? normalizePricingProfile({
-        goldSpotPerOz: Number(context.company.pricingProfile.goldSpotPerOz),
-        platinumSpotPerOz: Number(context.company.pricingProfile.platinumSpotPerOz),
-        silverSpotPerOz: Number(context.company.pricingProfile.silverSpotPerOz),
-        cadCharge: Number(context.company.pricingProfile.cadCharge),
-        centerSettingPerCarat: Number(context.company.pricingProfile.centerSettingPerCarat),
-        sideSettingPerStone: Number(context.company.pricingProfile.sideSettingPerStone),
-        sellingMarginDivisor: Number(context.company.pricingProfile.sellingMarginDivisor),
-        finalMultiplier: Number(context.company.pricingProfile.finalMultiplier)
-      })
-    : undefined;
-
-  const [dashboard, livePricing] = await Promise.all([
-    getDashboardData(context.company.id),
-    resolveMetalPricing(basePricingProfile)
-  ]);
+  const dashboard = await getDashboardData(context.company.id);
 
   const subscription = context.company.subscription;
   const trialDaysRemaining = getTrialDaysRemaining(subscription);
   const trialQuotesRemaining = getTrialQuotesRemaining(subscription);
-  const pricing = livePricing.pricingProfile;
   const currentPlanCode = subscription?.plan.code ?? "starter";
 
   return (
     <WorkspaceShell
       title="Workspace overview"
-      description="Track quotes, see live pricing, and jump into the next action without leaving the dashboard."
+      description="Track quotes and jump into the next action without leaving the dashboard."
       navItems={getWorkspaceNav("/")}
       banner={
         subscription?.status === "TRIALING" &&
@@ -362,7 +368,9 @@ export default async function HomePage() {
                       </p>
                     </td>
                     <td>{quote.metalType}</td>
-                    <td className="quoteValue">{formatCurrency(quote.estimatedPrice)}</td>
+                    <td className="quoteValue">
+                      {quote.estimatedPrice === null ? "Not generated" : formatCurrency(quote.estimatedPrice)}
+                    </td>
                     <td>
                       <StatusBadge status={quote.status} />
                     </td>
@@ -432,30 +440,11 @@ export default async function HomePage() {
           )}
         </article>
 
-        <article className="card">
+        <article className="card accentCard">
           <div className="sectionHeader">
             <div>
-              <h2>Live metal pricing</h2>
-              <p className="muted">These rates flow into the quote calculator and public previews.</p>
-            </div>
-          </div>
-          <div className="pricingGrid">
-            <div className="detailCard">
-              <span>Gold spot / oz</span>
-              <strong>{formatCurrency(Number(pricing.goldSpotPerOz))}</strong>
-            </div>
-            <div className="detailCard">
-              <span>Platinum spot / oz</span>
-              <strong>{formatCurrency(Number(pricing.platinumSpotPerOz))}</strong>
-            </div>
-            <div className="detailCard">
-              <span>Silver spot / oz</span>
-              <strong>{formatCurrency(Number(pricing.silverSpotPerOz))}</strong>
-            </div>
-            <div className="detailCard">
-              <span>Source</span>
-              <strong>{livePricing.source === "metals.dev" ? "Live feed" : "Fallback"}</strong>
-              <p className="muted small">{livePricing.message}</p>
+              <h2>Pricing is handled automatically</h2>
+              <p className="muted">Customers see the approved selling price while internal cost inputs stay private.</p>
             </div>
           </div>
         </article>

@@ -61,11 +61,6 @@ export async function GET(_request: Request, { params }: RouteContext) {
       sideDiamondCarats: Number(quoteResult.data.sideDiamondCarats),
       sideDiamondQuantity: quoteResult.data.sideDiamondQuantity,
       estimatedPrice: Number(quoteResult.data.estimatedPrice),
-      makingPrice: quoteResult.data.makingPrice ? Number(quoteResult.data.makingPrice) : null,
-      pricingTier: quoteResult.data.pricingTierSnapshot,
-      tierDivisor: quoteResult.data.tierDivisorSnapshot
-        ? Number(quoteResult.data.tierDivisorSnapshot)
-        : null,
       estimatedSellingPrice: quoteResult.data.estimatedSellingPrice
         ? Number(quoteResult.data.estimatedSellingPrice)
         : null,

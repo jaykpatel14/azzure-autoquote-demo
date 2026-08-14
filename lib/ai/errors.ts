@@ -62,6 +62,12 @@ export function serializeError(error: unknown): SerializedError {
 
 export function isTransientAIError(error: unknown) {
   const serialized = serializeError(error);
+  // Adding funds or raising an account limit is the only recovery for this
+  // error; retrying it immediately only creates a request storm.
+  if (serialized.code === "insufficient_quota") {
+    return false;
+  }
+
   return Boolean(
     serialized.status &&
       [408, 409, 425, 429, 500, 502, 503, 504].includes(serialized.status) ||
@@ -69,4 +75,21 @@ export function isTransientAIError(error: unknown) {
       serialized.code === "server_error" ||
       serialized.code === "timeout"
   );
+}
+
+export function getAnalysisErrorMessage(error: unknown) {
+  const serialized =
+    error && typeof error === "object" && "message" in error
+      ? (error as SerializedError)
+      : serializeError(error);
+
+  if (serialized.code === "insufficient_quota") {
+    return "OpenAI API quota is exhausted. Check API billing and usage limits for the project linked to this key.";
+  }
+
+  if (serialized.status === 429 || serialized.code === "rate_limit_exceeded") {
+    return "OpenAI is rate-limiting analysis requests. Wait briefly, then retry or increase the project's API rate limit.";
+  }
+
+  return serialized.message;
 }

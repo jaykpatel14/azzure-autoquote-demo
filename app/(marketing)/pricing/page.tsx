@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { PLAN_FEATURES, type PlanCode } from "@/lib/subscription-plans";
+import { useState } from "react";
+import type { PlanCode } from "@/lib/subscription-plans";
 
 const PLAN_META = {
   starter: {
     name: "Starter",
     price: 49,
-    annualPrice: 39,
+    audience: "Solo jewelers and occasional quoting",
+    highlights: ["100 quotes / month", "1-pass AI estimate", "Fixed pricing profile", "1 seat", "Standard email support"],
     badge: null,
     cta: "Start free trial",
     ctaHref: "/signup?plan=starter",
@@ -17,7 +18,8 @@ const PLAN_META = {
   professional: {
     name: "Professional",
     price: 99,
-    annualPrice: 79,
+    audience: "Growing shops quoting every day",
+    highlights: ["500 quotes / month", "Full 3-pass AI", "Editable pricing profile", "Custom branded PDFs", "Full quote history", "Up to 5 seats"],
     badge: "Most popular",
     cta: "Start free trial",
     ctaHref: "/signup?plan=professional",
@@ -26,7 +28,8 @@ const PLAN_META = {
   enterprise: {
     name: "Enterprise",
     price: 199,
-    annualPrice: 159,
+    audience: "High-volume and multi-location jewelers",
+    highlights: ["2,500 quotes / month", "3-pass AI + manual override", "White-label templates", "Unlimited role-based seats", "Manufacturing orders", "Branded customer links"],
     badge: null,
     cta: "Contact us",
     ctaHref: "mailto:sales@azzureautoquote.com",
@@ -37,7 +40,8 @@ const PLAN_META = {
   {
     name: string;
     price: number;
-    annualPrice: number;
+    audience: string;
+    highlights: readonly string[];
     badge: string | null;
     cta: string;
     ctaHref: string;
@@ -53,6 +57,7 @@ const FEATURE_ROWS = [
   { section: "Customisation", feature: "Custom pricing & margins", starter: false, professional: true, enterprise: true },
   { section: "Customisation", feature: "Branded PDF output", starter: false, professional: true, enterprise: true },
   { section: "Customisation", feature: "Quote image history", starter: false, professional: true, enterprise: true },
+  { section: "Storage", feature: "Image / quote storage", starter: "Not persisted", professional: "S3 + full history", enterprise: "S3 + retention controls" },
   { section: "Team", feature: "User seats", starter: "1", professional: "5", enterprise: "Unlimited" },
   { section: "Team", feature: "Overage quotes", starter: false, professional: "$0.25/quote", enterprise: "Custom rate" },
   { section: "Enterprise", feature: "Manufacturing orders", starter: false, professional: false, enterprise: true },
@@ -104,12 +109,7 @@ function FeatureCell({ value }: { value: string | boolean }) {
 }
 
 export default function PricingPage() {
-  const [annual, setAnnual] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const getPrice = useMemo(
-    () => (code: PlanCode) => (annual ? PLAN_META[code].annualPrice : PLAN_META[code].price),
-    [annual]
-  );
 
   return (
     <main className="pricingShell">
@@ -121,54 +121,24 @@ export default function PricingPage() {
           checkout only when you are ready to collect a card.
         </p>
 
-        <div className="billingToggle" role="tablist" aria-label="Billing period">
-          <button
-            className={!annual ? "billingToggleButton isActive" : "billingToggleButton"}
-            type="button"
-            onClick={() => setAnnual(false)}
-          >
-            Monthly
-          </button>
-          <button
-            className={annual ? "billingToggleButton isActive" : "billingToggleButton"}
-            type="button"
-            onClick={() => setAnnual(true)}
-          >
-            Annual <span className="billingToggleBadge">Save 20%</span>
-          </button>
-        </div>
       </section>
 
       <section className="pricingCards">
         {(Object.keys(PLAN_META) as PlanCode[]).map((code) => {
           const plan = PLAN_META[code];
-          const featureSet = PLAN_FEATURES[code];
-
           return (
             <article key={code} className={plan.featured ? "pricingCard pricingCard--featured" : "pricingCard"}>
               {plan.badge ? <span className="pricingBadge">{plan.badge}</span> : null}
               <div className="pricingCardTop">
                 <p className="pricingCardName">{plan.name}</p>
                 <p className="pricingCardPrice">
-                  {formatPrice(getPrice(code))} <span>/ month</span>
+                  {formatPrice(plan.price)} <span>/ month</span>
                 </p>
-                <p className="muted small">{annual ? "Billed annually" : "Billed monthly"}</p>
+                <p className="muted small">{plan.audience}</p>
               </div>
 
               <ul className="pricingFeatureList" aria-label={`${plan.name} features`}>
-                <li>AI passes: {featureSet.aiPasses === 1 ? "1-pass AI" : "Full 3-pass AI"}</li>
-                <li>Margins: {featureSet.customMargins ? "Custom pricing margins" : "Fixed margins"}</li>
-                <li>PDFs: {featureSet.brandedPdf ? "Branded PDF output" : "Azzure watermark"}</li>
-                <li>History: {featureSet.imageHistory ? "Image history" : "No image history"}</li>
-                <li>Storage: {featureSet.s3Storage ? "Private S3 storage" : "Inline image storage"}</li>
-                <li>
-                  Seats:{" "}
-                  {featureSet.teamSeats === Number.POSITIVE_INFINITY
-                    ? "Unlimited seats"
-                    : `${featureSet.teamSeats} seat${featureSet.teamSeats === 1 ? "" : "s"}`}
-                </li>
-                <li>Orders: Custom King verification required</li>
-                <li>Links: {featureSet.shareableLinks ? "Shareable links" : "No shareable links"}</li>
+                {plan.highlights.map((feature) => <li key={feature}>{feature}</li>)}
               </ul>
 
               {plan.ctaHref.startsWith("mailto:") ? (

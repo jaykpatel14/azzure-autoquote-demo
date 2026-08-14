@@ -39,10 +39,6 @@ export default async function PendingApprovalPage() {
             <strong>{context.company.accountStatus.toLowerCase().replaceAll("_", " ")}</strong>
           </div>
           <div className="detailRow">
-            <span>Pricing tier</span>
-            <strong>{context.company.pricingTier ?? "Not assigned yet"}</strong>
-          </div>
-          <div className="detailRow">
             <span>Next step</span>
             <strong>We&apos;ll email you as soon as the account is approved.</strong>
           </div>

@@ -66,7 +66,7 @@ async function applyAdminAccessControl(request: NextRequest) {
       return withSecurityHeaders(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
     }
 
-    const loginUrl = new URL("/signin", request.nextUrl.origin);
+    const loginUrl = new URL("/signin", getAppOrigin());
     loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     return withSecurityHeaders(NextResponse.redirect(loginUrl));
   }
@@ -76,7 +76,7 @@ async function applyAdminAccessControl(request: NextRequest) {
       return withSecurityHeaders(NextResponse.json({ error: "Forbidden" }, { status: 403 }));
     }
 
-    return withSecurityHeaders(NextResponse.redirect(new URL("/", request.nextUrl.origin)));
+    return withSecurityHeaders(NextResponse.redirect(new URL("/", getAppOrigin())));
   }
 
   return null;
@@ -142,7 +142,7 @@ async function applyAccountAccessControl(request: NextRequest) {
       return null;
     }
 
-    return withSecurityHeaders(NextResponse.redirect(new URL(redirectTarget, request.nextUrl.origin)));
+    return withSecurityHeaders(NextResponse.redirect(new URL(redirectTarget, getAppOrigin())));
   } catch {
     return null;
   }

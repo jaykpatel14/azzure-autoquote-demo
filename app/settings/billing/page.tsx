@@ -9,7 +9,6 @@ import { getTrialDaysRemaining, getTrialQuotesRemaining } from "@/lib/billing";
 import { canManageBilling, getAuthenticatedCompanyContext } from "@/lib/company";
 import { prisma } from "@/lib/prisma";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
-import { resolveMetalPricing, toPricingProfileInput } from "@/lib/metal-pricing";
 import { getCurrentUsagePeriod, getUsageRemaining, getUsageWarningMessage } from "@/lib/billing";
 import { syncStripeCheckoutSession } from "@/lib/billing-webhooks";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
@@ -55,8 +54,6 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
   const availablePlans = Object.values(basePlans).sort((a, b) => a.monthlyPriceCents - b.monthlyPriceCents);
   const warning = usagePeriod ? getUsageWarningMessage(usagePeriod) : null;
   const remaining = usagePeriod ? getUsageRemaining(usagePeriod) : null;
-  const pricingProfile = toPricingProfileInput(context.company.pricingProfile);
-  const livePricing = await resolveMetalPricing(pricingProfile);
   const billingAccess = canManageBilling(context.membership?.role ?? "CUSTOMER");
   const canRequestSubscription = !subscription || subscription.status !== "ACTIVE";
   const effectiveMonthlyLimit =
@@ -77,7 +74,7 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
   return (
     <WorkspaceShell
       title="Subscription billing"
-      description="Review billing, usage, and live metal pricing from the customer workspace."
+      description="Review your subscription, usage, and billing history."
       navItems={getWorkspaceNav("/settings/billing")}
       banner={
         subscription?.status === "TRIALING" &&
@@ -150,7 +147,7 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
         <article className="statCard">
           <span className="eyebrow">Account review</span>
           <strong>{context.company.accountStatus.toLowerCase().replaceAll("_", " ")}</strong>
-          <p className="muted small">{context.company.pricingTier ?? "No pricing tier assigned"}</p>
+          <p className="muted small">Managed by Azzure</p>
         </article>
         <article className="statCard">
           <span className="eyebrow">Company access</span>
@@ -158,11 +155,6 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
             {context.memberships.length} customer account{context.memberships.length === 1 ? "" : "s"}
           </strong>
           <p className="muted small">All company users have the same customer permissions.</p>
-        </article>
-        <article className="statCard">
-          <span className="eyebrow">Live pricing</span>
-          <strong>{livePricing.source === "metals.dev" ? "Live feed" : "Stored pricing"}</strong>
-          <p className="muted small">{livePricing.message}</p>
         </article>
       </section>
 
@@ -256,7 +248,7 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
                 </>
               ) : (
                 <p className="muted small">
-                  Billing changes are restricted to billing managers. You can still review usage and pricing.
+                  Billing changes are restricted to billing managers. You can still review usage.
                 </p>
               )}
             </div>
@@ -305,32 +297,11 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
           ) : null}
         </article>
 
-        <article className="card">
+        <article className="card accentCard">
           <div className="sectionHeader">
             <div>
-              <h2>Live metal pricing</h2>
-              <p className="muted">
-                Live spot pricing is visible to customers so quote calculations stay transparent.
-              </p>
-            </div>
-          </div>
-          <div className="pricingGrid">
-            <div className="detailCard">
-              <span>Gold spot / oz</span>
-              <strong>{formatCurrency(Number(livePricing.pricingProfile.goldSpotPerOz))}</strong>
-            </div>
-            <div className="detailCard">
-              <span>Platinum spot / oz</span>
-              <strong>{formatCurrency(Number(livePricing.pricingProfile.platinumSpotPerOz))}</strong>
-            </div>
-            <div className="detailCard">
-              <span>Silver spot / oz</span>
-              <strong>{formatCurrency(Number(livePricing.pricingProfile.silverSpotPerOz))}</strong>
-            </div>
-            <div className="detailCard">
-              <span>Source</span>
-              <strong>{livePricing.source === "metals.dev" ? "Live feed" : "Fallback"}</strong>
-              <p className="muted small">{livePricing.message}</p>
+              <h2>Automatic quote pricing</h2>
+              <p className="muted">Azzure manages the internal pricing inputs. Your workspace shows only approved selling prices.</p>
             </div>
           </div>
         </article>

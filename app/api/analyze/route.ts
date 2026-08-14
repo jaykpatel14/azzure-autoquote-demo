@@ -21,9 +21,15 @@ import {
   runModerationCheck,
   runReviewAttempt
 } from "@/lib/ai/runner";
-import { AttemptFailedError, ModerationRejectedError, serializeError } from "@/lib/ai/errors";
+import {
+  AttemptFailedError,
+  ModerationRejectedError,
+  getAnalysisErrorMessage,
+  serializeError
+} from "@/lib/ai/errors";
 import type { JewelryAnalysis } from "@/lib/ai/schema";
 import { hasAllowedImageSignature } from "@/lib/security";
+import { getPlanFeature, isPlanCode } from "@/lib/subscription-plans";
 import {
   buildAnalysisImageStorageKey,
   storeAnalysisImageInS3
@@ -72,9 +78,16 @@ export async function POST(request: Request) {
     const imageDataUrl = `data:${image.type};base64,${bytes.toString("base64")}`;
     const provider = await getJewelryAnalysisProvider();
     const configuredReviewCount = Number(process.env.AI_REVIEW_COUNT || 3);
-    const reviewCount = Number.isFinite(configuredReviewCount)
+    const configuredLimit = Number.isFinite(configuredReviewCount)
       ? Math.max(1, Math.min(3, configuredReviewCount))
       : 3;
+    const planCode = companyContext.company.subscription?.plan.code;
+    const normalizedPlanCode = planCode && isPlanCode(planCode) ? planCode : "starter";
+    const entitledReviewCount =
+      companyContext.company.subscription?.status === "TRIALING"
+        ? 3
+        : Number(getPlanFeature(normalizedPlanCode, "aiPasses"));
+    const reviewCount = Math.min(configuredLimit, entitledReviewCount);
 
     const analysis = await prisma.aiAnalysis.create({
       data: {
@@ -279,7 +292,7 @@ export async function POST(request: Request) {
 
     if (error instanceof AttemptFailedError) {
       return NextResponse.json(
-        { error: error.message, retryCount: error.retryCount },
+        { error: getAnalysisErrorMessage(error.serializedError), retryCount: error.retryCount },
         { status: 502 }
       );
     }

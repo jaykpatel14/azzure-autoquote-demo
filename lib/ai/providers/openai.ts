@@ -80,7 +80,9 @@ export async function createOpenAIJewelryAnalysisProvider(
       throw new Error("OPENAI_API_KEY is not configured.");
     }
 
-    client = new OpenAI({ apiKey });
+    // Retry policy is owned by the analysis runner so requests are not retried
+    // once by the SDK and then again by the application.
+    client = new OpenAI({ apiKey, maxRetries: 0 });
   }
   const model =
     runtimeOverrides?.model ||
