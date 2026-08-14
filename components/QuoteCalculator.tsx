@@ -437,7 +437,20 @@ export default function QuoteCalculator({
       body: formData
     });
 
-    const payload = await response.json().catch(() => ({}));
+    const responseText = await response.text();
+    let payload: Record<string, unknown> = {};
+    if (responseText) {
+      try {
+        payload = JSON.parse(responseText) as Record<string, unknown>;
+      } catch {
+        payload = {
+          error:
+            response.status === 413
+              ? "The server rejected this image because the upload is too large."
+              : `Analysis request failed (${response.status} ${response.statusText || "HTTP error"}).`
+        };
+      }
+    }
     return { ok: response.ok, payload };
   }
 
