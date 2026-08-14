@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 
@@ -12,7 +11,6 @@ export default function SignInForm({
   initialEmail: string;
   verified: boolean;
 }) {
-  const router = useRouter();
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState(
@@ -42,8 +40,10 @@ export default function SignInForm({
       return;
     }
 
-    router.push(result?.url || "/");
-    router.refresh();
+    // Force a new document request after Auth.js writes the session cookie.
+    // A client-side transition can reuse the anonymous home-page response and
+    // leave a successfully signed-in user looking at the public pricing page.
+    window.location.assign(result?.url || "/");
   }
 
   return (
