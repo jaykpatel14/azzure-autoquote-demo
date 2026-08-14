@@ -78,18 +78,18 @@ export async function GET(_request: Request, { params }: RouteContext) {
       buffer: pdfBuffer
     }) : null;
 
-    if (stored) {
-      await prisma.quote
-        .update({
-          where: { id: quoteResult.data.id },
-          data: {
-            pdfStorageKey: stored.key,
-            pdfStoredAt: new Date(),
-            pdfContentType: "application/pdf"
-          }
-        })
-        .catch(() => undefined);
-    }
+    // Always mark quote as sent (pdfStoredAt set) when PDF is generated,
+    // regardless of whether S3 persistence succeeded
+    await prisma.quote
+      .update({
+        where: { id: quoteResult.data.id },
+        data: {
+          ...(stored && { pdfStorageKey: stored.key }),
+          pdfStoredAt: new Date(),
+          pdfContentType: "application/pdf"
+        }
+      })
+      .catch(() => undefined);
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
