@@ -200,6 +200,25 @@ textarea:disabled {
   background: rgba(201, 168, 76, 0.4);
 }
 
+.workspaceNavMore summary.workspaceNavItem {
+  cursor: pointer;
+  list-style: none;
+}
+
+.workspaceNavMore summary.workspaceNavItem::-webkit-details-marker {
+  display: none;
+}
+
+.workspaceNavMore[open] summary.workspaceNavItem {
+  color: var(--color-gold-light);
+}
+
+.workspaceNavMorePanel {
+  display: grid;
+  gap: 6px;
+  padding-top: 6px;
+}
+
 .sidebarPanel {
   padding: var(--space-5);
   background: rgba(255, 255, 255, 0.03);
@@ -678,6 +697,14 @@ textarea:disabled {
 
 .tableShell {
   overflow-x: auto;
+  background:
+    linear-gradient(to right, var(--color-charcoal) 0%, transparent 24px) left,
+    linear-gradient(to left, var(--color-charcoal) 0%, transparent 24px) right,
+    radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.32), transparent) left,
+    radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.32), transparent) right;
+  background-repeat: no-repeat;
+  background-size: 24px 100%, 24px 100%, 12px 100%, 12px 100%;
+  background-attachment: local, local, scroll, scroll;
 }
 
 .dataTable {
@@ -707,6 +734,25 @@ textarea:disabled {
 
 .dataTable tbody tr:hover {
   background: rgba(201, 168, 76, 0.04);
+}
+
+.dataTable th:first-child,
+.dataTable td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: var(--color-charcoal);
+  box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.4);
+}
+
+.dataTable tbody tr:nth-child(odd) td:first-child {
+  background-color: var(--color-charcoal);
+  background-image: linear-gradient(rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.01));
+}
+
+.dataTable tbody tr:hover td:first-child {
+  background-color: var(--color-charcoal);
+  background-image: linear-gradient(rgba(201, 168, 76, 0.04), rgba(201, 168, 76, 0.04));
 }
 
 .badge,
@@ -1225,7 +1271,6 @@ textarea:disabled {
   background: linear-gradient(180deg, rgba(16, 20, 34, 0.98), rgba(20, 24, 40, 0.98));
   border: 1px solid rgba(201, 168, 76, 0.22);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-card);
 }
 
 .quoteStepGrid {
@@ -1880,7 +1925,9 @@ textarea:disabled {
 
 .publicQuoteHeader img,
 .publicQuoteLogo {
-  max-height: 64px;
+  width: 240px;
+  height: 64px;
+  object-fit: contain;
 }
 
 .publicQuoteTitle {
@@ -1934,11 +1981,23 @@ textarea:disabled {
 
 .publicQuotePrice {
   margin: 0;
-  color: var(--color-obsidian);
+  color: var(--color-gold);
   font-family: var(--font-display);
   font-size: var(--text-display);
   font-weight: 300;
   line-height: 0.92;
+}
+
+.publicQuoteBody .disclaimer {
+  color: rgba(28, 28, 30, 0.65);
+  background: rgba(28, 28, 30, 0.04);
+}
+
+.publicQuoteImage {
+  width: 100%;
+  display: block;
+  border-radius: var(--radius-md);
+  box-shadow: 0 18px 40px rgba(15, 15, 15, 0.12);
 }
 
 .publicQuoteCta {
@@ -2063,7 +2122,7 @@ textarea:disabled {
 .pricingCard {
   position: relative;
   padding: var(--space-6);
-  border-radius: 28px;
+  border-radius: var(--radius-3xl);
   border: 1px solid rgba(28, 28, 30, 0.08);
   background: rgba(255, 255, 255, 0.76);
   box-shadow: 0 20px 48px rgba(28, 28, 30, 0.06);
@@ -2162,7 +2221,7 @@ textarea:disabled {
   width: min(1180px, 100%);
   margin: var(--space-10) auto 0;
   padding: var(--space-6);
-  border-radius: 32px;
+  border-radius: var(--radius-4xl);
   border: 1px solid rgba(28, 28, 30, 0.08);
   background: rgba(255, 255, 255, 0.82);
   box-shadow: 0 18px 50px rgba(28, 28, 30, 0.08);
@@ -2386,7 +2445,7 @@ textarea:disabled {
   align-items: center;
   padding: 16px 18px;
   border: 1px solid rgba(201, 168, 76, 0.3);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   color: var(--color-gold-light);
   background: var(--color-gold-subtle);
 }
@@ -2438,7 +2497,7 @@ textarea:disabled {
   margin: 0 auto;
   padding: var(--space-6);
   border: 1px solid rgba(28, 28, 30, 0.08);
-  border-radius: 32px;
+  border-radius: var(--radius-4xl);
   background: rgba(255, 255, 255, 0.84);
   box-shadow: 0 20px 56px rgba(28, 28, 30, 0.08);
 }
@@ -2469,7 +2528,7 @@ textarea:disabled {
 .onboardingStep {
   padding: var(--space-5);
   border: 1px solid rgba(28, 28, 30, 0.08);
-  border-radius: 24px;
+  border-radius: var(--radius-2xl);
   background: rgba(255, 255, 255, 0.8);
 }
 
@@ -2565,7 +2624,7 @@ textarea:disabled {
   overflow: auto;
   padding: var(--space-6);
   border: 1px solid rgba(201, 168, 76, 0.18);
-  border-radius: 28px;
+  border-radius: var(--radius-3xl);
   background:
     radial-gradient(circle at top right, rgba(201, 168, 76, 0.08), transparent 28%),
     linear-gradient(180deg, rgba(20, 22, 30, 0.98), rgba(13, 14, 18, 0.98));
@@ -2587,7 +2646,7 @@ textarea:disabled {
   text-align: left;
   color: var(--color-body);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 22px;
+  border-radius: var(--radius-2xl);
   background: rgba(255, 255, 255, 0.04);
   transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
 }
@@ -2811,6 +2870,27 @@ hr.goldRule {
     min-height: 44px;
     white-space: nowrap;
     padding: 0 12px;
+  }
+
+  .workspaceNavMore {
+    position: relative;
+  }
+
+  .workspaceNavMorePanel {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 0;
+    min-width: 200px;
+    padding: var(--space-2);
+    background: rgba(18, 18, 20, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    z-index: 40;
+  }
+
+  .workspaceNavMorePanel .workspaceNavItem {
+    justify-content: flex-start;
   }
 
   .billingToggle {

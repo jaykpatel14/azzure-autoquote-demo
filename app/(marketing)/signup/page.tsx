@@ -143,47 +143,61 @@ export default function SignUpPage() {
 
         <form className="signupForm" onSubmit={handleSubmit} noValidate>
           <label className="field signupField">
-            <span>Business name</span>
+            <span>Business name *</span>
             <input
+              id="companyName"
               value={form.companyName}
               onChange={(event) => setField("companyName", event.target.value)}
               onBlur={() => validateField("companyName", form.companyName)}
+              aria-invalid={touched.companyName && Boolean(errors.companyName)}
+              aria-describedby={touched.companyName && errors.companyName ? "companyName-error" : undefined}
               required
             />
-            {touched.companyName && errors.companyName ? <p className="fieldError">{errors.companyName}</p> : null}
+            {touched.companyName && errors.companyName ? (
+              <p className="fieldError" id="companyName-error">{errors.companyName}</p>
+            ) : null}
           </label>
 
           <label className="field signupField">
-            <span>Your name</span>
+            <span>Your name *</span>
             <input
+              id="name"
               value={form.name}
               onChange={(event) => setField("name", event.target.value)}
               onBlur={() => validateField("name", form.name)}
+              aria-invalid={touched.name && Boolean(errors.name)}
+              aria-describedby={touched.name && errors.name ? "name-error" : undefined}
               required
             />
-            {touched.name && errors.name ? <p className="fieldError">{errors.name}</p> : null}
+            {touched.name && errors.name ? <p className="fieldError" id="name-error">{errors.name}</p> : null}
           </label>
 
           <label className="field signupField">
-            <span>Email address</span>
+            <span>Email address *</span>
             <input
+              id="email"
               type="email"
               value={form.email}
               onChange={(event) => setField("email", event.target.value)}
               onBlur={() => validateField("email", form.email)}
+              aria-invalid={touched.email && Boolean(errors.email)}
+              aria-describedby={touched.email && errors.email ? "email-error" : undefined}
               required
             />
-            {touched.email && errors.email ? <p className="fieldError">{errors.email}</p> : null}
+            {touched.email && errors.email ? <p className="fieldError" id="email-error">{errors.email}</p> : null}
           </label>
 
           <label className="field signupField">
-            <span>Password</span>
+            <span>Password *</span>
             <div className="passwordField">
               <input
+                id="password"
                 type={showPassword ? "text" : "password"}
                 value={form.password}
                 onChange={(event) => setField("password", event.target.value)}
                 onBlur={() => validateField("password", form.password)}
+                aria-invalid={touched.password && Boolean(errors.password)}
+                aria-describedby={touched.password && errors.password ? "password-error" : undefined}
                 required
                 minLength={8}
               />
@@ -191,6 +205,7 @@ export default function SignUpPage() {
                 className="passwordToggle"
                 type="button"
                 onClick={() => setShowPassword((current) => !current)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? "Hide" : "Show"}
               </button>
@@ -201,7 +216,9 @@ export default function SignUpPage() {
                 style={{ width: strengthWidth(passwordStrength) }}
               />
             </div>
-            {touched.password && errors.password ? <p className="fieldError">{errors.password}</p> : null}
+            {touched.password && errors.password ? (
+              <p className="fieldError" id="password-error">{errors.password}</p>
+            ) : null}
           </label>
 
           <button className="button primary button--lg signupButton" disabled={loading} type="submit">
@@ -209,7 +226,7 @@ export default function SignUpPage() {
           </button>
 
           <p className="signupFootnote">You won&apos;t be charged today. Cancel anytime before day 14.</p>
-          {status ? <div className="signupStatus">{status}</div> : null}
+          {status ? <div className="signupStatus" role="alert">{status}</div> : null}
         </form>
 
         <div className="signupFooter">

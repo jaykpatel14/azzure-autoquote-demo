@@ -159,7 +159,7 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
       }
       actions={
         <Link className="button primary" href="/quotes/new">
-          New Quote
+          New quote
         </Link>
       }
     >
@@ -234,7 +234,7 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
                 </Link>
               ) : null}
               <Link className="button primary" href="/quotes/new">
-                New Quote
+                New quote
               </Link>
             </div>
           </div>

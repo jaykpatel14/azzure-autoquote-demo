@@ -34,16 +34,21 @@ export default function BillingCancelForm({ returnTo }: BillingCancelFormProps) 
         />
       </label>
       <label className="field">
-        <span>Type CANCEL to confirm</span>
+        <span>Type CANCEL to confirm *</span>
         <input
+          id="confirmCode"
           name="confirmCode"
           value={confirmCode}
           onChange={(event) => setConfirmCode(event.target.value)}
           placeholder="CANCEL"
           autoComplete="off"
           spellCheck={false}
+          aria-invalid={submitted && !canSubmit}
+          aria-describedby={submitted && !canSubmit ? "confirmCode-error" : undefined}
         />
-        {submitted && !canSubmit ? <p className="fieldError">Type CANCEL to confirm this cancellation.</p> : null}
+        {submitted && !canSubmit ? (
+          <p className="fieldError" id="confirmCode-error">Type CANCEL to confirm this cancellation.</p>
+        ) : null}
       </label>
       <div className="onboardingStepActions">
         <button className="button destructive button--lg" type="submit" disabled={!canSubmit}>

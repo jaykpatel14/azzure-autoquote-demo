@@ -57,6 +57,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
                   type="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
+                  aria-describedby={status ? "reset-password-status" : undefined}
                   required
                 />
               </label>
@@ -64,7 +65,11 @@ export default function ResetPasswordForm({ token }: { token: string }) {
                 {loading ? "Updating..." : "Reset password"}
               </button>
             </form>
-            {status && <div className="status">{status}</div>}
+            {status && (
+              <div className="status" id="reset-password-status" role="alert">
+                {status}
+              </div>
+            )}
             {!token && <p className="muted">The reset link is missing or invalid.</p>}
             <p className="muted">
               Back to <Link href="/signin">sign in</Link>

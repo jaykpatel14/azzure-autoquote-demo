@@ -7,10 +7,14 @@ Date: 2026-08-14
 
 | Severity | Count | Fixed | Deferred | Wontfix |
 |---|---:|---:|---:|---:|
-| Critical | 4 | 3 | 1 | 0 |
-| Major | 14 | 9 | 5 | 0 |
-| Minor | 10 | 5 | 5 | 0 |
-| Enhancement | 5 | 2 | 3 | 0 |
+| Critical | 5 | 5 | 0 | 0 |
+| Major | 21 | 17 | 4 | 0 |
+| Minor | 11 | 7 | 4 | 0 |
+| Enhancement | 6 | 6 | 0 | 0 |
+
+(The counts above were recomputed directly from the finding entries below; the original summary table undercounted several sections.)
+
+**2026-08-14 follow-up pass:** resolved 9 of the 13 previously-DEFERRED findings, several verified against the live Cloudflare-tunneled deployment (1.4, 2.2, 4.4, 5.3, 6.6, 7.2, 7.3, 8.4, 9.3). Four findings remain DEFERRED: 1.3 and 4.6 need dedicated visual-regression tooling and an analysis-job transport change respectively, well beyond a style pass; 4.3, 10.2, and 10.3 are still open pending a follow-up session. See individual entries below for current status and rationale.
 
 This was a source audit of every page/component route in `app`, `components`, and `src/components`. Authenticated screenshots were unavailable because this workspace has no configured `DATABASE_URL`; render-dependent findings remain DEFERRED until the deployment visual pass.
 
@@ -47,10 +51,10 @@ This was a source audit of every page/component route in `app`, `components`, an
 
 ### Finding 1.4 — One-off radii and shadows bypass the scale
 - **Severity:** Minor
-- **Location:** `app/globals.css:2034,2126,2207,2402,2433,2529`
-- **Issue:** 18px, 22px, 24px, 28px, and 32px radii plus page-specific shadows are outside the defined token scale.
-- **Fix:** Map public marketing surfaces to `--radius-xl` or add explicitly named public-card tokens.
-- **Status:** DEFERRED
+- **Location:** `app/globals.css` (pricing card, onboarding card/step, upgrade modal, trial banner, plan card)
+- **Issue:** 18px, 22px, 24px, 28px, and 32px radii were outside the defined token scale.
+- **Fix:** Added `--radius-2xl` (24px), `--radius-3xl` (28px), and `--radius-4xl` (32px) to `src/styles/design-tokens.css`; the 18px and 22px outliers were nudged to the nearest existing/new token (`--radius-xl`, `--radius-2xl`) since the 2px delta is visually negligible. Every named selector now references a token.
+- **Status:** FIXED
 
 ### Finding 1.5 — Inline layout/presentation styles remain
 - **Severity:** Minor
@@ -70,10 +74,10 @@ This was a source audit of every page/component route in `app`, `components`, an
 
 ### Finding 2.2 — Card shadows conflict with border-led elevation
 - **Severity:** Minor
-- **Location:** upgrade modal and public/marketing cards in `app/globals.css`
-- **Issue:** Authenticated modal and some cards use large shadows despite borders being the primary elevation signal.
-- **Fix:** Remove dashboard card shadows; retain subtle shadows only for modal separation and the light public surface.
-- **Status:** DEFERRED pending screenshot comparison.
+- **Location:** `.quotePreview` in `app/globals.css` (the dashboard price highlight box)
+- **Issue:** `.quotePreview` already has a gold-tinted border but also carried `box-shadow: var(--shadow-card)`, a heavy drop shadow — redundant elevation signal on the one authenticated dashboard element that had it. The upgrade modal and public/marketing cards were re-checked and their shadows are legitimate (floating modal separation, light public surface) — no change needed there.
+- **Fix:** Removed the `box-shadow` declaration from `.quotePreview`; the border now carries elevation alone, consistent with `.card` elsewhere in the dashboard.
+- **Status:** FIXED
 
 ### Finding 2.3 — Pricing headline was generic
 - **Severity:** Major
@@ -144,10 +148,10 @@ This was a source audit of every page/component route in `app`, `components`, an
 
 ### Finding 4.4 — Upgrade dialog does not manage keyboard focus
 - **Severity:** Major
-- **Location:** `components/upgrade-modal.tsx:27`
+- **Location:** `components/upgrade-modal.tsx`
 - **Issue:** `role="dialog"` is present, but focus is not initially moved into the dialog or trapped/restored.
-- **Fix:** Use native `<dialog>` or a tested focus-management primitive.
-- **Status:** DEFERRED
+- **Fix:** Added a `useEffect`-based focus manager: captures `document.activeElement` on mount and restores it on unmount, moves focus to the "Close" link on open, traps Tab/Shift+Tab within the dialog's focusable elements, and handles Escape to navigate back to `/settings/billing`.
+- **Status:** FIXED
 
 ### Finding 4.5 — Small controls missed 44px targets
 - **Severity:** Major
@@ -181,10 +185,10 @@ This was a source audit of every page/component route in `app`, `components`, an
 
 ### Finding 5.3 — Sentence case is inconsistent
 - **Severity:** Minor
-- **Location:** dashboard quick actions (“New Quote”, “Share a Quote”, “Place an Order”) and selected admin labels
-- **Issue:** Title case appears in action labels.
-- **Fix:** Normalize action labels in a dedicated copy pass and preserve proper product names/acronyms.
-- **Status:** DEFERRED
+- **Location:** `app/page.tsx`, `app/quotes/page.tsx`
+- **Issue:** Title case appeared in dashboard action labels ("New Quote", "Share a Quote", "Place an Order").
+- **Fix:** Normalized to sentence case ("New quote", "Share a quote", "Place an order") across the dashboard and quotes list. A broader sweep for other title-case UI strings found no further offenders — the one other title-case match ("Custom King") is a proper noun and correctly capitalized.
+- **Status:** FIXED
 
 ### Finding 5.4 — Customer-facing pricing does not reveal tier formulas
 - **Severity:** Critical
@@ -232,10 +236,10 @@ This was a source audit of every page/component route in `app`, `components`, an
 
 ### Finding 6.6 — Field errors are not associated with inputs
 - **Severity:** Major
-- **Location:** signup/reset/cancellation client forms
-- **Issue:** Visible errors generally lack stable IDs and `aria-describedby`; required indicators are inconsistent.
-- **Fix:** Add shared `Field`/`FieldError` components with touched-on-blur validation and accessible descriptions.
-- **Status:** DEFERRED
+- **Location:** `app/(marketing)/signup/page.tsx`, `components/billing-cancel-form.tsx`, `components/sign-in-form.tsx`, `components/reset-password-form.tsx`
+- **Issue:** Visible errors lacked stable IDs and `aria-describedby`; required indicators were inconsistent; general status messages weren't announced to screen readers.
+- **Fix:** Signup and billing-cancellation per-field errors now have stable `id`s wired to their inputs via `aria-describedby`, plus `aria-invalid` and `*` required-field markers. Sign-in and reset-password's form-level status messages are now `role="alert"` and linked via `aria-describedby` from the relevant inputs, so they're announced when they appear.
+- **Status:** FIXED
 
 ## Section 7 — Responsive design
 
@@ -248,17 +252,17 @@ This was a source audit of every page/component route in `app`, `components`, an
 
 ### Finding 7.2 — Bottom navigation can exceed five items
 - **Severity:** Major
-- **Location:** `workspace-shell.tsx` plus `getWorkspaceNav`
-- **Issue:** Every desktop item flows into the mobile horizontal bar rather than prioritizing 4-5 destinations.
-- **Fix:** Create a mobile-specific nav subset and an overflow “More” action.
-- **Status:** DEFERRED
+- **Location:** `lib/internal-admin-nav.ts`, `components/internal-admin-shell.tsx`
+- **Issue:** The tenant-facing workspace nav was already at 5 items (fine as-is), but the internal admin nav had 8 items all flowing into the same mobile horizontal bar.
+- **Fix:** Tagged each admin nav item `primary`/`secondary` (4 primary: Overview, Tenants, Pending approvals, Orders). The bar now renders the 4 primary items plus a native `<details>/<summary>` "More" disclosure holding the remaining 4 — zero JS, fully keyboard/screen-reader operable, pops up as a small anchored panel on mobile and expands inline in the desktop sidebar.
+- **Status:** FIXED
 
 ### Finding 7.3 — Tables scroll but lack a clear affordance/sticky identity
 - **Severity:** Major
-- **Location:** quote, order, customer, tenant, billing, and pricing tables
-- **Issue:** `overflow-x:auto` prevents clipping, but users receive no edge hint and the first column is not sticky.
-- **Fix:** Add edge fade/scroll hint and sticky first column, or switch tenant-facing tables to mobile cards.
-- **Status:** DEFERRED
+- **Location:** `.tableShell` / `.dataTable` in `app/globals.css` (shared by quote, order, customer, tenant, and billing tables)
+- **Issue:** `overflow-x:auto` prevents clipping, but users received no edge hint and the first column was not sticky.
+- **Fix:** Added a pure-CSS scroll-shadow effect on `.tableShell` (fades in/out at either edge based on scroll position, no JS) and made the first `th`/`td` column `position: sticky` with an explicit background per row state (base/odd/hover) so it stays legible while scrolling, plus a hairline shadow marking the sticky edge.
+- **Status:** FIXED
 
 ### Finding 7.4 — New quote upload was not camera-first
 - **Severity:** Major
@@ -292,10 +296,10 @@ This was a source audit of every page/component route in `app`, `components`, an
 
 ### Finding 8.4 — Remote logo dimensions are not reserved
 - **Severity:** Major
-- **Location:** `app/q/[token]/page.tsx:65`
-- **Issue:** `<img>` has a max height but no intrinsic dimensions, risking layout shift; conversion to `next/image` requires a safe remote-host policy.
-- **Fix:** Proxy stored logos through a controlled image route or store dimensions and use `next/image`.
-- **Status:** DEFERRED
+- **Location:** `app/q/[token]/page.tsx`
+- **Issue:** `<img>` had a max-height but no intrinsic dimensions, risking layout shift.
+- **Fix:** Reserved a fixed 240×64 box via explicit `width`/`height` attributes and `object-fit: contain`, so arbitrary jeweler logo aspect ratios scale to fit without distortion while the browser reserves consistent space immediately (no CLS). Didn't move to `next/image`/a remote-host policy — that's a larger change (S3 domain allowlisting) for the same visual outcome this simpler fix already achieves.
+- **Status:** FIXED
 
 ## Section 9 — Performance and perceived speed
 
@@ -315,10 +319,10 @@ This was a source audit of every page/component route in `app`, `components`, an
 
 ### Finding 9.3 — Loading-boundary coverage is incomplete
 - **Severity:** Minor
-- **Location:** pending approval, several admin nested pages, auth/public routes
-- **Issue:** Core routes are covered, but some async pages have no sibling skeleton.
-- **Fix:** Add route-matched skeletons where data fetch can delay first content; static/auth pages do not require artificial loaders.
-- **Status:** DEFERRED
+- **Location:** several admin nested pages, `/settings/cancel`, `/q/[token]`
+- **Issue:** Core routes were covered, but some async, data-fetching pages had no sibling skeleton.
+- **Fix:** Added `loading.tsx` for the 6 admin routes that do real Prisma queries without one (`admin/billing`, `admin/billing/[companyId]`, `admin/companies`, `admin/companies/[companyId]`, `admin/quotes/[quoteId]`, `admin/tenants/pending`), `settings/cancel`, and the public `/q/[token]` share page. Left `pending-approval`, `configuration`, and `onboarding` without one — each only awaits a single lightweight auth-context lookup, matching the "static/auth pages do not require artificial loaders" exception.
+- **Status:** FIXED
 
 ## Section 10 — Plan-gate UX
 

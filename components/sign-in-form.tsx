@@ -80,6 +80,7 @@ export default function SignInForm({
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
+                  aria-describedby={status ? "signin-status" : undefined}
                   required
                 />
               </label>
@@ -89,6 +90,7 @@ export default function SignInForm({
                   type="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
+                  aria-describedby={status ? "signin-status" : undefined}
                   required
                 />
               </label>
@@ -96,7 +98,11 @@ export default function SignInForm({
                 {loading ? "Signing in..." : "Sign in"}
               </button>
             </form>
-            {status && <div className="status">{status}</div>}
+            {status && (
+              <div className="status" id="signin-status" role="alert">
+                {status}
+              </div>
+            )}
             <p className="muted">
               New here? <Link href="/signup">Create an account</Link>
             </p>

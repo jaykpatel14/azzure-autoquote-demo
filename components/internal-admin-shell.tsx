@@ -41,19 +41,38 @@ export default async function InternalAdminShell({
         </div>
 
         <nav className="workspaceNav" aria-label="Admin navigation">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              className={`workspaceNavItem${item.active ? " isActive" : ""}`}
-              href={item.href}
-              aria-current={item.active ? "page" : undefined}
-            >
-              <span>{item.label}</span>
-              {item.href === "/admin/tenants" && pendingCount > 0 ? (
-                <span className="badge">{pendingCount}</span>
-              ) : null}
-            </Link>
-          ))}
+          {navItems
+            .filter((item) => item.priority === "primary")
+            .map((item) => (
+              <Link
+                key={item.href}
+                className={`workspaceNavItem${item.active ? " isActive" : ""}`}
+                href={item.href}
+                aria-current={item.active ? "page" : undefined}
+              >
+                <span>{item.label}</span>
+                {item.href === "/admin/tenants" && pendingCount > 0 ? (
+                  <span className="badge">{pendingCount}</span>
+                ) : null}
+              </Link>
+            ))}
+          <details className="workspaceNavMore">
+            <summary className="workspaceNavItem">More</summary>
+            <div className="workspaceNavMorePanel">
+              {navItems
+                .filter((item) => item.priority === "secondary")
+                .map((item) => (
+                  <Link
+                    key={item.href}
+                    className={`workspaceNavItem${item.active ? " isActive" : ""}`}
+                    href={item.href}
+                    aria-current={item.active ? "page" : undefined}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+            </div>
+          </details>
         </nav>
 
         <section className="sidebarPanel sidebarFooter" aria-label="Admin session actions">

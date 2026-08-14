@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 type UpgradeModalProps = {
   currentPlanCode: string;
@@ -22,10 +23,50 @@ export default function UpgradeModal({
   plans
 }: UpgradeModalProps) {
   const [selectedPlan, setSelectedPlan] = useState(currentPlanCode);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeLinkRef = useRef<HTMLAnchorElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeLinkRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        router.push("/settings/billing");
+        return;
+      }
+
+      if (event.key !== "Tab" || !modalRef.current) return;
+
+      const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [router]);
 
   return (
     <div className="upgradeOverlay" role="dialog" aria-modal="true" aria-label="Upgrade plan">
-      <div className="upgradeModal">
+      <div className="upgradeModal" ref={modalRef}>
         <div className="sectionHeader">
           <div>
             <p className="eyebrow">Billing</p>
@@ -34,7 +75,7 @@ export default function UpgradeModal({
               Current plan: {currentPlanName}. Changes are applied immediately for upgrades and at the period end for downgrades.
             </p>
           </div>
-          <Link className="button secondary" href="/settings/billing">
+          <Link ref={closeLinkRef} className="button secondary" href="/settings/billing">
             Close
           </Link>
         </div>

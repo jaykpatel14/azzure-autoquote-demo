@@ -40,6 +40,11 @@ export default async function PublicQuotePage({
           websiteUrl: true,
           slug: true
         }
+      },
+      analysis: {
+        select: {
+          imageDataUrl: true
+        }
       }
     }
   });
@@ -66,7 +71,13 @@ export default async function PublicQuotePage({
       <article className="publicQuoteCard card">
         <header className="publicQuoteHeader">
           {quote.company.logoUrl ? (
-            <img className="publicQuoteLogo" src={quote.company.logoUrl} alt={`${quote.company.name} logo`} />
+            <img
+              className="publicQuoteLogo"
+              src={quote.company.logoUrl}
+              alt={`${quote.company.name} logo`}
+              width={240}
+              height={64}
+            />
           ) : (
             <p className="publicQuoteTitle">{quote.company.name}</p>
           )}
@@ -77,6 +88,14 @@ export default async function PublicQuotePage({
         </header>
 
         <section className="publicQuoteBody">
+          {quote.analysis?.imageDataUrl ? (
+            <img
+              className="publicQuoteImage"
+              src={quote.analysis.imageDataUrl}
+              alt={`${quote.metalType} jewelry for quote ${quote.quoteNumber}`}
+            />
+          ) : null}
+
           <div className="quotePreview publicQuotePreview">
             <p className="eyebrow">Estimated price</p>
             <p className="publicQuotePrice">{formatCurrency(Number(quote.estimatedSellingPrice ?? quote.estimatedPrice))}</p>

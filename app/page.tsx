@@ -274,7 +274,7 @@ export default async function HomePage() {
               <strong>Welcome to AutoQuote. Upload your first jewelry photo to generate a quote in seconds.</strong>
               <p className="muted">Create your first quote and this chart will begin to fill in.</p>
               <Link className="button primary" href="/quotes/new">
-                New Quote
+                New quote
               </Link>
             </div>
           ) : (
@@ -291,13 +291,13 @@ export default async function HomePage() {
           </div>
           <div className="stack">
             <Link className="detailCard" href="/quotes/new">
-              <span>New Quote</span>
+              <span>New quote</span>
               <strong>Upload a photo to start</strong>
               <p className="muted small">Open the quote builder and start a new estimate.</p>
             </Link>
             <PlanGate feature="canShareQuoteLink" fallbackHref="/settings/billing?upgrade=1">
               <Link className="detailCard" href="/quotes?status=sent">
-                <span>Share a Quote</span>
+                <span>Share a quote</span>
                 <strong>Send a quote to your customer</strong>
                 <p className="muted small">Open your sent quotes and copy the public link.</p>
               </Link>
@@ -305,7 +305,7 @@ export default async function HomePage() {
             <PlanGate feature="canPlaceManufacturingOrder" fallbackHref="/settings/billing?upgrade=1">
               <PlanGate requireCkVerification fallbackHref="/settings/billing?upgrade=1">
                 <Link className="detailCard" href="/orders">
-                  <span>Place an Order</span>
+                  <span>Place an order</span>
                   <strong>Submit for manufacturing</strong>
                   <p className="muted small">Open the manufacturing workspace.</p>
                 </Link>
@@ -331,7 +331,7 @@ export default async function HomePage() {
             <strong>Welcome to AutoQuote. Upload your first jewelry photo to generate a quote in seconds.</strong>
             <p className="muted">Your latest five quotes will appear here once you save your first estimate.</p>
             <Link className="button primary" href="/quotes/new">
-              New Quote
+              New quote
             </Link>
           </div>
         ) : (
