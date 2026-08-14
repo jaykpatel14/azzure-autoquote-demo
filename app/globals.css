@@ -633,7 +633,6 @@ textarea:disabled {
 }
 
 .field input,
-.field select,
 .field textarea {
   width: 100%;
   min-height: 46px;
@@ -643,6 +642,81 @@ textarea:disabled {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+select,
+.field select,
+.uiInput select,
+select.uiInput {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  color: var(--color-body);
+  background-color: #18181b;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color-scheme: dark;
+  cursor: pointer;
+  appearance: auto;
+  font-family: inherit;
+  font-size: var(--text-base);
+  transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+select option,
+.field select option,
+select.uiInput option {
+  color: #f4f4f8;
+  background-color: #18181b;
+  padding: 10px 14px;
+  font-size: 0.9375rem;
+}
+
+select option:disabled,
+.field select option:disabled {
+  color: #71717a;
+  background-color: #121214;
+}
+
+select option:checked {
+  color: var(--color-gold-light);
+  background-color: #27272a;
+}
+
+.quotesToolbar select {
+  width: auto;
+  min-height: 38px;
+  padding: 6px 12px;
+  color: var(--color-body);
+  background-color: #18181b;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color-scheme: dark;
+}
+
+.signupShell select,
+.onboardingShell select,
+.publicQuoteShell select,
+.pricingShell select {
+  color: #09090b;
+  background-color: #ffffff;
+  border: 1.5px solid rgba(28, 28, 30, 0.22);
+  color-scheme: light;
+}
+
+.signupShell select option,
+.onboardingShell select option,
+.publicQuoteShell select option,
+.pricingShell select option {
+  color: #09090b;
+  background-color: #ffffff;
+}
+
+.signupShell select option:disabled,
+.onboardingShell select option:disabled {
+  color: #a1a1aa;
+  background-color: #f4f4f5;
 }
 
 .uiInput {
@@ -684,6 +758,7 @@ textarea:disabled {
 
 .field input:focus,
 .field select:focus,
+select:focus,
 .field textarea:focus {
   border-color: var(--color-gold);
   box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.16);
