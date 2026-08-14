@@ -21,7 +21,6 @@ export class PlanError extends Error {
 
 export function isPlanId(value: string): value is PlanId { return Object.prototype.hasOwnProperty.call(PLAN_FEATURES, value); }
 export function resolvePlanId(plan: { id: string; code: string }, status: SubscriptionStatus): PlanId {
-  if (status === "TRIALING") return "plan_professional";
   const candidate = plan.id || `plan_${plan.code}`;
   if (!isPlanId(candidate)) throw new Error(`Unknown planId: ${candidate}`);
   return candidate;
