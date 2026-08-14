@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 
@@ -12,7 +11,6 @@ export default function SignInForm({
   initialEmail: string;
   verified: boolean;
 }) {
-  const router = useRouter();
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState(
@@ -44,8 +42,10 @@ export default function SignInForm({
       }
 
       keepLoading = false;
-      router.push(result?.url || "/");
-      router.refresh();
+      // Start a fresh document request so the destination is rendered with the
+      // session cookie that the credentials callback has just issued. A client
+      // transition can otherwise reuse the anonymous home-page response.
+      window.location.assign(result?.url || "/");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to sign in right now.");
       return;

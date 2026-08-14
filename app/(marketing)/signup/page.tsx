@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { isPlanCode, type PlanCode } from "@/lib/subscription-plans";
 
@@ -46,7 +46,7 @@ function normalizePlanCode(value: string | null): PlanCode {
 
 export default function SignUpPage() {
   const searchParams = useSearchParams();
-  const initialPlan = useMemo(() => normalizePlanCode(searchParams.get("plan")), [searchParams]);
+  const initialPlan = normalizePlanCode(searchParams.get("plan"));
   const [form, setForm] = useState<SignupForm>({
     companyName: "",
     name: "",
@@ -65,10 +65,6 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
-
-  useEffect(() => {
-    setForm((current) => ({ ...current, planCode: initialPlan }));
-  }, [initialPlan]);
 
   function setField<K extends FieldName>(name: K, value: SignupForm[K]) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -212,7 +208,7 @@ export default function SignUpPage() {
             {loading ? "Redirecting to checkout..." : "Continue to payment"}
           </button>
 
-          <p className="signupFootnote">You won't be charged today. Cancel anytime before day 14.</p>
+          <p className="signupFootnote">You won&apos;t be charged today. Cancel anytime before day 14.</p>
           {status ? <div className="signupStatus">{status}</div> : null}
         </form>
 

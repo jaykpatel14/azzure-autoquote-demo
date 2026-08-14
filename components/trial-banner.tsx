@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 type TrialBannerProps = {
   companyId: string;
@@ -11,6 +11,7 @@ type TrialBannerProps = {
 };
 
 const STORAGE_PREFIX = "azzure-trial-banner-dismissed";
+const STORAGE_EVENT = "azzure-trial-banner-change";
 
 export default function TrialBanner({
   companyId,
@@ -18,12 +19,19 @@ export default function TrialBanner({
   quoteCap,
   quotesRemaining
 }: TrialBannerProps) {
-  const [dismissed, setDismissed] = useState(true);
-
-  useEffect(() => {
-    const key = `${STORAGE_PREFIX}:${companyId}`;
-    setDismissed(window.sessionStorage.getItem(key) === "1");
-  }, [companyId]);
+  const subscribe = useCallback((notify: () => void) => {
+    window.addEventListener(STORAGE_EVENT, notify);
+    window.addEventListener("storage", notify);
+    return () => {
+      window.removeEventListener(STORAGE_EVENT, notify);
+      window.removeEventListener("storage", notify);
+    };
+  }, []);
+  const getSnapshot = useCallback(
+    () => window.sessionStorage.getItem(`${STORAGE_PREFIX}:${companyId}`) === "1",
+    [companyId]
+  );
+  const dismissed = useSyncExternalStore(subscribe, getSnapshot, () => true);
 
   if (dismissed) {
     return null;
@@ -35,7 +43,7 @@ export default function TrialBanner({
   function dismiss() {
     const key = `${STORAGE_PREFIX}:${companyId}`;
     window.sessionStorage.setItem(key, "1");
-    setDismissed(true);
+    window.dispatchEvent(new Event(STORAGE_EVENT));
   }
 
   return (
