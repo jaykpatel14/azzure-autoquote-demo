@@ -16,8 +16,10 @@ RUN npm run build
 FROM base AS migrator
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json* ./
+COPY tsconfig.json ./
 COPY prisma ./prisma
 COPY src ./src
+COPY lib ./lib
 
 FROM base AS runner
 ENV NODE_ENV=production
