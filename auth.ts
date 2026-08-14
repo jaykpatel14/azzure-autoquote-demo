@@ -60,14 +60,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               memberships: {
                 select: {
                   companyId: true,
-                  company: {
-                    select: {
-                      name: true,
-                      accountStatus: true,
-                      pricingTier: true,
-                      subscription: {
-                        select: {
-                          planId: true
+                company: {
+                  select: {
+                    name: true,
+                    accountStatus: true,
+                    pricingTier: true,
+                    ckCustomerVerified: true,
+                    subscription: {
+                      select: {
+                        planId: true
                         }
                       }
                     }
@@ -108,7 +109,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           companyName: user.memberships[0]?.company.name ?? "",
           planId: user.memberships[0]?.company.subscription?.planId ?? "",
           accountStatus: user.memberships[0]?.company.accountStatus ?? "PENDING_APPROVAL",
-          pricingTier: user.memberships[0]?.company.pricingTier ?? null
+          pricingTier: user.memberships[0]?.company.pricingTier ?? null,
+          ckCustomerVerified: user.memberships[0]?.company.ckCustomerVerified ?? false
         };
       }
     })
@@ -126,6 +128,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.planId = "planId" in user ? user.planId ?? "" : "";
         token.accountStatus = "accountStatus" in user ? user.accountStatus ?? "PENDING_APPROVAL" : "PENDING_APPROVAL";
         token.pricingTier = "pricingTier" in user ? user.pricingTier ?? null : null;
+        token.ckCustomerVerified =
+          "ckCustomerVerified" in user ? user.ckCustomerVerified ?? false : false;
       }
 
       return token;
@@ -150,6 +154,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.pricingTier === "TIER_3"
             ? token.pricingTier
             : null;
+        session.user.ckCustomerVerified = token.ckCustomerVerified === true;
       }
 
       return session;

@@ -167,7 +167,7 @@ export default function PricingPage() {
                     ? "Unlimited seats"
                     : `${featureSet.teamSeats} seat${featureSet.teamSeats === 1 ? "" : "s"}`}
                 </li>
-                <li>Orders: {featureSet.manufacturingOrders ? "Manufacturing orders" : "No manufacturing orders"}</li>
+                <li>Orders: Custom King verification required</li>
                 <li>Links: {featureSet.shareableLinks ? "Shareable links" : "No shareable links"}</li>
               </ul>
 

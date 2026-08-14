@@ -8,7 +8,6 @@ export type PlanFeatureKey =
   | "brandedPdf"
   | "imageHistory"
   | "teamSeats"
-  | "manufacturingOrders"
   | "shareableLinks"
   | "whiteLabel"
   | "s3Storage"
@@ -53,7 +52,6 @@ export const PLAN_FEATURES: Record<PlanCode, PlanFeatureMap> = {
     brandedPdf: false,
     imageHistory: false,
     teamSeats: 1,
-    manufacturingOrders: false,
     shareableLinks: false,
     whiteLabel: false,
     s3Storage: false,
@@ -65,7 +63,6 @@ export const PLAN_FEATURES: Record<PlanCode, PlanFeatureMap> = {
     brandedPdf: true,
     imageHistory: true,
     teamSeats: 5,
-    manufacturingOrders: false,
     shareableLinks: false,
     whiteLabel: false,
     s3Storage: true,
@@ -77,7 +74,6 @@ export const PLAN_FEATURES: Record<PlanCode, PlanFeatureMap> = {
     brandedPdf: true,
     imageHistory: true,
     teamSeats: Number.POSITIVE_INFINITY,
-    manufacturingOrders: true,
     shareableLinks: true,
     whiteLabel: true,
     s3Storage: true,

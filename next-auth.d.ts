@@ -11,6 +11,7 @@ declare module "next-auth" {
       planId: string;
       accountStatus: "PENDING_APPROVAL" | "APPROVED" | "SUSPENDED";
       pricingTier: "TIER_1" | "TIER_2" | "TIER_3" | null;
+      ckCustomerVerified: boolean;
     };
   }
 }
@@ -23,6 +24,7 @@ declare module "next-auth/jwt" {
     planId?: string;
     accountStatus?: "PENDING_APPROVAL" | "APPROVED" | "SUSPENDED";
     pricingTier?: "TIER_1" | "TIER_2" | "TIER_3" | null;
+    ckCustomerVerified?: boolean;
     role?: "AZZURE_ADMIN" | "CUSTOMER";
   }
 }

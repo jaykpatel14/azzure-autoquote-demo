@@ -193,7 +193,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
 
           {status === "sent" && !quote.order ? (
             <div style={{ marginTop: "1rem" }}>
-              <PlanGate minimumPlan="enterprise" fallbackHref="/settings/billing?upgrade=1">
+              <PlanGate requireCkVerification fallbackHref="/settings/billing?upgrade=1">
                 <form className="stack" action="/api/orders" method="post">
                   <input type="hidden" name="quoteId" value={quote.id} />
                   <label className="field">

@@ -46,12 +46,20 @@ export default async function AdminOrdersPage() {
           <strong>{data.counts.submitted}</strong>
         </article>
         <article className="statCard statCard--admin">
+          <span className="eyebrow">CK placed</span>
+          <strong>{data.counts.ckOrderPlaced}</strong>
+        </article>
+        <article className="statCard statCard--admin">
           <span className="eyebrow">In production</span>
           <strong>{data.counts.inProduction}</strong>
         </article>
         <article className="statCard statCard--admin">
           <span className="eyebrow">Completed</span>
           <strong>{data.counts.completed}</strong>
+        </article>
+        <article className="statCard statCard--admin">
+          <span className="eyebrow">Cancelled</span>
+          <strong>{data.counts.cancelled}</strong>
         </article>
       </section>
 

@@ -100,6 +100,14 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
               <span>About us</span>
               <strong>{company.aboutUs ? "Configured" : "Not set"}</strong>
             </div>
+            <div className="detailCard">
+              <span>Custom King verification</span>
+              <strong>{company.ckCustomerVerified ? "Verified" : "Not verified"}</strong>
+              <p className="muted small">
+                {company.ckCustomerVerifiedAt ? `Approved ${formatDate(company.ckCustomerVerifiedAt)}` : "No approval on file"}
+              </p>
+              {company.ckCustomerNotes ? <p className="muted small">{company.ckCustomerNotes}</p> : null}
+            </div>
           </div>
         </article>
 
@@ -135,6 +143,29 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
             </div>
           </div>
         </article>
+      </section>
+
+      <section className="card">
+        <div className="sectionHeader">
+          <div>
+            <h2>Custom King access</h2>
+            <p className="muted">Approve this tenant for manufacturing orders or revoke access if needed.</p>
+          </div>
+        </div>
+        <div className="heroActions">
+          <form action={`/api/admin/tenants/${company.id}/ck-verification`} method="post">
+            <input type="hidden" name="action" value="verify" />
+            <button className="button primary" type="submit" disabled={company.ckCustomerVerified}>
+              Verify customer
+            </button>
+          </form>
+          <form action={`/api/admin/tenants/${company.id}/ck-verification`} method="post">
+            <input type="hidden" name="action" value="revoke" />
+            <button className="button secondary" type="submit" disabled={!company.ckCustomerVerified}>
+              Revoke verification
+            </button>
+          </form>
+        </div>
       </section>
 
       <section className="grid twoUp">

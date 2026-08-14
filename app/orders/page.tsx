@@ -30,10 +30,7 @@ export default async function OrdersPage() {
     redirect("/onboarding");
   }
 
-  if (context.company.subscription?.plan.code !== "enterprise") {
-    redirect("/settings/billing?upgrade=1");
-  }
-
+  const canPlaceOrders = context.company.accountStatus === "APPROVED" && context.company.ckCustomerVerified;
   const overview = await getOrdersOverview(context.company.id);
 
   return (
@@ -47,6 +44,27 @@ export default async function OrdersPage() {
         </Link>
       }
     >
+      {!canPlaceOrders ? (
+        <section className="card">
+          <div className="sectionHeader">
+            <div>
+              <h2>Custom King verification required</h2>
+              <p className="muted">
+                Manufacturing orders are only available after your Azzure account is approved and verified with Custom King.
+              </p>
+            </div>
+          </div>
+          <div className="heroActions">
+            <Link className="button secondary" href="/settings">
+              Review account
+            </Link>
+            <a className="button secondary" href="mailto:support@azzuresolutions.com">
+              Contact support
+            </a>
+          </div>
+        </section>
+      ) : null}
+
       <section className="statGrid">
         <article className="statCard">
           <span className="eyebrow">Submitted</span>
@@ -54,9 +72,9 @@ export default async function OrdersPage() {
           <p className="muted small">Ready to be sent to manufacturing.</p>
         </article>
         <article className="statCard">
-          <span className="eyebrow">In review</span>
-          <strong>{overview.counts.IN_REVIEW}</strong>
-          <p className="muted small">Pending internal approval.</p>
+          <span className="eyebrow">CK placed</span>
+          <strong>{overview.counts.CK_ORDER_PLACED}</strong>
+          <p className="muted small">Accepted by Custom King and waiting on production.</p>
         </article>
         <article className="statCard">
           <span className="eyebrow">In production</span>
@@ -74,7 +92,7 @@ export default async function OrdersPage() {
         <div className="sectionHeader">
           <div>
             <h2>Orders dashboard</h2>
-            <p className="muted">Open orders from finalized quotes. Cancelation is only available while submitted.</p>
+            <p className="muted">Open orders from finalized quotes. Cancelation is only available while the order is still active.</p>
           </div>
         </div>
         {overview.recentOrders.length === 0 ? (

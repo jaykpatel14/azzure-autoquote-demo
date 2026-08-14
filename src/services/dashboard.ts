@@ -30,7 +30,7 @@ export type DashboardData = {
     id: string;
     orderNumber: string;
     itemName: string;
-    status: "SUBMITTED" | "IN_REVIEW" | "IN_PRODUCTION" | "COMPLETED" | "CANCELED";
+    status: "SUBMITTED" | "CK_ORDER_PLACED" | "IN_REVIEW" | "IN_PRODUCTION" | "COMPLETED" | "CANCELED" | "CANCELLED";
     submittedAt: Date;
     updatedAt: Date;
     quoteNumber: string;
@@ -136,7 +136,11 @@ export async function getDashboardData(companyId: string): Promise<DashboardData
     quotesThisMonth,
     totalQuotes,
     quotesSentThisMonth,
-    pendingOrders: ordersOverview.counts.SUBMITTED + ordersOverview.counts.IN_REVIEW + ordersOverview.counts.IN_PRODUCTION,
+    pendingOrders:
+      ordersOverview.counts.SUBMITTED +
+      ordersOverview.counts.CK_ORDER_PLACED +
+      ordersOverview.counts.IN_REVIEW +
+      ordersOverview.counts.IN_PRODUCTION,
     quoteActivity,
     recentQuotes,
     recentOrders: ordersOverview.recentOrders,

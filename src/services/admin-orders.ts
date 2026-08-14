@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 
 export const ADMIN_ORDER_STATUSES: OrderStatus[] = [
   "SUBMITTED",
+  "CK_ORDER_PLACED",
+  "CANCELLED",
   "IN_REVIEW",
   "IN_PRODUCTION",
   "COMPLETED",
@@ -26,10 +28,11 @@ export async function getAdminOrders(status?: OrderStatus | "all") {
     counts: {
       total: await prisma.order.count(),
       submitted: await prisma.order.count({ where: { status: "SUBMITTED" } }),
+      ckOrderPlaced: await prisma.order.count({ where: { status: "CK_ORDER_PLACED" } }),
       inReview: await prisma.order.count({ where: { status: "IN_REVIEW" } }),
       inProduction: await prisma.order.count({ where: { status: "IN_PRODUCTION" } }),
       completed: await prisma.order.count({ where: { status: "COMPLETED" } }),
-      canceled: await prisma.order.count({ where: { status: "CANCELED" } })
+      cancelled: await prisma.order.count({ where: { status: "CANCELLED" } }) + await prisma.order.count({ where: { status: "CANCELED" } })
     }
   };
 }
@@ -45,7 +48,10 @@ export async function getAdminOrder(orderId: string) {
           }
         }
       },
-      quote: true
+      quote: true,
+      timeline: {
+        orderBy: { createdAt: "asc" }
+      }
     }
   });
 

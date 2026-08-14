@@ -45,6 +45,7 @@ type CompanyMembershipCompany = Company & {
   subscription: (Subscription & { plan: Plan }) | null;
   accountStatus: AccountStatus;
   pricingTier: PricingTier | null;
+  ckCustomerVerified: boolean;
 };
 
 type CompanyMembership = Membership & {
@@ -142,9 +143,14 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
                 aboutUs: true,
                 quoteSequence: true,
                 accountStatus: true,
-                pricingTier: true,
-                approvedAt: true,
-                approvedBy: true,
+        pricingTier: true,
+        ckCustomerVerified: true,
+        ckCustomerVerifiedAt: true,
+        ckCustomerVerifiedBy: true,
+        ckCustomerRevokedAt: true,
+        ckCustomerNotes: true,
+        approvedAt: true,
+        approvedBy: true,
                 tierChangedAt: true,
                 tierChangedBy: true,
                 suspendedAt: true,

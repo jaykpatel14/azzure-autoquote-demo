@@ -31,6 +31,8 @@ enum AnalysisStatus {
 
 enum OrderStatus {
   SUBMITTED
+  CK_ORDER_PLACED
+  CANCELLED
   IN_REVIEW
   IN_PRODUCTION
   COMPLETED
@@ -59,6 +61,11 @@ model Company {
   quoteSequence   Int              @default(0)
   accountStatus   AccountStatus    @default(PENDING_APPROVAL)
   pricingTier     PricingTier?
+  ckCustomerVerified Boolean        @default(false)
+  ckCustomerVerifiedAt DateTime?
+  ckCustomerVerifiedBy String?
+  ckCustomerRevokedAt DateTime?
+  ckCustomerNotes  String?
   approvedAt      DateTime?
   approvedBy      String?
   tierChangedAt   DateTime?
@@ -283,16 +290,39 @@ model Order {
   orderNumber     String      @unique
   itemName        String
   status          OrderStatus @default(SUBMITTED)
+  ckOrderId       String?     @unique
+  ckOrderUrl      String?
+  ckOrderPlacedAt DateTime?
+  ckOrderPlacedBy String?
   notes           String?
   submittedAt     DateTime    @default(now())
   reviewedAt      DateTime?
   productionAt    DateTime?
   completedAt     DateTime?
+  completedBy     String?
   canceledAt      DateTime?
+  cancelledAt     DateTime?
+  cancelledBy     String?
+  cancellationReason String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   quote           Quote       @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  timeline        OrderEvent[]
+}
+
+model OrderEvent {
+  id            String      @id @default(cuid())
+  orderId       String
+  status        OrderStatus
+  note          String?
+  internalNote   String?
+  createdAt     DateTime    @default(now())
+  createdBy     String
+  isAdminAction Boolean     @default(false)
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
 }
 
 model EmailVerificationToken {

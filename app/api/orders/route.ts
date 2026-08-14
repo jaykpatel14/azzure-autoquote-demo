@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { canManageBilling, requireCompanyContext } from "@/lib/company";
-import { createOrderFromQuote } from "@/src/services/orders";
+import { requireCompanyContext } from "@/lib/company";
+import { sendOrderSubmittedEmail } from "@/lib/order-workflow";
+import { submitOrder } from "@/src/services/orders";
 
 export const runtime = "nodejs";
 
@@ -28,24 +29,27 @@ async function parseInput(request: Request) {
 export async function POST(request: Request) {
   try {
     const context = await requireCompanyContext();
-    if (context.company.subscription?.plan.code !== "enterprise") {
-      return NextResponse.json({ error: "Upgrade to Enterprise to place orders." }, { status: 403 });
-    }
-    if (!canManageBilling(context.membership?.role ?? "CUSTOMER")) {
-      return NextResponse.json({ error: "You do not have permission to manage orders." }, { status: 403 });
-    }
 
     const input = await parseInput(request);
-    const result = await createOrderFromQuote({
+    const result = await submitOrder({
       companyId: context.company.id,
       quoteId: input.quoteId,
       itemName: input.itemName,
-      notes: input.notes
+      notes: input.notes,
+      createdBy: context.user.id
     });
 
     if ("error" in result) {
       return NextResponse.json({ error: result.error.userMessage }, { status: result.error.statusCode });
     }
+
+    await sendOrderSubmittedEmail({
+      companyName: context.company.name,
+      orderNumber: result.data.orderNumber,
+      quoteNumber: result.data.quote.quoteNumber,
+      itemName: result.data.itemName,
+      orderUrl: new URL(`/orders/${result.data.id}`, request.url).toString()
+    });
 
     return NextResponse.redirect(new URL(`/orders/${result.data.id}`, request.url), 303);
   } catch (error) {

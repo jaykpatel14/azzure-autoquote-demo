@@ -31,10 +31,6 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     redirect("/signin");
   }
 
-  if (context.company.subscription?.plan.code !== "enterprise") {
-    redirect("/settings/billing?upgrade=1");
-  }
-
   const { orderId } = await params;
   const result = await getOrder({
     companyId: context.company.id,
@@ -47,6 +43,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
 
   const order = result.data;
   const timeline = getOrderTimeline(order);
+  const canCancel = !["COMPLETED", "CANCELED", "CANCELLED"].includes(order.status);
 
   return (
     <WorkspaceShell
@@ -85,6 +82,18 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
               <span>Submitted</span>
               <strong>{formatRelativeTime(order.submittedAt)}</strong>
             </div>
+            {order.ckOrderId ? (
+              <div className="detailRow">
+                <span>Custom King order</span>
+                <strong>{order.ckOrderUrl ? <a href={order.ckOrderUrl} target="_blank" rel="noreferrer">{order.ckOrderId}</a> : order.ckOrderId}</strong>
+              </div>
+            ) : null}
+            {order.ckOrderPlacedAt ? (
+              <div className="detailRow">
+                <span>CK placed</span>
+                <strong>{formatRelativeTime(order.ckOrderPlacedAt)}</strong>
+              </div>
+            ) : null}
           </div>
 
           {order.notes ? (
@@ -100,7 +109,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
             </Link>
           </div>
 
-          {order.status === "SUBMITTED" ? (
+          {canCancel ? (
             <div style={{ marginTop: "1rem" }}>
               <OrderCancelButton orderId={order.id} />
             </div>

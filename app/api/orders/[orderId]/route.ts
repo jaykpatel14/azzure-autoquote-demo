@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { canManageBilling, requireCompanyContext } from "@/lib/company";
+import { requireCompanyContext } from "@/lib/company";
 import { cancelOrder } from "@/src/services/orders";
 
 export const runtime = "nodejs";
@@ -13,14 +13,13 @@ type RouteContext = {
 export async function DELETE(_request: Request, context: RouteContext) {
   try {
     const companyContext = await requireCompanyContext();
-    if (!canManageBilling(companyContext.membership?.role ?? "CUSTOMER")) {
-      return NextResponse.json({ error: "You do not have permission to manage orders." }, { status: 403 });
-    }
 
     const { orderId } = await context.params;
     const result = await cancelOrder({
       companyId: companyContext.company.id,
-      orderId
+      orderId,
+      cancelledBy: companyContext.user.id,
+      isAdminAction: false
     });
 
     if ("error" in result) {

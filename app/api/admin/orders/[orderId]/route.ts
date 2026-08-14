@@ -2,7 +2,9 @@ import { OrderStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireInternalAdminContext, InternalAdminAccessError } from "@/lib/internal-admin";
+import { sendOrderCompletedEmail, sendOrderPlacedEmail } from "@/lib/order-workflow";
 import { prisma } from "@/lib/prisma";
+import { assignCkOrderId, cancelOrder, completeOrder } from "@/src/services/orders";
 
 export const runtime = "nodejs";
 
@@ -13,6 +15,8 @@ const paramsSchema = z.object({
 const schema = z.object({
   status: z.nativeEnum(OrderStatus),
   notes: z.string().optional(),
+  ckOrderId: z.string().optional(),
+  ckOrderUrl: z.string().optional(),
   redirectTo: z.string().optional()
 });
 
@@ -26,6 +30,8 @@ async function parseInput(request: Request) {
   return schema.parse({
     status: String(formData.get("status") || OrderStatus.SUBMITTED),
     notes: String(formData.get("notes") || ""),
+    ckOrderId: String(formData.get("ckOrderId") || ""),
+    ckOrderUrl: String(formData.get("ckOrderUrl") || ""),
     redirectTo: String(formData.get("redirectTo") || "")
   });
 }
@@ -47,24 +53,85 @@ export async function POST(request: Request, context: RouteContext) {
     const input = await parseInput(request);
     const order = await prisma.order.findUnique({
       where: { id: parsedParams.data.orderId },
-      select: { id: true, companyId: true }
+      select: {
+        id: true,
+        companyId: true,
+        orderNumber: true,
+        company: {
+          select: {
+            name: true
+          }
+        }
+      }
     });
 
     if (!order) {
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
 
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        status: input.status,
-        notes: input.notes?.trim() || null,
-        reviewedAt: input.status === OrderStatus.SUBMITTED ? null : new Date(),
-        productionAt: input.status === OrderStatus.IN_PRODUCTION ? new Date() : undefined,
-        completedAt: input.status === OrderStatus.COMPLETED ? new Date() : undefined,
-        canceledAt: input.status === OrderStatus.CANCELED ? new Date() : undefined
+    if (input.status === OrderStatus.CK_ORDER_PLACED) {
+      const result = await assignCkOrderId({
+        companyId: order.companyId,
+        orderId: order.id,
+        ckOrderId: input.ckOrderId?.trim() || order.orderNumber,
+        ckOrderUrl: input.ckOrderUrl?.trim() || null,
+        placedBy: admin.user.id,
+        adminUserId: admin.user.id
+      });
+
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error.userMessage }, { status: result.error.statusCode });
       }
-    });
+
+      await sendOrderPlacedEmail({
+        companyName: order.company.name,
+        orderNumber: order.orderNumber,
+        ckOrderId: input.ckOrderId?.trim() || order.orderNumber,
+        ckOrderUrl: input.ckOrderUrl?.trim() || null,
+        orderUrl: new URL(`/admin/orders/${order.id}`, request.url).toString()
+      });
+    } else if (input.status === OrderStatus.COMPLETED) {
+      const result = await completeOrder({
+        companyId: order.companyId,
+        orderId: order.id,
+        completedBy: admin.user.id,
+        internalNote: input.notes
+      });
+
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error.userMessage }, { status: result.error.statusCode });
+      }
+
+      await sendOrderCompletedEmail({
+        companyName: order.company.name,
+        orderNumber: order.orderNumber,
+        orderUrl: new URL(`/admin/orders/${order.id}`, request.url).toString()
+      });
+    } else if (input.status === OrderStatus.CANCELLED || input.status === OrderStatus.CANCELED) {
+      const result = await cancelOrder({
+        companyId: order.companyId,
+        orderId: order.id,
+        reason: input.notes,
+        cancelledBy: admin.user.id,
+        isAdminAction: true
+      });
+
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error.userMessage }, { status: result.error.statusCode });
+      }
+    } else {
+      const isSubmitted = input.status === OrderStatus.SUBMITTED;
+      const isInProduction = input.status === OrderStatus.IN_PRODUCTION;
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          status: input.status,
+          notes: input.notes?.trim() || null,
+          reviewedAt: isSubmitted ? null : new Date(),
+          productionAt: isInProduction ? new Date() : undefined
+        }
+      });
+    }
 
     await prisma.auditLog.create({
       data: {

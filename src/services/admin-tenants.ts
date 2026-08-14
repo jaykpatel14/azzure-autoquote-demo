@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { logAuditEvent } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { toPricingProfileInput } from "@/lib/metal-pricing";
 
@@ -16,6 +17,11 @@ type AdminTenantListCompany = {
   slug: string;
   accountStatus: string;
   pricingTier: string | null;
+  ckCustomerVerified: boolean;
+  ckCustomerVerifiedAt: Date | null;
+  ckCustomerVerifiedBy: string | null;
+  ckCustomerRevokedAt: Date | null;
+  ckCustomerNotes: string | null;
   createdAt: Date;
   subscription: {
     status: string;
@@ -248,6 +254,68 @@ export async function getAdminTenant(companyId: string) {
     analyses: company.analyses,
     subscription: company.subscription
   };
+}
+
+export async function verifyCkCustomer(params: {
+  companyId: string;
+  adminUserId: string;
+  notes?: string | null;
+}) {
+  const company = await prisma.company.update({
+    where: { id: params.companyId },
+    data: {
+      ckCustomerVerified: true,
+      ckCustomerVerifiedAt: new Date(),
+      ckCustomerVerifiedBy: params.adminUserId,
+      ckCustomerRevokedAt: null,
+      ckCustomerNotes: params.notes?.trim() || null
+    }
+  });
+
+  await logAuditEvent({
+    action: "COMPANY_UPDATED",
+    companyId: company.id,
+    actorUserId: params.adminUserId,
+    targetType: "Company",
+    targetId: company.id,
+    metadata: {
+      message: "Custom King customer verification approved",
+      ckCustomerVerified: true
+    }
+  });
+
+  return company;
+}
+
+export async function revokeCkVerification(params: {
+  companyId: string;
+  adminUserId: string;
+  notes?: string | null;
+}) {
+  const company = await prisma.company.update({
+    where: { id: params.companyId },
+    data: {
+      ckCustomerVerified: false,
+      ckCustomerVerifiedAt: null,
+      ckCustomerVerifiedBy: null,
+      ckCustomerRevokedAt: new Date(),
+      ckCustomerNotes: params.notes?.trim() || null
+    }
+  });
+
+  await logAuditEvent({
+    action: "COMPANY_UPDATED",
+    companyId: company.id,
+    actorUserId: params.adminUserId,
+    targetType: "Company",
+    targetId: company.id,
+    metadata: {
+      message: "Custom King customer verification revoked",
+      ckCustomerVerified: false
+    }
+  });
+
+  return company;
 }
 
 export async function getAdminSubscriptions() {

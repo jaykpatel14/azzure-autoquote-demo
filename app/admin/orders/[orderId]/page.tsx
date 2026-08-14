@@ -85,6 +85,11 @@ export default async function AdminOrderPage({ params }: OrderPageProps) {
               <strong>{order.itemName}</strong>
             </div>
             <div className="detailCard">
+              <span>Custom King</span>
+              <strong>{order.ckOrderId || "Not placed"}</strong>
+              <p className="muted small">{order.ckOrderUrl || "No tracking link"}</p>
+            </div>
+            <div className="detailCard">
               <span>Quote</span>
               <strong>{order.quote.quoteNumber}</strong>
               <p className="muted small">
@@ -120,8 +125,16 @@ export default async function AdminOrderPage({ params }: OrderPageProps) {
               </select>
             </label>
             <label className="field">
+              <span>Custom King order ID</span>
+              <input name="ckOrderId" defaultValue={order.ckOrderId ?? ""} placeholder="CK-100245" />
+            </label>
+            <label className="field">
+              <span>Custom King link</span>
+              <input name="ckOrderUrl" defaultValue={order.ckOrderUrl ?? ""} placeholder="https://..." />
+            </label>
+            <label className="field">
               <span>Notes</span>
-              <textarea name="notes" rows={6} defaultValue={order.notes ?? ""} placeholder="Add internal support notes" />
+              <textarea name="notes" rows={6} defaultValue={order.notes ?? ""} placeholder="Add internal support notes or cancellation reason" />
             </label>
             <div className="heroActions">
               <button className="button primary" type="submit">
@@ -136,6 +149,23 @@ export default async function AdminOrderPage({ params }: OrderPageProps) {
             <p className="muted small">Reviewed: {formatDate(order.reviewedAt)}</p>
             <p className="muted small">Production: {formatDate(order.productionAt)}</p>
             <p className="muted small">Completed: {formatDate(order.completedAt)}</p>
+            <p className="muted small">Canceled: {formatDate(order.canceledAt ?? order.cancelledAt)}</p>
+          </div>
+          <div className="detailCard" style={{ marginTop: "1rem" }}>
+            <span>Workflow events</span>
+            <div className="stack">
+              {order.timeline.length === 0 ? (
+                <p className="muted small">No order events recorded yet.</p>
+              ) : (
+                order.timeline.map((event) => (
+                  <div key={event.id}>
+                    <strong>{event.status}</strong>
+                    <p className="muted small">{formatDate(event.createdAt)}</p>
+                    {event.note ? <p className="muted small">{event.note}</p> : null}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </article>
       </section>

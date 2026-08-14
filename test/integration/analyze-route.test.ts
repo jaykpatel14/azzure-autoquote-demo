@@ -119,7 +119,8 @@ function mockSession(companyFixture: CompanyFixture, sessionVersion = 0): Sessio
       companyName: "Analysis Company",
       planId: "plan_starter",
       accountStatus: "APPROVED",
-      pricingTier: "TIER_3"
+      pricingTier: "TIER_3",
+      ckCustomerVerified: false
     },
     expires: new Date(Date.now() + 60 * 60 * 1000).toISOString()
   };

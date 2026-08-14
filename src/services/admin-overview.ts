@@ -74,6 +74,7 @@ function getStatusTone(status: string): AdminOverviewFeedItem["tone"] {
     case "invoice.payment_failed":
       return "warning";
     case "CANCELED":
+    case "CANCELLED":
       return "error";
     default:
       return "info";
@@ -170,7 +171,7 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
     prisma.order.count({
       where: {
         status: {
-          in: ["SUBMITTED", "IN_REVIEW", "IN_PRODUCTION"]
+          in: ["SUBMITTED", "CK_ORDER_PLACED", "IN_REVIEW", "IN_PRODUCTION"]
         }
       }
     }),

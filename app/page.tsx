@@ -296,7 +296,7 @@ export default async function HomePage() {
                 <p className="muted small">Open your sent quotes and copy the public link.</p>
               </Link>
             </PlanGate>
-            <PlanGate minimumPlan="enterprise" fallbackHref="/settings/billing?upgrade=1">
+            <PlanGate requireCkVerification fallbackHref="/settings/billing?upgrade=1">
               <Link className="detailCard" href="/orders">
                 <span>Place an Order</span>
                 <strong>Submit for manufacturing</strong>
