@@ -61,6 +61,8 @@ async function createCompanyFixture(
       name: `Analysis Company ${slug}`,
       slug,
       quoteSequence: 0,
+      accountStatus: "APPROVED",
+      pricingTier: "TIER_3",
       pricingProfile: { create: {} }
     }
   });
