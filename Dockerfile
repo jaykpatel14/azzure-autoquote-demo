@@ -1,16 +1,16 @@
 FROM node:22-alpine AS base
 WORKDIR /app
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl libc6-compat
 
 FROM base AS deps
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
 RUN npm ci
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN mkdir -p public
-RUN npx prisma generate
+RUN ./node_modules/.bin/prisma generate
 RUN npm run build
 
 FROM base AS migrator
@@ -24,11 +24,17 @@ RUN npx prisma generate
 
 FROM base AS runner
 ENV NODE_ENV=production
-ENV HOSTNAME=0.0.0.0
+ENV APP_HOST=0.0.0.0
 ENV PORT=8585
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/package-lock.json ./package-lock.json
+COPY --from=builder /app/server-entrypoint.js ./server-entrypoint.js
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/prisma ./prisma
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 EXPOSE 8585
-CMD ["node", "server.js"]
+CMD ["node", "server-entrypoint.js"]

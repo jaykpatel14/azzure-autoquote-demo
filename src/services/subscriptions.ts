@@ -18,6 +18,7 @@ export async function createCheckoutSession(params: {
   companyName: string;
   email: string;
   planCode: string;
+  baseUrl?: string;
 }): Promise<AppResult<{ url: string }>> {
   const plan = await prisma.plan.findUnique({ where: { code: params.planCode } });
   if (!plan) {
@@ -132,8 +133,11 @@ export async function createCheckoutSession(params: {
       }
     ],
     allow_promotion_codes: true,
-    success_url: buildAppUrl("/settings/billing?billing=success&session_id={CHECKOUT_SESSION_ID}"),
-    cancel_url: buildAppUrl("/settings/billing?billing=cancel"),
+    success_url: buildAppUrl(
+      "/settings/billing?billing=success&session_id={CHECKOUT_SESSION_ID}",
+      params.baseUrl
+    ),
+    cancel_url: buildAppUrl("/settings/billing?billing=cancel", params.baseUrl),
     metadata: {
       companyId: params.companyId,
       planId: plan.id,
@@ -157,6 +161,7 @@ export async function createCheckoutSession(params: {
 
 export async function createBillingPortalSession(params: {
   companyId: string;
+  baseUrl?: string;
 }): Promise<AppResult<{ url: string }>> {
   const company = await prisma.company.findUnique({
     where: { id: params.companyId },
@@ -182,7 +187,7 @@ export async function createBillingPortalSession(params: {
   const stripe = await getStripeClient();
   const session = await stripe.billingPortal.sessions.create({
     customer: company.subscription.stripeCustomerId,
-    return_url: buildAppUrl("/settings/billing")
+    return_url: buildAppUrl("/settings/billing", params.baseUrl)
   });
 
   return { data: { url: session.url } };

@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import type { Readable } from "node:stream";
 
 type QuotePdfStorageInput = {
@@ -90,6 +90,14 @@ export async function loadQuotePdfFromS3(key: string) {
 
   const bytes = await body.transformToByteArray();
   return Buffer.from(bytes);
+}
+
+export async function deleteQuotePdfFromS3(key: string) {
+  const bucket = getQuotePdfBucketName();
+  if (!bucket) return null;
+
+  await getS3Client().send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  return { bucket, key };
 }
 
 async function streamToBuffer(body: Readable | { transformToByteArray: () => Promise<Uint8Array> } | undefined) {

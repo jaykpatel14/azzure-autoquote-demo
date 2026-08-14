@@ -6,17 +6,19 @@ import {
   canManageBilling
 } from "@/lib/company";
 import { createBillingPortalSession } from "@/src/services/subscriptions";
+import { getRequestBaseUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const context = await requireCompanyContext();
     if (!canManageBilling(context.membership?.role ?? "CUSTOMER")) {
       throw new CompanyAccessError("You do not have permission to manage billing.");
     }
     const result = await createBillingPortalSession({
-      companyId: context.company.id
+      companyId: context.company.id,
+      baseUrl: getRequestBaseUrl(request)
     });
 
     if ("error" in result) {

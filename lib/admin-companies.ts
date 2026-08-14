@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient, SubscriptionStatus } from "@prisma/client";
+import { getEffectiveMonthlyLimit } from "@/lib/billing";
 import { generateToken } from "@/lib/tokens";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
 
@@ -341,10 +342,16 @@ export async function updateAdminCompanyBilling(
       companyId,
       periodStart: input.subscription.currentPeriodStart,
       periodEnd: input.subscription.currentPeriodEnd,
-      limit: selectedPlan.monthlyLimit
+      limit: getEffectiveMonthlyLimit({
+        status: input.subscription.status,
+        plan: selectedPlan
+      })
     },
     update: {
-      limit: selectedPlan.monthlyLimit
+      limit: getEffectiveMonthlyLimit({
+        status: input.subscription.status,
+        plan: selectedPlan
+      })
     }
   });
 

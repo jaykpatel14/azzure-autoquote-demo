@@ -13,6 +13,20 @@ concurrency:
 jobs:
   validate-and-push:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: autoquote
+          POSTGRES_PASSWORD: autoquote
+          POSTGRES_DB: autoquote
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U autoquote -d autoquote"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     permissions:
       contents: read
       id-token: write
@@ -45,6 +59,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Apply database migrations
+        run: npm run db:deploy
+
+      - name: Seed test data
+        run: npm run db:seed
+
       - name: Lint
         run: npm run lint
 
@@ -57,27 +77,39 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Show GitHub repository IDs
+        run: |
+          echo "Organization ID: ${{ github.repository_owner_id }}"
+          echo "Repository ID: ${{ github.repository_id }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref }}"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: AzzureAutoquoteECR
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set image URI
-        run: echo "IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${ECR_REPOSITORY}" >> "$GITHUB_ENV"
+        run: |
+          ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+
+          echo "ECR_REGISTRY=${ECR_REGISTRY}" >> "$GITHUB_ENV"
+          echo "IMAGE_URI=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" >> "$GITHUB_ENV"
 
       - name: Build Docker image
         run: |
           docker build \
-            -t "$IMAGE_URI:$IMAGE_TAG" \
-            -t "$IMAGE_URI:latest" \
+            -t "$IMAGE_URI" \
+            -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest" \
             .
 
       - name: Push Docker image
         run: |
-          docker push "$IMAGE_URI:$IMAGE_TAG"
-          docker push "$IMAGE_URI:latest"
+          docker push "$IMAGE_URI"
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"

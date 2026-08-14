@@ -1,7 +1,9 @@
 import type { Plan, Subscription, SubscriptionStatus, UsagePeriod } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_TRIAL_QUOTE_CAP } from "@/lib/subscription-plans";
 
 export const BILLABLE_SUBSCRIPTION_STATUSES: SubscriptionStatus[] = ["TRIALING", "ACTIVE"];
+export const TRIAL_MONTHLY_LIMIT = DEFAULT_TRIAL_QUOTE_CAP;
 
 export class BillingAccessError extends Error {
   constructor(message = "Your subscription is inactive. Update billing to continue.") {
@@ -31,7 +33,7 @@ export function getEffectiveMonthlyLimit(
   }
 ) {
   return subscription.status === "TRIALING"
-    ? subscription.trialQuoteCap ?? subscription.plan.monthlyLimit
+    ? subscription.trialQuoteCap ?? TRIAL_MONTHLY_LIMIT
     : subscription.plan.monthlyLimit;
 }
 
@@ -107,4 +109,3 @@ export async function getCurrentUsagePeriod(companyId: string) {
     orderBy: { periodStart: "desc" }
   });
 }
-

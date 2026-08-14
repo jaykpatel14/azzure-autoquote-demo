@@ -28,7 +28,7 @@ services:
       - .env.proxmox
     environment:
       NODE_ENV: production
-      HOSTNAME: 0.0.0.0
+      APP_HOST: 0.0.0.0
       PORT: "8585"
       # HOSTNAME is the container bind address; public redirects must always use
       # the externally reachable HTTPS origin.

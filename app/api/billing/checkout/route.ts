@@ -7,20 +7,13 @@ import {
   canManageBilling
 } from "@/lib/company";
 import { createCheckoutSession } from "@/src/services/subscriptions";
+import { getRequestBaseUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
 
 const schema = z.object({
   planCode: z.string().trim().min(1).max(50)
 });
-
-function startOfCurrentMonth(date = new Date()) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
-}
-
-function startOfNextMonth(date = new Date()) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
-}
 
 async function parseInput(request: Request) {
   const contentType = request.headers.get("content-type") || "";
@@ -45,7 +38,8 @@ export async function POST(request: Request) {
       companyId: context.company.id,
       companyName: context.company.name,
       email: context.user.email,
-      planCode: input.planCode
+      planCode: input.planCode,
+      baseUrl: getRequestBaseUrl(request)
     });
 
     if ("error" in result) {
