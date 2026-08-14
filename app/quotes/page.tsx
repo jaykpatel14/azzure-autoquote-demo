@@ -93,6 +93,8 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
   if (context.company.subscription && !context.company.subscription.onboardingComplete) {
     redirect("/onboarding");
   }
+  if (context.company.accountStatus !== "APPROVED") redirect("/pending-approval");
+  if (!context.company.pricingTier) redirect("/configuration");
 
   const subscription = context.company.subscription;
   const planFeatures = subscription ? getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status)) : null;

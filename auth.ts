@@ -182,7 +182,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         action: "SIGN_IN",
         companyId: membership.companyId,
         actorUserId: user.id,
-        metadata: { provider: "credentials" }
+        metadata: { provider: "credentials", admin: isInternalAdminEmail(user.email) }
       }).catch(() => undefined);
     },
     async signOut(event) {
@@ -209,7 +209,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         action: "SIGN_OUT",
         companyId: membership.companyId,
         actorUserId: token.sub,
-        metadata: { provider: "credentials" }
+        metadata: { provider: "credentials", admin: token.role === "AZZURE_ADMIN" }
       }).catch(() => undefined);
     }
   }

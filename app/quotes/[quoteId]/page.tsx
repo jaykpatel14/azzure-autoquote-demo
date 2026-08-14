@@ -43,6 +43,8 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
   if (context.company.subscription && !context.company.subscription.onboardingComplete) {
     redirect("/onboarding");
   }
+  if (context.company.accountStatus !== "APPROVED") redirect("/pending-approval");
+  if (!context.company.pricingTier) redirect("/configuration");
 
   const { quoteId } = await params;
   const result = await getQuote({

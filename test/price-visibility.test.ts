@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
-import { calculateMissingSellingPrice } from "@/src/services/backfill-selling-price";
+import { calculateMissingSellingPrice, recoverLegacyQuotePricing } from "@/src/services/backfill-selling-price";
 
 describe("jeweler price visibility", () => {
   test.each([
@@ -30,5 +30,14 @@ describe("selling-price backfill", () => {
     expect(calculateMissingSellingPrice({ makingPrice: 500, pricingTier: "TIER_1", estimatedSellingPrice: 900 })).toBeNull();
     expect(calculateMissingSellingPrice({ makingPrice: null, pricingTier: "TIER_1", estimatedSellingPrice: null })).toBeNull();
     expect(calculateMissingSellingPrice({ makingPrice: 500, pricingTier: null, estimatedSellingPrice: null })).toBeNull();
+  });
+
+  test("reconstructs missing Tier 2 snapshots without changing the legacy customer total", () => {
+    expect(recoverLegacyQuotePricing({ estimatedPrice: 3937.39, pricingTier: "TIER_2" })).toEqual({
+      makingPrice: 1378.09,
+      pricingTierSnapshot: "TIER_2",
+      tierDivisorSnapshot: 0.7,
+      estimatedSellingPrice: 3937.39
+    });
   });
 });

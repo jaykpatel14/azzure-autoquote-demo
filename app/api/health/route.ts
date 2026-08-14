@@ -10,17 +10,18 @@ export async function GET() {
     await prisma.$queryRaw`SELECT 1`;
 
     return NextResponse.json({
+      status: "ok",
       ok: true,
       database: "up",
       durationMs: Date.now() - startedAt
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
+        status: "error",
         ok: false,
         database: "down",
-        durationMs: Date.now() - startedAt,
-        error: error instanceof Error ? error.message : "Health check failed."
+        durationMs: Date.now() - startedAt
       },
       { status: 503 }
     );

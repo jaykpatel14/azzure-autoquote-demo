@@ -23,6 +23,7 @@ const publicPagePrefixes = [
   "/reset-password",
   "/verify-email",
   "/pending-approval",
+  "/configuration",
   "/suspended"
 ];
 
@@ -104,6 +105,7 @@ async function applyAccountAccessControl(request: NextRequest) {
               select: {
                 id: true,
                 accountStatus: true
+                ,pricingTier: true
               }
             }
           }
@@ -119,8 +121,9 @@ async function applyAccountAccessControl(request: NextRequest) {
     const activeMembership =
       user.memberships.find((membership) => membership.companyId === cookieCompanyId) ?? user.memberships[0];
     const companyStatus = activeMembership.company.accountStatus;
+    const pricingTier = activeMembership.company.pricingTier;
 
-    if (companyStatus === "APPROVED") {
+    if (companyStatus === "APPROVED" && pricingTier) {
       return null;
     }
 
@@ -132,12 +135,14 @@ async function applyAccountAccessControl(request: NextRequest) {
       const statusMessage =
         companyStatus === "SUSPENDED"
           ? "Your account has been suspended. Contact Azzure support."
+          : companyStatus === "APPROVED"
+            ? "Your pricing configuration is not complete. Contact Azzure support."
           : "Your account is pending approval. You cannot access this resource yet.";
 
       return withSecurityHeaders(NextResponse.json({ error: statusMessage }, { status: 403 }));
     }
 
-    const redirectTarget = companyStatus === "SUSPENDED" ? "/suspended" : "/pending-approval";
+    const redirectTarget = companyStatus === "SUSPENDED" ? "/suspended" : companyStatus === "APPROVED" ? "/configuration" : "/pending-approval";
     if (pathname === redirectTarget) {
       return null;
     }

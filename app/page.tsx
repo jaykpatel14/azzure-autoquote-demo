@@ -342,7 +342,7 @@ export default async function HomePage() {
                   <th scope="col">Thumbnail</th>
                   <th scope="col">Customer</th>
                   <th scope="col">Metal</th>
-                  <th scope="col">Value</th>
+                  <th scope="col">Quote price</th>
                   <th scope="col">Status</th>
                   <th scope="col">Actions</th>
                 </tr>

@@ -13,7 +13,7 @@ export default async function PendingApprovalPage() {
   }
 
   if (isCompanyApproved(context.company)) {
-    redirect("/");
+    redirect(context.company.pricingTier ? "/" : "/configuration");
   }
 
   return (

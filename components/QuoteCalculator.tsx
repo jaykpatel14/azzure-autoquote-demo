@@ -873,7 +873,7 @@ export default function QuoteCalculator({
           </div>
 
           <div className="quotePreview">
-            <p className="eyebrow">Approved final price</p>
+            <p className="eyebrow">Quote price</p>
             <div className="quotePrice">{formatCurrency(previewPrice)}</div>
             <div className="quoteMeta">
               <div>

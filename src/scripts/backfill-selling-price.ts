@@ -1,12 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { calculateMissingSellingPrice } from "@/src/services/backfill-selling-price";
+import { calculateMissingSellingPrice, recoverLegacyQuotePricing } from "@/src/services/backfill-selling-price";
+import { TIER_DIVISORS } from "@/src/services/pricing";
 
 async function backfillSellingPrices() {
   const where = {
     company: { accountStatus: "APPROVED" as const },
-    makingPrice: { not: null },
-    estimatedSellingPrice: null,
-    pricingTierSnapshot: { not: null }
+    OR: [{ makingPrice: null }, { estimatedSellingPrice: null }, { pricingTierSnapshot: null }, { tierDivisorSnapshot: null }]
   };
 
   const candidates = await prisma.quote.findMany({
@@ -14,7 +13,11 @@ async function backfillSellingPrices() {
     select: {
       id: true,
       makingPrice: true,
-      pricingTierSnapshot: true
+      estimatedPrice: true,
+      estimatedSellingPrice: true,
+      pricingTierSnapshot: true,
+      tierDivisorSnapshot: true,
+      company: { select: { pricingTier: true } }
     }
   });
 
@@ -23,16 +26,22 @@ async function backfillSellingPrices() {
   const updatedCount = await prisma.$transaction(async (tx) => {
     let updated = 0;
     for (const quote of candidates) {
-      if (!quote.makingPrice || !quote.pricingTierSnapshot) continue;
-      const estimatedSellingPrice = calculateMissingSellingPrice({
-        makingPrice: Number(quote.makingPrice),
-        pricingTier: quote.pricingTierSnapshot,
-        estimatedSellingPrice: null
+      const tier = quote.pricingTierSnapshot ?? quote.company.pricingTier;
+      if (!tier) continue;
+      const recovered = quote.makingPrice === null
+        ? recoverLegacyQuotePricing({ estimatedPrice: Number(quote.estimatedPrice), pricingTier: tier })
+        : null;
+      const estimatedSellingPrice = quote.makingPrice === null ? null : calculateMissingSellingPrice({
+        makingPrice: Number(quote.makingPrice), pricingTier: tier,
+        estimatedSellingPrice: quote.estimatedSellingPrice === null ? null : Number(quote.estimatedSellingPrice)
       });
-      if (estimatedSellingPrice === null) continue;
       await tx.quote.update({
         where: { id: quote.id },
-        data: { estimatedSellingPrice }
+        data: recovered ?? {
+          pricingTierSnapshot: tier,
+          tierDivisorSnapshot: quote.tierDivisorSnapshot ?? TIER_DIVISORS[tier],
+          estimatedSellingPrice: estimatedSellingPrice ?? Number(quote.estimatedPrice)
+        }
       });
       updated += 1;
     }

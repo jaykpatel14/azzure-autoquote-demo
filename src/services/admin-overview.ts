@@ -103,9 +103,9 @@ function describeAuditAction(action: string, metadata: unknown) {
     case "SIGN_UP":
       return "New signup";
     case "SIGN_IN":
-      return "Admin sign-in";
+      return payload.admin === true ? "Admin sign-in" : "User sign-in";
     case "SIGN_OUT":
-      return "Admin sign-out";
+      return payload.admin === true ? "Admin sign-out" : "User sign-out";
     case "COMPANY_CREATED":
       return `Tenant ${String(payload.companyName ?? "created")}`;
     case "MEMBERSHIP_CREATED":
@@ -307,14 +307,17 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
       tone: getStatusTone(company.subscription?.status ?? "ACTIVE"),
       occurredAt: company.createdAt
     })),
-    ...auditLogs.map((entry): AdminOverviewFeedItem => ({
-      id: `audit-${entry.id}`,
-      label: "EVENT",
-      description: `${describeAuditAction(entry.action, entry.metadata)}: ${entry.company.name}`,
-      href: `/admin/companies/${entry.company.id}`,
-      tone: getStatusTone(entry.action),
-      occurredAt: entry.createdAt
-    })),
+    ...auditLogs.map((entry): AdminOverviewFeedItem => {
+      const isAdminSessionEvent = entry.action === "SIGN_IN" || entry.action === "SIGN_OUT";
+      return {
+        id: `audit-${entry.id}`,
+        label: isAdminSessionEvent ? "ADMIN" : "EVENT",
+        description: isAdminSessionEvent ? describeAuditAction(entry.action, entry.metadata) : `${describeAuditAction(entry.action, entry.metadata)}: ${entry.company.name}`,
+        href: isAdminSessionEvent ? undefined : `/admin/companies/${entry.company.id}`,
+        tone: getStatusTone(entry.action),
+        occurredAt: entry.createdAt
+      };
+    }),
     ...webhookEvents.map((event): AdminOverviewFeedItem => ({
       id: `webhook-${event.id}`,
       label: event.errorMessage ? "ERROR" : "WEBHOOK",
