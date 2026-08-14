@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vit
 import type { Session } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { calculateQuote } from "@/lib/pricing";
+import { calculateTierPrice } from "@/src/services/pricing";
 
 const authMock = vi.hoisted(() => vi.fn<() => Promise<Session | null>>());
 const cookiesMock = vi.hoisted(() => vi.fn(async () => ({
@@ -56,6 +57,8 @@ async function createCompanyFixture(
       name: `Test Company ${slug}`,
       slug,
       quoteSequence: 0,
+      accountStatus: "APPROVED",
+      pricingTier: "TIER_3",
       pricingProfile: {
         create: {
           goldSpotPerOz: overrides.goldSpotPerOz ?? 4500,
@@ -117,7 +120,14 @@ function mockSession(companyFixture: CompanyFixture, sessionVersion = 0): Sessio
       name: "Test Owner",
       email: companyFixture.email,
       image: null,
-      sessionVersion
+      sessionVersion,
+      role: "CUSTOMER",
+      companyId: companyFixture.companyId,
+      companyName: "Test Company",
+      planId: "plan_starter",
+      accountStatus: "APPROVED",
+      pricingTier: "TIER_3",
+      ckCustomerVerified: false
     },
     expires: new Date(Date.now() + 60 * 60 * 1000).toISOString()
   };
@@ -212,9 +222,12 @@ describe("quote route integration", () => {
         finalMultiplier: 1.5
       }
     );
+    const expectedTierPrice = calculateTierPrice(expected.makingCost, "TIER_3");
 
     expect(savedQuote.companyId).toBe(company.companyId);
-    expect(Number(savedQuote.estimatedPrice)).toBe(expected.estimatedFinalPrice);
+    expect(Number(savedQuote.estimatedPrice)).toBe(expectedTierPrice.estimatedSellingPrice);
+    expect(Number(savedQuote.makingPrice ?? 0)).toBe(expected.makingCost);
+    expect(savedQuote.pricingTierSnapshot).toBe("TIER_3");
     expect(Number(savedQuote.metalWeightGrams)).toBe(payload.metalWeightGrams);
     expect(Number(savedQuote.centerDiamondCarats)).toBe(payload.centerDiamondCarats);
     expect(Number(savedQuote.sideDiamondCarats)).toBe(payload.sideDiamondCarats);

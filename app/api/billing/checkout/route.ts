@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
-import { requireCompanyContext, AuthRequiredError, CompanyAccessError } from "@/lib/company";
 import {
-  buildAppUrl,
-  getStripeClient,
-  resolveCheckoutCustomerId,
-  resolveCheckoutPriceId
-} from "@/lib/stripe";
+  requireCompanyContext,
+  AuthRequiredError,
+  CompanyAccessError,
+  canManageBilling
+} from "@/lib/company";
+import { createCheckoutSession } from "@/src/services/subscriptions";
 import { getRequestBaseUrl } from "@/lib/security";
 
 export const runtime = "nodejs";
@@ -31,80 +30,26 @@ async function parseInput(request: Request) {
 export async function POST(request: Request) {
   try {
     const context = await requireCompanyContext();
+    if (!canManageBilling(context.membership?.role ?? "CUSTOMER")) {
+      throw new CompanyAccessError("You do not have permission to manage billing.");
+    }
     const input = await parseInput(request);
-    if (!context.company.subscription) {
-      return NextResponse.json(
-        { error: "Billing is not initialized for this company yet." },
-        { status: 400 }
-      );
-    }
-
-    const plan = await prisma.plan.findUnique({ where: { code: input.planCode } });
-
-    if (!plan) {
-      return NextResponse.json({ error: "Unknown billing plan." }, { status: 404 });
-    }
-
-    const checkoutPriceId = await resolveCheckoutPriceId(plan);
-
-    if (!checkoutPriceId) {
-      return NextResponse.json(
-        {
-          error:
-            "This billing plan is not configured with a Stripe price. Use a price_ id, or attach a default recurring price to the product."
-        },
-        { status: 400 }
-      );
-    }
-
-    const stripe = await getStripeClient();
-    const stripeCustomerId = await resolveCheckoutCustomerId({
-      stripe,
-      stripeCustomerId: context.company.subscription.stripeCustomerId,
-      email: context.user.email,
-      companyName: context.company.name,
+    const result = await createCheckoutSession({
       companyId: context.company.id,
-      planCode: plan.code,
-      persistStripeCustomerId: async (customerId) => {
-        await prisma.subscription.update({
-          where: { companyId: context.company.id },
-          data: { stripeCustomerId: customerId }
-        });
-      }
+      companyName: context.company.name,
+      email: context.user.email,
+      planCode: input.planCode,
+      baseUrl: getRequestBaseUrl(request)
     });
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      customer: stripeCustomerId,
-      line_items: [
-        {
-          price: checkoutPriceId,
-          quantity: 1
-        }
-      ],
-      allow_promotion_codes: true,
-      success_url: buildAppUrl(
-        "/settings?billing=success&session_id={CHECKOUT_SESSION_ID}",
-        getRequestBaseUrl(request)
-      ),
-      cancel_url: buildAppUrl("/settings?billing=cancel", getRequestBaseUrl(request)),
-      metadata: {
-        companyId: context.company.id,
-        planCode: plan.code
-      },
-      subscription_data: {
-        metadata: {
-          companyId: context.company.id,
-          planCode: plan.code
-        }
-      }
-    });
-
-    if (!session.url) {
-      return NextResponse.json({ error: "Stripe did not return a checkout URL." }, { status: 502 });
+    if ("error" in result) {
+      return NextResponse.json(
+        { error: result.error.userMessage },
+        { status: result.error.statusCode }
+      );
     }
 
-    return NextResponse.redirect(session.url, 303);
+    return NextResponse.redirect(result.data.url, 303);
   } catch (error) {
     if (error instanceof AuthRequiredError) {
       return NextResponse.json({ error: error.message }, { status: 401 });

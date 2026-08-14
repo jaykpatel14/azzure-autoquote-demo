@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
-import { requireCompanyContext, AuthRequiredError, CompanyAccessError } from "@/lib/company";
+import {
+  requireCompanyContext,
+  AuthRequiredError,
+  CompanyAccessError,
+  canManageBilling
+} from "@/lib/company";
 
 export const runtime = "nodejs";
 
 export async function POST() {
   try {
-    await requireCompanyContext();
+    const context = await requireCompanyContext();
+    if (!canManageBilling(context.membership?.role ?? "CUSTOMER")) {
+      throw new CompanyAccessError("You do not have permission to manage pricing.");
+    }
     return NextResponse.json(
       { error: "Live metal pricing is managed automatically and cannot be edited." },
       { status: 403 }

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { onboardCompanyOwner } from "@/lib/onboarding";
 import { createEmailVerificationToken } from "@/lib/auth-tokens";
+import { sendSignupApprovalAlert } from "@/lib/account-workflow";
 import { sendAuthMail } from "@/lib/mailer";
 import { getRequestBaseUrl } from "@/lib/security";
 
@@ -14,8 +15,8 @@ const registerSchema = z.object({
   companyName: z.string().trim().min(2).max(120)
 });
 
-function buildAppUrl(path: string, baseUrl: string) {
-  return new URL(path, baseUrl).toString();
+function buildAppUrl(path: string, baseUrl?: string) {
+  return new URL(path, baseUrl || process.env.APP_URL || "http://localhost:3000").toString();
 }
 
 export async function POST(request: Request) {
@@ -58,6 +59,21 @@ export async function POST(request: Request) {
       emailSent = false;
       console.warn(
         `[auth] verification email delivery failed for ${user.email}: ${
+          mailError instanceof Error ? mailError.message : "unknown error"
+        }`
+      );
+    }
+
+    try {
+      await sendSignupApprovalAlert({
+        companyName: company.name,
+        ownerName: input.name?.trim() || user.name || user.email,
+        ownerEmail: user.email,
+        signedUpAt: company.createdAt
+      });
+    } catch (mailError) {
+      console.warn(
+        `[auth] signup approval alert delivery failed for ${company.id}: ${
           mailError instanceof Error ? mailError.message : "unknown error"
         }`
       );

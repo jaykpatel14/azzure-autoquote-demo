@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient, Subscription as PrismaSubscription } from "@prisma/client";
 import type Stripe from "stripe";
 import { prisma as defaultPrisma } from "@/lib/prisma";
-import { getEffectiveMonthlyLimit, mapStripeSubscriptionStatus } from "@/lib/billing";
+import { mapStripeSubscriptionStatus } from "@/lib/billing";
+import { DEFAULT_TRIAL_QUOTE_CAP } from "@/lib/subscription-plans";
 import { getStripeClient } from "@/lib/stripe";
 
 type Db = PrismaClient;
@@ -46,6 +47,18 @@ function getPriceSnapshot(subscription: Stripe.Subscription) {
     stripePriceId: price?.id ?? null,
     stripeProductId: toStripeId(price?.product)
   };
+}
+
+function toNumber(value: string | null | undefined, fallback: number) {
+  if (!value) return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function toDate(value: string | null | undefined) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 async function resolvePlan(
@@ -117,13 +130,21 @@ async function syncSubscriptionRecord(
   const period = getSubscriptionPeriod(subscription);
   const customerId =
     typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
-  const existingSubscription = await tx.subscription.findFirst({
-    where: {
-      OR: [{ stripeSubscriptionId: subscription.id }, { stripeCustomerId: customerId }]
-    }
-  });
+  const metadataCompanyId = subscription.metadata?.companyId;
+  const existingSubscription = metadataCompanyId
+    ? await tx.subscription.findFirst({
+        where: {
+          companyId: metadataCompanyId,
+          OR: [{ stripeSubscriptionId: subscription.id }, { stripeCustomerId: customerId }]
+        }
+      })
+    : await tx.subscription.findFirst({
+        where: {
+          OR: [{ stripeSubscriptionId: subscription.id }, { stripeCustomerId: customerId }]
+        }
+      });
 
-  const companyId = subscription.metadata?.companyId || existingSubscription?.companyId;
+  const companyId = metadataCompanyId || existingSubscription?.companyId;
   if (!companyId) {
     throw new Error("Stripe subscription is missing company metadata.");
   }
@@ -134,6 +155,11 @@ async function syncSubscriptionRecord(
   }
 
   const status = mapStripeSubscriptionStatus(subscription.status);
+  const trialQuoteCap = toNumber(subscription.metadata?.trialQuoteCap, DEFAULT_TRIAL_QUOTE_CAP);
+  const trialStartedAt = toDate(subscription.metadata?.trialStartedAt);
+  const trialEndsAt = toDate(subscription.metadata?.trialEndsAt);
+  const pendingPlanId = subscription.metadata?.pendingPlanId ?? plan.id;
+  const onboardingComplete = subscription.metadata?.onboardingComplete === "true";
 
   const savedSubscription = await tx.subscription.upsert({
     where: { companyId },
@@ -146,6 +172,12 @@ async function syncSubscriptionRecord(
       stripeProductId,
       stripePriceId,
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      trialStartedAt,
+      trialEndsAt,
+      trialQuoteCap,
+      trialQuotesUsed: 0,
+      pendingPlanId,
+      onboardingComplete,
       currentPeriodStart: toDateFromUnix(period.currentPeriodStart),
       currentPeriodEnd: toDateFromUnix(period.currentPeriodEnd)
     },
@@ -157,12 +189,22 @@ async function syncSubscriptionRecord(
       stripeProductId,
       stripePriceId,
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      trialStartedAt,
+      trialEndsAt,
+      trialQuoteCap,
+      pendingPlanId,
+      onboardingComplete,
       currentPeriodStart: toDateFromUnix(period.currentPeriodStart),
       currentPeriodEnd: toDateFromUnix(period.currentPeriodEnd)
     }
   });
 
-  await syncUsagePeriod(tx, companyId, getEffectiveMonthlyLimit({ status, plan }), subscription);
+  await syncUsagePeriod(
+    tx,
+    companyId,
+    status === "TRIALING" ? trialQuoteCap : plan.monthlyLimit,
+    subscription
+  );
 
   await tx.auditLog.create({
     data: {

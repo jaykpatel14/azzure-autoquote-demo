@@ -35,6 +35,7 @@ export default async function AdminCompaniesPage() {
       title="Customer companies"
       description="Inspect every tenant, their billing health, and the latest quote activity."
       navItems={getInternalAdminNav("/admin/companies")}
+      adminName={context.user.name || context.user.email}
       actions={
         <>
           <Link className="button secondary" href="/admin/billing">

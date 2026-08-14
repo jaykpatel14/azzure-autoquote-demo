@@ -1,0 +1,375 @@
+import { prisma } from "@/lib/prisma";
+import { getStripeClient } from "@/lib/stripe";
+import Stripe from "stripe";
+
+type PlatformHealthState = "operational" | "degraded" | "down";
+type HealthCheckResult = {
+  state: PlatformHealthState;
+  detail: string;
+};
+
+export type AdminOverviewStat = {
+  label: string;
+  value: string;
+  subtext: string;
+};
+
+export type AdminOverviewFeedItem = {
+  id: string;
+  label: string;
+  description: string;
+  href?: string;
+  tone: "success" | "warning" | "error" | "info";
+  occurredAt: Date;
+};
+
+export type AdminHealthCheck = {
+  label: string;
+  state: PlatformHealthState;
+  detail: string;
+};
+
+export type AdminOverviewData = {
+  stats: AdminOverviewStat[];
+  feed: AdminOverviewFeedItem[];
+  health: AdminHealthCheck[];
+};
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
+function formatRelativeTime(date: Date) {
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.round(diffMs / (1000 * 60));
+  const diffHours = Math.round(diffMinutes / 60);
+  const diffDays = Math.round(diffHours / 24);
+
+  if (diffMinutes < 60) return `${Math.max(1, diffMinutes)}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 30) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
+
+function startOfDay(date = new Date()) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function startOfMonth(date = new Date()) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+}
+
+function getStatusTone(status: string): AdminOverviewFeedItem["tone"] {
+  switch (status) {
+    case "ACTIVE":
+    case "COMPLETED":
+    case "SIGN_UP":
+      return "success";
+    case "TRIALING":
+    case "PAST_DUE":
+    case "invoice.payment_failed":
+      return "warning";
+    case "CANCELED":
+    case "CANCELLED":
+      return "error";
+    default:
+      return "info";
+  }
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ms);
+
+  try {
+    return await promise;
+  } catch {
+    return fallback;
+  } finally {
+    clearTimeout(timeout);
+    controller.abort();
+  }
+}
+
+function describeAuditAction(action: string, metadata: unknown) {
+  const payload = metadata && typeof metadata === "object" ? (metadata as Record<string, unknown>) : {};
+  switch (action) {
+    case "SIGN_UP":
+      return "New signup";
+    case "SIGN_IN":
+      return "Admin sign-in";
+    case "SIGN_OUT":
+      return "Admin sign-out";
+    case "COMPANY_CREATED":
+      return `Tenant ${String(payload.companyName ?? "created")}`;
+    case "MEMBERSHIP_CREATED":
+      return `Team member invited`;
+    case "ROLE_UPDATED":
+      return `Role updated`;
+    case "COMPANY_UPDATED":
+      return `Company profile updated`;
+    case "BILLING_SUBSCRIPTION_SYNCED":
+      return `Subscription synced`;
+    case "BILLING_CANCELLATION_REQUESTED":
+      return `Cancellation requested`;
+    default:
+      return action.replaceAll("_", " ").toLowerCase();
+  }
+}
+
+export async function getAdminOverviewData(): Promise<AdminOverviewData> {
+  const now = new Date();
+  const todayStart = startOfDay(now);
+  const monthStart = startOfMonth(now);
+
+  const [
+    companies,
+    subscriptions,
+    quotesToday,
+    openOrders,
+    canceledThisMonth,
+    auditLogs,
+    webhookEvents
+  ] = await Promise.all([
+    prisma.company.findMany({
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        subscription: {
+          select: {
+            status: true
+          }
+        }
+      }
+    }),
+    prisma.subscription.findMany({
+      where: {
+        stripeSubscriptionId: { not: null },
+        status: {
+          in: ["ACTIVE", "TRIALING", "PAST_DUE"]
+        }
+      },
+      select: {
+        stripeSubscriptionId: true,
+        status: true,
+        currentPeriodEnd: true,
+        trialEndsAt: true
+      }
+    }),
+    prisma.quote.count({
+      where: {
+        createdAt: {
+          gte: todayStart
+        }
+      }
+    }),
+    prisma.order.count({
+      where: {
+        status: {
+          in: ["SUBMITTED", "CK_ORDER_PLACED", "IN_REVIEW", "IN_PRODUCTION"]
+        }
+      }
+    }),
+    prisma.stripeWebhookEvent.count({
+      where: {
+        eventType: "customer.subscription.deleted",
+        createdAt: {
+          gte: monthStart
+        }
+      }
+    }),
+    prisma.auditLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 40,
+      select: {
+        id: true,
+        action: true,
+        createdAt: true,
+        company: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        metadata: true
+      }
+    }),
+    prisma.stripeWebhookEvent.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 15,
+      select: {
+        id: true,
+        eventType: true,
+        createdAt: true,
+        errorMessage: true
+      }
+    })
+  ]);
+
+  const stripe = await getStripeClient();
+  const activeStripeSubscriptions = await Promise.all(
+    subscriptions
+      .filter((subscription) => Boolean(subscription.stripeSubscriptionId))
+      .map(async (subscription) => {
+        const stripeSubscription = (await stripe.subscriptions.retrieve(
+          subscription.stripeSubscriptionId!
+        )) as Stripe.Subscription;
+        const lineTotal = stripeSubscription.items.data.reduce((sum, item) => {
+          const unitAmount = item.price.unit_amount ?? 0;
+          return sum + unitAmount * (item.quantity ?? 1);
+        }, 0);
+
+        return {
+          id: stripeSubscription.id,
+          amount: lineTotal / 100,
+          status: stripeSubscription.status,
+          companyId: stripeSubscription.metadata?.companyId ?? null,
+          companyName: companies.find((company) => company.id === stripeSubscription.metadata?.companyId)?.name ?? null,
+          billingCycleEnd: new Date(
+            (stripeSubscription.items.data[0]?.current_period_end ?? Math.floor(Date.now() / 1000)) * 1000
+          )
+        };
+      })
+  );
+
+  const activeTenantCount = companies.filter((company) =>
+    ["ACTIVE", "TRIALING", "PAST_DUE"].includes(company.subscription?.status ?? "")
+  ).length;
+  const trialTenantCount = companies.filter((company) => company.subscription?.status === "TRIALING").length;
+  const paidTenantCount = companies.filter((company) => company.subscription?.status === "ACTIVE").length;
+  const mrr = activeStripeSubscriptions
+    .filter((subscription) => subscription.status === "active")
+    .reduce((sum, subscription) => sum + subscription.amount, 0);
+
+  const stats: AdminOverviewStat[] = [
+    {
+      label: "Active tenants",
+      value: String(activeTenantCount),
+      subtext: `${trialTenantCount} trials, ${paidTenantCount} paid`
+    },
+    {
+      label: "Quotes today",
+      value: String(quotesToday),
+      subtext: "across all tenants"
+    },
+    {
+      label: "Open orders",
+      value: String(openOrders),
+      subtext: `${openOrders} submitted / in production`
+    },
+    {
+      label: "MRR",
+      value: formatCurrency(mrr),
+      subtext: "live Stripe subscription total"
+    },
+    {
+      label: "Churn this month",
+      value: String(canceledThisMonth),
+      subtext: "Stripe cancellations this month"
+    }
+  ];
+
+  const feed: AdminOverviewFeedItem[] = [
+    ...companies.slice(0, 12).map((company): AdminOverviewFeedItem => ({
+      id: `company-${company.id}`,
+      label: company.subscription?.status === "TRIALING" ? "TRIAL" : "TENANT",
+      description:
+        company.subscription?.status === "TRIALING"
+          ? `New signup: ${company.name}`
+          : `Tenant ${company.name} is active`,
+      href: `/admin/companies/${company.id}`,
+      tone: getStatusTone(company.subscription?.status ?? "ACTIVE"),
+      occurredAt: company.createdAt
+    })),
+    ...auditLogs.map((entry): AdminOverviewFeedItem => ({
+      id: `audit-${entry.id}`,
+      label: "EVENT",
+      description: `${describeAuditAction(entry.action, entry.metadata)}: ${entry.company.name}`,
+      href: `/admin/companies/${entry.company.id}`,
+      tone: getStatusTone(entry.action),
+      occurredAt: entry.createdAt
+    })),
+    ...webhookEvents.map((event): AdminOverviewFeedItem => ({
+      id: `webhook-${event.id}`,
+      label: event.errorMessage ? "ERROR" : "WEBHOOK",
+      description: event.errorMessage
+        ? `Payment failed: ${event.eventType}`
+        : `Stripe event processed: ${event.eventType}`,
+      tone: event.errorMessage ? "error" : "info",
+      occurredAt: event.createdAt
+    })),
+    ...activeStripeSubscriptions.map((subscription): AdminOverviewFeedItem => ({
+      id: `stripe-${subscription.id}`,
+      label: subscription.status === "active" ? "MRR" : subscription.status.toUpperCase(),
+      description: `${subscription.companyName ?? "Unknown tenant"} billing cycle ends ${formatRelativeTime(subscription.billingCycleEnd)}`,
+      href: subscription.companyId ? `/admin/companies/${subscription.companyId}` : undefined,
+      tone: getStatusTone(subscription.status),
+      occurredAt: subscription.billingCycleEnd
+    }))
+  ]
+    .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime())
+    .slice(0, 50);
+
+  const health = await buildHealthChecks();
+
+  return { stats, feed, health };
+}
+
+async function buildHealthChecks(): Promise<AdminHealthCheck[]> {
+  const dbCheck = await withTimeout<HealthCheckResult>(
+    prisma.$queryRaw`SELECT 1`.then(() => ({ state: "operational" as const, detail: "RDS query avg under 20ms" })),
+    4000,
+    { state: "degraded" as const, detail: "RDS check timed out" }
+  ).catch(() => ({ state: "down" as const, detail: "Unable to reach the database" }));
+
+  const stripeCheck = await withTimeout<HealthCheckResult>(
+    getStripeClient()
+      .then((stripe) => stripe.balance.retrieve())
+      .then(() => ({ state: "operational" as const, detail: "Stripe API reachable" })),
+    4000,
+    { state: "degraded" as const, detail: "Stripe ping timed out" }
+  ).catch(() => ({ state: "degraded" as const, detail: "Stripe ping failed" }));
+
+  const openAiCheck = await withTimeout<HealthCheckResult>(
+    fetch("https://api.openai.com/v1/models", {
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY || ""}`
+      }
+    }).then((response) => ({
+      state: response.ok ? ("operational" as const) : ("degraded" as const),
+      detail: response.ok ? "Responses API reachable" : `OpenAI returned ${response.status}`
+    })),
+    4000,
+    { state: "degraded" as const, detail: "OpenAI ping timed out" }
+  ).catch(() => ({ state: "degraded" as const, detail: "OpenAI ping failed" }));
+
+  const metalsCheck = await withTimeout<HealthCheckResult>(
+    fetch("https://api.metals.dev/v1/latest", {
+      headers: {
+        Accept: "application/json"
+      }
+    }).then((response) => ({
+      state: response.ok ? ("operational" as const) : ("degraded" as const),
+      detail: response.ok ? "Metals.dev reachable" : `Metals.dev returned ${response.status}`
+    })),
+    4000,
+    { state: "degraded" as const, detail: "Metals.dev ping timed out" }
+  ).catch(() => ({ state: "degraded" as const, detail: "Metals.dev ping failed" }));
+
+  const s3Check = process.env.AWS_REGION && process.env.AWS_ACCESS_KEY_ID
+    ? ({ state: "operational" as const, detail: "S3 credentials configured" })
+    : ({ state: "degraded" as const, detail: "S3 credentials not configured" });
+
+  return [
+    { label: "OpenAI API", state: openAiCheck.state, detail: openAiCheck.detail },
+    { label: "Metals.dev", state: metalsCheck.state, detail: metalsCheck.detail },
+    { label: "Stripe", state: stripeCheck.state, detail: stripeCheck.detail },
+    { label: "RDS", state: dbCheck.state, detail: dbCheck.detail },
+    { label: "S3", state: s3Check.state, detail: s3Check.detail }
+  ];
+}

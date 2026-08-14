@@ -17,6 +17,7 @@ export default async function AdminCreateCompanyPage() {
       title="Create company"
       description="Provision a new customer tenant and seed its first user from the internal admin console."
       navItems={getInternalAdminNav("/admin/companies")}
+      adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/companies">
           Back to companies

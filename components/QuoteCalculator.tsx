@@ -1,58 +1,101 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
-import {
-  calculateQuote,
-  convertMetalWeight,
-  mergePricingProfiles,
-  type MetalType,
-  type PricingProfileInput
-} from "@/lib/pricing";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { calculateQuote, type MetalType, type PricingProfileInput } from "@/lib/pricing";
+import { mergeConfidence, median } from "@/lib/statistics";
+import { mergePricingProfiles } from "@/lib/pricing";
+import { useToast } from "@/components/toast-provider";
 
-type Estimate = {
+type QuoteMode = "normal" | "without-center" | "without-center-and-side";
+type QuoteSaveResult = { ok: true; id: string; quoteNumber: string } | { ok: false; error: string };
+type FacetStatus = "pending" | "processing" | "done" | "error";
+
+type FacetOutput = {
   analysisId?: string;
-  jewelryType?: string;
+  jewelryType: string;
+  centerShape?: string | null;
+  metalWeightGrams: number;
+  centerDiamondCarats: number;
+  sideDiamondCarats: number;
+  sideDiamondQuantity: number;
+  confidence: "low" | "medium" | "high";
+  notes?: string;
+  assumptions?: string[];
+};
+
+type FacetDraft = {
+  id: string;
+  file?: File;
+  previewUrl: string | null;
+  isObjectUrl: boolean;
+  title: string;
+  description: string;
+  showDescription: boolean;
+  status: FacetStatus;
+  stageIndex: number;
+  output: FacetOutput | null;
+  error: string;
+};
+
+type AggregateQuote = {
+  jewelryType: string;
   centerShape?: string;
   metalWeightGrams: number;
   centerDiamondCarats: number;
   sideDiamondCarats: number;
   sideDiamondQuantity: number;
-  confidence: string;
-  notes?: string;
-  assumptions?: string[];
+  confidence: "low" | "medium" | "high";
+  assumptions: string[];
+  notes: string;
+  analysisId?: string;
 };
 
-type Phase = "idle" | "uploading" | "processing" | "ready" | "saving" | "saved" | "error";
-type QuoteMode = "normal" | "without-center" | "without-center-and-side";
-
-type SavedQuote = {
-  id: string;
-  quoteNumber: string;
+type QuoteCalculatorProps = {
+  canEdit: boolean;
+  pricingProfile?: PricingProfileInput;
+  pricingSourceLabel?: string;
+  pricingNote?: string;
+  initialQuote?: {
+    quoteId: string;
+    quoteNumber: string;
+    customerName: string | null;
+    metalType: MetalType;
+    metalWeightGrams: number;
+    centerDiamondCarats: number;
+    sideDiamondCarats: number;
+    sideDiamondQuantity: number;
+    imageDataUrl: string | null;
+    analysisId: string | null;
+    jewelryType: string | null;
+    centerShape: string | null;
+    confidence: string | null;
+    notes: string | null;
+    assumptions: string[] | null;
+  };
 };
 
-type SaveQuoteResult =
-  | { ok: true; id: string; quoteNumber: string }
-  | { ok: false; error: string };
+const ANALYSIS_STAGES = [
+  "Analysing metal composition...",
+  "Estimating diamond specs...",
+  "Calculating weight..."
+] as const;
 
-const initialEstimate: Estimate = {
-  jewelryType: "",
-  metalWeightGrams: 0,
-  centerDiamondCarats: 0,
-  sideDiamondCarats: 0,
-  sideDiamondQuantity: 0,
-  confidence: "manual"
+const EMPTY_PROFILE: PricingProfileInput = {
+  goldSpotPerOz: 0,
+  platinumSpotPerOz: 0,
+  silverSpotPerOz: 0,
+  cadCharge: 0,
+  centerSettingPerCarat: 0,
+  sideSettingPerStone: 0,
+  sellingMarginDivisor: 0,
+  finalMultiplier: 0
 };
 
-const processingCopy: Record<Exclude<Phase, "saved" | "error">, string> = {
-  idle: "Ready to upload a jewelry image.",
-  uploading: "Uploading the image securely to the server.",
-  processing: "Running moderation and three independent AI reviews.",
-  ready: "AI analysis is complete and the values are editable.",
-  saving: "Saving the approved quote to company history."
-};
-
-const QUOTE_MODE_OPTIONS: Array<{ value: QuoteMode; label: string; description: string }> = [
+const QUOTE_MODE_OPTIONS: Array<{
+  value: QuoteMode;
+  label: string;
+  description: string;
+}> = [
   {
     value: "normal",
     label: "Normal quote",
@@ -70,366 +113,587 @@ const QUOTE_MODE_OPTIONS: Array<{ value: QuoteMode; label: string; description: 
   }
 ];
 
-const initialCustomerPricingOverlay: PricingProfileInput = {
-  goldSpotPerOz: 0,
-  platinumSpotPerOz: 0,
-  silverSpotPerOz: 0,
-  cadCharge: 0,
-  centerSettingPerCarat: 0,
-  sideSettingPerStone: 0,
-  sellingMarginDivisor: 0,
-  finalMultiplier: 0
-};
+function uid() {
+  return globalThis.crypto?.randomUUID?.() ?? `facet-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
-type QuoteCalculatorProps = {
-  canEdit: boolean;
-  pricingProfile?: PricingProfileInput;
-  pricingSourceLabel?: string;
-  pricingNote?: string;
-};
+function chooseMode(values: string[]) {
+  if (!values.length) return undefined;
+
+  const counts = new Map<string, { count: number; firstIndex: number }>();
+  values.forEach((value, index) => {
+    const existing = counts.get(value) ?? { count: 0, firstIndex: index };
+    existing.count += 1;
+    counts.set(value, existing);
+  });
+
+  let bestValue: string | undefined;
+  let bestCount = -1;
+  let bestIndex = Number.POSITIVE_INFINITY;
+
+  for (const [value, entry] of counts.entries()) {
+    if (entry.count > bestCount || (entry.count === bestCount && entry.firstIndex < bestIndex)) {
+      bestValue = value;
+      bestCount = entry.count;
+      bestIndex = entry.firstIndex;
+    }
+  }
+
+  return bestValue;
+}
+
+function applyQuoteMode(input: FacetOutput, quoteMode: QuoteMode): FacetOutput {
+  if (quoteMode === "without-center-and-side") {
+    return {
+      ...input,
+      centerDiamondCarats: 0,
+      sideDiamondCarats: 0,
+      sideDiamondQuantity: 0
+    };
+  }
+
+  if (quoteMode === "without-center") {
+    return {
+      ...input,
+      centerDiamondCarats: 0
+    };
+  }
+
+  return input;
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD"
+  }).format(value);
+}
+
+function estimateBreakdown(
+  input: FacetOutput,
+  metalType: MetalType,
+  profile: PricingProfileInput = {}
+): {
+  metalCost: number;
+  diamondCost: number;
+  labourAndMargin: number;
+  total: number;
+} {
+  const config = { ...EMPTY_PROFILE, ...profile };
+  const totalDiamondCarats = input.centerDiamondCarats + input.sideDiamondCarats;
+  const purity: Record<"10K" | "14K" | "18K", number> = {
+    "10K": 0.417,
+    "14K": 0.585,
+    "18K": 0.75
+  };
+  const density: Record<MetalType, number> = {
+    "10K": 11.6,
+    "14K": 13.1,
+    "18K": 15.6,
+    Platinum: 21.45,
+    Silver: 10.49
+  };
+  const ozToGram = 31.1034768;
+  const metalRate =
+    metalType === "Platinum"
+      ? (Number(config.platinumSpotPerOz ?? 0) / ozToGram) * 1.3
+      : metalType === "Silver"
+        ? (Number(config.silverSpotPerOz ?? 0) / ozToGram) * 3.5
+        : ((Number(config.goldSpotPerOz ?? 0) / ozToGram) * purity[metalType]) * 1.15;
+  const diamondRate = 125;
+  const metalCost = metalRate * Number(input.metalWeightGrams || 0);
+  const diamondCost = diamondRate * totalDiamondCarats;
+  const makingCost =
+    metalCost +
+    diamondCost +
+    Number(config.cadCharge ?? 0) +
+    input.centerDiamondCarats * Number(config.centerSettingPerCarat ?? 0) +
+    input.sideDiamondQuantity * Number(config.sideSettingPerStone ?? 0);
+  const sellingPrice = makingCost / Math.max(Number(config.sellingMarginDivisor ?? 0.7), 0.01);
+  const total = sellingPrice * Math.max(Number(config.finalMultiplier ?? 2), 0);
+  const labourAndMargin = Math.max(total - metalCost - diamondCost, 0);
+
+  return {
+    metalCost: Math.round(metalCost * 100) / 100,
+    diamondCost: Math.round(diamondCost * 100) / 100,
+    labourAndMargin: Math.round(labourAndMargin * 100) / 100,
+    total: Math.round(total * 100) / 100
+  };
+}
+
+function mergeAssumptions(outputs: FacetOutput[]) {
+  return Array.from(
+    new Set(outputs.flatMap((output) => output.assumptions ?? []).map((value) => value.trim()).filter(Boolean))
+  );
+}
 
 export default function QuoteCalculator({
   canEdit,
   pricingProfile,
   pricingSourceLabel,
-  pricingNote
+  pricingNote,
+  initialQuote
 }: QuoteCalculatorProps) {
-  const [metalType, setMetalType] = useState<MetalType>("14K");
+  const [metalType, setMetalType] = useState<MetalType>(initialQuote?.metalType ?? "14K");
   const [quoteMode, setQuoteMode] = useState<QuoteMode>("normal");
-  const [customerName, setCustomerName] = useState("");
-  const [customerPricingOverlay, setCustomerPricingOverlay] = useState<PricingProfileInput>(
-    initialCustomerPricingOverlay
+  const [customerName, setCustomerName] = useState(initialQuote?.customerName ?? "");
+  const [customerNotes, setCustomerNotes] = useState("");
+  const [customerPricingOverlay, setCustomerPricingOverlay] = useState<PricingProfileInput>(EMPTY_PROFILE);
+  const [facets, setFacets] = useState<FacetDraft[]>(() =>
+    initialQuote
+      ? [
+          {
+            id: initialQuote.quoteId,
+            file: undefined,
+            previewUrl: initialQuote.imageDataUrl,
+            isObjectUrl: false,
+            title: initialQuote.quoteNumber,
+            description: "",
+            showDescription: false,
+            status: "done",
+            stageIndex: 0,
+            output: {
+              analysisId: initialQuote.analysisId ?? undefined,
+              jewelryType: initialQuote.jewelryType ?? "Jewelry",
+              centerShape: initialQuote.centerShape ?? "",
+              metalWeightGrams: initialQuote.metalWeightGrams,
+              centerDiamondCarats: initialQuote.centerDiamondCarats,
+              sideDiamondCarats: initialQuote.sideDiamondCarats,
+              sideDiamondQuantity: initialQuote.sideDiamondQuantity,
+              confidence:
+                initialQuote.confidence === "low" ||
+                initialQuote.confidence === "medium" ||
+                initialQuote.confidence === "high"
+                  ? initialQuote.confidence
+                  : "medium",
+              notes: initialQuote.notes ?? undefined,
+              assumptions: initialQuote.assumptions ?? undefined
+            },
+            error: ""
+          }
+        ]
+      : []
   );
-  const [estimate, setEstimate] = useState<Estimate>(initialEstimate);
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [activeFacetId, setActiveFacetId] = useState<string | null>(() => initialQuote?.quoteId ?? null);
   const [status, setStatus] = useState("");
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [savedQuote, setSavedQuote] = useState<SavedQuote | null>(null);
-  const [draftIsFresh, setDraftIsFresh] = useState(true);
+  const [savedQuote, setSavedQuote] = useState<{ id: string; quoteNumber: string } | null>(null);
+  const [draftIsFresh, setDraftIsFresh] = useState(!initialQuote);
+  const { showToast } = useToast();
 
-  const quoteEstimate = useMemo(() => applyQuoteMode(estimate, quoteMode), [estimate, quoteMode]);
+  const facetsRef = useRef<FacetDraft[]>([]);
+
+  useEffect(() => {
+    facetsRef.current = facets;
+  }, [facets]);
+
+  useEffect(() => {
+    return () => {
+      facetsRef.current.forEach((facet) => {
+        if (facet.isObjectUrl && facet.previewUrl) {
+          URL.revokeObjectURL(facet.previewUrl);
+        }
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    if (initialQuote) {
+      setStatus(`Editing quote ${initialQuote.quoteNumber}.`);
+    }
+  }, [initialQuote]);
+
   const effectivePricingProfile = useMemo(
     () => mergePricingProfiles(pricingProfile ?? {}, customerPricingOverlay),
     [pricingProfile, customerPricingOverlay]
   );
-  const price = useMemo(
-    () =>
-      calculateQuote(
-        {
-          metalType,
-          metalWeightGrams: quoteEstimate.metalWeightGrams,
-          centerDiamondCarats: quoteEstimate.centerDiamondCarats,
-          sideDiamondCarats: quoteEstimate.sideDiamondCarats,
-          sideDiamondQuantity: quoteEstimate.sideDiamondQuantity
-        },
-        effectivePricingProfile
-      ),
-    [metalType, quoteEstimate, effectivePricingProfile]
-  );
-  const previewPrice = draftIsFresh ? 0 : price.estimatedFinalPrice;
-  const hasCustomerOverlay = useMemo(
-    () => Object.values(customerPricingOverlay).some((value) => Number(value) > 0),
-    [customerPricingOverlay]
-  );
-  const centerStoneDisabled = quoteMode !== "normal";
-  const sideStoneDisabled = quoteMode === "without-center-and-side";
 
-  useEffect(() => {
-    return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+  const completedFacets = facets.filter((facet) => facet.status === "done" && facet.output);
+  const aggregateQuote = useMemo<AggregateQuote | null>(() => {
+    if (!completedFacets.length) return null;
+
+    const outputs = completedFacets.map((facet) => facet.output!).map((output) => applyQuoteMode(output, quoteMode));
+    return {
+      jewelryType: chooseMode(outputs.map((output) => output.jewelryType)) || "Jewelry",
+      centerShape: chooseMode(outputs.map((output) => output.centerShape ?? "").filter(Boolean)) || undefined,
+      metalWeightGrams: Number(median(outputs.map((output) => output.metalWeightGrams)).toFixed(2)),
+      centerDiamondCarats: Number(median(outputs.map((output) => output.centerDiamondCarats)).toFixed(2)),
+      sideDiamondCarats: Number(median(outputs.map((output) => output.sideDiamondCarats)).toFixed(2)),
+      sideDiamondQuantity: Math.round(median(outputs.map((output) => output.sideDiamondQuantity))),
+      confidence: mergeConfidence(outputs.map((output) => output.confidence)),
+      assumptions: mergeAssumptions(outputs),
+      notes:
+        mergeAssumptions(outputs).length > 0
+          ? `AI review values are approximate. Assumptions: ${mergeAssumptions(outputs).join(" | ")}`
+          : "AI review values are approximate.",
+      analysisId: completedFacets[0]?.output?.analysisId
     };
-  }, [previewUrl]);
+  }, [completedFacets, quoteMode]);
 
-  function clearDraftState(message: string) {
-    setEstimate(initialEstimate);
-    setMetalType("14K");
-    setQuoteMode("normal");
-    setCustomerName("");
-    setCustomerPricingOverlay(initialCustomerPricingOverlay);
-    setFile(null);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl("");
-    setStatus(message);
-    setPhase("idle");
-    setUploadProgress(0);
-    setDraftIsFresh(true);
-    setSavedQuote(null);
-  }
+  const computedPrice = useMemo(() => {
+    if (!aggregateQuote) return null;
 
-  function updateNumber(key: keyof Estimate, value: number) {
-    setEstimate((current) => ({ ...current, [key]: Math.max(0, value) }));
-  }
+    return calculateQuote(
+      {
+        metalType,
+        metalWeightGrams: aggregateQuote.metalWeightGrams,
+        centerDiamondCarats: aggregateQuote.centerDiamondCarats,
+        sideDiamondCarats: aggregateQuote.sideDiamondCarats,
+        sideDiamondQuantity: aggregateQuote.sideDiamondQuantity
+      },
+      effectivePricingProfile
+    );
+  }, [aggregateQuote, metalType, effectivePricingProfile]);
 
-  function updateOverlayNumber(key: keyof PricingProfileInput, value: number) {
-    setCustomerPricingOverlay((current) => ({ ...current, [key]: Math.max(0, value) }));
-  }
-
-  function changeMetal(next: MetalType) {
-    setEstimate((current) => ({
-      ...current,
-      metalWeightGrams: Number(
-        convertMetalWeight(current.metalWeightGrams, metalType, next).toFixed(2)
+  const breakdown = aggregateQuote
+    ? estimateBreakdown(
+        {
+          jewelryType: aggregateQuote.jewelryType,
+          centerShape: aggregateQuote.centerShape,
+          metalWeightGrams: aggregateQuote.metalWeightGrams,
+          centerDiamondCarats: aggregateQuote.centerDiamondCarats,
+          sideDiamondCarats: aggregateQuote.sideDiamondCarats,
+          sideDiamondQuantity: aggregateQuote.sideDiamondQuantity,
+          confidence: aggregateQuote.confidence,
+          notes: aggregateQuote.notes,
+          assumptions: aggregateQuote.assumptions
+        },
+        metalType,
+        effectivePricingProfile
       )
+    : null;
+
+  const previewPrice = computedPrice?.estimatedFinalPrice ?? 0;
+  const publicQuoteUrl = savedQuote ? `/q/${savedQuote.id}` : "";
+  const canAnalyse = canEdit && facets.some((facet) => facet.status === "pending" || facet.status === "error");
+
+  function updateFacet(id: string, updater: (facet: FacetDraft) => FacetDraft) {
+    setFacets((current) => current.map((facet) => (facet.id === id ? updater(facet) : facet)));
+  }
+
+  function handleFiles(selectedFiles: File[]) {
+    if (!selectedFiles.length) return;
+
+    setSavedQuote(null);
+    setDraftIsFresh(false);
+    const nextFacets = selectedFiles.map((file, index) => ({
+      id: uid(),
+      file,
+      previewUrl: URL.createObjectURL(file),
+      isObjectUrl: true,
+      title: `Facet ${facetsRef.current.length + index + 1}`,
+      description: "",
+      showDescription: false,
+      status: "pending" as FacetStatus,
+      stageIndex: 0,
+      output: null,
+      error: ""
     }));
-    setMetalType(next);
-  }
 
-  function changeQuoteMode(next: QuoteMode) {
-    setQuoteMode(next);
-  }
-
-  function resetEstimate(message = "Draft estimate cleared.") {
-    if (!window.confirm("Clear the current draft estimate?")) {
-      return;
-    }
-
-    clearDraftState(message);
-  }
-
-  const statusMessage =
-    phase === "error"
-      ? status
-      : status || processingCopy[phase as Exclude<Phase, "saved" | "error">] || "Ready to upload a jewelry image.";
-
-  const progressCopy = (() => {
-    if (phase === "saved" || phase === "error") {
-      return status;
-    }
-
-    return processingCopy[phase];
-  })();
-
-  function sendAnalysisRequest(selectedFile: File) {
-    return new Promise<{ ok: boolean; payload: unknown }>((resolve, reject) => {
-      const body = new FormData();
-      body.append("image", selectedFile);
-      body.append("metalType", metalType);
-
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/analyze");
-      xhr.responseType = "json";
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable && event.total > 0) {
-          setUploadProgress(Math.min(100, Math.round((event.loaded / event.total) * 100)));
-        }
-      };
-      xhr.onload = () => {
-        const payload = xhr.response ?? {};
-        resolve({ ok: xhr.status >= 200 && xhr.status < 300, payload });
-      };
-      xhr.onerror = () => reject(new Error("Upload failed. Please try again."));
-      xhr.send(body);
+    setFacets((current) => [...current, ...nextFacets]);
+    setActiveFacetId((current) => current ?? nextFacets[0].id);
+    setStatus(`${selectedFiles.length} image${selectedFiles.length === 1 ? "" : "s"} added.`);
+    showToast({
+      message: `${selectedFiles.length} image${selectedFiles.length === 1 ? "" : "s"} added to the quote.`,
+      variant: "info"
     });
   }
 
-  async function analyze() {
-    if (!file) {
-      setStatus("Choose a jewelry image first.");
+  function clearAllFacets() {
+    facetsRef.current.forEach((facet) => {
+      if (facet.isObjectUrl && facet.previewUrl) {
+        URL.revokeObjectURL(facet.previewUrl);
+      }
+    });
+    setFacets([]);
+    setActiveFacetId(null);
+    setSavedQuote(null);
+    setDraftIsFresh(true);
+    setStatus("Draft cleared.");
+    showToast({
+      message: "Quote draft cleared.",
+      variant: "info"
+    });
+  }
+
+  function removeFacet(id: string) {
+    setFacets((current) => {
+      const facet = current.find((item) => item.id === id);
+      if (facet && facet.isObjectUrl && facet.previewUrl) {
+        URL.revokeObjectURL(facet.previewUrl);
+      }
+      return current.filter((item) => item.id !== id);
+    });
+    setActiveFacetId((current) => (current === id ? null : current));
+  }
+
+  async function sendAnalysisRequest(file: File, metal: MetalType) {
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("metalType", metal);
+
+    const response = await fetch("/api/analyze", {
+      method: "POST",
+      body: formData
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    return { ok: response.ok, payload };
+  }
+
+  async function analyseFacet(facet: FacetDraft) {
+    if (!facet.file) {
+      updateFacet(facet.id, (current) => ({
+        ...current,
+        status: "error",
+        error: "This facet already has imported values. Add a new photo to re-analyse."
+      }));
       return;
     }
 
-    setLoading(true);
-    setPhase("uploading");
-    setUploadProgress(0);
-    setStatus("Uploading image and preparing AI review.");
-    setSavedQuote(null);
+    updateFacet(facet.id, (current) => ({
+      ...current,
+      status: "processing",
+      stageIndex: 0,
+      error: ""
+    }));
+
+    const pulser = window.setInterval(() => {
+      updateFacet(facet.id, (current) => ({
+        ...current,
+        stageIndex: (current.stageIndex + 1) % ANALYSIS_STAGES.length
+      }));
+    }, 800);
 
     try {
-      const response = await sendAnalysisRequest(file);
-      setPhase("processing");
-      setStatus(processingCopy.processing);
-
+      const response = await sendAnalysisRequest(facet.file, metalType);
       if (!response.ok) {
         const errorPayload = response.payload as { error?: string };
         throw new Error(errorPayload.error || "Analysis failed.");
       }
 
-      const result = response.payload as {
-        analysisId?: string;
-        jewelryType?: string;
-        centerShape?: string;
-        metalWeightGrams: number;
-        centerDiamondCarats: number;
-        sideDiamondCarats: number;
-        sideDiamondQuantity: number;
-        confidence: string;
-        notes?: string;
-        assumptions?: string[];
-      };
-      setEstimate({
-        analysisId: result.analysisId,
-        jewelryType: result.jewelryType,
-        centerShape: result.centerShape,
-        metalWeightGrams: result.metalWeightGrams,
-        centerDiamondCarats: result.centerDiamondCarats,
-        sideDiamondCarats: result.sideDiamondCarats,
-        sideDiamondQuantity: result.sideDiamondQuantity,
-        confidence: result.confidence,
-        notes: result.notes,
-        assumptions: result.assumptions
-      });
-      setDraftIsFresh(false);
-      setUploadProgress(100);
-      setPhase("ready");
-      setStatus("Estimate applied. Review and edit the details, then save the quote.");
+      const result = response.payload as FacetOutput;
+      updateFacet(facet.id, (current) => ({
+        ...current,
+        status: "done",
+        stageIndex: 0,
+        output: {
+          analysisId: result.analysisId,
+          jewelryType: result.jewelryType || "Jewelry",
+          centerShape: result.centerShape ?? "",
+          metalWeightGrams: result.metalWeightGrams,
+          centerDiamondCarats: result.centerDiamondCarats,
+          sideDiamondCarats: result.sideDiamondCarats,
+          sideDiamondQuantity: result.sideDiamondQuantity,
+          confidence: result.confidence,
+          notes: result.notes,
+          assumptions: result.assumptions
+        }
+      }));
     } catch (error) {
-      setPhase("error");
-      setStatus(error instanceof Error ? error.message : "Analysis failed.");
+      updateFacet(facet.id, (current) => ({
+        ...current,
+        status: "error",
+        error: error instanceof Error ? error.message : "Analysis failed."
+      }));
+      showToast({
+        message: error instanceof Error ? error.message : "Analysis failed.",
+        variant: "error",
+        autoDismiss: false
+      });
     } finally {
-      setLoading(false);
+      window.clearInterval(pulser);
     }
   }
 
-  async function persistQuote(
-    payload: {
-      analysisId?: string;
-      customerName: string;
-      quoteMode: QuoteMode;
-      metalType: MetalType;
-      metalWeightGrams: number;
-      centerDiamondCarats: number;
-      sideDiamondCarats: number;
-      sideDiamondQuantity: number;
-      pricingOverlay: PricingProfileInput;
-    },
-    options?: { resetDraftAfterSave?: boolean; confirm?: boolean }
-  ): Promise<SaveQuoteResult> {
-    if (options?.confirm !== false && !window.confirm("Save this approved quote to company history?")) {
-      return { ok: false, error: "Cancelled." };
+  async function analyseAll() {
+    if (!facets.length) {
+      setStatus("Add at least one jewelry photo first.");
+      showToast({
+        message: "Add at least one jewelry photo first.",
+        variant: "warning",
+        autoDismiss: false
+      });
+      return;
+    }
+
+    setStatus("Starting analysis for all facets.");
+    setSavedQuote(null);
+
+    for (const facet of facetsRef.current) {
+      if (facet.status === "done" && facet.output) continue;
+      await analyseFacet(facet);
+    }
+
+    setStatus("Facet analysis complete. Review the quote and save when ready.");
+    setDraftIsFresh(false);
+    showToast({
+      message: "Facet analysis complete.",
+      variant: "success"
+    });
+  }
+
+  async function persistQuote(options?: { resetDraftAfterSave?: boolean }) {
+    if (!aggregateQuote || !computedPrice) {
+      setStatus("Analyse the photos before saving the quote.");
+      showToast({
+        message: "Analyse the photos before saving the quote.",
+        variant: "warning",
+        autoDismiss: false
+      });
+      return;
+    }
+
+    if (!window.confirm("Save this approved quote to company history?")) {
+      return;
     }
 
     setSaving(true);
-    setPhase("saving");
     setStatus("Saving quote...");
 
     const response = await fetch("/api/quotes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        analysisId: aggregateQuote.analysisId,
+        customerName,
+        quoteMode,
+        metalType,
+        metalWeightGrams: aggregateQuote.metalWeightGrams,
+        centerDiamondCarats: aggregateQuote.centerDiamondCarats,
+        sideDiamondCarats: aggregateQuote.sideDiamondCarats,
+        sideDiamondQuantity: aggregateQuote.sideDiamondQuantity,
+        pricingOverlay: customerPricingOverlay
+      })
     });
 
-    const result = await response.json();
-    if (response.ok) {
-      const savedId = result.id as string;
-      const savedQuoteNumber = result.quoteNumber as string;
-      setPhase("saved");
-      setSavedQuote({ id: savedId, quoteNumber: savedQuoteNumber });
-      setStatus(`Quote ${savedQuoteNumber} saved. You can keep editing and save again if needed.`);
+    const result = (await response.json().catch(() => ({}))) as { id?: string; quoteNumber?: string; error?: string };
+    if (!response.ok) {
+      setStatus(result.error || "Unable to save quote.");
+      showToast({
+        message: result.error || "Unable to save quote.",
+        variant: "error",
+        autoDismiss: false
+      });
       setSaving(false);
+      return;
+    }
+
+    if (result.id && result.quoteNumber) {
+      setSavedQuote({ id: result.id, quoteNumber: result.quoteNumber });
+      setStatus(`Quote ${result.quoteNumber} saved. You can download the PDF or open the public view.`);
+      showToast({
+        message: `Quote ${result.quoteNumber} saved successfully.`,
+        variant: "success"
+      });
       if (options?.resetDraftAfterSave) {
         setDraftIsFresh(true);
       }
-      return { ok: true, id: savedId, quoteNumber: savedQuoteNumber };
-    } else {
-      setPhase("error");
-      setStatus(result.error || "Unable to save quote.");
-      setSaving(false);
-      return { ok: false, error: result.error || "Unable to save quote." };
     }
+
+    setSaving(false);
   }
 
-  const processingSteps = [
-    { label: "Upload", state: phase === "uploading" ? "active" : uploadProgress === 100 ? "done" : "idle" },
-    { label: "Moderate", state: phase === "processing" || phase === "ready" || phase === "saving" ? "active" : "idle" },
-    { label: "Review", state: phase === "ready" || phase === "saving" || phase === "saved" ? "active" : "idle" },
-    { label: "Save", state: phase === "saving" || phase === "saved" ? "active" : "idle" }
-  ] as const;
+  function updateFacetOutput(id: string, field: keyof FacetOutput, value: string | number) {
+    updateFacet(id, (current) => {
+      if (!current.output) return current;
+      return {
+        ...current,
+        output: {
+          ...current.output,
+          [field]: value
+        } as FacetOutput
+      };
+    });
+  }
+
+  const activeFacet = facets.find((facet) => facet.id === activeFacetId) ?? facets[0] ?? null;
 
   return (
     <div className="estimateWorkspace">
+      <section className="statGrid quoteStepGrid" aria-label="Quote creation steps">
+        <article className="statCard">
+          <span className="eyebrow">Step 1</span>
+          <strong>Upload</strong>
+          <p className="muted small">Add one or more jewelry photos to start the draft.</p>
+        </article>
+        <article className="statCard">
+          <span className="eyebrow">Step 2</span>
+          <strong>AI analysis</strong>
+          <p className="muted small">Each facet gets its own analysis card and editable result set.</p>
+        </article>
+        <article className="statCard">
+          <span className="eyebrow">Step 3</span>
+          <strong>Review &amp; generate</strong>
+          <p className="muted small">Approve the estimate, download the PDF, or open the public quote.</p>
+        </article>
+      </section>
+
       <div className="twoColumnLayout">
         <section className="card formCard">
           <div className="sectionHeader">
             <div>
-              <h2>Upload and review</h2>
-              <p className="muted">
-                AI output is approximate. Keep every field editable before you save a quote.
-              </p>
+              <h2>Step 1 · Upload photos</h2>
+              <p className="muted">Drop multiple photos here or click to upload. JPG, PNG, or WEBP up to 10 MB each.</p>
             </div>
             <div className="buttonRow">
-              <button className="button secondary" disabled={!canEdit || loading || saving} onClick={() => resetEstimate()}>
-                Reset draft
+              <button className="button secondary" type="button" disabled={!canEdit} onClick={clearAllFacets}>
+                Clear all
               </button>
-              <button className="button primary" disabled={loading || saving || !canEdit} onClick={analyze}>
-                {loading ? "Analyzing..." : "Analyze with AI"}
+              <button className="button primary" type="button" disabled={!canAnalyse} onClick={analyseAll}>
+                Analyse Photos
               </button>
             </div>
           </div>
 
-          <label className="dropzone">
+          <label
+            className="dropzone dropzone--multi"
+            onDragOver={(event) => {
+              event.preventDefault();
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              if (!canEdit) return;
+              handleFiles(Array.from(event.dataTransfer.files).filter(Boolean));
+            }}
+          >
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
-              disabled={!canEdit || loading || saving}
-              onChange={(event) => {
-                const selected = event.target.files?.[0] || null;
-                setFile(selected);
-                if (previewUrl) URL.revokeObjectURL(previewUrl);
-                setPreviewUrl(selected ? URL.createObjectURL(selected) : "");
-                setPhase("idle");
-                setStatus(selected ? "Image ready for analysis." : "");
+              multiple
+              disabled={!canEdit}
+              onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
+              onClick={(event) => {
+                (event.currentTarget as HTMLInputElement).value = "";
               }}
             />
-            <strong>Click to select a jewelry image</strong>
-            <span className="muted small">JPG, PNG, or WEBP up to 8 MB.</span>
-            {previewUrl && (
-              <Image
-                className="preview"
-                src={previewUrl}
-                alt="Jewelry preview"
-                width={800}
-                height={600}
-                unoptimized
-              />
-            )}
+            <strong>Click to select jewelry images</strong>
+            <span className="muted small">JPG, PNG, or WEBP up to 10 MB.</span>
           </label>
 
-          <div className="progressShell" aria-live="polite">
-            <div className="progressHeader">
-              <strong>Image upload progress</strong>
-              <span className="muted small">{uploadProgress}%</span>
+          {facets.length ? (
+            <div className="facetThumbRail" aria-label="Uploaded photos">
+              {facets.map((facet, index) => (
+                <button
+                  key={facet.id}
+                  type="button"
+                  className={activeFacet?.id === facet.id ? "facetThumb isActive" : "facetThumb"}
+                  onClick={() => setActiveFacetId(facet.id)}
+                >
+                  {facet.previewUrl ? (
+                    <img src={facet.previewUrl} alt="" className="facetThumbImage" />
+                  ) : (
+                    <div className="facetThumbImage facetThumbImage--fallback">
+                      <span>{facet.title}</span>
+                    </div>
+                  )}
+                  <span className="facetThumbBadge">#{index + 1}</span>
+                </button>
+              ))}
             </div>
-            <div className="progressTrack" aria-hidden="true">
-              <div
-                className={`progressFill ${phase === "processing" ? "isPulsing" : ""}`}
-                style={{ width: `${uploadProgress}%` }}
-              />
-            </div>
-            <p className="muted small">{progressCopy}</p>
-          </div>
-
-          <div className="stepper" aria-label="AI processing states">
-            {processingSteps.map((step) => (
-              <div key={step.label} className={`step ${step.state}`}>
-                <span className="stepDot" aria-hidden="true" />
-                <span>{step.label}</span>
-              </div>
-            ))}
-          </div>
+          ) : null}
 
           <div className="fields">
-            <div className="field">
-              <label htmlFor="quoteMode">Quote mode</label>
-              <select
-                id="quoteMode"
-                value={quoteMode}
-                disabled={!canEdit || loading || saving}
-                onChange={(event) => changeQuoteMode(event.target.value as QuoteMode)}
-              >
-                {QUOTE_MODE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <p className="muted small">
-                {QUOTE_MODE_OPTIONS.find((option) => option.value === quoteMode)?.description}
-              </p>
-            </div>
             <div className="field">
               <label htmlFor="customerName">Customer name</label>
               <input
@@ -437,25 +701,32 @@ export default function QuoteCalculator({
                 value={customerName}
                 onChange={(event) => setCustomerName(event.target.value)}
                 placeholder="Optional"
-                disabled={!canEdit || loading || saving}
+                disabled={!canEdit}
               />
             </div>
             <div className="field">
-              <label htmlFor="jewelryType">Jewelry type</label>
-              <input
-                id="jewelryType"
-                value={estimate.jewelryType || ""}
-                onChange={(event) => setEstimate((current) => ({ ...current, jewelryType: event.target.value }))}
-                disabled={!canEdit || loading || saving}
-              />
+              <label htmlFor="quoteMode">Quote mode</label>
+              <select
+                id="quoteMode"
+                value={quoteMode}
+                disabled={!canEdit}
+                onChange={(event) => setQuoteMode(event.target.value as QuoteMode)}
+              >
+                {QUOTE_MODE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <p className="muted small">{QUOTE_MODE_OPTIONS.find((option) => option.value === quoteMode)?.description}</p>
             </div>
             <div className="field">
               <label htmlFor="metalType">Metal type</label>
               <select
                 id="metalType"
                 value={metalType}
-                disabled={!canEdit || loading || saving}
-                onChange={(event) => changeMetal(event.target.value as MetalType)}
+                disabled={!canEdit}
+                onChange={(event) => setMetalType(event.target.value as MetalType)}
               >
                 {["10K", "14K", "18K", "Platinum", "Silver"].map((metal) => (
                   <option key={metal} value={metal}>
@@ -464,125 +735,213 @@ export default function QuoteCalculator({
                 ))}
               </select>
             </div>
-            <NumberField
-              label="Metal weight (g)"
-              value={estimate.metalWeightGrams}
-              disabled={!canEdit || loading || saving}
-              onChange={(value) => updateNumber("metalWeightGrams", value)}
-            />
-            <NumberField
-              label="Center diamond (ct)"
-              value={estimate.centerDiamondCarats}
-              disabled={!canEdit || loading || saving || centerStoneDisabled}
-              onChange={(value) => updateNumber("centerDiamondCarats", value)}
-            />
-            <NumberField
-              label="Side diamonds (ct)"
-              value={estimate.sideDiamondCarats}
-              disabled={!canEdit || loading || saving || sideStoneDisabled}
-              onChange={(value) => updateNumber("sideDiamondCarats", value)}
-            />
-            <NumberField
-              label="Side stone quantity"
-              value={estimate.sideDiamondQuantity}
-              step={1}
-              disabled={!canEdit || loading || saving || sideStoneDisabled}
-              onChange={(value) => updateNumber("sideDiamondQuantity", value)}
-            />
             <div className="field">
-              <label htmlFor="centerShape">Center shape</label>
-              <input
-                id="centerShape"
-                value={estimate.centerShape || ""}
-                onChange={(event) => setEstimate((current) => ({ ...current, centerShape: event.target.value }))}
-                placeholder="Round, oval, princess..."
-                disabled={!canEdit || loading || saving}
+              <label htmlFor="customerNotes">Notes</label>
+              <textarea
+                id="customerNotes"
+                rows={3}
+                value={customerNotes}
+                onChange={(event) => setCustomerNotes(event.target.value)}
+                placeholder="Optional notes for the quote review."
+                disabled={!canEdit}
               />
             </div>
-            <div className="field">
-              <label>Confidence</label>
-              <input readOnly value={estimate.confidence} />
-            </div>
           </div>
 
-          {estimate.notes ? <p className="muted">{estimate.notes}</p> : null}
-
-          <div className="sectionHeader" style={{ marginTop: "1.25rem" }}>
+          <div className="sectionHeader quoteSectionHeader">
             <div>
-              <h3>Customer pricing overlay</h3>
-              <p className="muted">
-                Add editable pricing on top of the Azzure base pricing before the final quote is calculated.
-              </p>
+              <h3>Step 2 - Facet analysis</h3>
+              <p className="muted">Each uploaded image gets its own card. Use the card inputs to refine the resolved values.</p>
             </div>
-            {hasCustomerOverlay ? <span className="eyebrow">Overlay active</span> : null}
           </div>
-          <div className="fields">
-            <NumberField
-              label="Gold spot / oz add-on"
-              value={customerPricingOverlay.goldSpotPerOz ?? 0}
-              disabled={!canEdit || loading || saving}
-              onChange={(value) => updateOverlayNumber("goldSpotPerOz", value)}
-            />
-            <NumberField
-              label="Platinum spot / oz add-on"
-              value={customerPricingOverlay.platinumSpotPerOz ?? 0}
-              disabled={!canEdit || loading || saving}
-              onChange={(value) => updateOverlayNumber("platinumSpotPerOz", value)}
-            />
-            <NumberField
-              label="Silver spot / oz add-on"
-              value={customerPricingOverlay.silverSpotPerOz ?? 0}
-              disabled={!canEdit || loading || saving}
-              onChange={(value) => updateOverlayNumber("silverSpotPerOz", value)}
-            />
-            <NumberField
-              label="CAD charge add-on"
-              value={customerPricingOverlay.cadCharge ?? 0}
-              disabled={!canEdit || loading || saving}
-              onChange={(value) => updateOverlayNumber("cadCharge", value)}
-            />
-            <NumberField
-              label="Center setting / carat add-on"
-              value={customerPricingOverlay.centerSettingPerCarat ?? 0}
-              disabled={!canEdit || loading || saving}
-              onChange={(value) => updateOverlayNumber("centerSettingPerCarat", value)}
-            />
-            <NumberField
-              label="Side setting / stone add-on"
-              value={customerPricingOverlay.sideSettingPerStone ?? 0}
-              disabled={!canEdit || loading || saving}
-              onChange={(value) => updateOverlayNumber("sideSettingPerStone", value)}
-            />
-            <NumberField
-              label="Selling margin divisor add-on"
-              value={customerPricingOverlay.sellingMarginDivisor ?? 0}
-              disabled={!canEdit || loading || saving}
-              onChange={(value) => updateOverlayNumber("sellingMarginDivisor", value)}
-            />
-            <NumberField
-              label="Final multiplier add-on"
-              value={customerPricingOverlay.finalMultiplier ?? 0}
-              disabled={!canEdit || loading || saving}
-              onChange={(value) => updateOverlayNumber("finalMultiplier", value)}
-            />
+
+          <div className="facetGrid">
+            {facets.length ? (
+              facets.map((facet, index) => (
+                <article
+                  key={facet.id}
+                  className={facet.id === activeFacet?.id ? "facetCard facetCard--active" : "facetCard"}
+                >
+                  <div className="facetCardHeader">
+                    {facet.previewUrl ? (
+                      <img src={facet.previewUrl} alt="" className="facetCardImage" />
+                    ) : (
+                      <div className="facetCardImage facetCardImage--fallback">
+                        <span>{facet.title}</span>
+                      </div>
+                    )}
+                    <div className="facetCardHeading">
+                      <div className="facetCardTitleRow">
+                        <input
+                          className="inlineTitleInput"
+                          value={facet.title}
+                          onChange={(event) =>
+                            updateFacet(facet.id, (current) => ({ ...current, title: event.target.value }))
+                          }
+                          disabled={!canEdit}
+                        />
+                        <span className={`statusPill statusPill--${facet.status}`}>{facet.status}</span>
+                      </div>
+                      <div className="facetCardMeta">
+                        <span className="monoCell">#{index + 1}</span>
+                        <button
+                          className="textLink"
+                          type="button"
+                          onClick={() =>
+                            updateFacet(facet.id, (current) => ({ ...current, showDescription: !current.showDescription }))
+                          }
+                        >
+                          {facet.showDescription ? "Hide description" : "+ Add description"}
+                        </button>
+                        <button className="textLink destructive" type="button" onClick={() => removeFacet(facet.id)}>
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {facet.showDescription ? (
+                    <textarea
+                      className="facetDescription"
+                      rows={2}
+                      value={facet.description}
+                      onChange={(event) =>
+                        updateFacet(facet.id, (current) => ({ ...current, description: event.target.value }))
+                      }
+                      placeholder="Optional description for this facet."
+                      disabled={!canEdit}
+                    />
+                  ) : null}
+
+                  {facet.status === "processing" ? (
+                    <div className="facetProgressList">
+                      {ANALYSIS_STAGES.map((stage, stageIndex) => (
+                        <div
+                          key={stage}
+                          className={stageIndex <= facet.stageIndex ? "facetProgressRow isActive" : "facetProgressRow"}
+                        >
+                          <span className="facetProgressDot" aria-hidden="true" />
+                          <span>{stage}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {facet.status === "error" ? <p className="fieldError">{facet.error}</p> : null}
+
+                  {facet.status === "done" && facet.output ? (
+                    <div className="facetResolvedGrid">
+                      <label className="facetResolvedField">
+                        <span>Jewelry type</span>
+                        <input
+                          value={facet.output.jewelryType}
+                          onChange={(event) => updateFacetOutput(facet.id, "jewelryType", event.target.value)}
+                          disabled={!canEdit}
+                        />
+                      </label>
+                      <label className="facetResolvedField">
+                        <span>Metal weight (g)</span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={facet.output.metalWeightGrams}
+                          onChange={(event) =>
+                            updateFacetOutput(facet.id, "metalWeightGrams", Number(event.target.value) || 0)
+                          }
+                          disabled={!canEdit}
+                        />
+                      </label>
+                      <label className="facetResolvedField">
+                        <span>Center stone (ct)</span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={facet.output.centerDiamondCarats}
+                          onChange={(event) =>
+                            updateFacetOutput(facet.id, "centerDiamondCarats", Number(event.target.value) || 0)
+                          }
+                          disabled={!canEdit}
+                        />
+                      </label>
+                      <label className="facetResolvedField">
+                        <span>Side stones (ct)</span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={facet.output.sideDiamondCarats}
+                          onChange={(event) =>
+                            updateFacetOutput(facet.id, "sideDiamondCarats", Number(event.target.value) || 0)
+                          }
+                          disabled={!canEdit}
+                        />
+                      </label>
+                      <label className="facetResolvedField">
+                        <span>Side stone qty</span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={facet.output.sideDiamondQuantity}
+                          onChange={(event) =>
+                            updateFacetOutput(facet.id, "sideDiamondQuantity", Number(event.target.value) || 0)
+                          }
+                          disabled={!canEdit}
+                        />
+                      </label>
+                      <label className="facetResolvedField">
+                        <span>Center shape</span>
+                        <input
+                          value={facet.output.centerShape ?? ""}
+                          onChange={(event) => updateFacetOutput(facet.id, "centerShape", event.target.value)}
+                          disabled={!canEdit}
+                        />
+                      </label>
+                      <label className="facetResolvedField">
+                        <span>Confidence</span>
+                        <input
+                          value={facet.output.confidence}
+                          onChange={(event) => updateFacetOutput(facet.id, "confidence", event.target.value)}
+                          disabled={!canEdit}
+                        />
+                      </label>
+                      <div className="facetResolvedNotes">
+                        <span>Notes</span>
+                        <p className="muted small">{facet.output.notes || "No notes provided."}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="emptyState emptyState--compact">
+                      <strong>{facet.status === "pending" ? "Awaiting analysis" : "Ready to analyse"}</strong>
+                      <p className="muted small">This card will populate after you run the AI review.</p>
+                    </div>
+                  )}
+                </article>
+              ))
+            ) : (
+              <div className="emptyState emptyStateIllustrated">
+                <QuoteUploadIllustration />
+                <strong>Drop in one or more jewelry photos to start the quote.</strong>
+                <p className="muted">Each uploaded photo becomes a facet card with its own analysis and editable values.</p>
+              </div>
+            )}
           </div>
         </section>
 
         <section className="card previewCard">
           <div className="sectionHeader">
             <div>
-              <h2>Customer quote preview</h2>
-              <p className="muted">
-                Recipients see only the approved final price and the disclaimer.
-              </p>
+              <h2>Step 3 - Review and generate</h2>
+              <p className="muted">Approve the final price, collapse the breakdown, and save the quote when ready.</p>
             </div>
           </div>
+
           <div className="quotePreview">
             <p className="eyebrow">Approved final price</p>
             {pricingSourceLabel ? <p className="muted small">{pricingSourceLabel}</p> : null}
-            <div className="quotePrice">
-              {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(previewPrice)}
-            </div>
+            <div className="quotePrice">{formatCurrency(previewPrice)}</div>
             <div className="quoteMeta">
               <div>
                 <span>Customer</span>
@@ -597,42 +956,53 @@ export default function QuoteCalculator({
                 <strong>{QUOTE_MODE_OPTIONS.find((option) => option.value === quoteMode)?.label}</strong>
               </div>
               <div>
-                <span>Stone layout</span>
-                <strong>
-                  {quoteEstimate.centerDiamondCarats.toFixed(2)} ct center, {quoteEstimate.sideDiamondQuantity} side stones
-                </strong>
+                <span>Facet count</span>
+                <strong>{completedFacets.length} analysed</strong>
               </div>
             </div>
-            {hasCustomerOverlay ? (
-              <p className="muted small">Customer pricing overlay is added on top of Azzure pricing.</p>
-            ) : null}
             {pricingNote ? <p className="muted small">{pricingNote}</p> : null}
+            {aggregateQuote?.notes ? <p className="muted small">{aggregateQuote.notes}</p> : null}
             <p className="disclaimer">
-              Final pricing is an approved estimate, not a manufacturing invoice. Production review may
-              change the quote after CAD, stone verification, or metal confirmation.
+              Final pricing is an approved estimate, not a manufacturing invoice. Production review may change the
+              quote after CAD, stone verification, or metal confirmation.
             </p>
           </div>
+
+          <details className="breakdownDetails">
+            <summary>Price breakdown</summary>
+            {breakdown ? (
+              <div className="breakdownList">
+                <div className="breakdownRow">
+                  <span>Metal cost ({metalType}, {aggregateQuote?.metalWeightGrams.toFixed(2)}g)</span>
+                  <strong>{formatCurrency(breakdown.metalCost)}</strong>
+                </div>
+                <div className="breakdownRow">
+                  <span>Diamond cost</span>
+                  <strong>{formatCurrency(breakdown.diamondCost)}</strong>
+                </div>
+                <div className="breakdownRow">
+                  <span>Labour &amp; margin</span>
+                  <strong>{formatCurrency(breakdown.labourAndMargin)}</strong>
+                </div>
+                <div className="breakdownRow breakdownRow--total">
+                  <span>Total estimate</span>
+                  <strong>{formatCurrency(breakdown.total)}</strong>
+                </div>
+              </div>
+            ) : (
+              <div className="emptyState emptyState--compact">
+                <strong>No estimate yet</strong>
+                <p className="muted small">Analyse at least one photo to generate the price breakdown.</p>
+              </div>
+            )}
+          </details>
 
           <div className="buttonRow">
             <button
               className="button primary"
-              disabled={!canEdit || loading || saving || draftIsFresh}
-              onClick={() =>
-                persistQuote(
-                  {
-                    analysisId: estimate.analysisId,
-                    customerName,
-                    quoteMode,
-                    metalType,
-                    metalWeightGrams: quoteEstimate.metalWeightGrams,
-                    centerDiamondCarats: quoteEstimate.centerDiamondCarats,
-                    sideDiamondCarats: quoteEstimate.sideDiamondCarats,
-                    sideDiamondQuantity: quoteEstimate.sideDiamondQuantity,
-                    pricingOverlay: customerPricingOverlay
-                  },
-                  { resetDraftAfterSave: false }
-                )
-              }
+              type="button"
+              disabled={!canEdit || saving || !aggregateQuote || draftIsFresh}
+              onClick={() => persistQuote({ resetDraftAfterSave: false })}
             >
               {saving ? "Saving..." : "Save current draft"}
             </button>
@@ -641,13 +1011,18 @@ export default function QuoteCalculator({
                 Download PDF
               </a>
             ) : null}
-            <button className="button secondary" onClick={() => window.print()}>
+            {savedQuote ? (
+              <a className="button secondary" href={publicQuoteUrl} target="_blank" rel="noreferrer">
+                Open public quote
+              </a>
+            ) : null}
+            <button className="button secondary" type="button" onClick={() => window.print()}>
               Print preview
             </button>
           </div>
 
           <div className="status" role="status" aria-live="polite">
-            {statusMessage || "Ready to quote."}
+            {status || "Ready to quote."}
           </div>
         </section>
       </div>
@@ -655,50 +1030,22 @@ export default function QuoteCalculator({
   );
 }
 
-function applyQuoteMode(estimate: Estimate, quoteMode: QuoteMode): Estimate {
-  if (quoteMode === "without-center-and-side") {
-    return {
-      ...estimate,
-      centerDiamondCarats: 0,
-      sideDiamondCarats: 0,
-      sideDiamondQuantity: 0
-    };
-  }
-
-  if (quoteMode === "without-center") {
-    return {
-      ...estimate,
-      centerDiamondCarats: 0
-    };
-  }
-
-  return estimate;
-}
-
-function NumberField({
-  label,
-  value,
-  step = 0.01,
-  disabled = false,
-  onChange
-}: {
-  label: string;
-  value: number;
-  step?: number;
-  disabled?: boolean;
-  onChange: (value: number) => void;
-}) {
+function QuoteUploadIllustration() {
   return (
-    <div className="field">
-      <label>{label}</label>
-      <input
-        type="number"
-        min={0}
-        step={step}
-        disabled={disabled}
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value) || 0)}
+    <svg className="emptyStateIllustration" viewBox="0 0 240 120" role="img" aria-label="Jewelry outline illustration">
+      <path
+        d="M64 56c12-16 30-24 56-24s44 8 56 24c-12 16-30 24-56 24s-44-8-56-24Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
       />
-    </div>
+      <path d="M72 68h96" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M103 58l17-20 17 20-17 26-17-26Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+    </svg>
   );
 }

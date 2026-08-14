@@ -8,6 +8,10 @@ datasource db {
 }
 
 enum MembershipRole {
+  OWNER
+  ADMIN
+  ESTIMATOR
+  VIEWER
   CUSTOMER
 }
 
@@ -25,12 +29,50 @@ enum AnalysisStatus {
   FAILED
 }
 
+enum OrderStatus {
+  SUBMITTED
+  CK_ORDER_PLACED
+  CANCELLED
+  IN_REVIEW
+  IN_PRODUCTION
+  COMPLETED
+  CANCELED
+}
+
+enum AccountStatus {
+  PENDING_APPROVAL
+  APPROVED
+  SUSPENDED
+}
+
+enum PricingTier {
+  TIER_1
+  TIER_2
+  TIER_3
+}
+
 model Company {
   id              String           @id @default(cuid())
   name            String
   slug            String           @unique
   logoUrl         String?
+  websiteUrl      String?
+  aboutUs         String?
   quoteSequence   Int              @default(0)
+  accountStatus   AccountStatus    @default(PENDING_APPROVAL)
+  pricingTier     PricingTier?
+  ckCustomerVerified Boolean        @default(false)
+  ckCustomerVerifiedAt DateTime?
+  ckCustomerVerifiedBy String?
+  ckCustomerRevokedAt DateTime?
+  ckCustomerNotes  String?
+  approvedAt      DateTime?
+  approvedBy      String?
+  tierChangedAt   DateTime?
+  tierChangedBy   String?
+  suspendedAt     DateTime?
+  suspendedReason String?
+  adminNotes      String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   memberships     Membership[]
@@ -38,6 +80,7 @@ model Company {
   pricingProfile  PricingProfile?
   analyses        AiAnalysis[]
   quotes          Quote[]
+  orders          Order[]
   usagePeriods    UsagePeriod[]
   auditLogs       AuditLog[]
 }
@@ -56,6 +99,7 @@ model User {
   id           String       @id @default(cuid())
   email        String       @unique
   name         String?
+  avatarUrl    String?
   passwordHash String?
   emailVerifiedAt DateTime?
   sessionVersion Int       @default(0)
@@ -103,6 +147,15 @@ model Subscription {
   cancelAtPeriodEnd    Boolean            @default(false)
   overageEnabled       Boolean            @default(false)
   overagePriceCents    Int?
+  trialStartedAt       DateTime?
+  trialEndsAt          DateTime?
+  trialQuoteCap        Int                @default(25)
+  trialQuotesUsed      Int                @default(0)
+  pendingPlanId        String?
+  pendingPlanActiveAt  DateTime?
+  onboardingComplete   Boolean            @default(false)
+  reminderSentAt10     DateTime?
+  reminderSentAt13     DateTime?
   currentPeriodStart   DateTime
   currentPeriodEnd     DateTime
   company              Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -144,6 +197,7 @@ model AiAnalysis {
   modelVersion          String         @default("gpt-5-mini")
   promptVersion         String         @default("jewelry-analysis-v1")
   imageDataUrl          String?
+  sourceImageStorageKey String?
   sourceImageMimeType   String?
   sourceImageSizeBytes  Int?
   status                AnalysisStatus @default(PENDING)
@@ -205,6 +259,7 @@ model Quote {
   id                    String      @id @default(cuid())
   companyId             String
   analysisId            String?     @unique
+  order                 Order?
   quoteNumber           String
   customerName          String?
   metalType             String
@@ -213,6 +268,11 @@ model Quote {
   sideDiamondCarats     Decimal
   sideDiamondQuantity   Int
   estimatedPrice        Decimal
+  makingPrice           Decimal?
+  pricingTierSnapshot   PricingTier?
+  tierDivisorSnapshot   Decimal?
+  estimatedSellingPrice Decimal?
+  isOverage             Boolean     @default(false)
   pdfStorageKey         String?     @unique
   pdfStoredAt           DateTime?
   pdfContentType        String?     @default("application/pdf")
@@ -221,6 +281,48 @@ model Quote {
   analysis              AiAnalysis? @relation(fields: [analysisId], references: [id])
 
   @@unique([companyId, quoteNumber])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  companyId       String
+  quoteId         String      @unique
+  orderNumber     String      @unique
+  itemName        String
+  status          OrderStatus @default(SUBMITTED)
+  ckOrderId       String?     @unique
+  ckOrderUrl      String?
+  ckOrderPlacedAt DateTime?
+  ckOrderPlacedBy String?
+  notes           String?
+  submittedAt     DateTime    @default(now())
+  reviewedAt      DateTime?
+  productionAt    DateTime?
+  completedAt     DateTime?
+  completedBy     String?
+  canceledAt      DateTime?
+  cancelledAt     DateTime?
+  cancelledBy     String?
+  cancellationReason String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  quote           Quote       @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  timeline        OrderEvent[]
+}
+
+model OrderEvent {
+  id            String      @id @default(cuid())
+  orderId       String
+  status        OrderStatus
+  note          String?
+  internalNote   String?
+  createdAt     DateTime    @default(now())
+  createdBy     String
+  isAdminAction Boolean     @default(false)
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
 }
 
 model EmailVerificationToken {

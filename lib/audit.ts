@@ -13,7 +13,10 @@ export type AuditAction =
   | "COMPANY_CREATED"
   | "MEMBERSHIP_CREATED"
   | "ROLE_UPDATED"
-  | "COMPANY_UPDATED";
+  | "COMPANY_UPDATED"
+  | "ACCOUNT_APPROVED"
+  | "ACCOUNT_SUSPENDED"
+  | "PRICING_TIER_UPDATED";
 
 export type AuditContext = {
   action: AuditAction;

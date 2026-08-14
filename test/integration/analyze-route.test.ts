@@ -43,7 +43,8 @@ function currentMonthRange() {
 
 async function createCompanyFixture(
   subscriptionStatus: SubscriptionStatus = "TRIALING",
-  usageLimit = 10
+  usageLimit = 10,
+  role: "CUSTOMER" | "OWNER" | "ADMIN" | "ESTIMATOR" | "VIEWER" = "CUSTOMER"
 ): Promise<CompanyFixture> {
   const companyId = `company_${randomUUID().slice(0, 8)}`;
   const userId = `user_${randomUUID().slice(0, 8)}`;
@@ -75,7 +76,7 @@ async function createCompanyFixture(
       memberships: {
         create: {
           companyId,
-          role: "CUSTOMER"
+          role
         }
       }
     }
@@ -112,7 +113,14 @@ function mockSession(companyFixture: CompanyFixture, sessionVersion = 0): Sessio
       name: "Analysis Owner",
       email: companyFixture.email,
       image: null,
-      sessionVersion
+      sessionVersion,
+      role: "CUSTOMER",
+      companyId: companyFixture.companyId,
+      companyName: "Analysis Company",
+      planId: "plan_starter",
+      accountStatus: "APPROVED",
+      pricingTier: "TIER_3",
+      ckCustomerVerified: false
     },
     expires: new Date(Date.now() + 60 * 60 * 1000).toISOString()
   };
@@ -461,6 +469,44 @@ describe("analysis route integration", () => {
       where: { companyId: company.companyId }
     });
     expect(usage.used).toBe(1);
+    expect(usage.reserved).toBe(0);
+  });
+
+  test("rejects viewer roles before reservation and analysis starts", async () => {
+    const company = await createCompanyFixture("ACTIVE", 10, "VIEWER");
+    authMock.mockResolvedValue(mockSession(company));
+
+    const provider = {
+      name: "mock-openai",
+      model: "mock-model",
+      modelVersion: "mock-model-version",
+      promptVersion: "mock-prompt-v1",
+      moderateImage: vi.fn(),
+      analyzeImage: vi.fn()
+    };
+    providerFactoryMock.mockReturnValue(provider);
+
+    const response = await analyzeImage(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        body: (() => {
+          const form = new FormData();
+          form.append("image", buildImage());
+          form.append("metalType", "14K");
+          return form;
+        })()
+      })
+    );
+
+    expect(response.status).toBe(403);
+    expect(provider.moderateImage).not.toHaveBeenCalled();
+    expect(provider.analyzeImage).not.toHaveBeenCalled();
+
+    const usage = await prisma.usagePeriod.findFirstOrThrow({
+      where: { companyId: company.companyId }
+    });
+
+    expect(usage.used).toBe(0);
     expect(usage.reserved).toBe(0);
   });
 

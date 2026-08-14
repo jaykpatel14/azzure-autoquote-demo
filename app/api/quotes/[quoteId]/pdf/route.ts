@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireCompanyContext, AuthRequiredError, CompanyAccessError } from "@/lib/company";
+import {
+  requireCompanyContext,
+  AuthRequiredError,
+  CompanyAccessError,
+  canViewQuotes
+} from "@/lib/company";
 import { generateQuotePdfBuffer } from "@/lib/pdf/quote";
 import {
   deleteQuotePdfFromS3,
   buildQuotePdfStorageKey,
+  loadAnalysisImageDataUrlFromS3,
   storeQuotePdfInS3
 } from "@/lib/quote-pdf-s3";
+import { getQuote } from "@/src/services/quotes";
 
 export const runtime = "nodejs";
 
@@ -19,50 +26,55 @@ type RouteContext = {
 export async function GET(_request: Request, { params }: RouteContext) {
   try {
     const context = await requireCompanyContext();
+    if (!canViewQuotes(context.membership?.role ?? "CUSTOMER")) {
+      throw new CompanyAccessError("You do not have permission to view quote PDFs.");
+    }
     const { quoteId } = await params;
 
-    const quote = await prisma.quote.findFirst({
-      where: {
-        id: quoteId,
-        companyId: context.company.id
-      },
-      include: {
-        company: {
-          select: {
-            name: true
-          }
-        },
-        analysis: {
-          select: {
-            jewelryType: true,
-            centerShape: true,
-            imageDataUrl: true
-          }
-        }
-      }
+    const quoteResult = await getQuote({
+      quoteId,
+      companyId: context.company.id
     });
 
-    if (!quote) {
-      return NextResponse.json({ error: "Quote not found." }, { status: 404 });
+    if ("error" in quoteResult) {
+      return NextResponse.json(
+        { error: quoteResult.error.userMessage },
+        { status: quoteResult.error.statusCode }
+      );
     }
 
+    const customerImageDataUrl = quoteResult.data.analysis?.sourceImageStorageKey
+      ? (await loadAnalysisImageDataUrlFromS3({
+          key: quoteResult.data.analysis.sourceImageStorageKey,
+          mimeType: quoteResult.data.analysis.sourceImageMimeType || "image/jpeg"
+        })) || quoteResult.data.analysis.imageDataUrl
+      : quoteResult.data.analysis?.imageDataUrl;
+
     const pdfBuffer = await generateQuotePdfBuffer({
-      companyName: quote.company.name,
-      quoteNumber: quote.quoteNumber,
-      createdAt: quote.createdAt,
-      customerName: quote.customerName?.trim() || quote.company.name || context.user.name || "Customer",
-      customerImageDataUrl: quote.analysis?.imageDataUrl,
-      metalType: quote.metalType,
-      metalWeightGrams: Number(quote.metalWeightGrams),
-      centerDiamondCarats: Number(quote.centerDiamondCarats),
-      sideDiamondCarats: Number(quote.sideDiamondCarats),
-      sideDiamondQuantity: quote.sideDiamondQuantity,
-      estimatedPrice: Number(quote.estimatedPrice),
-      jewelryType: quote.analysis?.jewelryType,
-      centerShape: quote.analysis?.centerShape
+      companyName: quoteResult.data.company.name,
+      quoteNumber: quoteResult.data.quoteNumber,
+      createdAt: quoteResult.data.createdAt,
+      customerName: quoteResult.data.customerName?.trim() || quoteResult.data.company.name || context.user.name || "Customer",
+      customerImageDataUrl,
+      metalType: quoteResult.data.metalType,
+      metalWeightGrams: Number(quoteResult.data.metalWeightGrams),
+      centerDiamondCarats: Number(quoteResult.data.centerDiamondCarats),
+      sideDiamondCarats: Number(quoteResult.data.sideDiamondCarats),
+      sideDiamondQuantity: quoteResult.data.sideDiamondQuantity,
+      estimatedPrice: Number(quoteResult.data.estimatedPrice),
+      makingPrice: quoteResult.data.makingPrice ? Number(quoteResult.data.makingPrice) : null,
+      pricingTier: quoteResult.data.pricingTierSnapshot,
+      tierDivisor: quoteResult.data.tierDivisorSnapshot
+        ? Number(quoteResult.data.tierDivisorSnapshot)
+        : null,
+      estimatedSellingPrice: quoteResult.data.estimatedSellingPrice
+        ? Number(quoteResult.data.estimatedSellingPrice)
+        : null,
+      jewelryType: quoteResult.data.analysis?.jewelryType,
+      centerShape: quoteResult.data.analysis?.centerShape
     });
 
-    const storageKey = quote.pdfStorageKey || buildQuotePdfStorageKey(quote.companyId, quote.quoteNumber);
+    const storageKey = buildQuotePdfStorageKey(context.company.id, quoteResult.data.quoteNumber);
     const stored = await storeQuotePdfInS3({
       key: storageKey,
       buffer: pdfBuffer
@@ -71,7 +83,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
     if (stored) {
       await prisma.quote
         .update({
-          where: { id: quote.id },
+          where: { id: quoteResult.data.id },
           data: {
             pdfStorageKey: stored.key,
             pdfStoredAt: new Date(),
@@ -84,7 +96,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${quote.quoteNumber}.pdf"`,
+        "Content-Disposition": `attachment; filename="${quoteResult.data.quoteNumber}.pdf"`,
         "Cache-Control": "no-store"
       }
     });

@@ -15,6 +15,8 @@ type WorkspaceShellProps = {
   description?: string;
   navItems: WorkspaceNavItem[];
   actions?: ReactNode;
+  banner?: ReactNode;
+  sidebarExtra?: ReactNode;
   children: ReactNode;
 };
 
@@ -24,6 +26,8 @@ export default function WorkspaceShell({
   description,
   navItems,
   actions,
+  banner,
+  sidebarExtra,
   children
 }: WorkspaceShellProps) {
   return (
@@ -36,10 +40,8 @@ export default function WorkspaceShell({
           <div className="brandMark">A</div>
           <div>
             <p className="eyebrow">{eyebrow}</p>
-            <strong>Jewelry quote studio</strong>
-            <p className="muted small">
-              Multi-tenant quoting, billing, and analysis in one focused workspace.
-            </p>
+            <strong className="brand">AutoQuote</strong>
+            <p className="muted small">Multi-tenant quoting, billing, and analysis in one focused workspace.</p>
           </div>
         </div>
 
@@ -60,6 +62,8 @@ export default function WorkspaceShell({
           <CompanySwitcher />
         </section>
 
+        {sidebarExtra ? sidebarExtra : null}
+
         <section className="sidebarPanel sidebarFooter" aria-label="Session actions">
           <p className="muted small">
             Signed in workspace controls stay tenant-aware and admin-only where required.
@@ -78,6 +82,7 @@ export default function WorkspaceShell({
           {actions ? <div className="heroActions">{actions}</div> : null}
         </header>
 
+        {banner ? <div className="pageBannerWrap">{banner}</div> : null}
         {children}
       </main>
     </div>

@@ -37,9 +37,9 @@ jobs:
           until docker compose -f docker-compose.proxmox.yml exec -T db pg_isready -U autoquote -d autoquote >/dev/null 2>&1; do
             sleep 2
           done
-          docker compose -f docker-compose.proxmox.yml build app
-          docker compose -f docker-compose.proxmox.yml run --rm app npm run db:deploy
-          docker compose -f docker-compose.proxmox.yml run --rm app npm run db:seed
+          docker compose -f docker-compose.proxmox.yml build app migrate
+          docker compose -f docker-compose.proxmox.yml run --rm migrate npm run db:deploy
+          docker compose -f docker-compose.proxmox.yml run --rm migrate npm run db:seed
           docker compose -f docker-compose.proxmox.yml up -d app
           for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             if curl -fsS https://autoquote.everyfacets.com/api/health; then

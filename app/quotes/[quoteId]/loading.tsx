@@ -1,0 +1,11 @@
+export default function Loading() {
+  return (
+    <div className="appLoading" aria-label="Loading quote detail">
+      <div className="skeleton" style={{ height: 84 }} />
+      <div className="grid twoUp">
+        <div className="skeleton card" style={{ height: 420 }} />
+        <div className="skeleton card" style={{ height: 420 }} />
+      </div>
+    </div>
+  );
+}

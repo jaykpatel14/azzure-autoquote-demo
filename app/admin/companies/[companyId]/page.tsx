@@ -55,6 +55,7 @@ export default async function AdminCompanyPage({ params }: AdminCompanyPageProps
       title={company.name}
       description="Review billing, quote history, team access, and support evidence for this company."
       navItems={getInternalAdminNav("/admin/companies")}
+      adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/companies">
           Back to companies

@@ -1,9 +1,19 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { requireCompanyContext, AuthRequiredError, CompanyAccessError } from "@/lib/company";
-import { buildQuotePdfStorageKey, deleteQuotePdfFromS3 } from "@/lib/quote-pdf-s3";
+import { z } from "zod";
+import {
+  requireCompanyContext,
+  AuthRequiredError,
+  CompanyAccessError,
+  canDeleteQuotes,
+  canViewQuotes
+} from "@/lib/company";
+import { deleteQuote, getQuote } from "@/src/services/quotes";
 
 export const runtime = "nodejs";
+
+const paramsSchema = z.object({
+  quoteId: z.string().cuid()
+});
 
 type RouteContext = {
   params: Promise<{
@@ -11,41 +21,88 @@ type RouteContext = {
   }>;
 };
 
+export async function GET(_request: Request, { params }: RouteContext) {
+  try {
+    const context = await requireCompanyContext();
+    if (!canViewQuotes(context.membership?.role ?? "CUSTOMER")) {
+      throw new CompanyAccessError("You do not have permission to view quotes.");
+    }
+    const parsed = paramsSchema.safeParse(await params);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+    }
+
+    const result = await getQuote({
+      quoteId: parsed.data.quoteId,
+      companyId: context.company.id
+    });
+
+    if ("error" in result) {
+      return NextResponse.json(
+        { error: result.error.userMessage },
+        { status: result.error.statusCode }
+      );
+    }
+
+    return NextResponse.json({
+      id: result.data.id,
+      quoteNumber: result.data.quoteNumber,
+      customerName: result.data.customerName,
+      metalType: result.data.metalType,
+      metalWeightGrams: Number(result.data.metalWeightGrams),
+      centerDiamondCarats: Number(result.data.centerDiamondCarats),
+      sideDiamondCarats: Number(result.data.sideDiamondCarats),
+      sideDiamondQuantity: result.data.sideDiamondQuantity,
+      estimatedPrice: Number(result.data.estimatedPrice),
+      makingPrice: result.data.makingPrice ? Number(result.data.makingPrice) : null,
+      pricingTier: result.data.pricingTierSnapshot,
+      tierDivisor: result.data.tierDivisorSnapshot ? Number(result.data.tierDivisorSnapshot) : null,
+      estimatedSellingPrice: result.data.estimatedSellingPrice
+        ? Number(result.data.estimatedSellingPrice)
+        : null,
+      createdAt: result.data.createdAt,
+      analysis: result.data.analysis
+    });
+  } catch (error) {
+    if (error instanceof AuthRequiredError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+
+    if (error instanceof CompanyAccessError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unable to load quote." },
+      { status: 400 }
+    );
+  }
+}
+
 export async function DELETE(_request: Request, { params }: RouteContext) {
   try {
     const context = await requireCompanyContext();
-    const { quoteId } = await params;
-
-    const quote = await prisma.quote.findFirst({
-      where: {
-        id: quoteId,
-        companyId: context.company.id
-      },
-      select: {
-        id: true,
-        companyId: true,
-        quoteNumber: true,
-        pdfStorageKey: true
-      }
-    });
-
-    if (!quote) {
-      return NextResponse.json({ error: "Quote not found." }, { status: 404 });
+    if (!canDeleteQuotes(context.membership?.role ?? "CUSTOMER")) {
+      throw new CompanyAccessError("You do not have permission to delete quotes.");
+    }
+    const parsed = paramsSchema.safeParse(await params);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid request." }, { status: 400 });
     }
 
-    const storageKey = quote.pdfStorageKey || buildQuotePdfStorageKey(quote.companyId, quote.quoteNumber);
-    if (storageKey) {
-      await deleteQuotePdfFromS3(storageKey).catch(() => undefined);
+    const result = await deleteQuote({
+      quoteId: parsed.data.quoteId,
+      companyId: context.company.id
+    });
+
+    if ("error" in result) {
+      return NextResponse.json(
+        { error: result.error.userMessage },
+        { status: result.error.statusCode }
+      );
     }
 
-    await prisma.quote.delete({
-      where: { id: quote.id }
-    });
-
-    return NextResponse.json({
-      ok: true,
-      quoteNumber: quote.quoteNumber
-    });
+    return NextResponse.json({ deleted: true, quoteId: result.data.quoteId });
   } catch (error) {
     if (error instanceof AuthRequiredError) {
       return NextResponse.json({ error: error.message }, { status: 401 });
