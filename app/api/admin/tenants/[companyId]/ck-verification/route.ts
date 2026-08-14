@@ -7,7 +7,7 @@ import { buildPublicUrl } from "@/lib/security";
 export const runtime = "nodejs";
 
 const paramsSchema = z.object({
-  companyId: z.string().cuid()
+  companyId: z.string().min(1)
 });
 
 const schema = z.object({

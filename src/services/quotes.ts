@@ -4,6 +4,7 @@ import { allocateQuoteNumber } from "@/lib/quote-number";
 import { NotFoundError, ConflictError, type AppResult } from "@/src/lib/errors";
 import { assertPlanFeature } from "@/src/stripe/plans";
 import { CompanyAccessError } from "@/lib/company";
+import { buildBrandedPublicUrl } from "@/lib/security";
 
 async function assertApprovedCompany(companyId: string) {
   const company = await prisma.company.findUnique({ where: { id: companyId }, select: { accountStatus: true, pricingTier: true } });
@@ -98,8 +99,12 @@ export function deriveQuoteStatus(
   return "draft";
 }
 
-export function getQuotePublicUrl(quoteId: string) {
-  return `/q/${quoteId}`;
+export function getQuotePublicUrl(token: string) {
+  return `/q/${token}`;
+}
+
+export function getBrandedQuotePublicUrl(companySlug: string, token: string) {
+  return buildBrandedPublicUrl(companySlug, `/q/${token}`);
 }
 
 export async function createQuote(

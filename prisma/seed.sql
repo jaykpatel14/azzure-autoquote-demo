@@ -25,6 +25,11 @@ INSERT INTO "Company" (
   "slug",
   "logoUrl",
   "quoteSequence",
+  "accountStatus",
+  "pricingTier",
+  "ckCustomerVerified",
+  "ckCustomerVerifiedAt",
+  "approvedAt",
   "updatedAt"
 ) VALUES (
   'company_demo_jewelry',
@@ -32,6 +37,11 @@ INSERT INTO "Company" (
   'demo-jewelry',
   NULL,
   0,
+  'APPROVED',
+  'TIER_2',
+  true,
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP,
   CURRENT_TIMESTAMP
 )
 ON CONFLICT ("id") DO UPDATE SET
@@ -39,6 +49,11 @@ ON CONFLICT ("id") DO UPDATE SET
   "slug" = EXCLUDED."slug",
   "logoUrl" = EXCLUDED."logoUrl",
   "quoteSequence" = EXCLUDED."quoteSequence",
+  "accountStatus" = EXCLUDED."accountStatus",
+  "pricingTier" = EXCLUDED."pricingTier",
+  "ckCustomerVerified" = EXCLUDED."ckCustomerVerified",
+  "ckCustomerVerifiedAt" = EXCLUDED."ckCustomerVerifiedAt",
+  "approvedAt" = EXCLUDED."approvedAt",
   "updatedAt" = CURRENT_TIMESTAMP;
 
 INSERT INTO "PricingProfile" (
@@ -143,7 +158,7 @@ INSERT INTO "Subscription" (
 ) VALUES (
   'subscription_demo_jewelry',
   'company_demo_jewelry',
-  'plan_professional',
+  'plan_enterprise',
   'ACTIVE',
   date_trunc('month', CURRENT_TIMESTAMP),
   date_trunc('month', CURRENT_TIMESTAMP) + INTERVAL '1 month',
@@ -173,7 +188,7 @@ INSERT INTO "UsagePeriod" (
   'company_demo_jewelry',
   date_trunc('month', CURRENT_TIMESTAMP),
   date_trunc('month', CURRENT_TIMESTAMP) + INTERVAL '1 month',
-  500,
+  2500,
   0,
   0
 )

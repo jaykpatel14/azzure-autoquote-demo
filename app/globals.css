@@ -1865,6 +1865,9 @@ textarea:disabled {
 .publicQuoteCard {
   width: min(780px, 100%);
   margin: 0 auto;
+  background: var(--color-ivory);
+  border: 1px solid var(--color-ivory-dark);
+  box-shadow: 0 24px 60px rgba(15, 15, 15, 0.16);
 }
 
 .publicQuoteHeader {

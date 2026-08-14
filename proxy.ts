@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { ACTIVE_COMPANY_COOKIE } from "@/lib/company";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getAppOrigin, getClientIp, isSameOriginRequest } from "@/lib/security";
+import { extractTenantSlugFromHost, getAppOrigin, getClientIp, isSameOriginRequest } from "@/lib/security";
 
 const rateLimits: Array<{ prefix: string; limit: number; windowMs: number }> = [
   { prefix: "/api/auth/register", limit: 5, windowMs: 60_000 },
@@ -155,6 +155,9 @@ async function applyAccountAccessControl(request: NextRequest) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const tenantSlug = pathname.startsWith("/q/")
+    ? extractTenantSlugFromHost(request.nextUrl.hostname)
+    : null;
 
   const adminAccessResponse = await applyAdminAccessControl(request);
   if (adminAccessResponse) {
@@ -197,6 +200,12 @@ export async function proxy(request: NextRequest) {
       response.headers.set("Retry-After", String(retryAfter));
       return withSecurityHeaders(response);
     }
+  }
+
+  if (tenantSlug) {
+    const forwardedHeaders = new Headers(request.headers);
+    forwardedHeaders.set("x-tenant-slug", tenantSlug);
+    return withSecurityHeaders(NextResponse.next({ request: { headers: forwardedHeaders } }));
   }
 
   return withSecurityHeaders(NextResponse.next());

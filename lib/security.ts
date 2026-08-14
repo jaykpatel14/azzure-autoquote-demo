@@ -13,6 +13,31 @@ export function buildPublicUrl(path: string) {
   return new URL(path, getAppOrigin());
 }
 
+export function getAppHostname() {
+  return new URL(getAppOrigin()).hostname;
+}
+
+export function buildBrandedPublicUrl(companySlug: string, path: string) {
+  const url = new URL(getAppOrigin());
+  url.hostname = `${companySlug}.${url.hostname}`;
+  url.pathname = path;
+  return url.toString();
+}
+
+export function extractTenantSlugFromHost(hostname: string) {
+  const appHostname = getAppHostname();
+  if (hostname === appHostname || !hostname.endsWith(`.${appHostname}`)) {
+    return null;
+  }
+
+  const prefix = hostname.slice(0, hostname.length - appHostname.length - 1);
+  if (!prefix || prefix.includes(".") || prefix === "www") {
+    return null;
+  }
+
+  return prefix;
+}
+
 export function getRequestOrigin(request: Request | NextRequest) {
   return request.headers.get("origin") || request.headers.get("referer") || "";
 }

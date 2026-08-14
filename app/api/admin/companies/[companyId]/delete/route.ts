@@ -6,7 +6,7 @@ import { requireInternalAdminContext, InternalAdminAccessError } from "@/lib/int
 export const runtime = "nodejs";
 
 const paramsSchema = z.object({
-  companyId: z.string().cuid()
+  companyId: z.string().min(1)
 });
 
 type RouteContext = {

@@ -6,7 +6,7 @@ import { StatusBadge } from "@/src/components/ui/StatusBadge";
 import { PlanGate } from "@/src/components/ui/PlanGate";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
-import { deriveQuoteStatus, getQuotePublicUrl, getQuote } from "@/src/services/quotes";
+import { deriveQuoteStatus, getBrandedQuotePublicUrl, getQuotePublicUrl, getQuote } from "@/src/services/quotes";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 
 function formatCurrency(value: number) {
@@ -60,6 +60,8 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
   const status = deriveQuoteStatus(quote);
   const subscription = context.company.subscription;
   const canShare = Boolean(subscription && getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status)).canShareQuoteLink);
+  const publicUrl = (token: string) =>
+    canShare ? getBrandedQuotePublicUrl(context.company.slug, token) : getQuotePublicUrl(token);
 
   return (
     <WorkspaceShell
@@ -119,7 +121,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               quoteId={quote.id}
               viewHref={`/quotes/${quote.id}`}
               pdfHref={`/api/quotes/${quote.id}/pdf`}
-              publicHref={getQuotePublicUrl(quote.id)}
+              publicHref={publicUrl(quote.publicShareToken ?? quote.id)}
               canCopyLink={status === "sent" && canShare}
               copyLinkTitle={
                 canShare
@@ -159,7 +161,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
             </div>
               {quote.publicShareToken ? <div className="detailCard">
                 <span>Public link</span>
-                <Link className="textLink" href={getQuotePublicUrl(quote.publicShareToken)} target="_blank">Open customer view</Link>
+                <Link className="textLink" href={publicUrl(quote.publicShareToken)} target="_blank">Open customer view</Link>
               </div> : null}
             </div>
 

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -35,8 +36,9 @@ export default async function PublicQuotePage({
       company: {
         select: {
           name: true,
-          logoUrl: true
-          ,websiteUrl: true
+          logoUrl: true,
+          websiteUrl: true,
+          slug: true
         }
       }
     }
@@ -45,6 +47,9 @@ export default async function PublicQuotePage({
   if (!quote) {
     notFound();
   }
+
+  const headerList = await headers();
+  const isBranded = headerList.get("x-tenant-slug") === quote.company.slug;
 
   const expiresAt = quote.sharedAt ? new Date(quote.sharedAt.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
   if (!expiresAt || expiresAt <= new Date()) {
@@ -108,7 +113,7 @@ export default async function PublicQuotePage({
 
         <footer className="publicQuoteFooter">
           <span>{quote.company.name}</span>
-          <span>Public quote preview powered by Azzure AutoQuote</span>
+          {isBranded ? null : <span>Public quote preview powered by Azzure AutoQuote</span>}
         </footer>
       </article>
     </main>
