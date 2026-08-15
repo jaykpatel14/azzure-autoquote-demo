@@ -17,6 +17,7 @@ type AdminMemberInput = {
   email: string;
   name?: string | null;
   password?: string | null;
+  role?: string;
 };
 
 type AdminCompanyInput = AdminMemberInput & {
@@ -234,20 +235,20 @@ export async function addAdminCompanyMember(
     data: {
       companyId: company.id,
       userId: user.id,
-      role: "CUSTOMER"
+      role: input.role || "CUSTOMER"
     }
   });
 
   await client.auditLog.create({
     data: {
       action: "MEMBERSHIP_CREATED",
-      companyId: company.id,
+     companyId: company.id,
       actorUserId: adminUserId,
       targetType: "Membership",
       targetId: user.id,
       metadata: {
         email,
-        role: "CUSTOMER",
+        role: input.role || "CUSTOMER",
         userCreated: user.created
       }
     }

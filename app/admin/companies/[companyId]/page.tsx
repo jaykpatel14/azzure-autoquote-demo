@@ -188,15 +188,28 @@ export default async function AdminCompanyPage({ params }: AdminCompanyPageProps
                 <input name="email" type="email" placeholder="user@acme.com" required />
               </label>
             </div>
-            <label className="field">
-              <span>Password</span>
-              <input
-                name="password"
-                type="password"
-                placeholder="Required for brand new users"
-                minLength={8}
-              />
-            </label>
+            <div className="grid twoUp">
+              <label className="field">
+                <span>Role</span>
+                <select name="role" defaultValue="CUSTOMER">
+                  <option value="OWNER">Owner</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="ESTIMATOR">Estimator</option>
+                  <option value="VIEWER">Viewer</option>
+                  <option value="MANUFACTURING">Manufacturing</option>
+                  <option value="CUSTOMER">Customer</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Password</span>
+                <input
+                  name="password"
+                  type="password"
+                  placeholder="Required for brand new users"
+                  minLength={8}
+                />
+              </label>
+            </div>
             <p className="disclaimer">
               Existing users are reused automatically. If the email does not exist yet, a password is
               required so the admin team can hand off access securely.
