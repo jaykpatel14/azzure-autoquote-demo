@@ -13,6 +13,7 @@ enum MembershipRole {
   ESTIMATOR
   VIEWER
   CUSTOMER
+  MANUFACTURING
 }
 
 enum SubscriptionStatus {
