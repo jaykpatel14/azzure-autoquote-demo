@@ -167,7 +167,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
 
           {quote.analysis?.notes ? (
             <div className="detailCard detailCard--stacked">
-              <span>Analysis notes</span>
+              <span>Photo description &amp; notes</span>
               <p className="muted">{quote.analysis.notes}</p>
             </div>
           ) : null}

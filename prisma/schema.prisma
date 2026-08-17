@@ -62,6 +62,7 @@ model Company {
   quoteSequence   Int              @default(0)
   accountStatus   AccountStatus    @default(PENDING_APPROVAL)
   pricingTier     PricingTier?
+  customerMarginPct Float          @default(0)
   ckCustomerVerified Boolean        @default(false)
   ckCustomerVerifiedAt DateTime?
   ckCustomerVerifiedBy String?
@@ -271,7 +272,12 @@ model Quote {
   sideDiamondCarats     Decimal
   sideDiamondQuantity   Int
   estimatedPrice        Decimal
-  makingPrice           Decimal?
+  makingPrice           Float?
+  makingPriceBreakdown  Json?
+  colorClarity          String      @default("E VS1")
+  cadCost               Float       @default(0)
+  customerMarginPct     Float       @default(0)
+  customerMarginAmount  Float       @default(0)
   pricingTierSnapshot   PricingTier?
   tierDivisorSnapshot   Decimal?
   estimatedSellingPrice Decimal?

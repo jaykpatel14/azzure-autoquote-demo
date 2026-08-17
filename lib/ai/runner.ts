@@ -11,8 +11,8 @@ import type {
   ModerationSnapshot
 } from "@/lib/ai/provider";
 import { median, mergeConfidence } from "@/lib/statistics";
-import { METAL_TYPES, type MetalType } from "@/lib/pricing";
-import type { JewelryAnalysis } from "@/lib/ai/schema";
+import { type MetalType } from "@/lib/pricing";
+import type { JewelryAnalysis, CenterStoneSpec, SideStoneSpec } from "@/lib/ai/schema";
 
 export type AnalysisAttemptResult =
   | {
@@ -37,11 +37,15 @@ export type JewelryAnalysisRun = {
     jewelryType: string;
     selectedMetal: MetalType;
     metalWeightGrams: number;
+    isTwoTone: boolean;
+    hasWeddingBand: boolean;
+    centerStone: CenterStoneSpec;
+    sideStones: SideStoneSpec[];
     centerDiamondCarats: number;
     sideDiamondCarats: number;
     sideDiamondQuantity: number;
     centerShape?: string;
-    centerClarity?: string;
+    centerClarity: string;
     settingType?: string;
     confidence: "low" | "medium" | "high";
     assumptions: string[];
@@ -55,12 +59,6 @@ async function withTransientRetries<T>(
 ): Promise<{ result: T; retryCount: number; latencyMs: number }> {
   const started = Date.now();
   let retryCount = 0;
-  // We want automatic retries only for transient errors so an individual review
-  // can recover without charging another customer usage unit.
-  // The caller owns persistence of the successful or failed review.
-  // Retry delays are intentionally omitted to keep the MVP deterministic.
-  // If the provider keeps failing, the caller will receive the final error.
-  // The operation itself should be side-effect free beyond the API request.
   while (true) {
     try {
       const result = await operation();
@@ -134,7 +132,7 @@ export async function runReviewAttempt(params: {
   selectedMetal: MetalType;
   attemptNumber: number;
   attemptLimit?: number;
-}) : Promise<
+}): Promise<
   | {
       kind: "success";
       attemptNumber: number;
@@ -188,21 +186,66 @@ export async function runReviewAttempt(params: {
 }
 
 export function aggregateJewelryAnalysis(outputs: JewelryAnalysis[], selectedMetal: MetalType) {
+  const isTwoToneCount = outputs.filter((o) => o.isTwoTone).length;
+  const isTwoTone = isTwoToneCount > outputs.length / 2;
+
+  const hasWeddingBandCount = outputs.filter((o) => o.hasWeddingBand).length;
+  const hasWeddingBand = hasWeddingBandCount > outputs.length / 2;
+
+  const centerShape =
+    chooseMode(outputs.map((output) => output.centerStone?.shape).filter(Boolean) as string[]) || "round";
+  const centerCaratWeight = Number(
+    median(outputs.map((output) => output.centerStone?.caratWeight || 0)).toFixed(2)
+  );
+
+  const centerStone: CenterStoneSpec = {
+    shape: centerShape,
+    caratWeight: centerCaratWeight
+  };
+
+  // Pick representative side stones from outputs
+  const sideStones: SideStoneSpec[] =
+    outputs.find((o) => (o.sideStones || []).length > 0)?.sideStones ||
+    outputs[0]?.sideStones ||
+    [];
+
+  const sideDiamondCarats = Number(
+    median(
+      outputs.map((output) =>
+        (output.sideStones || []).reduce((acc, ss) => acc + ss.caratWeightEach * ss.count, 0)
+      )
+    ).toFixed(2)
+  );
+
+  const sideDiamondQuantity = Math.round(
+    median(
+      outputs.map((output) =>
+        (output.sideStones || []).reduce((acc, ss) => acc + ss.count, 0)
+      )
+    )
+  );
+
+  const settingType =
+    chooseMode(
+      outputs.flatMap((output) => (output.sideStones || []).map((ss) => ss.settingType)).filter(Boolean) as string[]
+    ) || undefined;
+
   return {
     jewelryType: chooseMode(outputs.map((output) => output.jewelry_type)) || "Jewelry",
     selectedMetal:
       (chooseMode(outputs.map((output) => output.selected_metal)) as MetalType | undefined) ||
       selectedMetal,
     metalWeightGrams: Number(median(outputs.map((output) => output.metal_weight_grams)).toFixed(2)),
-    centerDiamondCarats: Number(median(outputs.map((output) => output.center_diamond_weight_ct)).toFixed(2)),
-    sideDiamondCarats: Number(median(outputs.map((output) => output.side_diamond_total_weight_ct)).toFixed(2)),
-    sideDiamondQuantity: Math.round(median(outputs.map((output) => output.side_diamond_quantity))),
-    centerShape:
-      chooseMode(outputs.map((output) => output.center_shape).filter(Boolean) as string[]) || undefined,
-    centerClarity:
-      chooseMode(outputs.map((output) => output.center_clarity).filter(Boolean) as string[]) || undefined,
-    settingType:
-      chooseMode(outputs.map((output) => output.setting_type).filter(Boolean) as string[]) || undefined,
+    isTwoTone,
+    hasWeddingBand,
+    centerStone,
+    sideStones,
+    centerDiamondCarats: centerCaratWeight,
+    sideDiamondCarats,
+    sideDiamondQuantity,
+    centerShape,
+    centerClarity: "E VS1",
+    settingType,
     confidence: mergeConfidence(outputs.map((output) => output.confidence)),
     assumptions: mergeAssumptions(outputs),
     notes: outputs.length
@@ -217,7 +260,7 @@ export async function runJewelryAnalysis(params: {
   selectedMetal: MetalType;
   reviewCount: number;
   attemptLimit?: number;
-}) : Promise<JewelryAnalysisRun> {
+}): Promise<JewelryAnalysisRun> {
   const moderation = await runModerationCheck({
     provider: params.provider,
     imageDataUrl: params.imageDataUrl,

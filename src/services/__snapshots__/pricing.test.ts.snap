@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`calculateMakingPrice > full realistic quote: 1.5ct oval + 20 round side stones, 20% margin, $50 CAD 1`] = `
+{
+  "cadCost": 50,
+  "centerStoneCost": 1.875,
+  "centerStoneSettingCost": 30,
+  "colorClarity": "E VS1",
+  "customerMarginAmount": 29.88,
+  "customerMarginPct": 20,
+  "makingPrice": 179.25,
+  "pieces": 1,
+  "polishingCost": 20,
+  "sideStoneCost": 32,
+  "sideStoneSettingCost": 0.5,
+  "subtotal": 149.38,
+  "waxCost": 15,
+}
+`;
+
+exports[`calculateTierPrice > snapshot: full result shape does not change 1`] = `
+{
+  "divisor": 0.7,
+  "estimatedSellingPrice": 1428.57,
+  "formattedBreakdown": {
+    "estimatedSellingPrice": "$1,428.57",
+    "makingPrice": "$500.00",
+    "tierLabel": "Tier 2 - Standard",
+  },
+  "makingPrice": 500,
+  "tier": "TIER_2",
+}
+`;

@@ -22,13 +22,19 @@ type CreateQuoteInput = {
   sideDiamondCarats: number;
   sideDiamondQuantity: number;
   estimatedPrice: number;
-  makingPrice?: number;
+  makingPrice?: number | null;
+  makingPriceBreakdown?: Prisma.InputJsonValue | null;
+  colorClarity?: string;
+  cadCost?: number;
+  customerMarginPct?: number;
+  customerMarginAmount?: number;
   pricingTierSnapshot?: PricingTier | null;
   tierDivisorSnapshot?: number | null;
   estimatedSellingPrice?: number | null;
   centerShape?: string | null;
   centerClarity?: string | null;
   settingType?: string | null;
+  notes?: string | null;
 };
 
 type QuotePayload = Quote & {
@@ -143,14 +149,18 @@ export async function createQuote(
 
         if (
           analysis &&
-          (input.centerShape !== undefined || input.centerClarity !== undefined || input.settingType !== undefined)
+          (input.centerShape !== undefined ||
+            input.centerClarity !== undefined ||
+            input.settingType !== undefined ||
+            input.notes !== undefined)
         ) {
           await tx.aiAnalysis.update({
             where: { id: analysis.id },
             data: {
               ...(input.centerShape !== undefined ? { centerShape: input.centerShape || null } : {}),
               ...(input.centerClarity !== undefined ? { centerClarity: input.centerClarity || null } : {}),
-              ...(input.settingType !== undefined ? { settingType: input.settingType || null } : {})
+              ...(input.settingType !== undefined ? { settingType: input.settingType || null } : {}),
+              ...(input.notes !== undefined ? { notes: input.notes || null } : {})
             }
           });
         }
@@ -168,10 +178,15 @@ export async function createQuote(
             sideDiamondQuantity: input.sideDiamondQuantity,
             estimatedPrice: input.estimatedPrice,
             makingPrice: input.makingPrice ?? null,
+            makingPriceBreakdown: input.makingPriceBreakdown ?? undefined,
+            colorClarity: input.colorClarity ?? "E VS1",
+            cadCost: input.cadCost ?? 0,
+            customerMarginPct: input.customerMarginPct ?? 0,
+            customerMarginAmount: input.customerMarginAmount ?? 0,
             pricingTierSnapshot: input.pricingTierSnapshot ?? null,
             tierDivisorSnapshot: input.tierDivisorSnapshot ?? null,
-            estimatedSellingPrice: input.estimatedSellingPrice ?? null
-            ,isOverage: Boolean(usage && usage.used > usage.limit)
+            estimatedSellingPrice: input.estimatedSellingPrice ?? null,
+            isOverage: Boolean(usage && usage.used > usage.limit)
           }
         });
       });

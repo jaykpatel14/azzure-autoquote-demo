@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { calculateQuote, type MetalType, type PricingProfileInput } from "@/lib/pricing";
+import { type MetalType, type PricingProfileInput } from "@/lib/pricing";
 import { mergeConfidence, median } from "@/lib/statistics";
-import { mergePricingProfiles } from "@/lib/pricing";
 import { useToast } from "@/components/toast-provider";
+import {
+  calculateMakingPrice as calculateProductionCost,
+  calculateTierPrice,
+  DEFAULT_COLOR_CLARITY
+} from "@/src/services/pricing";
+import type { PricingTier } from "@prisma/client";
 
 type QuoteMode = "normal" | "without-center" | "without-center-and-side";
-type QuoteSaveResult = { ok: true; id: string; quoteNumber: string } | { ok: false; error: string };
 type FacetStatus = "pending" | "processing" | "done" | "error";
 
 type FacetOutput = {
@@ -20,6 +24,8 @@ type FacetOutput = {
   centerDiamondCarats: number;
   sideDiamondCarats: number;
   sideDiamondQuantity: number;
+  hasWeddingBand?: boolean;
+  isTwoTone?: boolean;
   confidence: "low" | "medium" | "high";
   notes?: string;
   assumptions?: string[];
@@ -42,12 +48,14 @@ type FacetDraft = {
 type AggregateQuote = {
   jewelryType: string;
   centerShape?: string;
-  centerClarity?: string;
+  centerClarity: string;
   settingType?: string;
   metalWeightGrams: number;
   centerDiamondCarats: number;
   sideDiamondCarats: number;
   sideDiamondQuantity: number;
+  hasWeddingBand: boolean;
+  isTwoTone: boolean;
   confidence: "low" | "medium" | "high";
   assumptions: string[];
   notes: string;
@@ -56,6 +64,9 @@ type AggregateQuote = {
 
 type QuoteCalculatorProps = {
   canEdit: boolean;
+  pricingTier?: PricingTier;
+  customerMarginPct?: number;
+  cadCost?: number;
   pricingProfile?: PricingProfileInput;
   pricingSourceLabel?: string;
   pricingNote?: string;
@@ -81,21 +92,10 @@ type QuoteCalculatorProps = {
 };
 
 const ANALYSIS_STAGES = [
-  "Analysing metal composition...",
-  "Estimating diamond specs...",
+  "Analysing metal & piece composition...",
+  "Estimating diamond specs & settings...",
   "Calculating weight..."
 ] as const;
-
-const EMPTY_PROFILE: PricingProfileInput = {
-  goldSpotPerOz: 0,
-  platinumSpotPerOz: 0,
-  silverSpotPerOz: 0,
-  cadCharge: 0,
-  centerSettingPerCarat: 0,
-  sideSettingPerStone: 0,
-  sellingMarginDivisor: 0,
-  finalMultiplier: 0
-};
 
 const QUOTE_MODE_OPTIONS: Array<{
   value: QuoteMode;
@@ -183,14 +183,15 @@ function mergeAssumptions(outputs: FacetOutput[]) {
 
 export default function QuoteCalculator({
   canEdit,
-  pricingProfile,
+  pricingTier = "TIER_2",
+  customerMarginPct = 0,
+  cadCost = 0,
   initialQuote
 }: QuoteCalculatorProps) {
   const [metalType, setMetalType] = useState<MetalType>(initialQuote?.metalType ?? "14K");
   const [quoteMode, setQuoteMode] = useState<QuoteMode>("normal");
   const [customerName, setCustomerName] = useState(initialQuote?.customerName ?? "");
   const [customerNotes, setCustomerNotes] = useState("");
-  const [customerPricingOverlay, setCustomerPricingOverlay] = useState<PricingProfileInput>(EMPTY_PROFILE);
   const [facets, setFacets] = useState<FacetDraft[]>(() =>
     initialQuote
       ? [
@@ -207,13 +208,15 @@ export default function QuoteCalculator({
             output: {
               analysisId: initialQuote.analysisId ?? undefined,
               jewelryType: initialQuote.jewelryType ?? "Jewelry",
-              centerShape: initialQuote.centerShape ?? "",
-              centerClarity: initialQuote.centerClarity ?? "",
-              settingType: initialQuote.settingType ?? "",
+              centerShape: initialQuote.centerShape ?? "round",
+              centerClarity: DEFAULT_COLOR_CLARITY,
+              settingType: initialQuote.settingType ?? "prong",
               metalWeightGrams: initialQuote.metalWeightGrams,
               centerDiamondCarats: initialQuote.centerDiamondCarats,
               sideDiamondCarats: initialQuote.sideDiamondCarats,
               sideDiamondQuantity: initialQuote.sideDiamondQuantity,
+              hasWeddingBand: false,
+              isTwoTone: false,
               confidence:
                 initialQuote.confidence === "low" ||
                 initialQuote.confidence === "medium" ||
@@ -257,25 +260,25 @@ export default function QuoteCalculator({
     }
   }, [initialQuote]);
 
-  const effectivePricingProfile = useMemo(
-    () => mergePricingProfiles(pricingProfile ?? {}, customerPricingOverlay),
-    [pricingProfile, customerPricingOverlay]
-  );
-
   const completedFacets = facets.filter((facet) => facet.status === "done" && facet.output);
   const aggregateQuote = useMemo<AggregateQuote | null>(() => {
     if (!completedFacets.length) return null;
 
     const outputs = completedFacets.map((facet) => facet.output!).map((output) => applyQuoteMode(output, quoteMode));
+    const hasWeddingBand = outputs.some((o) => o.hasWeddingBand);
+    const isTwoTone = outputs.some((o) => o.isTwoTone);
+
     return {
       jewelryType: chooseMode(outputs.map((output) => output.jewelryType)) || "Jewelry",
-      centerShape: chooseMode(outputs.map((output) => output.centerShape ?? "").filter(Boolean)) || undefined,
-      centerClarity: chooseMode(outputs.map((output) => output.centerClarity ?? "").filter(Boolean)) || undefined,
-      settingType: chooseMode(outputs.map((output) => output.settingType ?? "").filter(Boolean)) || undefined,
+      centerShape: chooseMode(outputs.map((output) => output.centerShape ?? "").filter(Boolean)) || "round",
+      centerClarity: DEFAULT_COLOR_CLARITY,
+      settingType: chooseMode(outputs.map((output) => output.settingType ?? "").filter(Boolean)) || "prong",
       metalWeightGrams: Number(median(outputs.map((output) => output.metalWeightGrams)).toFixed(2)),
       centerDiamondCarats: Number(median(outputs.map((output) => output.centerDiamondCarats)).toFixed(2)),
       sideDiamondCarats: Number(median(outputs.map((output) => output.sideDiamondCarats)).toFixed(2)),
       sideDiamondQuantity: Math.round(median(outputs.map((output) => output.sideDiamondQuantity))),
+      hasWeddingBand,
+      isTwoTone,
       confidence: mergeConfidence(outputs.map((output) => output.confidence)),
       assumptions: mergeAssumptions(outputs),
       notes:
@@ -286,22 +289,51 @@ export default function QuoteCalculator({
     };
   }, [completedFacets, quoteMode]);
 
-  const computedPrice = useMemo(() => {
-    if (!aggregateQuote) return null;
+  // Recalculate production cost & end customer price client-side in real-time
+  const { costBreakdown, estimatedSellingPrice } = useMemo<{
+    costBreakdown: unknown;
+    estimatedSellingPrice: number;
+  }>(() => {
+    if (!aggregateQuote) return { costBreakdown: null, estimatedSellingPrice: 0 };
 
-    return calculateQuote(
-      {
-        metalType,
-        metalWeightGrams: aggregateQuote.metalWeightGrams,
-        centerDiamondCarats: aggregateQuote.centerDiamondCarats,
-        sideDiamondCarats: aggregateQuote.sideDiamondCarats,
-        sideDiamondQuantity: aggregateQuote.sideDiamondQuantity
-      },
-      effectivePricingProfile
-    );
-  }, [aggregateQuote, metalType, effectivePricingProfile]);
+    const centerCarat = Math.max(aggregateQuote.centerDiamondCarats, 0.0001);
+    const sideStones =
+      aggregateQuote.sideDiamondQuantity > 0 && aggregateQuote.sideDiamondCarats > 0
+        ? [
+            {
+              shape: "round",
+              caratWeightEach: aggregateQuote.sideDiamondCarats / aggregateQuote.sideDiamondQuantity,
+              count: aggregateQuote.sideDiamondQuantity,
+              settingType: aggregateQuote.settingType || "prong"
+            }
+          ]
+        : [];
 
-  const previewPrice = computedPrice?.estimatedFinalPrice ?? 0;
+    try {
+      const breakdown = calculateProductionCost({
+        centerStone: {
+          shape: aggregateQuote.centerShape || "round",
+          caratWeight: centerCarat
+        },
+        sideStones,
+        hasWeddingBand: aggregateQuote.hasWeddingBand,
+        isTwoTone: aggregateQuote.isTwoTone,
+        colorClarity: DEFAULT_COLOR_CLARITY,
+        cadCost,
+        customerMarginPct
+      });
+
+      const totalCost = breakdown.subtotal + breakdown.customerMarginAmount;
+      const tierResult = calculateTierPrice(totalCost, pricingTier);
+      return {
+        costBreakdown: breakdown,
+        estimatedSellingPrice: tierResult.estimatedSellingPrice
+      };
+    } catch {
+      return { costBreakdown: null, estimatedSellingPrice: 0 };
+    }
+  }, [aggregateQuote, cadCost, customerMarginPct, pricingTier]);
+
   const canAnalyse = canEdit && facets.some((facet) => facet.status === "pending" || facet.status === "error");
 
   function updateFacet(id: string, updater: (facet: FacetDraft) => FacetDraft) {
@@ -364,10 +396,13 @@ export default function QuoteCalculator({
     setActiveFacetId((current) => (current === id ? null : current));
   }
 
-  async function sendAnalysisRequest(file: File, metal: MetalType) {
+  async function sendAnalysisRequest(file: File, metal: MetalType, description?: string) {
     const formData = new FormData();
     formData.append("image", file);
     formData.append("metalType", metal);
+    if (description) {
+      formData.append("description", description);
+    }
 
     const response = await fetch("/api/analyze", {
       method: "POST",
@@ -416,7 +451,7 @@ export default function QuoteCalculator({
     }, 800);
 
     try {
-      const response = await sendAnalysisRequest(facet.file, metalType);
+      const response = await sendAnalysisRequest(facet.file, metalType, facet.description || customerNotes);
       if (!response.ok) {
         const errorPayload = response.payload as { error?: string };
         throw new Error(errorPayload.error || "Analysis failed.");
@@ -430,13 +465,15 @@ export default function QuoteCalculator({
         output: {
           analysisId: result.analysisId,
           jewelryType: result.jewelryType || "Jewelry",
-          centerShape: result.centerShape ?? "",
-          centerClarity: result.centerClarity ?? "",
-          settingType: result.settingType ?? "",
+          centerShape: result.centerShape ?? "round",
+          centerClarity: DEFAULT_COLOR_CLARITY,
+          settingType: result.settingType ?? "prong",
           metalWeightGrams: result.metalWeightGrams,
           centerDiamondCarats: result.centerDiamondCarats,
           sideDiamondCarats: result.sideDiamondCarats,
           sideDiamondQuantity: result.sideDiamondQuantity,
+          hasWeddingBand: result.hasWeddingBand ?? false,
+          isTwoTone: result.isTwoTone ?? false,
           confidence: result.confidence,
           notes: result.notes,
           assumptions: result.assumptions
@@ -486,7 +523,7 @@ export default function QuoteCalculator({
   }
 
   async function persistQuote(options?: { resetDraftAfterSave?: boolean }) {
-    if (!aggregateQuote || !computedPrice) {
+    if (!aggregateQuote || !costBreakdown) {
       setStatus("Analyse the photos before saving the quote.");
       showToast({
         message: "Analyse the photos before saving the quote.",
@@ -515,10 +552,13 @@ export default function QuoteCalculator({
         centerDiamondCarats: aggregateQuote.centerDiamondCarats,
         sideDiamondCarats: aggregateQuote.sideDiamondCarats,
         sideDiamondQuantity: aggregateQuote.sideDiamondQuantity,
-        centerShape: aggregateQuote.centerShape ?? "",
-        centerClarity: aggregateQuote.centerClarity ?? "",
-        settingType: aggregateQuote.settingType ?? "",
-        pricingOverlay: customerPricingOverlay
+        centerShape: aggregateQuote.centerShape ?? "round",
+        centerClarity: DEFAULT_COLOR_CLARITY,
+        settingType: aggregateQuote.settingType ?? "prong",
+        customerNotes,
+        notes: customerNotes,
+        hasWeddingBand: aggregateQuote.hasWeddingBand,
+        isTwoTone: aggregateQuote.isTwoTone
       })
     });
 
@@ -549,7 +589,7 @@ export default function QuoteCalculator({
     setSaving(false);
   }
 
-  function updateFacetOutput(id: string, field: keyof FacetOutput, value: string | number) {
+  function updateFacetOutput(id: string, field: keyof FacetOutput, value: string | number | boolean) {
     updateFacet(id, (current) => {
       if (!current.output) return current;
       return {
@@ -615,8 +655,26 @@ export default function QuoteCalculator({
             <strong>Add jewelry photos</strong>
             <span className="muted small">Use your camera or choose JPG, PNG, or WEBP images up to 10 MB.</span>
             <div className="dropzoneActions">
-              <label className="button primary"><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} />Take a photo</label>
-              <label className="button secondary"><input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} />Choose from library</label>
+              <label className="button primary">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  capture="environment"
+                  disabled={!canEdit}
+                  onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
+                />
+                Take a photo
+              </label>
+              <label className="button secondary">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  disabled={!canEdit}
+                  onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
+                />
+                Choose from library
+              </label>
             </div>
           </div>
 
@@ -685,22 +743,33 @@ export default function QuoteCalculator({
               </select>
             </div>
             <div className="field">
-              <label htmlFor="customerNotes">Notes</label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                <label htmlFor="customerNotes" style={{ marginBottom: 0 }}>
+                  Photo description &amp; special instructions <span className="muted small" style={{ fontWeight: "normal" }}>(Optional)</span>
+                </label>
+                <span className="muted small" style={{ fontSize: "0.75rem", fontVariantNumeric: "tabular-nums" }}>
+                  {customerNotes.length} / 1000 characters
+                </span>
+              </div>
               <textarea
                 id="customerNotes"
-                rows={3}
+                rows={4}
+                maxLength={1000}
                 value={customerNotes}
                 onChange={(event) => setCustomerNotes(event.target.value)}
-                placeholder="Optional notes for the quote review."
+                placeholder="Optional: Explain details about the uploaded photo (e.g. style preferences, stone modifications, custom engraving, or specific design requests)..."
                 disabled={!canEdit}
               />
+              <p className="muted small">
+                Add an optional description (up to 1,000 characters) so the customer or jeweler can explain details about the uploaded photo.
+              </p>
             </div>
           </div>
 
           <div className="sectionHeader quoteSectionHeader">
             <div>
               <h3>Step 2 - Facet analysis</h3>
-              <p className="muted">Each uploaded image gets its own card. Use the card inputs to refine the resolved values.</p>
+              <p className="muted">Each uploaded image gets its own card. Modify values below to see real-time price updates.</p>
             </div>
           </div>
 
@@ -740,7 +809,7 @@ export default function QuoteCalculator({
                             updateFacet(facet.id, (current) => ({ ...current, showDescription: !current.showDescription }))
                           }
                         >
-                          {facet.showDescription ? "Hide description" : "+ Add description"}
+                          {facet.showDescription ? "Hide description" : (facet.description ? "Edit photo description" : "+ Add photo description")}
                         </button>
                         <button className="textLink destructive" type="button" onClick={() => removeFacet(facet.id)}>
                           Remove
@@ -749,17 +818,29 @@ export default function QuoteCalculator({
                     </div>
                   </div>
 
-                  {facet.showDescription ? (
-                    <textarea
-                      className="facetDescription"
-                      rows={2}
-                      value={facet.description}
-                      onChange={(event) =>
-                        updateFacet(facet.id, (current) => ({ ...current, description: event.target.value }))
-                      }
-                      placeholder="Optional description for this facet."
-                      disabled={!canEdit}
-                    />
+                  {facet.showDescription || facet.description ? (
+                    <div style={{ marginTop: "0.75rem", padding: "0.75rem", borderRadius: "var(--radius-sm, 6px)", backgroundColor: "var(--color-surface-subtle, #f9fafb)", border: "1px solid var(--color-border, #e5e7eb)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                        <span style={{ fontSize: "0.8125rem", fontWeight: 500 }}>
+                          Photo explanation <span className="muted small" style={{ fontWeight: "normal" }}>(Optional)</span>
+                        </span>
+                        <span className="muted small" style={{ fontSize: "0.75rem", fontVariantNumeric: "tabular-nums" }}>
+                          {facet.description.length} / 1000 characters
+                        </span>
+                      </div>
+                      <textarea
+                        className="facetDescription"
+                        rows={2}
+                        maxLength={1000}
+                        value={facet.description}
+                        onChange={(event) =>
+                          updateFacet(facet.id, (current) => ({ ...current, description: event.target.value }))
+                        }
+                        placeholder="Optional description explaining this specific photo (max 1000 characters)..."
+                        disabled={!canEdit}
+                        style={{ width: "100%", margin: 0 }}
+                      />
+                    </div>
                   ) : null}
 
                   {facet.status === "processing" ? (
@@ -815,6 +896,15 @@ export default function QuoteCalculator({
                         />
                       </label>
                       <label className="facetResolvedField">
+                        <span>Center shape</span>
+                        <input
+                          value={facet.output.centerShape ?? ""}
+                          onChange={(event) => updateFacetOutput(facet.id, "centerShape", event.target.value)}
+                          disabled={!canEdit}
+                          placeholder="e.g. Oval, Round, Cushion"
+                        />
+                      </label>
+                      <label className="facetResolvedField">
                         <span>Side stones (ct)</span>
                         <input
                           type="number"
@@ -841,41 +931,61 @@ export default function QuoteCalculator({
                         />
                       </label>
                       <label className="facetResolvedField">
-                        <span>Center shape</span>
-                        <input
-                          value={facet.output.centerShape ?? ""}
-                          onChange={(event) => updateFacetOutput(facet.id, "centerShape", event.target.value)}
-                          disabled={!canEdit}
-                          placeholder="e.g. Round"
-                        />
-                      </label>
-                      <label className="facetResolvedField">
-                        <span>Clarity</span>
-                        <input
-                          value={facet.output.centerClarity ?? ""}
-                          onChange={(event) => updateFacetOutput(facet.id, "centerClarity", event.target.value)}
-                          disabled={!canEdit}
-                          placeholder="e.g. VS1"
-                        />
-                      </label>
-                      <label className="facetResolvedField">
                         <span>Setting type</span>
                         <input
                           value={facet.output.settingType ?? ""}
                           onChange={(event) => updateFacetOutput(facet.id, "settingType", event.target.value)}
                           disabled={!canEdit}
-                          placeholder="e.g. Prong"
+                          placeholder="e.g. Prong, Bezel, Pavé"
                         />
                       </label>
-                      <label className="facetResolvedField">
-                        <span>Confidence</span>
+
+                      {/* Color / Clarity: Fixed read-only display */}
+                      <div
+                        className="facetResolvedField"
+                        title="Color and clarity are standardised to E VS1 for all quotes"
+                      >
+                        <span>Color / Clarity</span>
                         <input
-                          value={facet.output.confidence}
-                          onChange={(event) => updateFacetOutput(facet.id, "confidence", event.target.value)}
-                          disabled={!canEdit}
+                          value="E VS1 (fixed)"
+                          readOnly
+                          disabled
+                          style={{
+                            cursor: "not-allowed",
+                            backgroundColor: "var(--color-surface-subtle, #f3f4f6)",
+                            color: "var(--color-text-muted, #6b7280)",
+                            fontWeight: 500
+                          }}
                         />
-                      </label>
-                      <div className="facetResolvedNotes">
+                      </div>
+
+                      {/* Piece configuration toggles */}
+                      <div className="facetResolvedField facetResolvedField--full" style={{ gridColumn: "1 / -1", display: "flex", gap: "1.5rem", marginTop: "0.5rem" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={facet.output.hasWeddingBand ?? false}
+                            onChange={(event) =>
+                              updateFacetOutput(facet.id, "hasWeddingBand", event.target.checked)
+                            }
+                            disabled={!canEdit}
+                          />
+                          <span style={{ fontSize: "0.875rem" }}>Ring + wedding band (2 pieces)</span>
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={facet.output.isTwoTone ?? false}
+                            onChange={(event) =>
+                              updateFacetOutput(facet.id, "isTwoTone", event.target.checked)
+                            }
+                            disabled={!canEdit}
+                          />
+                          <span style={{ fontSize: "0.875rem" }}>Two-tone gold (2 pieces)</span>
+                        </label>
+                      </div>
+
+                      <div className="facetResolvedNotes" style={{ gridColumn: "1 / -1" }}>
                         <span>Notes</span>
                         <p className="muted small">{facet.output.notes || "No notes provided."}</p>
                       </div>
@@ -908,7 +1018,7 @@ export default function QuoteCalculator({
 
           <div className="quotePreview">
             <p className="eyebrow">Quote price</p>
-            <div className="quotePrice">{formatCurrency(previewPrice)}</div>
+            <div className="quotePrice">{formatCurrency(estimatedSellingPrice)}</div>
             <div className="quoteMeta">
               <div>
                 <span>Customer</span>

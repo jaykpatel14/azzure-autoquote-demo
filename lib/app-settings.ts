@@ -5,7 +5,8 @@ export const ADMIN_SETTING_KEYS = [
   "OPENAI_API_KEY",
   "OPENAI_MODEL",
   "STRIPE_SECRET_KEY",
-  "STRIPE_WEBHOOK_SECRET"
+  "STRIPE_WEBHOOK_SECRET",
+  "cad_cost_per_quote"
 ] as const;
 
 export type AdminSettingKey = (typeof ADMIN_SETTING_KEYS)[number];
@@ -150,6 +151,13 @@ export async function resolveRuntimeSetting(key: string, fallback?: string | nul
   return fallback?.trim() || null;
 }
 
+export async function getSettingValue(key: string): Promise<number | null> {
+  const resolved = await resolveRuntimeSetting(key);
+  if (!resolved) return null;
+  const parsed = Number.parseFloat(resolved);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export async function upsertRuntimeSetting({ key, value, updatedByUserId }: UpsertSettingInput) {
   const normalizedKey = normalizeAdminSettingKey(key);
   const storedValue = isSecretSettingKey(normalizedKey) ? encryptValue(value) : value.trim();
@@ -186,7 +194,7 @@ export async function listRuntimeSettings() {
     return {
       key,
       value: rawValue,
-      maskedValue: maskValue(rawValue),
+      maskedValue: isSecretSettingKey(key) ? maskValue(rawValue) : rawValue || "Not set",
       secret: isSecretSettingKey(key),
       source: record ? ("database" as const) : rawValue ? ("env" as const) : ("default" as const),
       updatedAt: record?.updatedAt ?? null,
@@ -205,6 +213,8 @@ export function getSettingLabel(key: AdminSettingKey) {
       return "Stripe secret key";
     case "STRIPE_WEBHOOK_SECRET":
       return "Stripe webhook secret";
+    case "cad_cost_per_quote":
+      return "CAD cost per quote ($)";
   }
 }
 
@@ -218,5 +228,7 @@ export function getSettingHelpText(key: AdminSettingKey) {
       return "Used for Stripe checkout and portal sessions.";
     case "STRIPE_WEBHOOK_SECRET":
       return "Used to verify incoming Stripe webhooks.";
+    case "cad_cost_per_quote":
+      return "Configurable flat fee CAD cost snapshotted on every quote creation.";
   }
 }

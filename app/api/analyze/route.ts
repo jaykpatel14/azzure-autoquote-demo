@@ -168,12 +168,18 @@ export async function POST(request: Request) {
             completionTokens: attemptResult.result.usage?.outputTokens,
             totalTokens: attemptResult.result.usage?.totalTokens,
             metalWeightGrams: attemptResult.result.output.metal_weight_grams,
-            centerDiamondCarats: attemptResult.result.output.center_diamond_weight_ct,
-            sideDiamondCarats: attemptResult.result.output.side_diamond_total_weight_ct,
-            sideDiamondQuantity: attemptResult.result.output.side_diamond_quantity,
+            centerDiamondCarats: attemptResult.result.output.centerStone?.caratWeight ?? 0,
+            sideDiamondCarats: (attemptResult.result.output.sideStones || []).reduce(
+              (acc, ss) => acc + ss.caratWeightEach * ss.count,
+              0
+            ),
+            sideDiamondQuantity: (attemptResult.result.output.sideStones || []).reduce(
+              (acc, ss) => acc + ss.count,
+              0
+            ),
             confidence: attemptResult.result.output.confidence,
             notes: attemptResult.result.output.assumptions.join(" | "),
-            output: attemptResult.result.output,
+            output: attemptResult.result.output as unknown as Prisma.InputJsonValue,
             rawResponse: attemptResult.result.rawResponse as Prisma.InputJsonValue
           }
         });

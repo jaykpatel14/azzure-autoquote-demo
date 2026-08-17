@@ -15,10 +15,21 @@ describe("openai jewelry analysis provider", () => {
         jewelry_type: "ring",
         selected_metal: "14K",
         metal_weight_grams: 6.2,
-        center_diamond_weight_ct: 1.1,
-        side_diamond_total_weight_ct: 0.4,
-        side_diamond_quantity: 12,
-        center_shape: "round",
+        isTwoTone: false,
+        hasWeddingBand: false,
+        centerStone: {
+          shape: "round",
+          caratWeight: 1.1
+        },
+        sideStones: [
+          {
+            shape: "round",
+            caratWeightEach: 0.03,
+            count: 12,
+            settingType: "prong"
+          }
+        ],
+        colorClarity: "E VS1",
         confidence: "high",
         assumptions: ["The image appears to be a ring."]
       }
@@ -38,7 +49,7 @@ describe("openai jewelry analysis provider", () => {
         responses: { parse: parseMock },
         moderations: { create: moderationsMock }
       } as never,
-      { model: "gpt-5-mini", modelVersion: "gpt-5-mini", promptVersion: "jewelry-analysis-v1" }
+      { model: "gpt-5-mini", modelVersion: "gpt-5-mini", promptVersion: "jewelry-analysis-v2" }
     );
 
     const moderation = await provider.moderateImage({
@@ -74,6 +85,8 @@ describe("openai jewelry analysis provider", () => {
     );
     expect(result.responseId).toBe("resp_123");
     expect(result.output.jewelry_type).toBe("ring");
+    expect(result.output.centerStone.caratWeight).toBe(1.1);
+    expect(result.output.colorClarity).toBe("E VS1");
     expect(result.usage).toEqual({
       inputTokens: 120,
       outputTokens: 48,
@@ -106,12 +119,23 @@ describe("openai jewelry analysis provider", () => {
             jewelry_type: "ring",
             selected_metal: "14K",
             metal_weight_grams: 5.8,
-            center_diamond_weight_ct: 1.2,
-            side_diamond_total_weight_ct: 0.5,
-            side_diamond_quantity: 14,
+            isTwoTone: false,
+            hasWeddingBand: false,
+            centerStone: {
+              shape: "round",
+              caratWeight: 1.2
+            },
+            sideStones: [
+              {
+                shape: "round",
+                caratWeightEach: 0.03,
+                count: 14,
+                settingType: "prong"
+              }
+            ],
+            colorClarity: "E VS1",
             confidence: "medium",
-            assumptions: ["The ring appears solid."],
-            center_shape: "round"
+            assumptions: ["The ring appears solid."]
           },
           latencyMs: 12,
           retryCount: 0,
@@ -135,7 +159,7 @@ describe("openai jewelry analysis provider", () => {
     if (result.kind === "success") {
       expect(result.retryCount).toBe(1);
       expect(provider.analyzeImage).toHaveBeenCalledTimes(2);
-      expect(result.result.output.center_diamond_weight_ct).toBe(1.2);
+      expect(result.result.output.centerStone.caratWeight).toBe(1.2);
     }
   });
 });

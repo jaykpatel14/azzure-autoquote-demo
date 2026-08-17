@@ -8,6 +8,7 @@ import { getAuthenticatedCompanyContext, canCreateQuotes } from "@/lib/company";
 import { normalizePricingProfile, resolveMetalPricing } from "@/lib/metal-pricing";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getQuote } from "@/src/services/quotes";
+import { getSettingValue } from "@/lib/app-settings";
 
 type NewQuotePageProps = {
   searchParams?: Promise<{
@@ -82,6 +83,9 @@ export default async function NewQuotePage({ searchParams }: NewQuotePageProps) 
     >
       <QuoteCalculator
         canEdit={canEdit}
+        pricingTier={context.company.pricingTier ?? "TIER_2"}
+        customerMarginPct={context.company.customerMarginPct ?? 0}
+        cadCost={(await getSettingValue("cad_cost_per_quote")) ?? 0}
         pricingProfile={livePricing.pricingProfile}
         pricingSourceLabel={
           livePricing.source === "metals.dev"

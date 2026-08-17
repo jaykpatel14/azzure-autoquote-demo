@@ -3,7 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vit
 import type { Session } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { calculateQuote } from "@/lib/pricing";
-import { calculateTierPrice } from "@/src/services/pricing";
+import { calculateMakingPrice, calculateTierPrice } from "@/src/services/pricing";
 
 const authMock = vi.hoisted(() => vi.fn<() => Promise<Session | null>>());
 const cookiesMock = vi.hoisted(() => vi.fn(async () => ({
@@ -219,30 +219,30 @@ describe("quote route integration", () => {
       where: { id: result.id }
     });
 
-    const expected = calculateQuote(
-      {
-        metalType: payload.metalType,
-        metalWeightGrams: payload.metalWeightGrams,
-        centerDiamondCarats: payload.centerDiamondCarats,
-        sideDiamondCarats: payload.sideDiamondCarats,
-        sideDiamondQuantity: payload.sideDiamondQuantity
+    const expectedMakingPrice = calculateMakingPrice({
+      centerStone: {
+        shape: "round",
+        caratWeight: payload.centerDiamondCarats
       },
-      {
-        goldSpotPerOz: 3000,
-        platinumSpotPerOz: 2000,
-        silverSpotPerOz: 100,
-        cadCharge: 50,
-        centerSettingPerCarat: 20,
-        sideSettingPerStone: 4,
-        sellingMarginDivisor: 0.5,
-        finalMultiplier: 1.5
-      }
-    );
-    const expectedTierPrice = calculateTierPrice(expected.makingCost, "TIER_3");
+      sideStones: [
+        {
+          shape: "round",
+          caratWeightEach: payload.sideDiamondCarats / payload.sideDiamondQuantity,
+          count: payload.sideDiamondQuantity,
+          settingType: "prong"
+        }
+      ],
+      hasWeddingBand: false,
+      isTwoTone: false,
+      colorClarity: "E VS1",
+      cadCost: 0,
+      customerMarginPct: 0
+    });
+    const expectedTierPrice = calculateTierPrice(expectedMakingPrice.makingPrice, "TIER_3");
 
     expect(savedQuote.companyId).toBe(company.companyId);
     expect(Number(savedQuote.estimatedPrice)).toBe(expectedTierPrice.estimatedSellingPrice);
-    expect(Number(savedQuote.makingPrice ?? 0)).toBe(expected.makingCost);
+    expect(Number(savedQuote.makingPrice ?? 0)).toBe(expectedMakingPrice.makingPrice);
     expect(savedQuote.pricingTierSnapshot).toBe("TIER_3");
     expect(Number(savedQuote.metalWeightGrams)).toBe(payload.metalWeightGrams);
     expect(Number(savedQuote.centerDiamondCarats)).toBe(payload.centerDiamondCarats);
