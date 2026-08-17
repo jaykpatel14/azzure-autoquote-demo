@@ -173,10 +173,6 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
                 <strong>{subscription.plan.name}</strong>
               </div>
               <div className="detailRow">
-                <span>Assigned pricing tier</span>
-                <strong>{context.company.pricingTier?.replace("TIER_", "Tier ") ?? "Configuration pending"}</strong>
-              </div>
-              <div className="detailRow">
                 <span>Status</span>
                 <strong>{subscription.status.toLowerCase()}</strong>
               </div>

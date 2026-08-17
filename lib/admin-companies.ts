@@ -1,7 +1,13 @@
-import type { Prisma, PrismaClient, SubscriptionStatus } from "@prisma/client";
+import type { MembershipRole, Prisma, PrismaClient, SubscriptionStatus } from "@prisma/client";
 import { getEffectiveMonthlyLimit } from "@/lib/billing";
 import { generateToken } from "@/lib/tokens";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
+
+const MEMBERSHIP_ROLES: MembershipRole[] = ["OWNER", "ADMIN", "ESTIMATOR", "VIEWER", "CUSTOMER", "MANUFACTURING"];
+
+function resolveMembershipRole(role?: string): MembershipRole {
+  return MEMBERSHIP_ROLES.includes(role as MembershipRole) ? (role as MembershipRole) : "CUSTOMER";
+}
 
 type PrismaCompanyClient =
   | Pick<
@@ -17,6 +23,7 @@ type AdminMemberInput = {
   email: string;
   name?: string | null;
   password?: string | null;
+  role?: string;
 };
 
 type AdminCompanyInput = AdminMemberInput & {
@@ -230,24 +237,26 @@ export async function addAdminCompanyMember(
     throw new Error("That user is already assigned to this company.");
   }
 
+  const role = resolveMembershipRole(input.role);
+
   await client.membership.create({
     data: {
       companyId: company.id,
       userId: user.id,
-      role: "CUSTOMER"
+      role
     }
   });
 
   await client.auditLog.create({
     data: {
       action: "MEMBERSHIP_CREATED",
-      companyId: company.id,
+     companyId: company.id,
       actorUserId: adminUserId,
       targetType: "Membership",
       targetId: user.id,
       metadata: {
         email,
-        role: "CUSTOMER",
+        role,
         userCreated: user.created
       }
     }

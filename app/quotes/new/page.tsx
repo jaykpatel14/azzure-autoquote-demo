@@ -106,6 +106,8 @@ export default async function NewQuotePage({ searchParams }: NewQuotePageProps) 
                 analysisId: sourceQuote.analysisId ?? null,
                 jewelryType: sourceQuote.analysis?.jewelryType ?? null,
                 centerShape: sourceQuote.analysis?.centerShape ?? null,
+                centerClarity: sourceQuote.analysis?.centerClarity ?? null,
+                settingType: sourceQuote.analysis?.settingType ?? null,
                 confidence: sourceQuote.analysis?.confidence ?? null,
                 notes: sourceQuote.analysis?.notes ?? null,
                 assumptions: Array.isArray(sourceQuote.analysis?.assumptions)

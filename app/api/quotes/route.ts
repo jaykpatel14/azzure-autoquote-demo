@@ -44,6 +44,9 @@ const quoteSchema = z.object({
   centerDiamondCarats: z.coerce.number().min(0),
   sideDiamondCarats: z.coerce.number().min(0),
   sideDiamondQuantity: z.coerce.number().int().min(0),
+  centerShape: z.union([z.string().trim().max(120), z.literal("")]).optional(),
+  centerClarity: z.union([z.string().trim().max(120), z.literal("")]).optional(),
+  settingType: z.union([z.string().trim().max(120), z.literal("")]).optional(),
   pricingOverlay: pricingOverlaySchema.optional()
 });
 
@@ -112,6 +115,9 @@ export async function POST(request: Request) {
       centerDiamondCarats: adjustedInput.centerDiamondCarats,
       sideDiamondCarats: adjustedInput.sideDiamondCarats,
       sideDiamondQuantity: adjustedInput.sideDiamondQuantity,
+      centerShape: adjustedInput.centerShape !== undefined ? adjustedInput.centerShape || null : undefined,
+      centerClarity: adjustedInput.centerClarity !== undefined ? adjustedInput.centerClarity || null : undefined,
+      settingType: adjustedInput.settingType !== undefined ? adjustedInput.settingType || null : undefined,
       estimatedPrice: tierPricing.estimatedSellingPrice,
       makingPrice: tierPricing.makingPrice,
       pricingTierSnapshot: tierPricing.tier,

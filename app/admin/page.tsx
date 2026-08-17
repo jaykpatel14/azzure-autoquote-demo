@@ -4,6 +4,7 @@ import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { getAdminOverviewData } from "@/src/services/admin-overview";
+import { resolveMetalPricing } from "@/lib/metal-pricing";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,10 @@ export default async function AdminDashboardPage() {
     redirect("/signin");
   }
 
-  const overview = await getAdminOverviewData();
+  const [overview, livePricing] = await Promise.all([
+    getAdminOverviewData(),
+    resolveMetalPricing()
+  ]);
 
   return (
     <InternalAdminShell
@@ -143,6 +147,34 @@ export default async function AdminDashboardPage() {
             ))}
           </div>
         </article>
+      </section>
+
+      <section className="card">
+        <div className="sectionHeader">
+          <div>
+            <h2>Live community pricing</h2>
+            <p className="muted">Current market spot prices from Metals.dev, refreshed daily in Toronto.</p>
+          </div>
+        </div>
+        <div className="pricingGrid">
+          <div className="detailCard">
+            <span>Gold spot / oz</span>
+            <strong>{Number(livePricing.pricingProfile.goldSpotPerOz).toFixed(2)}</strong>
+          </div>
+          <div className="detailCard">
+            <span>Platinum spot / oz</span>
+            <strong>{Number(livePricing.pricingProfile.platinumSpotPerOz).toFixed(2)}</strong>
+          </div>
+          <div className="detailCard">
+            <span>Silver spot / oz</span>
+            <strong>{Number(livePricing.pricingProfile.silverSpotPerOz).toFixed(2)}</strong>
+          </div>
+          <div className="detailCard">
+            <span>Source</span>
+            <strong>{livePricing.source === "metals.dev" ? "Live feed" : "Fallback"}</strong>
+            <p className="muted small">{livePricing.message?.replace("Live market spot prices loaded from ", "")}</p>
+          </div>
+        </div>
       </section>
 
       <section className="card">

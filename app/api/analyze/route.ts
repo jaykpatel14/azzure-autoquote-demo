@@ -229,6 +229,8 @@ export async function POST(request: Request) {
           sideDiamondQuantity: merged.sideDiamondQuantity,
           confidence: merged.confidence,
           centerShape: merged.centerShape,
+          centerClarity: merged.centerClarity,
+          settingType: merged.settingType,
           assumptions: merged.assumptions,
           notes: merged.notes,
           output: merged

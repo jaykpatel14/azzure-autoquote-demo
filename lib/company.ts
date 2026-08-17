@@ -30,11 +30,12 @@ export class CompanyAccessError extends Error {
   }
 }
 
-export type CompanyRole = MembershipRole | "CUSTOMER";
+export type CompanyRole = MembershipRole | "CUSTOMER" | "MANUFACTURING";
 
 const COMPANY_ROLE_RANK: Record<CompanyRole, number> = {
   VIEWER: 0,
   ESTIMATOR: 1,
+  MANUFACTURING: 1,
   ADMIN: 2,
   OWNER: 3,
   CUSTOMER: 3
@@ -91,6 +92,14 @@ export function canDeleteQuotes(role: CompanyRole | null | undefined) {
 
 export function canViewQuotes(role: CompanyRole | null | undefined) {
   return hasCompanyRole(role, "VIEWER");
+}
+
+export function canViewOrders(role: CompanyRole | null | undefined) {
+  return hasCompanyRole(role, "MANUFACTURING");
+}
+
+export function canManageOrders(role: CompanyRole | null | undefined) {
+  return hasCompanyRole(role, "MANUFACTURING");
 }
 
 export function isCompanyApproved(company: Pick<CompanyMembershipCompany, "accountStatus">) {

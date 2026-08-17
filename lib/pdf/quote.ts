@@ -18,6 +18,8 @@ export type QuotePdfInput = {
   estimatedSellingPrice?: number | null;
   jewelryType?: string | null;
   centerShape?: string | null;
+  centerClarity?: string | null;
+  settingType?: string | null;
   branding?: "azzure_watermark" | "custom_logo" | "white_label";
 };
 
@@ -230,6 +232,8 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
       { label: "Side diamonds", value: `${input.sideDiamondCarats.toFixed(2)} ct total` },
       { label: "Side stone quantity", value: `${input.sideDiamondQuantity}` },
       { label: "Center shape", value: input.centerShape || "Not specified" },
+      { label: "Center clarity", value: input.centerClarity || "Not specified" },
+      { label: "Setting type", value: input.settingType || "Not specified" },
       {
         label: "Final selling price",
         value:

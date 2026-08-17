@@ -26,6 +26,9 @@ type CreateQuoteInput = {
   pricingTierSnapshot?: PricingTier | null;
   tierDivisorSnapshot?: number | null;
   estimatedSellingPrice?: number | null;
+  centerShape?: string | null;
+  centerClarity?: string | null;
+  settingType?: string | null;
 };
 
 type QuotePayload = Quote & {
@@ -40,6 +43,8 @@ type QuotePayload = Quote & {
   analysis: {
     jewelryType: string | null;
     centerShape: string | null;
+    centerClarity: string | null;
+    settingType: string | null;
     confidence: string | null;
     notes: string | null;
     imageDataUrl: string | null;
@@ -136,6 +141,20 @@ export async function createQuote(
       const quote = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const quoteNumber = await allocateQuoteNumber(tx, input.companyId);
 
+        if (
+          analysis &&
+          (input.centerShape !== undefined || input.centerClarity !== undefined || input.settingType !== undefined)
+        ) {
+          await tx.aiAnalysis.update({
+            where: { id: analysis.id },
+            data: {
+              ...(input.centerShape !== undefined ? { centerShape: input.centerShape || null } : {}),
+              ...(input.centerClarity !== undefined ? { centerClarity: input.centerClarity || null } : {}),
+              ...(input.settingType !== undefined ? { settingType: input.settingType || null } : {})
+            }
+          });
+        }
+
         return tx.quote.create({
           data: {
             companyId: input.companyId,
@@ -198,6 +217,8 @@ export async function getQuote(params: {
         select: {
           jewelryType: true,
           centerShape: true,
+          centerClarity: true,
+          settingType: true,
           confidence: true,
           notes: true,
           imageDataUrl: true,

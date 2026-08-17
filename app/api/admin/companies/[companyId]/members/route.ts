@@ -11,6 +11,7 @@ const schema = z.object({
   email: z.string().trim().email("A valid email address is required."),
   name: z.string().optional(),
   password: z.string().optional(),
+  role: z.string().optional().default("CUSTOMER"),
   redirectTo: z.string().optional()
 });
 

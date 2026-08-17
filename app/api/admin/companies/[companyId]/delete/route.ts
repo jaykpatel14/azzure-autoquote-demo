@@ -59,6 +59,24 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
+    // Cascade: delete memberships and orphaned users first to prevent login crashes
+    const memberships = await prisma.membership.findMany({
+      where: {companyId: company.id},
+      select: { userId: true }
+    });
+
+    const userIds = memberships
+      .map((m) => m.userId)
+      .filter((id): id is string => Boolean(id));
+
+    if (userIds.length > 0) {
+      await prisma.$transaction(async (tx) => {
+        await tx.membership.deleteMany({ where: {companyId: company.id} });
+        await tx.auditLog.deleteMany({ where: {companyId: company.id} });
+        await tx.user.deleteMany({ where: { id: { in: userIds } } });
+      });
+    }
+
     await prisma.company.delete({
       where: { id: company.id }
     });

@@ -14,6 +14,8 @@ type FacetOutput = {
   analysisId?: string;
   jewelryType: string;
   centerShape?: string | null;
+  centerClarity?: string | null;
+  settingType?: string | null;
   metalWeightGrams: number;
   centerDiamondCarats: number;
   sideDiamondCarats: number;
@@ -40,6 +42,8 @@ type FacetDraft = {
 type AggregateQuote = {
   jewelryType: string;
   centerShape?: string;
+  centerClarity?: string;
+  settingType?: string;
   metalWeightGrams: number;
   centerDiamondCarats: number;
   sideDiamondCarats: number;
@@ -68,6 +72,8 @@ type QuoteCalculatorProps = {
     analysisId: string | null;
     jewelryType: string | null;
     centerShape: string | null;
+    centerClarity: string | null;
+    settingType: string | null;
     confidence: string | null;
     notes: string | null;
     assumptions: string[] | null;
@@ -202,6 +208,8 @@ export default function QuoteCalculator({
               analysisId: initialQuote.analysisId ?? undefined,
               jewelryType: initialQuote.jewelryType ?? "Jewelry",
               centerShape: initialQuote.centerShape ?? "",
+              centerClarity: initialQuote.centerClarity ?? "",
+              settingType: initialQuote.settingType ?? "",
               metalWeightGrams: initialQuote.metalWeightGrams,
               centerDiamondCarats: initialQuote.centerDiamondCarats,
               sideDiamondCarats: initialQuote.sideDiamondCarats,
@@ -262,6 +270,8 @@ export default function QuoteCalculator({
     return {
       jewelryType: chooseMode(outputs.map((output) => output.jewelryType)) || "Jewelry",
       centerShape: chooseMode(outputs.map((output) => output.centerShape ?? "").filter(Boolean)) || undefined,
+      centerClarity: chooseMode(outputs.map((output) => output.centerClarity ?? "").filter(Boolean)) || undefined,
+      settingType: chooseMode(outputs.map((output) => output.settingType ?? "").filter(Boolean)) || undefined,
       metalWeightGrams: Number(median(outputs.map((output) => output.metalWeightGrams)).toFixed(2)),
       centerDiamondCarats: Number(median(outputs.map((output) => output.centerDiamondCarats)).toFixed(2)),
       sideDiamondCarats: Number(median(outputs.map((output) => output.sideDiamondCarats)).toFixed(2)),
@@ -421,6 +431,8 @@ export default function QuoteCalculator({
           analysisId: result.analysisId,
           jewelryType: result.jewelryType || "Jewelry",
           centerShape: result.centerShape ?? "",
+          centerClarity: result.centerClarity ?? "",
+          settingType: result.settingType ?? "",
           metalWeightGrams: result.metalWeightGrams,
           centerDiamondCarats: result.centerDiamondCarats,
           sideDiamondCarats: result.sideDiamondCarats,
@@ -503,6 +515,9 @@ export default function QuoteCalculator({
         centerDiamondCarats: aggregateQuote.centerDiamondCarats,
         sideDiamondCarats: aggregateQuote.sideDiamondCarats,
         sideDiamondQuantity: aggregateQuote.sideDiamondQuantity,
+        centerShape: aggregateQuote.centerShape ?? "",
+        centerClarity: aggregateQuote.centerClarity ?? "",
+        settingType: aggregateQuote.settingType ?? "",
         pricingOverlay: customerPricingOverlay
       })
     });
@@ -831,6 +846,25 @@ export default function QuoteCalculator({
                           value={facet.output.centerShape ?? ""}
                           onChange={(event) => updateFacetOutput(facet.id, "centerShape", event.target.value)}
                           disabled={!canEdit}
+                          placeholder="e.g. Round"
+                        />
+                      </label>
+                      <label className="facetResolvedField">
+                        <span>Clarity</span>
+                        <input
+                          value={facet.output.centerClarity ?? ""}
+                          onChange={(event) => updateFacetOutput(facet.id, "centerClarity", event.target.value)}
+                          disabled={!canEdit}
+                          placeholder="e.g. VS1"
+                        />
+                      </label>
+                      <label className="facetResolvedField">
+                        <span>Setting type</span>
+                        <input
+                          value={facet.output.settingType ?? ""}
+                          onChange={(event) => updateFacetOutput(facet.id, "settingType", event.target.value)}
+                          disabled={!canEdit}
+                          placeholder="e.g. Prong"
                         />
                       </label>
                       <label className="facetResolvedField">
