@@ -278,24 +278,25 @@ export async function getQuoteHistoryPage(params: {
       where: { companyId: params.companyId },
       orderBy: { createdAt: "desc" },
       select: {
-      id: true,
-      quoteNumber: true,
-      customerName: true,
-      metalType: true,
-      estimatedPrice: true,
-      estimatedSellingPrice: true,
-      createdAt: true,
-      pdfStoredAt: true,
-      analysis: {
-        select: {
-          imageDataUrl: true
+        id: true,
+        quoteNumber: true,
+        customerName: true,
+        metalType: true,
+        estimatedPrice: true,
+        estimatedSellingPrice: true,
+        createdAt: true,
+        pdfStoredAt: true,
+        analysis: {
+          select: {
+            imageDataUrl: true,
+            sourceImageStorageKey: true
+          }
+        },
+        order: {
+          select: {
+            id: true
+          }
         }
-      },
-      order: {
-        select: {
-          id: true
-        }
-      }
       }
     }),
     prisma.aiAnalysis.findMany({
@@ -307,7 +308,8 @@ export async function getQuoteHistoryPage(params: {
         status: true,
         errorMessage: true,
         createdAt: true,
-        imageDataUrl: true
+        imageDataUrl: true,
+        sourceImageStorageKey: true
       }
     })
   ]);
@@ -322,7 +324,11 @@ export async function getQuoteHistoryPage(params: {
       estimatedPrice: Number(quote.estimatedSellingPrice ?? quote.estimatedPrice),
       createdAt: quote.createdAt,
       pdfStoredAt: quote.pdfStoredAt,
-      thumbnailUrl: quote.analysis?.imageDataUrl ?? null,
+      thumbnailUrl: quote.analysis
+        ? quote.analysis.sourceImageStorageKey
+          ? `/api/quotes/${quote.id}/image`
+          : quote.analysis.imageDataUrl ?? null
+        : null,
       status: deriveQuoteStatus(quote),
       displayStatus: deriveQuoteStatus(quote)
     })),
@@ -335,7 +341,9 @@ export async function getQuoteHistoryPage(params: {
       estimatedPrice: null,
       createdAt: analysis.createdAt,
       pdfStoredAt: null,
-      thumbnailUrl: analysis.imageDataUrl,
+      thumbnailUrl: analysis.sourceImageStorageKey
+        ? `/api/analyze/${analysis.id}/image`
+        : analysis.imageDataUrl ?? null,
       status: "draft" as const,
       displayStatus:
         analysis.status === "FAILED"

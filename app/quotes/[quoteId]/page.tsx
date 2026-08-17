@@ -172,8 +172,12 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
             </div>
           ) : null}
 
-          {quote.analysis?.imageDataUrl ? (
-            <img className="quoteDetailImage" src={quote.analysis.imageDataUrl} alt={`${quote.metalType} jewelry for quote ${quote.quoteNumber}`} />
+          {quote.analysis?.sourceImageStorageKey || quote.analysis?.imageDataUrl ? (
+            <img
+              className="quoteDetailImage"
+              src={quote.analysis.sourceImageStorageKey ? `/api/quotes/${quote.id}/image` : (quote.analysis.imageDataUrl ?? "")}
+              alt={`${quote.metalType} jewelry for quote ${quote.quoteNumber}`}
+            />
           ) : null}
 
           {status === "sent" && !quote.order ? (

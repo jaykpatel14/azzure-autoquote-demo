@@ -104,7 +104,9 @@ export default async function NewQuotePage({ searchParams }: NewQuotePageProps) 
                 centerDiamondCarats: Number(sourceQuote.centerDiamondCarats),
                 sideDiamondCarats: Number(sourceQuote.sideDiamondCarats),
                 sideDiamondQuantity: sourceQuote.sideDiamondQuantity,
-                imageDataUrl: sourceQuote.analysis?.imageDataUrl ?? null,
+                imageDataUrl: sourceQuote.analysis?.sourceImageStorageKey
+                  ? `/api/quotes/${sourceQuote.id}/image`
+                  : (sourceQuote.analysis?.imageDataUrl ?? null),
                 analysisId: sourceQuote.analysisId ?? null,
                 jewelryType: sourceQuote.analysis?.jewelryType ?? null,
                 centerShape: sourceQuote.analysis?.centerShape ?? null,

@@ -45,7 +45,16 @@ export function buildAppUrl(path: string, baseUrl = getAppUrl()) {
 export async function resolveCheckoutPriceId(
   plan: Pick<Plan, "code" | "stripePriceId" | "stripeProductId">
 ) {
-  const candidate = plan.stripePriceId || plan.stripeProductId;
+  let candidate = plan.stripePriceId || plan.stripeProductId;
+  if (!candidate) {
+    const envPriceKey = `STRIPE_${plan.code.toUpperCase()}_PRICE_ID`;
+    const envProductKey = `STRIPE_${plan.code.toUpperCase()}_PRODUCT_ID`;
+    candidate =
+      (await resolveRuntimeSetting(envPriceKey, process.env[envPriceKey])) ||
+      (await resolveRuntimeSetting(envProductKey, process.env[envProductKey])) ||
+      null;
+  }
+
   if (!candidate) {
     return null;
   }
@@ -68,7 +77,7 @@ export async function resolveCheckoutPriceId(
     }
   }
 
-  return null;
+  return candidate;
 }
 
 type CheckoutCustomerResolverInput = {
