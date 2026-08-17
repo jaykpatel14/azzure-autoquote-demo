@@ -58,16 +58,20 @@ export async function storeQuotePdfInS3({ key, buffer, contentType = "applicatio
     return null;
   }
 
-  await getS3Client().send(
-    new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: buffer,
-      ContentType: contentType
-    })
-  );
+  try {
+    await getS3Client().send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType
+      })
+    );
 
-  return { bucket, key };
+    return { bucket, key };
+  } catch {
+    return null;
+  }
 }
 
 export async function loadQuotePdfFromS3(key: string) {
@@ -76,28 +80,36 @@ export async function loadQuotePdfFromS3(key: string) {
     return null;
   }
 
-  const response = await getS3Client().send(
-    new GetObjectCommand({
-      Bucket: bucket,
-      Key: key
-    })
-  );
+  try {
+    const response = await getS3Client().send(
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: key
+      })
+    );
 
-  const body = response.Body;
-  if (!body || typeof body !== "object" || !("transformToByteArray" in body)) {
+    const body = response.Body;
+    if (!body || typeof body !== "object" || !("transformToByteArray" in body)) {
+      return null;
+    }
+
+    const bytes = await body.transformToByteArray();
+    return Buffer.from(bytes);
+  } catch {
     return null;
   }
-
-  const bytes = await body.transformToByteArray();
-  return Buffer.from(bytes);
 }
 
 export async function deleteQuotePdfFromS3(key: string) {
   const bucket = getQuotePdfBucketName();
   if (!bucket) return null;
 
-  await getS3Client().send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
-  return { bucket, key };
+  try {
+    await getS3Client().send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+    return { bucket, key };
+  } catch {
+    return null;
+  }
 }
 
 async function streamToBuffer(body: Readable | { transformToByteArray: () => Promise<Uint8Array> } | undefined) {
@@ -127,16 +139,20 @@ export async function storeAnalysisImageInS3({
     return null;
   }
 
-  await getS3Client().send(
-    new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: buffer,
-      ContentType: contentType
-    })
-  );
+  try {
+    await getS3Client().send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType
+      })
+    );
 
-  return { bucket, key };
+    return { bucket, key };
+  } catch {
+    return null;
+  }
 }
 
 export async function loadAnalysisImageFromS3(key: string) {
@@ -145,14 +161,18 @@ export async function loadAnalysisImageFromS3(key: string) {
     return null;
   }
 
-  const response = await getS3Client().send(
-    new GetObjectCommand({
-      Bucket: bucket,
-      Key: key
-    })
-  );
+  try {
+    const response = await getS3Client().send(
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: key
+      })
+    );
 
-  return streamToBuffer(response.Body as never);
+    return streamToBuffer(response.Body as never);
+  } catch {
+    return null;
+  }
 }
 
 export async function loadAnalysisImageDataUrlFromS3(params: {

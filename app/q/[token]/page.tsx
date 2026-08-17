@@ -43,7 +43,8 @@ export default async function PublicQuotePage({
       },
       analysis: {
         select: {
-          imageDataUrl: true
+          imageDataUrl: true,
+          sourceImageStorageKey: true
         }
       }
     }
@@ -88,10 +89,10 @@ export default async function PublicQuotePage({
         </header>
 
         <section className="publicQuoteBody">
-          {quote.analysis?.imageDataUrl ? (
+          {quote.analysis?.sourceImageStorageKey || quote.analysis?.imageDataUrl ? (
             <img
               className="publicQuoteImage"
-              src={quote.analysis.imageDataUrl}
+              src={quote.analysis.sourceImageStorageKey ? `/q/${token}/image` : (quote.analysis.imageDataUrl ?? "")}
               alt={`${quote.metalType} jewelry for quote ${quote.quoteNumber}`}
             />
           ) : null}

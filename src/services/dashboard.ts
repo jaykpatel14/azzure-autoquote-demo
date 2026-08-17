@@ -72,7 +72,8 @@ export async function getDashboardData(companyId: string): Promise<DashboardData
         pdfStoredAt: true,
         analysis: {
           select: {
-            imageDataUrl: true
+            imageDataUrl: true,
+            sourceImageStorageKey: true
           }
         },
         order: {
@@ -128,7 +129,11 @@ export async function getDashboardData(companyId: string): Promise<DashboardData
     estimatedPrice: Number(quote.estimatedPrice),
     createdAt: quote.createdAt,
     pdfStoredAt: quote.pdfStoredAt,
-    thumbnailUrl: quote.analysis?.imageDataUrl ?? null,
+    thumbnailUrl: quote.analysis
+      ? quote.analysis.sourceImageStorageKey
+        ? `/api/quotes/${quote.id}/image`
+        : quote.analysis.imageDataUrl ?? null
+      : null,
     status: deriveQuoteStatus(quote),
     displayStatus: deriveQuoteStatus(quote)
   }));
