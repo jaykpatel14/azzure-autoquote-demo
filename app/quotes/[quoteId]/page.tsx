@@ -8,6 +8,7 @@ import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { deriveQuoteStatus, getBrandedQuotePublicUrl, getQuotePublicUrl, getQuote } from "@/src/services/quotes";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
+import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -57,6 +58,9 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
   }
 
   const quote = result.data;
+  const renderingDataUrl = quote.renderingStorageKey
+    ? await loadQuoteRenderingDataUrlFromS3(quote.renderingStorageKey)
+    : quote.renderingDataUrl;
   const status = deriveQuoteStatus(quote);
   const subscription = context.company.subscription;
   const canShare = Boolean(subscription && getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status)).canShareQuoteLink);
@@ -83,6 +87,15 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
             </div>
             <StatusBadge status={status} />
           </div>
+          {renderingDataUrl ? (
+            <div className="detailCard detailCard--stacked" style={{ marginBottom: "1rem" }}>
+              <span>Realistic design visualization</span>
+              <img className="quoteDetailImage" src={renderingDataUrl} alt={`AI design visualization for quote ${quote.quoteNumber}`} />
+              <p className="muted small">AI-generated design visualization. Appearance is illustrative and may differ from the finished product.</p>
+            </div>
+          ) : quote.renderingStatus === "FAILED" ? (
+            <p className="fieldError">The presentation rendering could not be generated.</p>
+          ) : null}
           <div className="detailStack">
             <div className="detailRow">
               <span>Quote number</span>

@@ -52,6 +52,11 @@ export function buildAnalysisImageStorageKey(companyId: string, analysisId: stri
   return `analysis/${companyId}/${safeAnalysisId}.${getFileExtensionForMimeType(mimeType)}`;
 }
 
+export function buildQuoteRenderingStorageKey(companyId: string, quoteId: string) {
+  const safeQuoteId = quoteId.replace(/[^a-zA-Z0-9._-]+/g, "_");
+  return `renderings/${companyId}/${safeQuoteId}.jpg`;
+}
+
 export async function storeQuotePdfInS3({ key, buffer, contentType = "application/pdf" }: QuotePdfStorageInput) {
   const bucket = getQuotePdfBucketName();
   if (!bucket) {
@@ -137,6 +142,14 @@ export async function storeAnalysisImageInS3({
   );
 
   return { bucket, key };
+}
+
+export async function storeQuoteRenderingInS3(input: QuotePdfStorageInput) {
+  return storeAnalysisImageInS3(input);
+}
+
+export async function loadQuoteRenderingDataUrlFromS3(key: string) {
+  return loadAnalysisImageDataUrlFromS3({ key, mimeType: "image/jpeg" });
 }
 
 export async function loadAnalysisImageFromS3(key: string) {

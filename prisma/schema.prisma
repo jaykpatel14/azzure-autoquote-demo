@@ -30,6 +30,13 @@ enum AnalysisStatus {
   FAILED
 }
 
+enum RenderingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 enum OrderStatus {
   SUBMITTED
   CK_ORDER_PLACED
@@ -281,6 +288,13 @@ model Quote {
   pdfStorageKey         String?     @unique
   pdfStoredAt           DateTime?
   pdfContentType        String?     @default("application/pdf")
+  renderingStatus       RenderingStatus @default(PENDING)
+  renderingStorageKey   String?     @unique
+  renderingDataUrl      String?
+  renderingMimeType     String?     @default("image/jpeg")
+  renderingModel        String?
+  renderingError        String?
+  renderingCreatedAt    DateTime?
   createdAt             DateTime    @default(now())
   company               Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   analysis              AiAnalysis? @relation(fields: [analysisId], references: [id])

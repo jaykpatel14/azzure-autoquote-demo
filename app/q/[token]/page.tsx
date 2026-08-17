@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,8 @@ export default async function PublicQuotePage({
       estimatedSellingPrice: true,
       sharedAt: true,
       createdAt: true,
+      renderingStorageKey: true,
+      renderingDataUrl: true,
       company: {
         select: {
           name: true,
@@ -54,6 +57,9 @@ export default async function PublicQuotePage({
   }
 
   const headerList = await headers();
+  const renderingDataUrl = quote.renderingStorageKey
+    ? await loadQuoteRenderingDataUrlFromS3(quote.renderingStorageKey)
+    : quote.renderingDataUrl;
   const isBranded = headerList.get("x-tenant-slug") === quote.company.slug;
 
   const expiresAt = quote.sharedAt ? new Date(quote.sharedAt.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
@@ -88,6 +94,16 @@ export default async function PublicQuotePage({
         </header>
 
         <section className="publicQuoteBody">
+          {renderingDataUrl ? (
+            <div>
+              <img
+                className="publicQuoteImage"
+                src={renderingDataUrl}
+                alt={`AI design visualization for quote ${quote.quoteNumber}`}
+              />
+              <p className="muted small">AI-generated design visualization. Appearance is illustrative and may differ from the finished product.</p>
+            </div>
+          ) : null}
           {quote.analysis?.imageDataUrl ? (
             <img
               className="publicQuoteImage"

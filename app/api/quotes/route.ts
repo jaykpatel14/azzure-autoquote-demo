@@ -19,6 +19,7 @@ import { createQuote } from "@/src/services/quotes";
 import { calculateTierPrice } from "@/src/services/pricing";
 import { assertBillableSubscription, BillingAccessError } from "@/lib/billing";
 import { assertPlanFeature, getCompanyPlanFeatures, PlanError } from "@/src/stripe/plans";
+import { generateQuoteRendering } from "@/lib/ai/quote-rendering";
 
 const quoteModes = ["normal", "without-center", "without-center-and-side"] as const;
 
@@ -132,10 +133,17 @@ export async function POST(request: Request) {
       );
     }
 
+    const rendering = await generateQuoteRendering({
+      quoteId: quoteResult.data.id,
+      companyId: company.id
+    });
+
     return NextResponse.json({
       id: quoteResult.data.id,
       quoteNumber: quoteResult.data.quoteNumber,
-      estimatedPrice: Number(quoteResult.data.estimatedPrice)
+      estimatedPrice: Number(quoteResult.data.estimatedPrice),
+      renderingStatus: rendering.status,
+      renderingError: rendering.status === "FAILED" ? "The quote was saved, but its rendering could not be generated." : undefined
     });
   } catch (error) {
     if (error instanceof PlanError || error instanceof BillingAccessError) {

@@ -6,6 +6,7 @@ export type QuotePdfInput = {
   createdAt: Date;
   customerName?: string | null;
   customerImageDataUrl?: string | null;
+  renderingDataUrl?: string | null;
   metalType: string;
   metalWeightGrams: number;
   centerDiamondCarats: number;
@@ -289,6 +290,24 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
         noteTop + 84,
         { align: "center", width: doc.page.width - 96 }
       );
+
+    if (input.renderingDataUrl?.trim()) {
+      doc.addPage();
+      doc.rect(0, 0, doc.page.width, doc.page.height).fill("#f5f3ef");
+      doc.font("Helvetica-Bold").fontSize(20).fillColor("#111827").text("Design visualization", 48, 42);
+      doc.font("Helvetica").fontSize(9).fillColor("#6b7280").text(`Quote ${input.quoteNumber}`, 48, 68);
+      doc.image(input.renderingDataUrl, 48, 96, {
+        fit: [doc.page.width - 96, doc.page.height - 190],
+        align: "center",
+        valign: "center"
+      });
+      doc.font("Helvetica").fontSize(8.5).fillColor("#6b7280").text(
+        "AI-generated design visualization. Appearance is illustrative and may differ from the finished product.",
+        48,
+        doc.page.height - 66,
+        { width: doc.page.width - 96, align: "center" }
+      );
+    }
 
     doc.end();
   });

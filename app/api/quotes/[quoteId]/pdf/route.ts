@@ -11,6 +11,7 @@ import {
   deleteQuotePdfFromS3,
   buildQuotePdfStorageKey,
   loadAnalysisImageDataUrlFromS3,
+  loadQuoteRenderingDataUrlFromS3,
   storeQuotePdfInS3
 } from "@/lib/quote-pdf-s3";
 import { getQuote } from "@/src/services/quotes";
@@ -46,19 +47,23 @@ export async function GET(_request: Request, { params }: RouteContext) {
       );
     }
 
-    const customerImageDataUrl = quoteResult.data.analysis?.sourceImageStorageKey
+    const sourceImageDataUrl = quoteResult.data.analysis?.sourceImageStorageKey
       ? (await loadAnalysisImageDataUrlFromS3({
           key: quoteResult.data.analysis.sourceImageStorageKey,
           mimeType: quoteResult.data.analysis.sourceImageMimeType || "image/jpeg"
         })) || quoteResult.data.analysis.imageDataUrl
       : quoteResult.data.analysis?.imageDataUrl;
+    const renderingDataUrl = quoteResult.data.renderingStorageKey
+      ? await loadQuoteRenderingDataUrlFromS3(quoteResult.data.renderingStorageKey)
+      : quoteResult.data.renderingDataUrl;
 
     const pdfBuffer = await generateQuotePdfBuffer({
       companyName: quoteResult.data.company.name,
       quoteNumber: quoteResult.data.quoteNumber,
       createdAt: quoteResult.data.createdAt,
       customerName: quoteResult.data.customerName?.trim() || quoteResult.data.company.name || context.user.name || "Customer",
-      customerImageDataUrl,
+      customerImageDataUrl: sourceImageDataUrl,
+      renderingDataUrl,
       metalType: quoteResult.data.metalType,
       metalWeightGrams: Number(quoteResult.data.metalWeightGrams),
       centerDiamondCarats: Number(quoteResult.data.centerDiamondCarats),

@@ -501,7 +501,7 @@ export default function QuoteCalculator({
     }
 
     setSaving(true);
-    setStatus("Saving quote...");
+    setStatus("Creating quote and realistic presentation rendering...");
 
     const response = await fetch("/api/quotes", {
       method: "POST",
@@ -522,7 +522,13 @@ export default function QuoteCalculator({
       })
     });
 
-    const result = (await response.json().catch(() => ({}))) as { id?: string; quoteNumber?: string; error?: string };
+    const result = (await response.json().catch(() => ({}))) as {
+      id?: string;
+      quoteNumber?: string;
+      error?: string;
+      renderingStatus?: "COMPLETED" | "FAILED";
+      renderingError?: string;
+    };
     if (!response.ok) {
       setStatus(result.error || "Unable to save quote.");
       showToast({
@@ -536,10 +542,18 @@ export default function QuoteCalculator({
 
     if (result.id && result.quoteNumber) {
       setSavedQuote({ id: result.id, quoteNumber: result.quoteNumber });
-      setStatus(`Quote ${result.quoteNumber} saved. You can download the PDF or open the public view.`);
+      const renderingFailed = result.renderingStatus === "FAILED";
+      setStatus(
+        renderingFailed
+          ? `Quote ${result.quoteNumber} saved, but its rendering could not be created. You can still download the quote.`
+          : `Quote ${result.quoteNumber} and its realistic rendering are ready. You can download the PDF or open the public view.`
+      );
       showToast({
-        message: `Quote ${result.quoteNumber} saved successfully.`,
-        variant: "success"
+        message: renderingFailed
+          ? `Quote ${result.quoteNumber} saved without a rendering.`
+          : `Quote ${result.quoteNumber} and rendering created successfully.`,
+        variant: renderingFailed ? "warning" : "success",
+        autoDismiss: !renderingFailed
       });
       if (options?.resetDraftAfterSave) {
         setDraftIsFresh(true);
@@ -941,7 +955,7 @@ export default function QuoteCalculator({
               disabled={!canEdit || saving || !aggregateQuote || draftIsFresh}
               onClick={() => persistQuote({ resetDraftAfterSave: false })}
             >
-              {saving ? "Saving..." : "Save current draft"}
+              {saving ? "Creating quote and rendering..." : "Get the quote"}
             </button>
             {savedQuote ? (
               <a className="button secondary" href={`/api/quotes/${savedQuote.id}/pdf`} target="_blank" rel="noreferrer">
