@@ -4,6 +4,7 @@ import { addAdminCompanyMember } from "@/lib/admin-companies";
 import { requireInternalAdminContext, InternalAdminAccessError } from "@/lib/internal-admin";
 import { prisma } from "@/lib/prisma";
 import { buildPublicUrl } from "@/lib/security";
+import { MembershipRole } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,7 @@ const schema = z.object({
   email: z.string().trim().email("A valid email address is required."),
   name: z.string().optional(),
   password: z.string().optional(),
-  role: z.string().optional().default("CUSTOMER"),
+  role: z.nativeEnum(MembershipRole).optional().default("CUSTOMER"),
   redirectTo: z.string().optional()
 });
 
@@ -26,6 +27,7 @@ async function parseInput(request: Request) {
     email: String(formData.get("email") || ""),
     name: String(formData.get("name") || ""),
     password: String(formData.get("password") || ""),
+    role: String(formData.get("role") || "CUSTOMER"),
     redirectTo: String(formData.get("redirectTo") || "")
   });
 }
@@ -46,7 +48,8 @@ export async function POST(request: Request, context: RouteContext) {
       await addAdminCompanyMember(client, admin.user.id, companyId, {
         email: input.email,
         name: input.name,
-        password: input.password
+        password: input.password,
+        role: input.role
       });
     });
 

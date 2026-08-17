@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient, SubscriptionStatus } from "@prisma/client";
+import type { MembershipRole, Prisma, PrismaClient, SubscriptionStatus } from "@prisma/client";
 import { getEffectiveMonthlyLimit } from "@/lib/billing";
 import { generateToken } from "@/lib/tokens";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
@@ -17,7 +17,7 @@ type AdminMemberInput = {
   email: string;
   name?: string | null;
   password?: string | null;
-  role?: string;
+  role?: MembershipRole;
 };
 
 type AdminCompanyInput = AdminMemberInput & {
