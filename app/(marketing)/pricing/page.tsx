@@ -169,7 +169,7 @@ export default function PricingPage() {
           </div>
         </div>
 
-        <div className="tableShell pricingTableShell">
+        <div className="pricingTableShell">
           <table className="featureTable">
             <thead>
               <tr>

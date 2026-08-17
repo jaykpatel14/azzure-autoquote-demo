@@ -41,6 +41,8 @@ export type JewelryAnalysisRun = {
     sideDiamondCarats: number;
     sideDiamondQuantity: number;
     centerShape?: string;
+    centerClarity?: string;
+    settingType?: string;
     confidence: "low" | "medium" | "high";
     assumptions: string[];
     notes: string;
@@ -197,6 +199,10 @@ export function aggregateJewelryAnalysis(outputs: JewelryAnalysis[], selectedMet
     sideDiamondQuantity: Math.round(median(outputs.map((output) => output.side_diamond_quantity))),
     centerShape:
       chooseMode(outputs.map((output) => output.center_shape).filter(Boolean) as string[]) || undefined,
+    centerClarity:
+      chooseMode(outputs.map((output) => output.center_clarity).filter(Boolean) as string[]) || undefined,
+    settingType:
+      chooseMode(outputs.map((output) => output.setting_type).filter(Boolean) as string[]) || undefined,
     confidence: mergeConfidence(outputs.map((output) => output.confidence)),
     assumptions: mergeAssumptions(outputs),
     notes: outputs.length

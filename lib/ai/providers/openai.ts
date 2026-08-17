@@ -49,7 +49,10 @@ function buildPrompt(selectedMetal: string, attemptNumber: number) {
     "Estimate the piece from the image and return a cautious preliminary assessment.",
     "Never claim exact manufacturing precision.",
     "Return jewelry_type, selected_metal, metal_weight_grams, center_diamond_weight_ct,",
-    "side_diamond_total_weight_ct, side_diamond_quantity, optional center_shape, confidence, and assumptions."
+    "side_diamond_total_weight_ct, side_diamond_quantity, optional center_shape (e.g. round, princess,",
+    "cushion, emerald, oval, pear, marquise, radiant, asscher, heart), optional center_clarity",
+    "(a standard GIA-style grade such as FL, IF, VVS1, VVS2, VS1, VS2, SI1, SI2, or I1-I3),",
+    "optional setting_type (e.g. prong, bezel, pave, halo, channel, tension, cluster), confidence, and assumptions."
   ].join(" ");
 }
 

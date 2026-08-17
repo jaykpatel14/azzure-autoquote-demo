@@ -205,6 +205,8 @@ model AiAnalysis {
   selectedMetal         String
   jewelryType           String?
   centerShape           String?
+  centerClarity         String?
+  settingType           String?
   assumptions           Json?
   moderationModel       String?
   moderationFlagged     Boolean        @default(false)

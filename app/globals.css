@@ -2318,6 +2318,14 @@ select:focus,
 
 .pricingTableShell {
   overflow-x: auto;
+  background:
+    linear-gradient(to right, rgba(255, 255, 255, 0.92) 0%, transparent 24px) left,
+    linear-gradient(to left, rgba(255, 255, 255, 0.92) 0%, transparent 24px) right,
+    radial-gradient(farthest-side at 0% 50%, rgba(28, 28, 30, 0.12), transparent) left,
+    radial-gradient(farthest-side at 100% 50%, rgba(28, 28, 30, 0.12), transparent) right;
+  background-repeat: no-repeat;
+  background-size: 24px 100%, 24px 100%, 12px 100%, 12px 100%;
+  background-attachment: local, local, scroll, scroll;
 }
 
 .featureTable {
@@ -2339,6 +2347,7 @@ select:focus,
   font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .featureTable tbody th {
@@ -2347,6 +2356,18 @@ select:focus,
   font-family: var(--font-ui);
   font-size: 1rem;
   font-weight: 500;
+}
+
+.featureTable th:first-child,
+.featureTable td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: rgba(255, 255, 255, 0.92);
+}
+
+.featureTable td:not(:first-child) {
+  white-space: nowrap;
 }
 
 .featureSection {

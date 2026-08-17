@@ -69,7 +69,9 @@ export async function GET(_request: Request, { params }: RouteContext) {
         ? Number(quoteResult.data.estimatedSellingPrice)
         : null,
       jewelryType: quoteResult.data.analysis?.jewelryType,
-      centerShape: quoteResult.data.analysis?.centerShape
+      centerShape: quoteResult.data.analysis?.centerShape,
+      centerClarity: quoteResult.data.analysis?.centerClarity,
+      settingType: quoteResult.data.analysis?.settingType
       ,branding: features.pdfBranding
     });
 
