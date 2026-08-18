@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { getCompanyPlanFeatures } from "@/src/stripe/plans";
 
 export function normalizeShowroomCode(value: string) {
   const compact = value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -18,14 +17,14 @@ export async function getActiveShowroom(token: string) {
     include: { company: true }
   });
   if (!session?.isActive || session.company.accountStatus !== "APPROVED") return null;
-  const { features } = await getCompanyPlanFeatures(session.companyId).catch(() => ({ features: null }));
-  if (!features?.canUseShowroomMode) return null;
   return session;
 }
 
 export async function nextShowroomCode(companyId: string) {
   const latest = await prisma.showroomQuote.findFirst({
-    where: { companyId }, orderBy: { displayCode: "desc" }, select: { displayCode: true }
+    where: { companyId },
+    orderBy: { displayCode: "desc" },
+    select: { displayCode: true }
   });
   const next = Math.min(9999, Number(latest?.displayCode.slice(3) || 0) + 1);
   return `QT-${String(next).padStart(4, "0")}`;
