@@ -135,8 +135,9 @@ async function buildMetalsDevUrl() {
   const baseUrl =
     (await resolveRuntimeSetting("METALS_DEV_BASE_URL", process.env.METALS_DEV_BASE_URL)) ||
     METALS_DEV_BASE_URL;
-  const apiKey =
+  const rawKey =
     (await resolveRuntimeSetting("METALS_DEV_API_KEY", process.env.METALS_DEV_API_KEY)) || null;
+  const apiKey = rawKey ? rawKey.replace(/^['"]|['"]$/g, "").trim() : null;
   const currency =
     (await resolveRuntimeSetting("METALS_DEV_CURRENCY", process.env.METALS_DEV_CURRENCY)) || "USD";
   const unit =
@@ -195,7 +196,8 @@ export async function resolveMetalPricing(
   try {
     const response = await fetch(url, {
       headers: {
-        Accept: "application/json"
+        Accept: "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AzzureAutoQuote/2.0"
       },
       cache: "no-store"
     });
@@ -203,6 +205,7 @@ export async function resolveMetalPricing(
     if (!response.ok) {
       throw new Error(`Metals.dev request failed with status ${response.status}.`);
     }
+
 
     const payload = (await response.json()) as MetalsDevLatestResponse;
     if (payload.status !== "success" || !payload.metals) {

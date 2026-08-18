@@ -191,12 +191,14 @@ export default function QuoteCalculator({
   pricingTier = "TIER_2",
   customerMarginPct = 0,
   cadCost = 0,
+  pricingProfile,
   initialQuote,
   companyName,
   companyLogoUrl,
   canShareQuoteLink = false,
   canPlaceManufacturingOrder = false
 }: QuoteCalculatorProps) {
+
   const [metalType, setMetalType] = useState<MetalType>(initialQuote?.metalType ?? "14K");
   const [quoteMode, setQuoteMode] = useState<QuoteMode>("normal");
   const [customerName, setCustomerName] = useState(initialQuote?.customerName ?? "");
@@ -420,10 +422,15 @@ export default function QuoteCalculator({
 
     try {
       const breakdown = calculateProductionCost({
+        metalType,
+        metalWeightGrams: aggregateQuote.metalWeightGrams,
+        goldSpotPerOz: pricingProfile?.goldSpotPerOz ?? 4500,
         centerStone: {
           shape: aggregateQuote.centerShape || "round",
           caratWeight: centerCarat
         },
+
+
         sideStones,
         hasWeddingBand: aggregateQuote.hasWeddingBand,
         isTwoTone: aggregateQuote.isTwoTone,

@@ -48,9 +48,10 @@ export function isCenterStoneStandardShape(shape: string): boolean {
 }
 
 export function centerStoneCost(caratWeight: number, shape: string): number {
-  const pricePerCarat = isCenterStoneStandardShape(shape) ? 1.25 : 1.75;
+  const pricePerCarat = isCenterStoneStandardShape(shape) ? 125 : 175;
   return caratWeight * pricePerCarat;
 }
+
 
 export function isSideStoneRound(shape: string): boolean {
   if (!shape) return false;
@@ -119,6 +120,10 @@ export function polishingCost(input: WaxInput): number {
 }
 
 export type MakingPriceInput = {
+  metalType?: string;
+  metalWeightGrams?: number;
+  goldSpotPerOz?: number;
+
   // Center stone
   centerStone: {
     shape: string;
@@ -148,6 +153,7 @@ export type MakingPriceInput = {
 };
 
 export type MakingPriceBreakdown = {
+  metalCost: number;
   // Stone costs
   centerStoneCost: number;
   sideStoneCost: number;
@@ -168,6 +174,23 @@ export type MakingPriceBreakdown = {
   colorClarity: "E VS1";
 };
 
+export function calculateMetalCost(
+  metalType = "14K",
+  weightGrams = 0,
+  spotPrice = 4500,
+  wastagePct = 25
+): number {
+  if (weightGrams <= 0) return 0;
+  const ozToGram = 31.1034768;
+  const purityMap: Record<string, number> = { "10K": 0.417, "14K": 0.585, "18K": 0.75, Platinum: 0.95, Silver: 0.925 };
+  const purity = purityMap[metalType] ?? 0.585;
+  // Loss multiplier: 1 + (wastagePct / 100). Default 25% wastage = 1.25 multiplier (e.g. 7.0g finished ring requires ~8.75g to 9.0g raw gold)
+  const lossFactor = metalType === "Platinum" ? 1.35 : metalType === "Silver" ? 3.5 : (1 + (wastagePct / 100));
+  const ratePerGram = (spotPrice / ozToGram) * purity * lossFactor;
+  return weightGrams * ratePerGram;
+}
+
+
 export function calculateMakingPrice(
   input: MakingPriceInput
 ): MakingPriceBreakdown {
@@ -184,6 +207,13 @@ export function calculateMakingPrice(
   if (cadCost < 0) {
     throw new ValidationError("CAD cost cannot be negative");
   }
+
+  const _metalCost = calculateMetalCost(
+    input.metalType ?? "14K",
+    input.metalWeightGrams ?? 0,
+    input.goldSpotPerOz ?? 4500,
+    25
+  );
 
   const _centerStoneCost = centerStoneCost(
     input.centerStone.caratWeight,
@@ -211,8 +241,9 @@ export function calculateMakingPrice(
   const _polishingCost = polishingCost(pieceConfig);
   const _cadCost = cadCost;
 
-  // Subtotal = all components before customer margin
+  // Subtotal = all components (metal + stones + labor + cad) before customer margin
   const subtotal =
+    _metalCost +
     _centerStoneCost +
     _sideStoneCost +
     _centerStoneSettingCost +
@@ -225,10 +256,10 @@ export function calculateMakingPrice(
   const _customerMarginAmount = subtotal * (customerMarginPct / 100);
 
   // Making price = subtotal + customer margin
-  // Round ONCE here — never inside sub-functions
   const makingPrice = Math.round((subtotal + _customerMarginAmount) * 100) / 100;
 
   return {
+    metalCost: Math.round(_metalCost * 100) / 100,
     centerStoneCost: _centerStoneCost,
     sideStoneCost: _sideStoneCost,
     centerStoneSettingCost: _centerStoneSettingCost,
@@ -244,6 +275,7 @@ export function calculateMakingPrice(
     colorClarity: DEFAULT_COLOR_CLARITY
   };
 }
+
 
 export type TierPriceResult = {
   makingPrice: number;

@@ -16,7 +16,10 @@ import {
 import { createQuote } from "@/src/services/quotes";
 import { calculateMakingPrice, calculateTierPrice } from "@/src/services/pricing";
 import { getSettingValue } from "@/lib/app-settings";
+import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricing";
 import { assertBillableSubscription, BillingAccessError } from "@/lib/billing";
+
+
 import { assertPlanFeature, getCompanyPlanFeatures, PlanError } from "@/src/stripe/plans";
 import { generateQuoteRendering } from "@/lib/ai/quote-rendering";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
@@ -78,8 +81,22 @@ export async function POST(request: Request) {
     // 1. Fetch admin-configured CAD cost from platform settings
     const cadCost = (await getSettingValue("cad_cost_per_quote")) ?? 0;
 
-    // 2. Fetch jeweler's margin percentage from company record
+    // 2. Fetch jeweler's margin percentage & live metal spot pricing
     const customerMarginPct = company.customerMarginPct ?? 0;
+    const baseProfile = company.pricingProfile
+      ? normalizePricingProfile({
+          goldSpotPerOz: Number(company.pricingProfile.goldSpotPerOz),
+          platinumSpotPerOz: Number(company.pricingProfile.platinumSpotPerOz),
+          silverSpotPerOz: Number(company.pricingProfile.silverSpotPerOz),
+          cadCharge: Number(company.pricingProfile.cadCharge),
+          centerSettingPerCarat: Number(company.pricingProfile.centerSettingPerCarat),
+          sideSettingPerStone: Number(company.pricingProfile.sideSettingPerStone),
+          sellingMarginDivisor: Number(company.pricingProfile.sellingMarginDivisor),
+          finalMultiplier: Number(company.pricingProfile.finalMultiplier)
+        })
+      : undefined;
+    const livePricing = await resolveMetalPricing(allowCustomPricing ? baseProfile : null);
+
 
     // 3. Prepare side stones list
     let sideStonesList = adjustedInput.sideStones;
@@ -101,6 +118,9 @@ export async function POST(request: Request) {
     // 4. Calculate making price breakdown
     const centerCarat = Math.max(adjustedInput.centerDiamondCarats, 0.0001);
     const makingPriceBreakdown = calculateMakingPrice({
+      metalType: adjustedInput.metalType,
+      metalWeightGrams: adjustedInput.metalWeightGrams,
+      goldSpotPerOz: Number(livePricing.pricingProfile.goldSpotPerOz),
       centerStone: {
         shape: adjustedInput.centerShape || "round",
         caratWeight: centerCarat
@@ -112,6 +132,9 @@ export async function POST(request: Request) {
       cadCost,
       customerMarginPct
     });
+
+
+
 
     // 5. Apply tier formula on top of making price
     const tierResult = calculateTierPrice(
