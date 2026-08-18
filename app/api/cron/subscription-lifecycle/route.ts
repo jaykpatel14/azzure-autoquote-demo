@@ -33,8 +33,8 @@ async function sendTrialReminder(email: string, daysRemaining: number, companyNa
   await sendAuthMail({
     to: email,
     subject: `${companyName} trial: ${daysRemaining} days remaining`,
-    text: `Your AI AutoQuote trial has ${daysRemaining} days left. Upgrade now: ${actionUrl}`,
-    html: `<p>Your AI AutoQuote trial has <strong>${daysRemaining}</strong> days left.</p><p><a href="${actionUrl}">Upgrade your plan</a></p>`
+    text: `Your Azzure AIQuote trial has ${daysRemaining} days left. Upgrade now: ${actionUrl}`,
+    html: `<p>Your Azzure AIQuote trial has <strong>${daysRemaining}</strong> days left.</p><p><a href="${actionUrl}">Upgrade your plan</a></p>`
   });
 }
 
@@ -43,8 +43,8 @@ async function sendTrialExpired(email: string, companyName: string) {
   await sendAuthMail({
     to: email,
     subject: `${companyName} trial ended`,
-    text: `Your AI AutoQuote trial has ended. Visit ${actionUrl} to reactivate billing.`,
-    html: `<p>Your AI AutoQuote trial has ended.</p><p><a href="${actionUrl}">Reactivate billing</a></p>`
+    text: `Your Azzure AIQuote trial has ended. Visit ${actionUrl} to reactivate billing.`,
+    html: `<p>Your Azzure AIQuote trial has ended.</p><p><a href="${actionUrl}">Reactivate billing</a></p>`
   });
 }
 

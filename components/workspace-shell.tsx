@@ -21,7 +21,7 @@ type WorkspaceShellProps = {
 };
 
 export default function WorkspaceShell({
-  eyebrow = "AI AutoQuote",
+  eyebrow = "Azzure AIQuote",
   title,
   description,
   navItems,
@@ -46,7 +46,7 @@ export default function WorkspaceShell({
           </div>
           <div>
             <strong className="brandTitleText">Azzure</strong>
-            <p className="brandSubtitleText">AutoQuote AI</p>
+            <p className="brandSubtitleText">AIQuote Studio</p>
           </div>
         </div>
 
@@ -94,7 +94,7 @@ export default function WorkspaceShell({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 3l-2 6 4 12 4-12-2-6" />
               </svg>
             </div>
-            <strong className="brand">AutoQuote</strong>
+            <strong className="brand">Azzure AIQuote</strong>
           </div>
           <div className="mobileTopActions">
             <SignOutButton />

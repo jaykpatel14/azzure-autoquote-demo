@@ -75,7 +75,7 @@ export default async function AdminDashboardPage() {
       {overview.pendingApprovals > 0 ? (
         <section className="warningBanner">
           <strong>{overview.pendingApprovals} account{overview.pendingApprovals === 1 ? " is" : "s are"} waiting for approval</strong>
-          <p>Jewelers cannot use AutoQuote until approved.</p>
+          <p>Jewelers cannot use Azzure AIQuote until approved.</p>
           <Link className="textLink" href="/admin/tenants/pending">Review pending accounts</Link>
         </section>
       ) : null}

@@ -271,7 +271,7 @@ export default async function HomePage() {
           {dashboard.totalQuotes === 0 ? (
             <div className="emptyState emptyStateIllustrated">
               <QuoteOutlineIllustration />
-              <strong>Welcome to AutoQuote. Upload your first jewelry photo to generate a quote in seconds.</strong>
+              <strong>Welcome to Azzure AIQuote. Upload a jewelry photo or describe a concept to generate a quote in seconds.</strong>
               <p className="muted">Create your first quote and this chart will begin to fill in.</p>
               <Link className="button primary" href="/quotes/new">
                 New quote
@@ -328,7 +328,7 @@ export default async function HomePage() {
         {dashboard.recentQuotes.length === 0 ? (
           <div className="emptyState emptyStateIllustrated">
             <QuoteOutlineIllustration />
-            <strong>Welcome to AutoQuote. Upload your first jewelry photo to generate a quote in seconds.</strong>
+            <strong>Welcome to Azzure AIQuote. Upload a jewelry photo or describe a concept to generate a quote in seconds.</strong>
             <p className="muted">Your latest five quotes will appear here once you save your first estimate.</p>
             <Link className="button primary" href="/quotes/new">
               New quote
@@ -478,11 +478,11 @@ function MarketingPage() {
       <section className="marketingHero">
         <div className="marketingHeroInner">
           <div>
-            <p className="eyebrow">AI AutoQuote</p>
-            <h1 className="marketingHeadline">Luxury quote workflows for modern jewelers.</h1>
+            <p className="eyebrow">Azzure AIQuote</p>
+            <h1 className="marketingHeadline">Intelligent jewelry quoting &amp; 3D showroom studio.</h1>
             <p className="marketingSubheadline">
-              Turn a jewelry photo into a polished estimate with AI-assisted analysis, live pricing,
-              and a customer-ready quote surface that feels premium from first upload to final approval.
+              Turn customer ideas and photos into photorealistic 3D concepts and spot-accurate retail estimates in 30 seconds.
+              Present luxury tablet consultations and dispatch straight to manufacturing with 1 click.
             </p>
           </div>
           <div className="marketingActions">

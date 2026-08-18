@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
     await sendAuthMail({
       to: user.email,
-      subject: "Verify your AI AutoQuote account",
+      subject: "Verify your Azzure AIQuote account",
       text: `Verify your email address: ${verificationUrl}`,
       html: `<p>Verify your email address: <a href="${verificationUrl}">${verificationUrl}</a></p>`
     });

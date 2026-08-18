@@ -14,8 +14,8 @@ const uiFont = Inter({ subsets: ["latin"], variable: "--font-ui-loaded", display
 const monoFont = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono-loaded", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "AI AutoQuote",
-  description: "AI-assisted jewelry quote estimation."
+  title: "Azzure AIQuote | Intelligent Jewelry Estimation & Showroom Studio",
+  description: "Instant 3D ring visualization, live precious metal spot quotations, and direct-to-manufacturing workflow for retail jewelers."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

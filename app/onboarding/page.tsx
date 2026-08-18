@@ -27,7 +27,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
       <main className="publicQuoteShell onboardingPublicShell">
         <article className="publicQuoteCard card onboardingPublicCard">
           <header className="publicQuoteHeader">
-            <p className="publicQuoteTitle">Welcome to AI AutoQuote</p>
+            <p className="publicQuoteTitle">Welcome to Azzure AIQuote</p>
             <p className="publicQuoteBlurb">
               Your 14-day free trial has started. Sign in to finish the guided setup and move into your workspace.
             </p>
@@ -63,7 +63,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
     <main className="onboardingShell">
       <section className="onboardingCard">
         <div className="onboardingHero">
-          <p className="eyebrow">AI AutoQuote</p>
+          <p className="eyebrow">Azzure AIQuote</p>
           <h1 className="onboardingTitle">Your 14-day free trial has started.</h1>
           <p className="onboardingLead">
             You&apos;re on the Professional plan with full access, no charge today.
