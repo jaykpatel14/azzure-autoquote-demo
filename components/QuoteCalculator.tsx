@@ -247,6 +247,7 @@ export default function QuoteCalculator({
   const { showToast } = useToast();
 
   const facetsRef = useRef<FacetDraft[]>([]);
+  const showroomFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     facetsRef.current = facets;
@@ -457,6 +458,43 @@ export default function QuoteCalculator({
       message: `${selectedFiles.length} image${selectedFiles.length === 1 ? "" : "s"} added to the quote.`,
       variant: "info"
     });
+  }
+
+  async function handleShowroomPhotoSelect(fileList: FileList | File[] | null) {
+    if (!fileList || !fileList.length) return;
+    const file = fileList[0];
+    if (!file.type.startsWith("image/")) {
+      showToast({
+        message: "Please select an image file (JPG, PNG, or WEBP).",
+        variant: "error"
+      });
+      return;
+    }
+
+    setSavedQuote(null);
+    setDraftIsFresh(false);
+    const newFacet: FacetDraft = {
+      id: uid(),
+      file,
+      previewUrl: URL.createObjectURL(file),
+      isObjectUrl: true,
+      title: "Showroom Reference",
+      description: "",
+      showDescription: false,
+      status: "pending" as FacetStatus,
+      stageIndex: 0,
+      output: null,
+      error: ""
+    };
+
+    setFacets([newFacet]);
+    setActiveFacetId(newFacet.id);
+    setStatus("Analyzing reference photo for live showroom quote...");
+    showToast({
+      message: "Analyzing photo for live showroom quote...",
+      variant: "info"
+    });
+    await analyseFacet(newFacet);
   }
 
   function clearAllFacets() {
@@ -763,22 +801,74 @@ export default function QuoteCalculator({
         <div className="showroomShowcaseGrid">
           {/* Left: Photorealistic 3D Concept & Interactive Visualizer */}
           <section className="card showroomVisualCard">
+            <input
+              ref={showroomFileInputRef}
+              type="file"
+              accept="image/png, image/jpeg, image/webp"
+              capture="environment"
+              style={{ display: "none" }}
+              onChange={(e) => handleShowroomPhotoSelect(e.target.files)}
+            />
+
             <div className="showroomVisualHeader">
               <span className="eyebrow">Photorealistic 3D Visualization</span>
-              <h2>{aggregateQuote?.centerShape ? `${aggregateQuote.centerShape} Bespoke Ring` : "Custom Jewelry Design"}</h2>
+              <div className="showroomTitleRow">
+                <h2>{aggregateQuote?.centerShape ? `${aggregateQuote.centerShape} Bespoke Ring` : "Custom Jewelry Design"}</h2>
+                <button
+                  type="button"
+                  className="button secondary button--sm"
+                  onClick={() => showroomFileInputRef.current?.click()}
+                  title="Upload a reference photo or snap with tablet camera"
+                >
+                  📷 {facets[0]?.previewUrl ? "Change Photo" : "Upload / Snap Photo"}
+                </button>
+              </div>
             </div>
 
-            <div className="showroomHeroImageFrame">
+            <div
+              className={`showroomHeroImageFrame${!facets[0]?.previewUrl ? " isDropTarget" : ""}`}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleShowroomPhotoSelect(e.dataTransfer.files);
+              }}
+              onClick={() => {
+                if (!facets[0]?.previewUrl) {
+                  showroomFileInputRef.current?.click();
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label="Upload reference photo or view 3D rendering"
+            >
               {facets[0]?.previewUrl ? (
-                <img
-                  src={facets[0].previewUrl}
-                  alt="3D Photorealistic Jewelry Concept"
-                  className="showroomHeroImage"
-                />
+                <div className="showroomImageWrapper">
+                  <img
+                    src={facets[0].previewUrl}
+                    alt="3D Photorealistic Jewelry Concept"
+                    className="showroomHeroImage"
+                  />
+                  <button
+                    type="button"
+                    className="showroomPhotoBadgeBtn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      showroomFileInputRef.current?.click();
+                    }}
+                  >
+                    📷 Snap / Change Photo
+                  </button>
+                </div>
               ) : (
                 <div className="showroomEmptyRender">
-                  <QuoteUploadIllustration />
-                  <p>Describe an idea or upload a photo to generate a photorealistic 3D presentation rendering.</p>
+                  <div className="showroomCameraCircle" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <strong>Upload or Snap Customer Reference Photo</strong>
+                  <p className="muted small">Tap to use tablet camera or drag &amp; drop an inspiration photo (Pinterest/IG). Or type a prompt below!</p>
                 </div>
               )}
             </div>
@@ -791,7 +881,7 @@ export default function QuoteCalculator({
                   className="uiInput"
                   value={conceptPrompt}
                   onChange={(e) => setConceptPrompt(e.target.value)}
-                  placeholder="e.g. Add hidden halo, make prongs rose gold..."
+                  placeholder="e.g. Add hidden halo, make prongs rose gold, 2ct oval..."
                   disabled={generatingConcept}
                 />
                 <button
@@ -800,7 +890,7 @@ export default function QuoteCalculator({
                   onClick={() => generateConcept()}
                   disabled={generatingConcept || !conceptPrompt.trim()}
                 >
-                  {generatingConcept ? "Synthesizing..." : "Re-render"}
+                  {generatingConcept ? "Synthesizing..." : "✨ Synthesize"}
                 </button>
               </div>
 
@@ -811,7 +901,10 @@ export default function QuoteCalculator({
                       key={preset}
                       type="button"
                       className="conceptChip"
-                      onClick={() => setConceptPrompt(preset)}
+                      onClick={() => {
+                        setConceptPrompt(preset);
+                        generateConcept(preset);
+                      }}
                       disabled={generatingConcept}
                     >
                       {preset}
@@ -889,13 +982,6 @@ export default function QuoteCalculator({
                     View Official Proposal PDF
                   </a>
                 ) : null}
-                <button
-                  type="button"
-                  className="button ghost button--sm"
-                  onClick={() => setShowroomMode(false)}
-                >
-                  Adjust Internal Labor &amp; Margins
-                </button>
               </div>
             </div>
           </section>
@@ -926,28 +1012,6 @@ export default function QuoteCalculator({
           📺 Enter Showroom Presentation Mode
         </button>
       </div>
-
-      <section className="statGrid quoteStepGrid" aria-label="Quote creation steps">
-        <article className="statCard">
-          <span className="eyebrow">Step 1</span>
-          <strong>{inputMode === "photos" ? "Upload Photos" : "Describe Concept"}</strong>
-          <p className="muted small">
-            {inputMode === "photos"
-              ? "Add jewelry photos or snap with tablet camera."
-              : "Describe customer dream ring for instant AI synthesis."}
-          </p>
-        </article>
-        <article className="statCard">
-          <span className="eyebrow">Step 2</span>
-          <strong>AI Analysis &amp; 3D Render</strong>
-          <p className="muted small">Extracted specifications with real-time jewelry parameters.</p>
-        </article>
-        <article className="statCard">
-          <span className="eyebrow">Step 3</span>
-          <strong>Live Retail Quote</strong>
-          <p className="muted small">Spot precious metal rates + store margin computed instantly.</p>
-        </article>
-      </section>
 
       <div className="twoColumnLayout">
         <section className="card formCard">

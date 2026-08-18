@@ -12,7 +12,7 @@ const schema = z.object({
   companyName: z.string().trim().min(2).max(120),
   aboutUs: z.string().trim().max(300).optional().or(z.literal("")),
   websiteUrl: z.string().trim().url().optional().or(z.literal("")),
-  logoUrl: z.string().trim().url().optional().or(z.literal(""))
+  logoUrl: z.string().trim().optional().or(z.literal(""))
 });
 
 async function parseInput(request: Request) {

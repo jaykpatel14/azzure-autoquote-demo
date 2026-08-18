@@ -45,11 +45,15 @@ export default function WorkspaceShell({
             </svg>
           </div>
           <div>
-            <p className="eyebrow">{eyebrow}</p>
-            <strong className="brand">AutoQuote</strong>
-            <p className="muted small">Multi-tenant jewelry quoting &amp; AI analysis.</p>
+            <strong className="brandTitleText">Azzure</strong>
+            <p className="brandSubtitleText">AutoQuote AI</p>
           </div>
         </div>
+
+        <Link href="/quotes/new" className="sidebarNewQuoteBtn">
+          <span className="plusSign" aria-hidden="true">+</span>
+          <span>New Quote</span>
+        </Link>
 
         <nav className="workspaceNav" aria-label="Workspace navigation">
           {navItems.map((item) => (

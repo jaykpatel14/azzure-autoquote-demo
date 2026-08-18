@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import SettingsTabs from "@/components/settings-tabs";
 import WorkspaceShell from "@/components/workspace-shell";
+import LogoDropzone from "@/components/LogoDropzone";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getSettingsProfileData } from "@/src/services/settings";
@@ -44,7 +45,7 @@ export default async function BrandingSettingsPage() {
         <form className="stack" action="/api/settings/branding" method="post">
           <label className="field">
             <span>Company name</span>
-            <input name="companyName" defaultValue={data.company.name} />
+            <input name="companyName" defaultValue={data.company.name} required />
           </label>
           <label className="field">
             <span>About us</span>
@@ -60,32 +61,15 @@ export default async function BrandingSettingsPage() {
             <span>Website URL</span>
             <input name="websiteUrl" defaultValue={data.company.websiteUrl ?? ""} placeholder="https://..." />
           </label>
-          <label className="field">
-            <span>Logo URL</span>
-            <input
-              name="logoUrl"
-              defaultValue={data.company.logoUrl ?? ""}
-              placeholder={canUseLogo ? "https://..." : "Professional, Enterprise, or Ultra only"}
-              disabled={!canUseLogo}
-            />
-          </label>
-          {!canUseLogo ? (
-            <p className="muted small">Upload your store logo on the Professional, Enterprise, or Ultra plan. Ultra subscribers unlock full Showroom &amp; Kiosk branding customization.</p>
-          ) : (
-            <p className="muted small">Your logo is displayed in customer quote PDFs, public customer share pages, and tablet Showroom mode.</p>
-          )}
-          <div className="card logoPreviewCard" style={{ background: "var(--color-ivory)" }}>
-            <p className="eyebrow" style={{ color: "rgba(28,28,30,0.58)" }}>
-              Quote preview
-            </p>
-            {data.company.logoUrl ? (
-              <img className="companyLogoPreview" src={data.company.logoUrl} alt={data.company.name} />
-            ) : (
-              <strong style={{ color: "var(--color-obsidian)" }}>{data.company.name}</strong>
-            )}
-          </div>
-          <button className="button primary" type="submit" style={{ width: "fit-content" }}>
-            Save branding
+
+          <LogoDropzone
+            initialLogoUrl={data.company.logoUrl}
+            companyName={data.company.name}
+            canUseLogo={canUseLogo}
+          />
+
+          <button className="button primary button--lg" type="submit" style={{ width: "fit-content", marginTop: "var(--space-3)" }}>
+            Save Branding Details
           </button>
         </form>
       </section>

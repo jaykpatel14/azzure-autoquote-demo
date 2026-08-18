@@ -1,0 +1,132 @@
+﻿{
+    "colorMode":  "LIGHT",
+    "font":  "PLAYFAIR_DISPLAY",
+    "roundness":  "ROUND_FOUR",
+    "customColor":  "#007fff",
+    "headlineFont":  "PLAYFAIR_DISPLAY",
+    "bodyFont":  "INTER",
+    "labelFont":  "INTER",
+    "namedColors":  {
+                        "background":  "#f9f9ff",
+                        "error":  "#ba1a1a",
+                        "error_container":  "#ffdad6",
+                        "inverse_on_surface":  "#eef0fb",
+                        "inverse_primary":  "#abc7ff",
+                        "inverse_surface":  "#2d3039",
+                        "on_background":  "#181c23",
+                        "on_error":  "#ffffff",
+                        "on_error_container":  "#93000a",
+                        "on_primary":  "#ffffff",
+                        "on_primary_container":  "#fefcff",
+                        "on_primary_fixed":  "#001b3f",
+                        "on_primary_fixed_variant":  "#004590",
+                        "on_secondary":  "#ffffff",
+                        "on_secondary_container":  "#61626b",
+                        "on_secondary_fixed":  "#191b22",
+                        "on_secondary_fixed_variant":  "#45464e",
+                        "on_surface":  "#181c23",
+                        "on_surface_variant":  "#414754",
+                        "on_tertiary":  "#ffffff",
+                        "on_tertiary_container":  "#fdfcfc",
+                        "on_tertiary_fixed":  "#1a1c1c",
+                        "on_tertiary_fixed_variant":  "#464747",
+                        "outline":  "#717786",
+                        "outline_variant":  "#c1c6d7",
+                        "primary":  "#005ab7",
+                        "primary_container":  "#0072e5",
+                        "primary_fixed":  "#d7e2ff",
+                        "primary_fixed_dim":  "#abc7ff",
+                        "secondary":  "#5c5e66",
+                        "secondary_container":  "#dfdfe9",
+                        "secondary_fixed":  "#e2e2ec",
+                        "secondary_fixed_dim":  "#c5c6cf",
+                        "surface":  "#f9f9ff",
+                        "surface_bright":  "#f9f9ff",
+                        "surface_container":  "#ebedf8",
+                        "surface_container_high":  "#e6e8f3",
+                        "surface_container_highest":  "#e0e2ed",
+                        "surface_container_low":  "#f1f3fe",
+                        "surface_container_lowest":  "#ffffff",
+                        "surface_dim":  "#d7dae4",
+                        "surface_tint":  "#005cbc",
+                        "surface_variant":  "#e0e2ed",
+                        "tertiary":  "#5b5c5c",
+                        "tertiary_container":  "#747575",
+                        "tertiary_fixed":  "#e3e2e2",
+                        "tertiary_fixed_dim":  "#c6c6c6"
+                    },
+    "designMd":  "---\nname: Azzure AutoQuote\ncolors:\n  surface: \u0027#f9f9ff\u0027\n  surface-dim: \u0027#d7dae4\u0027\n  surface-bright: \u0027#f9f9ff\u0027\n  surface-container-lowest: \u0027#ffffff\u0027\n  surface-container-low: \u0027#f1f3fe\u0027\n  surface-container: \u0027#ebedf8\u0027\n  surface-container-high: \u0027#e6e8f3\u0027\n  surface-container-highest: \u0027#e0e2ed\u0027\n  on-surface: \u0027#181c23\u0027\n  on-surface-variant: \u0027#414754\u0027\n  inverse-surface: \u0027#2d3039\u0027\n  inverse-on-surface: \u0027#eef0fb\u0027\n  outline: \u0027#717786\u0027\n  outline-variant: \u0027#c1c6d7\u0027\n  surface-tint: \u0027#005cbc\u0027\n  primary: \u0027#005ab7\u0027\n  on-primary: \u0027#ffffff\u0027\n  primary-container: \u0027#0072e5\u0027\n  on-primary-container: \u0027#fefcff\u0027\n  inverse-primary: \u0027#abc7ff\u0027\n  secondary: \u0027#5c5e66\u0027\n  on-secondary: \u0027#ffffff\u0027\n  secondary-container: \u0027#dfdfe9\u0027\n  on-secondary-container: \u0027#61626b\u0027\n  tertiary: \u0027#5b5c5c\u0027\n  on-tertiary: \u0027#ffffff\u0027\n  tertiary-container: \u0027#747575\u0027\n  on-tertiary-container: \u0027#fdfcfc\u0027\n  error: \u0027#ba1a1a\u0027\n  on-error: \u0027#ffffff\u0027\n  error-container: \u0027#ffdad6\u0027\n  on-error-container: \u0027#93000a\u0027\n  primary-fixed: \u0027#d7e2ff\u0027\n  primary-fixed-dim: \u0027#abc7ff\u0027\n  on-primary-fixed: \u0027#001b3f\u0027\n  on-primary-fixed-variant: \u0027#004590\u0027\n  secondary-fixed: \u0027#e2e2ec\u0027\n  secondary-fixed-dim: \u0027#c5c6cf\u0027\n  on-secondary-fixed: \u0027#191b22\u0027\n  on-secondary-fixed-variant: \u0027#45464e\u0027\n  tertiary-fixed: \u0027#e3e2e2\u0027\n  tertiary-fixed-dim: \u0027#c6c6c6\u0027\n  on-tertiary-fixed: \u0027#1a1c1c\u0027\n  on-tertiary-fixed-variant: \u0027#464747\u0027\n  background: \u0027#f9f9ff\u0027\n  on-background: \u0027#181c23\u0027\n  surface-variant: \u0027#e0e2ed\u0027\ntypography:\n  display-lg:\n    fontFamily: Playfair Display\n    fontSize: 48px\n    fontWeight: \u0027700\u0027\n    lineHeight: \u00271.1\u0027\n    letterSpacing: -0.02em\n  display-md:\n    fontFamily: Playfair Display\n    fontSize: 36px\n    fontWeight: \u0027600\u0027\n    lineHeight: \u00271.2\u0027\n    letterSpacing: -0.01em\n  headline-lg:\n    fontFamily: Playfair Display\n    fontSize: 30px\n    fontWeight: \u0027600\u0027\n    lineHeight: \u00271.3\u0027\n  headline-lg-mobile:\n    fontFamily: Playfair Display\n    fontSize: 24px\n    fontWeight: \u0027600\u0027\n    lineHeight: \u00271.3\u0027\n  title-lg:\n    fontFamily: Inter\n    fontSize: 20px\n    fontWeight: \u0027600\u0027\n    lineHeight: 28px\n    letterSpacing: 0.01em\n  body-lg:\n    fontFamily: Inter\n    fontSize: 16px\n    fontWeight: \u0027400\u0027\n    lineHeight: 24px\n  body-md:\n    fontFamily: Inter\n    fontSize: 14px\n    fontWeight: \u0027400\u0027\n    lineHeight: 20px\n  label-sm:\n    fontFamily: Inter\n    fontSize: 12px\n    fontWeight: \u0027600\u0027\n    lineHeight: 16px\n    letterSpacing: 0.05em\nrounded:\n  sm: 0.125rem\n  DEFAULT: 0.25rem\n  md: 0.375rem\n  lg: 0.5rem\n  xl: 0.75rem\n  full: 9999px\nspacing:\n  base: 4px\n  xs: 8px\n  sm: 16px\n  md: 24px\n  lg: 40px\n  xl: 64px\n  gutter: 24px\n  margin-mobile: 16px\n  margin-desktop: 48px\n---\n\n## Brand \u0026 Style\nThe design system for this platform blends high-end editorial luxury with the clinical precision of a B2B SaaS tool. It targets luxury jewelry retailers who demand both aesthetic sophistication and high-performance functionality. \n\nThe visual style is **Luxury-Tech Modern**, a hybrid that utilizes **Minimalism** to create focus and **Glassmorphism** to signify depth and premium quality. The interface should feel like a digital boutique—airy, expensive, and meticulously organized. Use generous whitespace to allow product photography to breathe, while maintaining a rigid underlying grid that communicates reliability and technical accuracy.\n\n## Colors\nThe palette is anchored by **Azure Blue** for primary actions and **Midnight Slate** for structural components and high-contrast typography. \n\n- **Primary (Azure Blue):** Reserved for intent, primary buttons, and active states. It bridges the gap between traditional luxury and modern technology.\n- **Secondary (Midnight Slate):** Used for navigation backgrounds, headers, and deep contrast elements to ground the UI.\n- **Metallics (Silver \u0026 Gold):** Used sparingly as accents for status indicators, border highlights on premium cards, and specialized jewelry swatches.\n- **Surfaces:** A combination of pure white (#FFFFFF) and **Soft Neutrals** (#F8F9FA) creates a layered, \"gallery-style\" environment. Glassmorphism is applied to floating panels and navigation overlays using a 12% opacity Azure or Slate tint with a 20px backdrop blur.\n\n## Typography\nThis system employs a dual-typeface strategy to balance brand emotion with utility.\n\n- **Editorial Layer:** Use **Playfair Display** for high-impact moments—landing sections, quote summaries, and luxury product titles. This evokes a sense of heritage and exclusivity.\n- **Utility Layer:** Use **Inter** for all data-heavy interfaces, administrative dashboards, and inputs. It provides the clarity and precision required for B2B logistics.\n- **Hierarchy:** Maintain high contrast between Serif headlines and Sans-serif subheaders. Use tracking (letter-spacing) on labels to enhance the professional, \"engineered\" feel of the UI.\n\n## Layout \u0026 Spacing\nThe layout follows a **Fluid Grid** model with strict adherence to an 8px spacing system to ensure technical precision.\n\n- **Desktop:** 12-column grid with 24px gutters and 48px outer margins. This allows for complex data layouts while maintaining an \"airy\" feel.\n- **Tablet:** 8-column grid with 24px gutters.\n- **Mobile:** 4-column grid with 16px margins.\n- **Philosophy:** Favor \"Over-spacing.\" In luxury design, whitespace is a commodity. Use `xl` (64px) spacing between major sections to prevent the UI from feeling cluttered or \"cheap.\"\n\n## Elevation \u0026 Depth\nHierarchy is established through **Tonal Layers** and **Subtle Shadows**. \n\n1. **Base:** Soft Neutral (#F8F9FA) background.\n2. **Floor:** Pure White surfaces with a 1px border in #E9ECEF (no shadow). Use this for standard layout sections.\n3. **Lifted:** Cards and interactive containers use an **Ambient Shadow**: `0 4px 20px rgba(26, 28, 35, 0.06)`.\n4. **Floating:** Glassmorphic overlays (modals, dropdowns) use a 20px backdrop blur and a `1px` inner border (top/left) in a light blue tint to simulate light hitting glass.\n\n## Shapes\nThe shape language is **Soft (0.25rem)**. While consumer apps often use high-radius pills, this system uses subtle corner rounding to maintain a professional, architectural, and \"cut\" aesthetic—reminiscent of gemstone faceting.\n\n- **Standard Buttons/Inputs:** 4px (Soft) radius.\n- **Product Cards:** 8px (Large) radius.\n- **AI-Status Indicators:** Fully circular (Pill) to distinguish organic/dynamic intelligence from static data.\n\n## Components\n\n- **Buttons:** Primary buttons use a subtle gradient from Azure Blue to a slightly deeper shade. Labels are always `label-sm` (uppercase) for a professional look. Secondary buttons use a Midnight Slate \"Ghost\" style (border only).\n- **Luxury Jewelry Swatches:** Rectangular containers with 4px radius. They must include a subtle metallic inner-shadow to give depth to gold/silver/platinum indicators.\n- **Data Tables:** High-density but high-clarity. Use Midnight Slate for headers and Azure Blue for interactive text/links. Row hover states should use the Soft Neutral surface color.\n- **AI-Status Indicators:** Use a pulsating glow effect using the Azure Blue primary color at 20% opacity. This indicates \"AutoQuote\" intelligence is processing.\n- **Input Fields:** Use a floating label pattern. On focus, the border transitions from Neutral to a 2px Azure Blue, and the background remains White to ensure legibility.\n- **Cards:** Premium cards feature a 1px metallic silver top-border and the Ambient Shadow defined in the Elevation section.",
+    "colorVariant":  "FIDELITY",
+    "overridePrimaryColor":  "#007fff",
+    "overrideSecondaryColor":  "#1a1c23",
+    "overrideTertiaryColor":  "#c0c0c0",
+    "spacingScale":  2,
+    "typography":  {
+                       "body-lg":  {
+                                       "fontFamily":  "Inter",
+                                       "fontSize":  "16px",
+                                       "fontWeight":  "400",
+                                       "lineHeight":  "24px"
+                                   },
+                       "body-md":  {
+                                       "fontFamily":  "Inter",
+                                       "fontSize":  "14px",
+                                       "fontWeight":  "400",
+                                       "lineHeight":  "20px"
+                                   },
+                       "display-lg":  {
+                                          "fontFamily":  "Playfair Display",
+                                          "fontSize":  "48px",
+                                          "fontWeight":  "700",
+                                          "lineHeight":  "1.1",
+                                          "letterSpacing":  "-0.02em"
+                                      },
+                       "display-md":  {
+                                          "fontFamily":  "Playfair Display",
+                                          "fontSize":  "36px",
+                                          "fontWeight":  "600",
+                                          "lineHeight":  "1.2",
+                                          "letterSpacing":  "-0.01em"
+                                      },
+                       "headline-lg":  {
+                                           "fontFamily":  "Playfair Display",
+                                           "fontSize":  "30px",
+                                           "fontWeight":  "600",
+                                           "lineHeight":  "1.3"
+                                       },
+                       "headline-lg-mobile":  {
+                                                  "fontFamily":  "Playfair Display",
+                                                  "fontSize":  "24px",
+                                                  "fontWeight":  "600",
+                                                  "lineHeight":  "1.3"
+                                              },
+                       "label-sm":  {
+                                        "fontFamily":  "Inter",
+                                        "fontSize":  "12px",
+                                        "fontWeight":  "600",
+                                        "lineHeight":  "16px",
+                                        "letterSpacing":  "0.05em"
+                                    },
+                       "title-lg":  {
+                                        "fontFamily":  "Inter",
+                                        "fontSize":  "20px",
+                                        "fontWeight":  "600",
+                                        "lineHeight":  "28px",
+                                        "letterSpacing":  "0.01em"
+                                    }
+                   },
+    "spacing":  {
+                    "base":  "4px",
+                    "gutter":  "24px",
+                    "lg":  "40px",
+                    "margin-desktop":  "48px",
+                    "margin-mobile":  "16px",
+                    "md":  "24px",
+                    "sm":  "16px",
+                    "xl":  "64px",
+                    "xs":  "8px"
+                },
+    "headlineFontFamily":  "Playfair Display",
+    "bodyFontFamily":  "Inter",
+    "labelFontFamily":  "Inter"
+}

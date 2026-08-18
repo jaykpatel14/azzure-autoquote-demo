@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Azzure AutoQuote - New Quote</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-variant": "#e0e2ed",
+                    "secondary-fixed": "#e2e2ec",
+                    "on-tertiary-fixed": "#1a1c1c",
+                    "on-tertiary": "#ffffff",
+                    "surface-bright": "#f9f9ff",
+                    "primary-container": "#0072e5",
+                    "on-secondary": "#ffffff",
+                    "secondary-fixed-dim": "#c5c6cf",
+                    "surface-container-highest": "#e0e2ed",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary-container": "#61626b",
+                    "on-surface": "#181c23",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#45464e",
+                    "surface": "#f9f9ff",
+                    "secondary-container": "#dfdfe9",
+                    "primary": "#005ab7",
+                    "surface-container-low": "#f1f3fe",
+                    "secondary": "#5c5e66",
+                    "inverse-surface": "#2d3039",
+                    "tertiary-fixed": "#e3e2e2",
+                    "tertiary-container": "#747575",
+                    "background": "#f9f9ff",
+                    "surface-dim": "#d7dae4",
+                    "surface-container-high": "#e6e8f3",
+                    "inverse-primary": "#abc7ff",
+                    "error-container": "#ffdad6",
+                    "primary-fixed-dim": "#abc7ff",
+                    "tertiary": "#5b5c5c",
+                    "inverse-on-surface": "#eef0fb",
+                    "on-secondary-fixed": "#191b22",
+                    "on-surface-variant": "#414754",
+                    "on-error": "#ffffff",
+                    "outline": "#717786",
+                    "primary-fixed": "#d7e2ff",
+                    "on-background": "#181c23",
+                    "on-primary-fixed": "#001b3f",
+                    "outline-variant": "#c1c6d7",
+                    "on-tertiary-fixed-variant": "#464747",
+                    "on-primary-fixed-variant": "#004590",
+                    "on-primary-container": "#fefcff",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#c6c6c6",
+                    "surface-container": "#ebedf8",
+                    "surface-tint": "#005cbc",
+                    "error": "#ba1a1a",
+                    "on-tertiary-container": "#fdfcfc"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "xl": "64px",
+                    "margin-desktop": "48px",
+                    "xs": "8px",
+                    "gutter": "24px",
+                    "margin-mobile": "16px",
+                    "base": "4px",
+                    "md": "24px",
+                    "sm": "16px",
+                    "lg": "40px"
+            },
+            "fontFamily": {
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "headline-lg": [
+                            "Playfair Display"
+                    ],
+                    "display-lg": [
+                            "Playfair Display"
+                    ],
+                    "headline-lg-mobile": [
+                            "Playfair Display"
+                    ],
+                    "title-lg": [
+                            "Inter"
+                    ],
+                    "display-md": [
+                            "Playfair Display"
+                    ],
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg": [
+                            "30px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "title-lg": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-md": [
+                            "36px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        .ambient-shadow {
+            box-shadow: 0 4px 20px rgba(26, 28, 35, 0.06);
+        }
+        
+        .glassmorphic {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.7);
+            border-top: 1px solid rgba(0, 90, 183, 0.1);
+            border-left: 1px solid rgba(0, 90, 183, 0.1);
+        }
+        
+        .metallic-border-top {
+            border-top: 1px solid #E9ECEF;
+        }
+        
+        .ai-pulse {
+            animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(0, 90, 183, 0.2);
+            }
+            50% {
+                opacity: .8;
+                box-shadow: 0 0 0 10px rgba(0, 90, 183, 0);
+            }
+        }
+        
+        /* Custom Scrollbar for inner areas */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.surface-variant');
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.outline-variant');
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden antialiased font-body-lg text-body-lg">
+<!-- SideNavBar -->
+<nav class="bg-surface dark:bg-surface-dim border-r border-outline-variant dark:border-outline h-screen w-64 fixed left-0 top-0 flex flex-col py-md px-sm z-40">
+<div class="mb-xl flex flex-col items-start px-sm">
+<h1 class="font-headline-lg text-headline-lg font-semibold text-primary dark:text-primary-fixed">Azzure</h1>
+<p class="font-label-sm text-label-sm text-secondary mt-1 tracking-widest">AutoQuote AI</p>
+</div>
+<button class="bg-gradient-to-r from-primary to-primary-fixed-dim text-on-primary w-full py-3 px-4 rounded-lg font-label-sm text-label-sm uppercase tracking-widest shadow-md mb-8 hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+            New Quote
+        </button>
+<ul class="flex flex-col gap-2 flex-grow">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-md text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm uppercase">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-md text-primary dark:text-primary-fixed font-bold border-r-4 border-primary dark:border-primary-fixed bg-surface-container-low dark:bg-surface-container-highest scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined">request_quote</span>
+<span class="font-label-sm text-label-sm uppercase">Quotes</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-md text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-sm text-label-sm uppercase">Customers</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-md text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">shopping_bag</span>
+<span class="font-label-sm text-label-sm uppercase">Orders</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-md text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">diamond</span>
+<span class="font-label-sm text-label-sm uppercase">Showroom</span>
+</a>
+</li>
+</ul>
+<ul class="flex flex-col gap-2 mt-auto pt-4 border-t border-outline-variant/30">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-md text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm uppercase">Settings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-md text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-label-sm uppercase">Profile</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-64 flex-1 flex flex-col h-full bg-surface-container-lowest">
+<!-- TopNavBar -->
+<header class="bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm dark:shadow-none docked full-width top-0 sticky z-30 h-20 flex justify-between items-center w-full px-margin-desktop">
+<div class="flex items-center gap-4">
+<nav aria-label="Breadcrumb" class="flex text-on-surface-variant dark:text-on-secondary-container font-label-sm text-label-sm">
+<ol class="inline-flex items-center space-x-1 md:space-x-3">
+<li class="inline-flex items-center">
+<a class="hover:text-primary dark:hover:text-primary-fixed transition-all" href="#">Quotes</a>
+</li>
+<li>
+<div class="flex items-center">
+<span class="material-symbols-outlined text-sm mx-1">chevron_right</span>
+<span class="text-primary font-bold border-b-2 border-primary pb-1">New Quote Builder</span>
+</div>
+</li>
+</ol>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<!-- Search -->
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border border-transparent focus:border-primary focus:bg-surface-container-lowest rounded-full font-body-md text-body-md text-on-surface w-64 transition-all outline-none" placeholder="Search references..." type="text"/>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button class="hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="font-label-sm text-label-sm uppercase tracking-widest text-primary hover:bg-primary/10 px-4 py-2 rounded-md transition-colors border border-primary/20">
+                        Enter Showroom
+                    </button>
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden border border-outline-variant">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a user in a clean, brightly lit modern office setting. The lighting is soft and even, highlighting a friendly expression. The background is slightly blurred, showing hints of a luxury aesthetic with neutral tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPFfX80MzHH2gl81yrL8haTs2en6Ug-KZACIGQJliNcTDRHk8iVyD-M0cwS5stiL3NJHo5eMLfDaJLSwI2rZlhlnIvlK7zZcw50Mosy9Y6CEOeSidYMJbrdtogNjVyfDZ1oJNOaYiXEp-qY5KgCWWjyzQLebcCr3Y2eKL5h6RtMu77hz51kKQIyWmg2u2lWHidFwQxeCf0EWXUd0j79fbHOX2gvMVdAcoIh4HLyk1KVlZho3LQvYtJ"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Workspace Grid -->
+<div class="flex-1 overflow-hidden flex">
+<!-- Left Column: Input (3/12 width on desktop approx) -->
+<section class="w-1/4 min-w-[320px] bg-surface-bright border-r border-surface-variant/50 p-gutter overflow-y-auto flex flex-col gap-8">
+<!-- Client Details -->
+<div class="space-y-4">
+<h2 class="font-title-lg text-title-lg text-on-surface">Client &amp; Concept</h2>
+<div class="relative">
+<label class="absolute -top-2 left-3 bg-surface-bright px-1 font-label-sm text-label-sm text-secondary">Client Name</label>
+<input class="w-full bg-transparent border border-outline-variant rounded-md px-4 py-3 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Select or type..." type="text"/>
+</div>
+<div class="relative">
+<label class="absolute -top-2 left-3 bg-surface-bright px-1 font-label-sm text-label-sm text-secondary">Concept Title</label>
+<input class="w-full bg-transparent border border-outline-variant rounded-md px-4 py-3 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g. Vintage Sapphire Halo" type="text"/>
+</div>
+</div>
+<!-- Reference Upload -->
+<div class="space-y-4 flex-1 flex flex-col">
+<h3 class="font-title-lg text-title-lg text-on-surface flex items-center justify-between">
+                        Reference Assets
+                        <span class="material-symbols-outlined text-sm text-secondary cursor-help" title="Upload sketches or reference photos for AI analysis">info</span>
+</h3>
+<div class="flex-1 border-2 border-dashed border-outline-variant rounded-xl bg-surface-container-lowest flex flex-col items-center justify-center p-6 text-center hover:bg-surface-container-low hover:border-primary transition-colors cursor-pointer group">
+<div class="w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">cloud_upload</span>
+</div>
+<p class="font-title-lg text-title-lg text-on-surface mb-2">Drop references here</p>
+<p class="font-body-md text-body-md text-secondary mb-4">Supports JPG, PNG, PDF up to 50MB</p>
+<button class="bg-surface-variant text-on-surface-variant px-6 py-2 rounded-md font-label-sm text-label-sm uppercase tracking-wider hover:bg-surface-dim transition-colors">
+                            Browse Files
+                        </button>
+</div>
+<!-- Uploaded Thumbnails -->
+<div class="flex gap-3 overflow-x-auto pb-2">
+<div class="w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-outline-variant relative group">
+<img class="w-full h-full object-cover" data-alt="A rough, pencil sketch on textured paper of a vintage-style ring featuring a large center stone surrounded by smaller stones. The sketch is slightly messy, indicating an early design phase, shot from a top-down perspective under warm desk lamp lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7Yx2rdA40sVxn0j1RBZIYGuG3XOM-gmbYavlhsE4scE-cB0dhQZ7zBrebGUzA_ZnJqRf0FXJDI1Q6vbHfY1eWV1ogDC7dQUUU6bLEb-dfvgnCPx3Bf6sH0vCnmabjCavXFKlNSpI3LKXOdjgKJHTLDLzN4vn_-JpIJZtw0coBUoL5aTz2z9iHusTZBPBsAnWaLYskK3ue-P3SbjgO8Uw3J47tQcDzwNiX85qTj2FVTzfhnAOyRRnd"/>
+<div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-white">delete</span>
+</div>
+</div>
+<div class="w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-outline-variant relative group">
+<img class="w-full h-full object-cover" data-alt="A high-quality macro photograph of a loose, deep blue sapphire stone resting on a piece of clean white silk. The lighting is sharp, catching the facets of the gem, creating a luxurious and pristine aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvwiN9i7DiXhHKVLJCcdR-5fQHz_nfKbgUbOqZBUJzyrhyp8ukW7WmTo-qCrosOMi8k0sg2w_rLSeT6trzgQEyTNFct7k8sV-EckiB_DI6v7Q0UkJqAJcJFvNCHzs0Mal3cqwov53dr98BCdp_SnN-RRpKIbVIRgsor9iLa5xVquctV-ODzwBojybFzY5wyocyZBEuN4FjVgxUGFlv-g5Ut2nigoYfcSvtM2a7Qq_5O1cZ6E4OpPW2"/>
+<div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-white">delete</span>
+</div>
+</div>
+</div>
+</div>
+<div class="relative">
+<label class="absolute -top-2 left-3 bg-surface-bright px-1 font-label-sm text-label-sm text-secondary">Design Notes (Optional)</label>
+<textarea class="w-full bg-transparent border border-outline-variant rounded-md px-4 py-3 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" placeholder="Describe specific requirements..." rows="3"></textarea>
+</div>
+<button class="bg-gradient-to-r from-primary to-primary-fixed-dim text-on-primary w-full py-4 rounded-lg font-label-sm text-label-sm uppercase tracking-widest shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">auto_awesome</span>
+                    Generate AI Quote
+                </button>
+</section>
+<!-- Center Column: AI Visualization (5/12 width approx) -->
+<section class="flex-1 bg-surface-container-lowest flex flex-col relative">
+<!-- Toolbar -->
+<div class="h-14 border-b border-surface-variant flex items-center justify-between px-6 bg-surface/50 backdrop-blur-sm z-10">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">view_in_ar</span>
+<span class="font-title-lg text-title-lg text-on-surface">3D Visualization</span>
+</div>
+<div class="flex gap-2">
+<button class="p-2 rounded-md hover:bg-surface-variant text-secondary transition-colors" title="Rotate Left">
+<span class="material-symbols-outlined text-sm">rotate_left</span>
+</button>
+<button class="p-2 rounded-md hover:bg-surface-variant text-secondary transition-colors" title="Rotate Right">
+<span class="material-symbols-outlined text-sm">rotate_right</span>
+</button>
+<button class="p-2 rounded-md hover:bg-surface-variant text-secondary transition-colors" title="Zoom In">
+<span class="material-symbols-outlined text-sm">zoom_in</span>
+</button>
+</div>
+</div>
+<!-- Canvas Area -->
+<div class="flex-1 relative bg-gradient-to-b from-surface-lowest to-surface-bright flex items-center justify-center overflow-hidden p-8">
+<!-- AI Processing State Overlay (Active for demo) -->
+<div class="absolute inset-0 z-20 glassmorphic flex flex-col items-center justify-center">
+<div class="w-32 h-32 rounded-full border-4 border-surface-variant border-t-primary animate-spin mb-8"></div>
+<h2 class="font-display-md text-display-md text-on-surface mb-2">Analyzing Geometry</h2>
+<p class="font-body-lg text-body-lg text-secondary animate-pulse">Extracting proportions from reference images...</p>
+<!-- Progress Steps -->
+<div class="mt-12 w-full max-w-md space-y-4">
+<div class="flex items-center gap-4 text-primary">
+<span class="material-symbols-outlined">check_circle</span>
+<span class="font-title-lg text-title-lg">Material Recognition Complete</span>
+</div>
+<div class="flex items-center gap-4 text-primary ai-pulse bg-primary/5 p-2 rounded-md">
+<span class="material-symbols-outlined animate-spin">sync</span>
+<span class="font-title-lg text-title-lg">Constructing 3D Mesh</span>
+</div>
+<div class="flex items-center gap-4 text-secondary opacity-50">
+<span class="material-symbols-outlined">radio_button_unchecked</span>
+<span class="font-title-lg text-title-lg">Calculating Weights &amp; Costs</span>
+</div>
+</div>
+</div>
+<!-- Underlying Canvas (Placeholder for 3D) -->
+<div class="w-full h-full max-w-2xl max-h-[600px] relative opacity-30 blur-sm">
+<img class="w-full h-full object-contain" data-alt="A sophisticated 3D wireframe render of a complex jewelry piece, likely a ring, set against a pristine white background. The lines are thin and technical, colored in a subtle azure blue, conveying a sense of high-precision digital design software. The lighting is neutral and flat, typical of CAD environments." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCbX3TUAhrFW-XkrRNcjK15Nf__kNWElCxqeShNf1qAhd-bzPHphq5tLD-uugIMZSzlbQ0aEceG_ijvOfeB2K86eceuEiOXOU6i0B3vjGa9q9mtJns-eOgfoY_SefTWOcnfBg1D-om8wr60igl-5vVIMnXsAp3MwWdhElDTfS2DpFpNdgjmv_4FSQsjfHQj9iSbCqGn5OasyhbYLMHAOZS1nl8OYk1g65PC1jcvysYKydwF2kSJZbd"/>
+</div>
+</div>
+</section>
+<!-- Right Column: Specs & Pricing (4/12 width approx) -->
+<section class="w-[380px] bg-surface-bright border-l border-surface-variant/50 flex flex-col h-full">
+<div class="p-6 border-b border-surface-variant bg-surface-container-lowest">
+<h2 class="font-display-md text-display-md text-on-surface mb-1">Quote Details</h2>
+<p class="font-body-md text-body-md text-secondary flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-amber-500"></span> Draft Mode
+                    </p>
+</div>
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<!-- High Confidence Attributes Cards -->
+<div>
+<h3 class="font-label-sm text-label-sm uppercase text-secondary mb-3 tracking-widest flex items-center justify-between">
+                            Detected Attributes
+                            <span class="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px]">AI CONFIDENCE: HIGH</span>
+</h3>
+<div class="space-y-3">
+<!-- Metal Card -->
+<div class="ambient-shadow bg-surface-container-lowest p-4 rounded-lg border-t border-l border-surface-variant/30 flex items-start gap-4 hover:border-primary/50 transition-colors cursor-pointer">
+<div class="w-12 h-12 rounded-md bg-gradient-to-br from-gray-200 to-gray-400 border border-gray-300 shadow-inner flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-white/80">diamond</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h4 class="font-title-lg text-title-lg text-on-surface">Platinum 950</h4>
+<span class="material-symbols-outlined text-sm text-primary">edit</span>
+</div>
+<p class="font-body-md text-body-md text-secondary mt-1">Est. Weight: 8.4g</p>
+</div>
+</div>
+<!-- Center Stone Card -->
+<div class="ambient-shadow bg-surface-container-lowest p-4 rounded-lg border-t border-l border-surface-variant/30 flex items-start gap-4 hover:border-primary/50 transition-colors cursor-pointer">
+<div class="w-12 h-12 rounded-md bg-gradient-to-br from-blue-700 to-blue-900 border border-blue-800 shadow-inner flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-white/80">hexagon</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h4 class="font-title-lg text-title-lg text-on-surface">Sapphire</h4>
+<span class="material-symbols-outlined text-sm text-primary">edit</span>
+</div>
+<p class="font-body-md text-body-md text-secondary mt-1">Oval Cut • ~2.5ct • Ceylon</p>
+</div>
+</div>
+<!-- Accent Stones Card -->
+<div class="ambient-shadow bg-surface-container-lowest p-4 rounded-lg border-t border-l border-surface-variant/30 flex items-start gap-4 hover:border-primary/50 transition-colors cursor-pointer">
+<div class="w-12 h-12 rounded-md bg-white border border-gray-200 shadow-inner flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-gray-400">lens_blur</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h4 class="font-title-lg text-title-lg text-on-surface">Diamonds</h4>
+<span class="material-symbols-outlined text-sm text-primary">edit</span>
+</div>
+<p class="font-body-md text-body-md text-secondary mt-1">Halo • ~0.45ct tw • VS1-G</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Cost Breakdown Table -->
+<div>
+<h3 class="font-label-sm text-label-sm uppercase text-secondary mb-3 tracking-widest">Cost Breakdown</h3>
+<div class="bg-surface-container-lowest rounded-lg border border-surface-variant overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-[#181c23] text-on-tertiary">
+<th class="py-2 px-4 font-label-sm text-label-sm font-medium">Item</th>
+<th class="py-2 px-4 font-label-sm text-label-sm font-medium text-right">Est. Cost</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-variant">
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="py-3 px-4 font-body-md text-body-md text-on-surface">Platinum Setting</td>
+<td class="py-3 px-4 font-body-md text-body-md text-on-surface text-right">$650.00</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="py-3 px-4 font-body-md text-body-md text-on-surface">Center Stone (Market)</td>
+<td class="py-3 px-4 font-body-md text-body-md text-primary text-right cursor-pointer hover:underline">$3,200.00</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="py-3 px-4 font-body-md text-body-md text-on-surface">Accent Stones</td>
+<td class="py-3 px-4 font-body-md text-body-md text-on-surface text-right">$450.00</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="py-3 px-4 font-body-md text-body-md text-on-surface">Labor &amp; Finishing</td>
+<td class="py-3 px-4 font-body-md text-body-md text-on-surface text-right">$350.00</td>
+</tr>
+</tbody>
+<tfoot>
+<tr class="bg-surface-bright border-t-2 border-surface-variant">
+<td class="py-4 px-4 font-title-lg text-title-lg text-on-surface">Total Retail Est.</td>
+<td class="py-4 px-4 font-title-lg text-title-lg text-on-surface text-right">$4,650.00</td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+</div>
+<!-- Bottom Actions -->
+<div class="p-6 border-t border-surface-variant bg-surface-container-lowest space-y-3">
+<button class="w-full bg-surface-bright border border-outline text-on-surface py-3 rounded-lg font-label-sm text-label-sm uppercase tracking-widest hover:bg-surface-variant transition-colors flex items-center justify-center gap-2" disabled="">
+<span class="material-symbols-outlined text-sm">save</span>
+                        Save Draft
+                    </button>
+<button class="w-full bg-[#181c23] text-white py-3 rounded-lg font-label-sm text-label-sm uppercase tracking-widest opacity-50 cursor-not-allowed flex items-center justify-center gap-2">
+                        Review Final Quote
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+<p class="text-center font-label-sm text-label-sm text-secondary mt-2">Waiting for AI processing...</p>
+</div>
+</section>
+</div>
+</main>
+</body></html>

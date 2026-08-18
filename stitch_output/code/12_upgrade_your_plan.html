@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Azzure AutoQuote - Upgrade Plan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#61626b",
+                        "on-surface": "#181c23",
+                        "primary": "#005ab7",
+                        "surface-bright": "#f9f9ff",
+                        "error-container": "#ffdad6",
+                        "surface-container-low": "#f1f3fe",
+                        "surface-tint": "#005cbc",
+                        "tertiary-container": "#747575",
+                        "error": "#ba1a1a",
+                        "on-tertiary-container": "#fdfcfc",
+                        "secondary-fixed": "#e2e2ec",
+                        "on-secondary-fixed-variant": "#45464e",
+                        "tertiary-fixed": "#e3e2e2",
+                        "primary-container": "#0072e5",
+                        "inverse-surface": "#2d3039",
+                        "secondary-container": "#dfdfe9",
+                        "surface-container-high": "#e6e8f3",
+                        "on-surface-variant": "#414754",
+                        "surface-container-highest": "#e0e2ed",
+                        "primary-fixed-dim": "#abc7ff",
+                        "surface-container": "#ebedf8",
+                        "outline": "#717786",
+                        "on-secondary-fixed": "#191b22",
+                        "on-primary-fixed": "#001b3f",
+                        "surface-dim": "#d7dae4",
+                        "outline-variant": "#c1c6d7",
+                        "on-primary-container": "#fefcff",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#eef0fb",
+                        "surface-variant": "#e0e2ed",
+                        "on-background": "#181c23",
+                        "inverse-primary": "#abc7ff",
+                        "surface": "#f9f9ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#d7e2ff",
+                        "tertiary": "#5b5c5c",
+                        "secondary-fixed-dim": "#c5c6cf",
+                        "background": "#f9f9ff",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "on-tertiary-fixed-variant": "#464747",
+                        "secondary": "#5c5e66",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#004590"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "xs": "8px",
+                        "base": "4px",
+                        "md": "24px",
+                        "sm": "16px",
+                        "lg": "40px",
+                        "xl": "64px",
+                        "margin-desktop": "48px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Playfair Display"],
+                        "display-md": ["Playfair Display"],
+                        "label-sm": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "headline-lg": ["Playfair Display"],
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-md": ["36px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "headline-lg": ["30px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Subtle Gradient for Primary Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, #005ab7 0%, #004590 100%);
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 90, 183, 0.2);
+        }
+
+        /* Ambient Shadow for Premium Cards */
+        .ambient-shadow {
+            box-shadow: 0 4px 20px rgba(26, 28, 35, 0.06);
+        }
+
+        /* Metallic Inner Shadow for Swatches/Accents */
+        .metallic-accent {
+            box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.5), inset 0 -1px 3px rgba(0, 0, 0, 0.1);
+            border-top: 1px solid #e3e2e2;
+        }
+        
+        /* Glassmorphism utility */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.8);
+            border-left: 1px solid rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body-lg text-on-surface antialiased min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<nav class="bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm dark:shadow-none docked full-width top-0 sticky z-50">
+<div class="flex justify-between items-center w-full px-margin-desktop h-20 max-w-7xl mx-auto">
+<!-- Brand -->
+<div class="flex items-center gap-xs cursor-pointer">
+<span aria-hidden="true" class="material-symbols-outlined fill text-primary text-3xl">diamond</span>
+<span class="font-headline-lg text-headline-lg font-semibold text-primary dark:text-primary-fixed tracking-tight">Azzure AutoQuote</span>
+</div>
+<!-- Navigation Links (Breadcrumbs style) -->
+<div class="hidden md:flex items-center gap-sm">
+<a class="text-on-surface-variant dark:text-on-secondary-container font-label-sm text-label-sm hover:text-primary dark:hover:text-primary-fixed transition-all uppercase" href="#">Settings</a>
+<span class="material-symbols-outlined text-outline-variant text-sm">chevron_right</span>
+<a class="text-primary font-bold font-label-sm text-label-sm border-b-2 border-primary pb-1 uppercase" href="#">Billing &amp; Plans</a>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-md">
+<div class="flex gap-sm items-center">
+<button aria-label="Notifications" class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button aria-label="Search" class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+</div>
+<button class="hidden md:flex btn-primary px-sm py-xs rounded uppercase font-label-sm text-label-sm items-center gap-xs">
+<span>Enter Showroom</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<!-- Avatar -->
+<div class="h-8 w-8 rounded-full bg-surface-container-highest border border-outline-variant overflow-hidden flex items-center justify-center cursor-pointer ml-sm">
+<img alt="User Avatar" class="h-full w-full object-cover" data-alt="A professional headshot of a luxury jewelry store manager, bright studio lighting, soft neutral background, wearing a tailored navy blazer. High resolution, shallow depth of field, modern B2B SaaS profile avatar style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrdAzj3IRP8UooHJod9UhrUqOSEgjJ_KPW8DWyR1yev2POcOgGSC9tnuU07HrOMg56QUu0ntSE7QjuNUJV_RLisjFiwITefTRM1r9SU1DPm3K9CU99_yszlIOn2tUb9JffSa2-5GNYeFHnJMN2iv1a7rsqM4Nj6iV6vuLcDhofi_R6pg7pPQBqfwFN-Vyp-W66s8b3k7NM89TpuFEvO6ECxQDoWMNs0SW-x1BQ05EqFr-0fAeelVTW"/>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex flex-col items-center justify-center px-margin-mobile md:px-margin-desktop py-xl relative overflow-hidden">
+<!-- Abstract Background Decoration -->
+<div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none opacity-40">
+<div class="absolute top-[-10%] right-[-5%] w-[40vw] h-[40vw] rounded-full bg-primary-fixed-dim blur-3xl opacity-20"></div>
+<div class="absolute bottom-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-surface-container-high blur-3xl opacity-30"></div>
+</div>
+<!-- Header Section -->
+<div class="text-center max-w-3xl mb-xl">
+<h1 class="font-display-lg text-display-lg text-on-surface mb-sm">Scale Your Showroom</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                Elevate your jewelry retail experience with advanced AI quoting, extended showroom capabilities, and premium manufacturing integrations. Choose the tier that matches your ambition.
+            </p>
+</div>
+<!-- Pricing Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter max-w-[1400px] w-full mb-xl">
+<!-- Tier 1: Starter -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex flex-col relative overflow-hidden transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg bg-white">
+<div class="mb-lg">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-xs">Starter</h3>
+<div class="flex items-baseline gap-xs">
+<span class="font-display-md text-display-md text-on-surface">$49</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/mo</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-sm min-h-[40px]">Essential tools for independent jewelers to streamline quoting.</p>
+</div>
+<ul class="flex flex-col gap-sm flex-grow mb-lg">
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-outline text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">50 Quotes per month</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-outline text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Basic AI Material Estimation</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-outline text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Standard Diamond API</span>
+</li>
+<li class="flex items-start gap-xs opacity-50">
+<span class="material-symbols-outlined text-outline-variant text-[20px] mt-[2px]">cancel</span>
+<span class="font-body-md text-body-md text-on-surface-variant line-through">Manufacturing Integration</span>
+</li>
+<li class="flex items-start gap-xs opacity-50">
+<span class="material-symbols-outlined text-outline-variant text-[20px] mt-[2px]">cancel</span>
+<span class="font-body-md text-body-md text-on-surface-variant line-through">Live Showroom Mode</span>
+</li>
+</ul>
+<button class="w-full py-sm border border-outline text-on-surface font-label-sm text-label-sm uppercase rounded hover:bg-surface-container-low transition-colors">
+                    Downgrade
+                </button>
+</div>
+<!-- Tier 2: Professional (Current) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex flex-col relative overflow-hidden transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg bg-white">
+<!-- Current Plan Indicator -->
+<div class="absolute top-0 right-0 bg-surface-container-high text-on-surface-variant font-label-sm text-[10px] uppercase px-sm py-[4px] rounded-bl-lg font-bold">
+                    Current Plan
+                </div>
+<div class="mb-lg mt-sm">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-xs">Professional</h3>
+<div class="flex items-baseline gap-xs">
+<span class="font-display-md text-display-md text-on-surface">$99</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/mo</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-sm min-h-[40px]">Advanced capabilities for growing retail boutiques.</p>
+</div>
+<ul class="flex flex-col gap-sm flex-grow mb-lg">
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-primary text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface font-medium">500 Quotes per month</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-primary text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface font-medium">Advanced Generative AI Passes</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-primary text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface font-medium">Premium Gemstone APIs</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-primary text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface font-medium">Basic CAD Export</span>
+</li>
+<li class="flex items-start gap-xs opacity-50">
+<span class="material-symbols-outlined text-outline-variant text-[20px] mt-[2px]">cancel</span>
+<span class="font-body-md text-body-md text-on-surface-variant line-through">Live Showroom Mode</span>
+</li>
+</ul>
+<button class="w-full py-sm border border-outline text-on-surface-variant font-label-sm text-label-sm uppercase rounded cursor-default bg-surface-container-lowest opacity-70">
+                    Active
+                </button>
+</div>
+<!-- Tier 3: Enterprise (Highlighted) -->
+<div class="bg-surface-container-lowest border-2 border-primary rounded-xl p-md flex flex-col relative overflow-hidden transition-transform duration-300 hover:-translate-y-2 ambient-shadow bg-white z-10 scale-105">
+<!-- Highlight Ribbon -->
+<div class="absolute top-0 left-0 w-full bg-primary text-on-primary font-label-sm text-[10px] uppercase py-[6px] text-center font-bold tracking-widest metallic-accent">
+                    Most Popular Upgrade
+                </div>
+<div class="mb-lg mt-md">
+<div class="flex items-center gap-xs mb-xs">
+<span class="material-symbols-outlined fill text-primary text-[24px]">diamond</span>
+<h3 class="font-title-lg text-title-lg text-primary">Enterprise</h3>
+</div>
+<div class="flex items-baseline gap-xs">
+<span class="font-display-md text-display-md text-on-surface">$199</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/mo</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-sm min-h-[40px]">Full suite integration for high-volume custom jewelers.</p>
+</div>
+<ul class="flex flex-col gap-sm flex-grow mb-lg">
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined fill text-primary text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">Unlimited Quotes</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined fill text-primary text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">Unlimited AI Design Passes</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined fill text-primary text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">Direct Manufacturing API</span>
+</li>
+<li class="flex items-start gap-xs p-xs bg-surface-container-low rounded-lg border border-primary-fixed-dim">
+<span class="material-symbols-outlined fill text-primary text-[20px] mt-[2px]">storefront</span>
+<span class="font-body-md text-body-md text-primary-fixed-variant font-semibold">Live Showroom Mode Included</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined fill text-primary text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">Priority Support</span>
+</li>
+</ul>
+<button class="w-full py-sm btn-primary font-label-sm text-label-sm uppercase rounded tracking-wider shadow-md">
+                    Upgrade Now
+                </button>
+</div>
+<!-- Tier 4: Ultra -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md flex flex-col relative overflow-hidden transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg bg-white">
+<div class="mb-lg">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-xs">Ultra</h3>
+<div class="flex items-baseline gap-xs">
+<span class="font-display-md text-display-md text-on-surface">$399</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/mo</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-sm min-h-[40px]">Multi-store franchise management and white-labeling.</p>
+</div>
+<ul class="flex flex-col gap-sm flex-grow mb-lg">
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-secondary text-[20px] mt-[2px]">done_all</span>
+<span class="font-body-md text-body-md text-on-surface">Everything in Enterprise</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-secondary text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">White-label Customer Portal</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-secondary text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Multi-location Inventory Sync</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-secondary text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Dedicated Account Manager</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-secondary text-[20px] mt-[2px]">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Custom API Rate Limits</span>
+</li>
+</ul>
+<button class="w-full py-sm border-2 border-surface-container-high text-on-surface font-label-sm text-label-sm uppercase rounded hover:border-outline transition-colors">
+                    Contact Sales
+                </button>
+</div>
+</div>
+<!-- Secondary Action -->
+<div class="mt-lg">
+<a class="text-on-surface-variant hover:text-primary font-label-sm text-label-sm uppercase tracking-widest transition-colors flex items-center gap-xs" href="#">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                Maybe Later, Back to Settings
+            </a>
+</div>
+</main>
+</body></html>

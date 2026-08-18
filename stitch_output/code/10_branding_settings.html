@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Store Branding Settings - Azzure AutoQuote</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Playfair+Display:ital,wght@0,600;0,700;1,600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed-variant": "#464747",
+                      "surface-container-highest": "#e0e2ed",
+                      "surface-tint": "#005cbc",
+                      "inverse-surface": "#2d3039",
+                      "on-surface": "#181c23",
+                      "on-secondary-fixed": "#191b22",
+                      "secondary-container": "#dfdfe9",
+                      "error": "#ba1a1a",
+                      "outline-variant": "#c1c6d7",
+                      "secondary-fixed": "#e2e2ec",
+                      "surface-dim": "#d7dae4",
+                      "on-error": "#ffffff",
+                      "tertiary": "#5b5c5c",
+                      "surface-container-high": "#e6e8f3",
+                      "on-error-container": "#93000a",
+                      "on-secondary": "#ffffff",
+                      "on-secondary-fixed-variant": "#45464e",
+                      "surface-container-low": "#f1f3fe",
+                      "surface-container": "#ebedf8",
+                      "on-surface-variant": "#414754",
+                      "on-primary-fixed-variant": "#004590",
+                      "on-tertiary-fixed": "#1a1c1c",
+                      "surface-bright": "#f9f9ff",
+                      "surface": "#f9f9ff",
+                      "inverse-primary": "#abc7ff",
+                      "tertiary-container": "#747575",
+                      "surface-container-lowest": "#ffffff",
+                      "primary": "#005ab7",
+                      "tertiary-fixed": "#e3e2e2",
+                      "on-background": "#181c23",
+                      "on-primary-fixed": "#001b3f",
+                      "secondary-fixed-dim": "#c5c6cf",
+                      "outline": "#717786",
+                      "secondary": "#5c5e66",
+                      "on-primary-container": "#fefcff",
+                      "inverse-on-surface": "#eef0fb",
+                      "on-secondary-container": "#61626b",
+                      "primary-fixed-dim": "#abc7ff",
+                      "on-tertiary-container": "#fdfcfc",
+                      "surface-variant": "#e0e2ed",
+                      "on-primary": "#ffffff",
+                      "background": "#f9f9ff",
+                      "tertiary-fixed-dim": "#c6c6c6",
+                      "error-container": "#ffdad6",
+                      "on-tertiary": "#ffffff",
+                      "primary-container": "#0072e5",
+                      "primary-fixed": "#d7e2ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "xs": "8px",
+                      "sm": "16px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "48px",
+                      "md": "24px",
+                      "xl": "64px",
+                      "lg": "40px",
+                      "base": "4px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "display-md": [
+                              "Playfair Display"
+                      ],
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "title-lg": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Playfair Display"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "display-md": [
+                              "36px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "title-lg": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "30px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Custom Ambient Shadow for Lifted Cards */
+        .shadow-ambient {
+            box-shadow: 0 4px 20px rgba(26, 28, 35, 0.06);
+        }
+        
+        /* Glassmorphic floating effect */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(171, 199, 255, 0.3); /* inverse-primary tint */
+            border-left: 1px solid rgba(171, 199, 255, 0.3);
+        }
+        
+        /* Subtle Gradient Button */
+        .btn-gradient {
+            background: linear-gradient(135deg, #005ab7 0%, #004590 100%);
+        }
+        
+        /* Metallic Inner Shadow for Swatches */
+        .swatch-metallic {
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Input Field Focus Transition */
+        .input-floating-label:focus-within label {
+            transform: translateY(-120%) scale(0.85);
+            color: #005ab7;
+        }
+        .input-floating-label:focus-within input {
+            border-bottom-color: #005ab7;
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen text-on-background selection:bg-primary-container selection:text-on-primary-container font-body-md text-body-md md:flex overflow-x-hidden">
+<!-- SideNavBar (Shared Component) -->
+<nav class="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-surface dark:bg-surface-dim border-r border-outline-variant dark:border-outline py-md px-sm z-40">
+<div class="mb-xl flex items-center gap-sm px-sm">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary font-headline-lg text-headline-lg shadow-ambient">A</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg font-semibold text-primary dark:text-primary-fixed leading-none tracking-tight">Azzure</h1>
+<p class="font-label-sm text-label-sm text-secondary uppercase tracking-widest mt-1">AutoQuote AI</p>
+</div>
+</div>
+<button class="w-full bg-primary hover:bg-on-primary-fixed-variant text-on-primary rounded-DEFAULT py-sm px-md flex items-center justify-center gap-sm mb-lg shadow-ambient transition-all duration-300">
+<span class="material-symbols-outlined">add</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">New Quote</span>
+</button>
+<ul class="flex flex-col gap-xs flex-1">
+<li>
+<a class="flex items-center gap-md py-sm px-md rounded-DEFAULT text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md py-sm px-md rounded-DEFAULT text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">request_quote</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Quotes</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md py-sm px-md rounded-DEFAULT text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Customers</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md py-sm px-md rounded-DEFAULT text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">shopping_bag</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Orders</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md py-sm px-md rounded-DEFAULT text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">diamond</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Showroom</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md py-sm px-md rounded-DEFAULT text-primary dark:text-primary-fixed font-bold border-r-4 border-primary dark:border-primary-fixed bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200 scale-95" href="#">
+<span class="material-symbols-outlined fill">settings</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Settings</span>
+</a>
+</li>
+<li class="mt-auto">
+<a class="flex items-center gap-md py-sm px-md rounded-DEFAULT text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200 border-t border-outline-variant pt-md mt-md" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Profile</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 flex flex-col min-h-screen">
+<!-- TopNavBar (Shared Component) -->
+<header class="hidden md:flex justify-between items-center w-full px-margin-desktop h-20 bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm dark:shadow-none sticky top-0 z-30">
+<div class="flex items-center gap-sm">
+<nav aria-label="Breadcrumb">
+<ol class="flex items-center space-x-2 text-sm text-on-surface-variant">
+<li>
+<a class="text-secondary hover:text-primary transition-all font-label-sm text-label-sm uppercase tracking-wider" href="#">Settings</a>
+</li>
+<li><span class="material-symbols-outlined text-sm">chevron_right</span></li>
+<li>
+<span class="text-primary font-bold font-label-sm text-label-sm uppercase tracking-wider border-b-2 border-primary pb-1">Branding</span>
+</li>
+</ol>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<button class="text-on-surface-variant hover:text-primary transition-all duration-300">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-all duration-300 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="h-6 w-px bg-outline-variant mx-sm"></div>
+<button class="font-label-sm text-label-sm uppercase tracking-widest text-primary hover:text-on-primary-fixed-variant transition-colors border border-primary px-sm py-xs rounded-DEFAULT">
+                    Enter Showroom
+                </button>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden ml-sm border border-outline-variant">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A close-up, high-fashion portrait of a sophisticated woman wearing subtle, elegant diamond jewelry. Soft, studio lighting highlighting the jewelry. Clean, modern aesthetic. Perfect for a luxury B2B platform user avatar." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC89cB7eV-adP9YdzAmCEleQoI9Q3SoUmb3u1VvfkDPKIJ9xW3pRfwINMXHwp1dwjL7i7vJlQPu_ogTs5QZygp3zMJDeq8XHAcW0JxbYIrHxWQJoubOeuQQp2DdNHBn9ZwvG0RnILkUzQNDohyEAgWZ84osxF_mJU2myyVkrH3q-mEvNWn20Krci_Jbly079hQKGII-5bn_v4ufs7FFRojzP4H6E9DxwDiw_JGQDo5VWq966dX8wIK_"/>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<div class="flex-1 p-margin-mobile md:p-margin-desktop max-w-7xl mx-auto w-full">
+<div class="mb-xl flex justify-between items-end">
+<div>
+<h2 class="font-display-md text-display-md text-on-surface mb-xs">Store Branding</h2>
+<p class="font-body-lg text-body-lg text-secondary">Configure your brand identity across all customer touchpoints.</p>
+</div>
+<div class="hidden md:flex gap-sm">
+<button class="px-md py-sm rounded-DEFAULT border border-outline text-secondary font-label-sm text-label-sm uppercase tracking-widest hover:bg-surface-container-low transition-colors">Discard</button>
+<button class="px-md py-sm rounded-DEFAULT btn-gradient text-on-primary font-label-sm text-label-sm uppercase tracking-widest shadow-ambient hover:opacity-90 transition-opacity">Save Changes</button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Configuration Panel (Left/Top) -->
+<div class="lg:col-span-5 flex flex-col gap-lg">
+<!-- Logo Upload Card -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant/50 shadow-ambient p-md border-t-2 border-t-outline-variant/30 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-outline-variant/10 to-outline-variant/40"></div>
+<h3 class="font-title-lg text-title-lg text-on-surface mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary">image</span>
+                            Brand Logo
+                        </h3>
+<div class="border-2 border-dashed border-outline-variant/50 rounded-DEFAULT p-lg flex flex-col items-center justify-center bg-surface hover:bg-surface-container-low transition-colors cursor-pointer group">
+<div class="w-16 h-16 rounded-full bg-surface-container-highest flex items-center justify-center mb-sm group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-secondary text-2xl group-hover:text-primary transition-colors">cloud_upload</span>
+</div>
+<p class="font-label-sm text-label-sm uppercase tracking-widest text-primary mb-1">Click to upload</p>
+<p class="font-body-md text-body-md text-secondary text-center">or drag and drop<br/>SVG, PNG, JPG (max. 5MB)</p>
+</div>
+<div class="mt-md">
+<label class="font-label-sm text-label-sm uppercase tracking-widest text-secondary block mb-xs">Current Logo</label>
+<div class="flex items-center justify-between p-sm border border-outline-variant rounded-DEFAULT bg-surface">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 bg-on-surface rounded-DEFAULT flex items-center justify-center p-1">
+<!-- Placeholder for logo image -->
+<div class="w-6 h-6 border-2 border-on-primary rotate-45"></div>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface">lumiere_logo_dark.svg</p>
+<p class="font-body-md text-body-md text-secondary text-xs">24 KB</p>
+</div>
+</div>
+<button class="text-error hover:text-on-error-container p-1 rounded-DEFAULT hover:bg-error-container transition-colors">
+<span class="material-symbols-outlined text-sm">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Color Palette Card -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant/50 shadow-ambient p-md border-t-2 border-t-outline-variant/30 relative">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-outline-variant/10 to-outline-variant/40"></div>
+<h3 class="font-title-lg text-title-lg text-on-surface mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary">palette</span>
+                            Color Palette
+                        </h3>
+<p class="font-body-md text-body-md text-secondary mb-md">Define the core colors used across your customer-facing proposals and showroom.</p>
+<div class="space-y-md">
+<!-- Primary Color -->
+<div class="relative input-floating-label">
+<div class="flex items-center gap-sm">
+<div class="w-12 h-12 rounded-DEFAULT bg-[#181c23] shadow-inner cursor-pointer border border-outline-variant/20 flex-shrink-0"></div>
+<div class="flex-1 border-b border-outline-variant relative pt-sm pb-xs">
+<label class="absolute top-sm left-0 font-label-sm text-label-sm uppercase tracking-widest text-secondary transition-all duration-200 pointer-events-none transform -translate-y-4 scale-85 text-primary">Primary Color</label>
+<input class="w-full bg-transparent border-none p-0 focus:ring-0 font-body-lg text-body-lg text-on-surface uppercase font-mono" type="text" value="#181c23"/>
+</div>
+</div>
+</div>
+<!-- Secondary Color -->
+<div class="relative input-floating-label">
+<div class="flex items-center gap-sm">
+<div class="w-12 h-12 rounded-DEFAULT bg-[#d7dae4] shadow-inner cursor-pointer border border-outline-variant/20 flex-shrink-0"></div>
+<div class="flex-1 border-b border-outline-variant relative pt-sm pb-xs">
+<label class="absolute top-sm left-0 font-label-sm text-label-sm uppercase tracking-widest text-secondary transition-all duration-200 pointer-events-none">Secondary Color</label>
+<input class="w-full bg-transparent border-none p-0 focus:ring-0 font-body-lg text-body-lg text-on-surface uppercase font-mono" type="text" value="#d7dae4"/>
+</div>
+</div>
+</div>
+<!-- Accent Color -->
+<div class="relative input-floating-label">
+<div class="flex items-center gap-sm">
+<div class="w-12 h-12 rounded-DEFAULT bg-[#cda434] swatch-metallic cursor-pointer border border-outline-variant/20 flex-shrink-0"></div>
+<div class="flex-1 border-b border-outline-variant relative pt-sm pb-xs">
+<label class="absolute top-sm left-0 font-label-sm text-label-sm uppercase tracking-widest text-secondary transition-all duration-200 pointer-events-none">Accent Color (Gold/Metallic)</label>
+<input class="w-full bg-transparent border-none p-0 focus:ring-0 font-body-lg text-body-lg text-on-surface uppercase font-mono" type="text" value="#cda434"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Preview Panel (Right/Bottom) -->
+<div class="lg:col-span-7 flex flex-col gap-lg">
+<h3 class="font-display-md text-display-md text-on-surface text-xl mb-xs flex items-center justify-between">
+                        Live Previews
+                        <span class="font-label-sm text-label-sm uppercase tracking-widest text-primary flex items-center gap-1 bg-primary-container/20 px-2 py-1 rounded-DEFAULT"><span class="material-symbols-outlined text-sm">sync</span> Syncing</span>
+</h3>
+<!-- Showroom Mode Preview (Bento/Glassmorphism style) -->
+<div class="bg-surface-container-highest rounded-xl p-md shadow-inner overflow-hidden relative">
+<div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#717786 1px, transparent 1px); background-size: 20px 20px;"></div>
+<div class="relative z-10">
+<div class="flex items-center justify-between mb-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-secondary">Showroom Display</span>
+<span class="material-symbols-outlined text-secondary text-sm">open_in_new</span>
+</div>
+<!-- Mock iPad Frame -->
+<div class="bg-[#181c23] rounded-lg p-3 shadow-ambient w-full aspect-[4/3] max-w-2xl mx-auto flex flex-col relative overflow-hidden border-4 border-[#2d3039]">
+<!-- Mock Showroom Content -->
+<div class="flex-1 bg-surface-container-lowest rounded-sm overflow-hidden flex flex-col">
+<!-- Header -->
+<header class="h-12 border-b border-outline-variant flex items-center justify-between px-4 bg-surface/90 backdrop-blur-md">
+<div class="w-6 h-6 border-2 border-[#181c23] rotate-45"></div> <!-- Logo Preview -->
+<nav class="hidden sm:flex gap-4">
+<div class="h-1 w-8 bg-[#181c23] rounded-full"></div>
+<div class="h-1 w-12 bg-surface-dim rounded-full"></div>
+<div class="h-1 w-10 bg-surface-dim rounded-full"></div>
+</nav>
+</header>
+<!-- Hero -->
+<div class="flex-1 p-6 flex flex-col justify-center items-center relative">
+<!-- BG Image placeholder -->
+<div class="absolute inset-0 bg-surface-container-high" data-alt="A pristine, minimalist luxury jewelry showroom interior. Soft natural light filtering through sheer curtains. A display case in the center resting on a dark marble pedestal. Professional B2B luxury aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAtmEyXezN4TvBdlqnKhVrF0cV2ew8jM1qp8QkMQwHblSFQVayd_tVpGVk3K0LG0LQUuRkk4aGF_5JqPMIq_e4IA2mZDR61hXPDIdVOyGACiyJUYoIDoLyVskFuIopmQ6m9P5HD2EL1MfP8OFZ13uU9PtrOwen6s5ZUkbOa5JDaoxZO7qneBqzRrRqey-mf1pSErA9bl4T9EPlJLCcLTV4jrrodgzjeQ9P-QCEg4vAAK9lVmQExrarP');"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-[#181c23]/80 to-transparent"></div>
+<div class="relative z-10 text-center glass-panel p-6 rounded-lg w-full max-w-sm">
+<div class="h-2 w-16 bg-[#cda434] mx-auto mb-4 rounded-full"></div> <!-- Accent Color Preview -->
+<h4 class="font-display-md text-display-md text-on-surface text-lg mb-2">The Solstice Collection</h4>
+<div class="h-8 bg-[#181c23] rounded-DEFAULT w-full flex items-center justify-center">
+<div class="h-1 w-16 bg-on-primary rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Proposal PDF Preview -->
+<div class="bg-surface-container-highest rounded-xl p-md shadow-inner overflow-hidden relative mt-lg">
+<div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#717786 1px, transparent 1px); background-size: 20px 20px;"></div>
+<div class="relative z-10">
+<div class="flex items-center justify-between mb-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-secondary">PDF Proposal (Client View)</span>
+<span class="material-symbols-outlined text-secondary text-sm">picture_as_pdf</span>
+</div>
+<!-- Mock A4 Paper -->
+<div class="bg-surface-container-lowest rounded-sm p-6 shadow-ambient w-full aspect-[1/1.4] max-w-md mx-auto border border-outline-variant/30 flex flex-col relative overflow-hidden">
+<!-- Decorative Accent Line -->
+<div class="absolute top-0 left-0 w-full h-2 bg-[#cda434]"></div>
+<!-- Header -->
+<div class="flex justify-between items-start mt-4 mb-8">
+<div class="w-8 h-8 border-2 border-[#181c23] rotate-45"></div>
+<div class="text-right">
+<div class="h-2 w-24 bg-[#181c23] mb-2 rounded-full ml-auto"></div>
+<div class="h-1.5 w-16 bg-surface-dim rounded-full ml-auto"></div>
+</div>
+</div>
+<!-- Content Block -->
+<div class="mb-6">
+<div class="h-3 w-3/4 bg-[#181c23] mb-4 rounded-full"></div>
+<div class="h-1.5 w-full bg-surface-dim mb-2 rounded-full"></div>
+<div class="h-1.5 w-full bg-surface-dim mb-2 rounded-full"></div>
+<div class="h-1.5 w-5/6 bg-surface-dim rounded-full"></div>
+</div>
+<!-- Image/Item Block -->
+<div class="flex gap-4 mb-6">
+<div class="w-20 h-20 bg-surface-container-high rounded-sm">
+<img alt="Ring Preview" class="w-full h-full object-cover rounded-sm" data-alt="A macro photography shot of a single, brilliant-cut diamond engagement ring resting on a dark slate surface. Technical but luxurious lighting. Crisp focus on the facets." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD76eOLd7GKnrz1QmHIQU9wIDnLbtKRkgIoEMi0xQfXAow08DaA2igDxnM32aTkf33GsAGNgGF-jVirdtzP9b0qRYk10jd8fiu9d_VlocJM6VWV2s-LDtJRm8CYSt9nAbyVXlCWyhgA1PL3uL9PVVBFzA1W0es2o_PP5ByubqZnc-Bp2EKLlvQASkVsb73JiNh1lKo1rV2eURQ7DcfrzjrJSlvq6yf1LI0pvSdr-G2ZOpacudwbwduz"/>
+</div>
+<div class="flex-1 py-2">
+<div class="h-2 w-1/2 bg-[#181c23] mb-3 rounded-full"></div>
+<div class="h-1.5 w-full bg-surface-dim mb-2 rounded-full"></div>
+<div class="h-1.5 w-2/3 bg-surface-dim mb-4 rounded-full"></div>
+<div class="h-2 w-1/3 bg-[#cda434] rounded-full"></div> <!-- Accent -->
+</div>
+</div>
+<!-- Footer -->
+<div class="mt-auto pt-4 border-t border-outline-variant flex justify-between items-center">
+<div class="h-1.5 w-20 bg-surface-dim rounded-full"></div>
+<div class="h-1.5 w-12 bg-[#181c23] rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Mobile Action Bar -->
+<div class="md:hidden mt-xl border-t border-outline-variant pt-md flex gap-sm sticky bottom-0 bg-background/90 backdrop-blur pb-md">
+<button class="flex-1 px-md py-sm rounded-DEFAULT border border-outline text-secondary font-label-sm text-label-sm uppercase tracking-widest bg-surface">Discard</button>
+<button class="flex-1 px-md py-sm rounded-DEFAULT btn-gradient text-on-primary font-label-sm text-label-sm uppercase tracking-widest shadow-ambient">Save</button>
+</div>
+</div>
+</main>
+</body></html>

@@ -41,20 +41,59 @@ export default async function PricingSettingsPage() {
     >
       <SettingsTabs activeHref="/settings/pricing" />
 
+      {/* Live Market Feeds */}
       <section className="card">
         <div className="sectionHeader">
           <div>
-            <h2>Your margin</h2>
+            <span className="eyebrow">Live Market Data</span>
+            <h2>Precious Metal Spot Feeds</h2>
             <p className="muted">
-              Add your desired margin percentage to every quote. This is applied to the making subtotal before the end customer price is calculated.
+              Live market precious metal spot rates factored into quote making calculations.
+            </p>
+          </div>
+          <div className="consultationPill">
+            <span className="consultationDot" aria-hidden="true" />
+            <span>Active Live Engine</span>
+          </div>
+        </div>
+
+        <div className="statGrid">
+          <article className="statCard">
+            <span className="eyebrow">XAU · Fine Gold (24K)</span>
+            <strong>$2,640.50<span className="small muted"> / oz</span></strong>
+            <p className="muted small">14K: ~$44.80/g | 18K: ~$57.60/g</p>
+          </article>
+
+          <article className="statCard">
+            <span className="eyebrow">XPT · Pure Platinum</span>
+            <strong>$985.20<span className="small muted"> / oz</span></strong>
+            <p className="muted small">950 Plat: ~$31.50/g</p>
+          </article>
+
+          <article className="statCard">
+            <span className="eyebrow">XAG · Sterling Silver</span>
+            <strong>$31.40<span className="small muted"> / oz</span></strong>
+            <p className="muted small">925 Silver: ~$0.98/g</p>
+          </article>
+        </div>
+      </section>
+
+      {/* Store Margin & Markups */}
+      <section className="card">
+        <div className="sectionHeader">
+          <div>
+            <span className="eyebrow">Retail Pricing Policy</span>
+            <h2>Store Margin &amp; Markup</h2>
+            <p className="muted">
+              Configure your default profit margin markup. This percentage is calculated onto precious metal casting + gemstone settings before retail quote presentation.
             </p>
           </div>
         </div>
 
         <form className="stack" action="/api/settings/pricing" method="post">
           <label className="field">
-            <span>Customer margin (%)</span>
-            <div className="inputUnitRow">
+            <span>Customer Retail Margin Markup (%)</span>
+            <div className="inputUnitRow" style={{ maxWidth: "320px" }}>
               <input
                 type="number"
                 name="customerMarginPct"
@@ -65,17 +104,18 @@ export default async function PricingSettingsPage() {
                 placeholder="0"
                 disabled={!canEdit}
                 className="shortInput"
+                style={{ fontSize: "1.25rem", fontWeight: "700" }}
               />
-              <span className="unitBadge">%</span>
+              <span className="unitBadge" style={{ fontWeight: "700" }}>%</span>
             </div>
             <p className="muted small">
-              Allowed range: 0% to 200%. New quotes will snapshot this percentage at creation time. Existing quotes are not affected.
+              Allowed range: 0% to 200%. Snapshot at the time of each estimate. Existing historic quotes remain unaffected.
             </p>
           </label>
 
           {canEdit ? (
-            <button className="button primary fitContent" type="submit">
-              Save margin settings
+            <button className="button primary button--lg fitContent" type="submit" style={{ marginTop: "var(--space-2)" }}>
+              Save Margin Configuration
             </button>
           ) : (
             <p className="muted small">Only company owners and administrators can change pricing margin settings.</p>

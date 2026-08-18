@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Inter, JetBrains_Mono } from "next/font/google";
+import { Playfair_Display, Inter, JetBrains_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/toast-provider";
 import "@/src/styles/design-tokens.css";
 import "./globals.css";
 
-const displayFont = Cormorant_Garamond({ subsets: ["latin"], variable: "--font-display-loaded", display: "swap" });
+const displayFont = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-display-loaded",
+  display: "swap",
+  weight: ["400", "600", "700"]
+});
 const uiFont = Inter({ subsets: ["latin"], variable: "--font-ui-loaded", display: "swap" });
 const monoFont = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono-loaded", display: "swap" });
 

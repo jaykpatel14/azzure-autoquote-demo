@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Azzure AutoQuote - AI Pricing for Luxury Jewelry Retailers</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Playfair+Display:ital,wght@0,600;0,700;1,600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#e0e2ed",
+                      "secondary-fixed": "#e2e2ec",
+                      "on-tertiary-fixed": "#1a1c1c",
+                      "on-tertiary": "#ffffff",
+                      "surface-bright": "#f9f9ff",
+                      "primary-container": "#0072e5",
+                      "on-secondary": "#ffffff",
+                      "secondary-fixed-dim": "#c5c6cf",
+                      "surface-container-highest": "#e0e2ed",
+                      "surface-container-lowest": "#ffffff",
+                      "on-secondary-container": "#61626b",
+                      "on-surface": "#181c23",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#45464e",
+                      "surface": "#f9f9ff",
+                      "secondary-container": "#dfdfe9",
+                      "primary": "#005ab7",
+                      "surface-container-low": "#f1f3fe",
+                      "secondary": "#5c5e66",
+                      "inverse-surface": "#2d3039",
+                      "tertiary-fixed": "#e3e2e2",
+                      "tertiary-container": "#747575",
+                      "background": "#f9f9ff",
+                      "surface-dim": "#d7dae4",
+                      "surface-container-high": "#e6e8f3",
+                      "inverse-primary": "#abc7ff",
+                      "error-container": "#ffdad6",
+                      "primary-fixed-dim": "#abc7ff",
+                      "tertiary": "#5b5c5c",
+                      "inverse-on-surface": "#eef0fb",
+                      "on-secondary-fixed": "#191b22",
+                      "on-surface-variant": "#414754",
+                      "on-error": "#ffffff",
+                      "outline": "#717786",
+                      "primary-fixed": "#d7e2ff",
+                      "on-background": "#181c23",
+                      "on-primary-fixed": "#001b3f",
+                      "outline-variant": "#c1c6d7",
+                      "on-tertiary-fixed-variant": "#464747",
+                      "on-primary-fixed-variant": "#004590",
+                      "on-primary-container": "#fefcff",
+                      "on-primary": "#ffffff",
+                      "tertiary-fixed-dim": "#c6c6c6",
+                      "surface-container": "#ebedf8",
+                      "surface-tint": "#005cbc",
+                      "error": "#ba1a1a",
+                      "on-tertiary-container": "#fdfcfc"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "xl": "64px",
+                      "margin-desktop": "48px",
+                      "xs": "8px",
+                      "gutter": "24px",
+                      "margin-mobile": "16px",
+                      "base": "4px",
+                      "md": "24px",
+                      "sm": "16px",
+                      "lg": "40px"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Playfair Display"
+                      ],
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "headline-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "title-lg": [
+                              "Inter"
+                      ],
+                      "display-md": [
+                              "Playfair Display"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "30px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "title-lg": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-md": [
+                              "36px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        /* Ambient Shadow */
+        .ambient-shadow {
+            box-shadow: 0 4px 20px rgba(26, 28, 35, 0.06);
+        }
+        
+        /* Glassmorphic Overlay */
+        .glass-overlay {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0, 90, 183, 0.1);
+            border-left: 1px solid rgba(0, 90, 183, 0.1);
+        }
+
+        /* Pulsating AI Glow */
+        @keyframes ai-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 90, 183, 0.2); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 90, 183, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 90, 183, 0); }
+        }
+        .ai-indicator {
+            animation: ai-pulse 2s infinite;
+        }
+
+        /* Gradient Button */
+        .btn-primary {
+            background: linear-gradient(135deg, #0072e5 0%, #005ab7 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #005ab7 0%, #004590 100%);
+            transform: translateY(-1px);
+        }
+
+        /* Metallic Swatch */
+        .metallic-swatch {
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Fluid Grid Setup */
+        .fluid-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+        @media (min-width: 768px) {
+            .fluid-grid {
+                grid-template-columns: repeat(8, 1fr);
+            }
+        }
+        @media (min-width: 1024px) {
+            .fluid-grid {
+                grid-template-columns: repeat(12, 1fr);
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-lg antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation (Marketing Version - Suppressing SideNav for transactional intent) -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm transition-all duration-300">
+<div class="max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop h-20 flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="font-headline-lg text-headline-lg font-semibold text-primary">Azzure</span>
+<span class="font-body-md text-body-md text-secondary mt-1 hidden sm:block">AutoQuote AI</span>
+</div>
+<nav class="hidden md:flex items-center gap-xl">
+<a class="font-label-sm text-label-sm uppercase text-secondary hover:text-primary transition-colors tracking-widest" href="#features">Workflow</a>
+<a class="font-label-sm text-label-sm uppercase text-secondary hover:text-primary transition-colors tracking-widest" href="#intelligence">Intelligence</a>
+<a class="font-label-sm text-label-sm uppercase text-secondary hover:text-primary transition-colors tracking-widest" href="#pricing">Pricing</a>
+</nav>
+<div class="flex items-center gap-md">
+<a class="font-label-sm text-label-sm uppercase text-primary hover:text-primary-fixed-dim transition-colors hidden sm:block" href="/login">Log In</a>
+<button class="btn-primary text-on-primary font-label-sm text-label-sm uppercase px-md py-sm rounded-lg shadow-sm">
+                    Start Free Trial
+                </button>
+</div>
+</div>
+</header>
+<main class="pt-20">
+<!-- Hero Section -->
+<section class="relative min-h-[921px] flex items-center pt-xl pb-xl overflow-hidden bg-surface-container-lowest">
+<!-- Decorative background element -->
+<div class="absolute top-0 right-0 w-[800px] h-[800px] bg-primary-fixed rounded-full blur-[120px] opacity-20 -translate-y-1/2 translate-x-1/3 z-0"></div>
+<div class="max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop w-full relative z-10">
+<div class="fluid-grid items-center">
+<div class="col-span-4 md:col-span-8 lg:col-span-5 flex flex-col gap-lg">
+<div class="inline-flex items-center gap-xs px-sm py-xs bg-surface-container-low border border-outline-variant/50 rounded-full w-max">
+<span class="w-2 h-2 rounded-full bg-primary ai-indicator"></span>
+<span class="font-label-sm text-label-sm text-primary uppercase">Introducing AutoQuote v2.0</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-on-surface">
+                            Stop Saying <br/>
+<span class="italic text-primary font-light">"Let Me Get Back to You."</span>
+</h1>
+<p class="font-body-lg text-body-lg text-secondary max-w-md">
+                            The ultimate AI-powered pricing engine for luxury jewelry retailers. Close bespoke commissions instantly on the showroom floor with real-time, mathematically perfect quotes.
+                        </p>
+<div class="flex flex-col sm:flex-row gap-md pt-xs">
+<button class="btn-primary text-on-primary font-label-sm text-label-sm uppercase px-xl py-md rounded-lg shadow-md flex items-center justify-center gap-xs">
+                                Start Free Trial
+                                <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<button class="bg-surface-container-lowest text-on-surface border border-outline border-opacity-30 hover:bg-surface-container-low font-label-sm text-label-sm uppercase px-xl py-md rounded-lg transition-colors flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">play_circle</span>
+                                Watch Demo
+                            </button>
+</div>
+<div class="pt-lg flex items-center gap-md border-t border-surface-variant">
+<div class="flex -space-x-3">
+<img class="w-10 h-10 rounded-full border-2 border-surface-container-lowest object-cover z-30" data-alt="A macro shot of a brilliant cut diamond resting on a dark grey velvet surface. The lighting is dramatic, highlighting the facets and creating sharp reflections. Luxury, high-end editorial aesthetic. Deep shadows and crisp highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA00wsHq-hVBT5pK6gVg_mDVFWbuwR4KrzoDvvxINCP_jUyxwEAuaOG7pyPwnz7q9nBg1h-QG1O9SRcpqQQKKJSBFG5ao79dPYKgei8HVnzbcMk-EQ9aAorub7eUqATobfXuUD0MTDYToSxPbWOnkZ8XL1tW4K3w-o-I9we_xRi5-9C2zO0KIGw1jWMDr6YfaKHbVIV1sQG80pF0oaWjDmzjYLjVTYwcaWHrcDB0DkonxnsvMz-GX21"/>
+<img class="w-10 h-10 rounded-full border-2 border-surface-container-lowest object-cover z-20" data-alt="A close-up of a jeweler's hands holding a platinum ring setting with tweezers under a bright white loupe light. The background is a blurred dark slate grey workspace. Technical, precise, high-end aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8gTncdg4jaiWYacBbbn4qtcO3r7y3jLArlu1pc7keD2Q01GcK6_a-cMl48jqekQTtOI_cYasJh5yOwNL2b0Hp1JmKwaXKJnXn5CbghsnwpsR_qQJq8P7WmS3gj9NyHND2vmc_7MqxK_fKzFdxUbfbeIQH4b6QHFjjB-z45ElqNKYePr5IXk3q2w3W53cQnuf2F3tH3VYzuBENz4f5ataMYnsWxYxDPcERUDHMgjieK0HYxjy_Qc7G"/>
+<img class="w-10 h-10 rounded-full border-2 border-surface-container-lowest object-cover z-10" data-alt="A detailed shot of a gold necklace chain draped elegantly over a minimalist white marble pedestal. The lighting is soft and ambient, creating a high-key, modern luxury aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCts5ks5eG8nWdF1s4n6IjOCMlZo5sx1xztLRAtbk1vxs4OKBK6isNjsj5SfBpVxP2A_9BS-T3rWsPpZp7dxpupda__ghBmEpOAMvOGu5TvWZJdTIGsmFjTdzhgAjJGxuKnwHpVf30rZReq0-lxLhbBOIH3azb4m8Hvr6HpTozbNWiWvkd0XnG_YNxVTNx0XMqajUhypARZafQ7bmpg56EeVPdCWIdBkl-WWoVAzA4b2tkRuj9nBvaO"/>
+</div>
+<div>
+<p class="font-title-lg text-title-lg text-on-surface">Trusted by 500+</p>
+<p class="font-body-md text-body-md text-secondary">luxury retailers worldwide</p>
+</div>
+</div>
+</div>
+<div class="col-span-4 md:col-span-8 lg:col-span-7 mt-xl lg:mt-0 relative">
+<!-- Hero Image / iPad Mockup Concept -->
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden ambient-shadow border border-outline-variant/30">
+<img class="w-full h-full object-cover" data-alt="A sleek, modern tablet device resting on a pristine white marble showroom counter. The tablet screen displays a sophisticated, minimalist interface with a 3D rendering of a custom engagement ring alongside a detailed, cleanly formatted price breakdown in shades of deep slate and azure blue. High-end, editorial tech aesthetic, soft natural lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpLq4mBapBpT2TGt8XA6ZdDIr9W3sOGUAs78q9i8oUBGBQUJuA8ysMECUft2nIyq_oiffNWB2VBqDL5zGpIOiMakMWc-jmPWoyWbtTa7VXi50_q8a6kIyvWwydr7pn4Fc0gjDtb5q76Co-krSdssnyeVZdKT-7v5GBCM1Mbi0xnfdQCUk_1iZceg6L7qJSPie30l4hbcFvZ1bl22_W45Elpi_UhJuchYhmanJ1nQl_ycb7xAYjTofQ"/>
+<!-- Floating UI Element -->
+<div class="absolute bottom-md left-md right-md sm:right-auto glass-overlay rounded-lg p-md max-w-sm">
+<div class="flex items-start justify-between mb-sm">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">diamond</span>
+<span class="font-title-lg text-title-lg text-on-surface">Bespoke Solitaire</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary bg-surface-container px-2 py-1 rounded">Real-time</span>
+</div>
+<div class="flex justify-between items-end border-b border-surface-variant pb-sm mb-sm">
+<span class="font-body-md text-body-md text-secondary">2.5ct VVS1 • Platinum</span>
+<span class="font-headline-lg text-headline-lg text-primary">$24,500</span>
+</div>
+<div class="flex items-center gap-xs text-secondary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] ai-indicator text-primary">check_circle</span>
+                                    Live spot prices updated 2 mins ago
+                                </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+</body></html>
