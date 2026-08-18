@@ -372,10 +372,16 @@ async function buildHealthChecks(): Promise<AdminHealthCheck[]> {
     { state: "degraded" as const, detail: "OpenAI ping timed out" }
   ).catch(() => ({ state: "degraded" as const, detail: "OpenAI ping failed" }));
 
+  const metalsApiKey = (process.env.METALS_DEV_API_KEY || "").replace(/^['"]|['"]$/g, "").trim();
+  const metalsPingUrl = metalsApiKey
+    ? `https://api.metals.dev/v1/latest?api_key=${encodeURIComponent(metalsApiKey)}&currency=USD&unit=toz`
+    : "https://api.metals.dev/v1/latest";
+
   const metalsCheck = await withTimeout<HealthCheckResult>(
-    fetch("https://api.metals.dev/v1/latest", {
+    fetch(metalsPingUrl, {
       headers: {
-        Accept: "application/json"
+        Accept: "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AzzureAutoQuote/2.0"
       }
     }).then((response) => ({
       state: response.ok ? ("operational" as const) : ("degraded" as const),
@@ -384,6 +390,7 @@ async function buildHealthChecks(): Promise<AdminHealthCheck[]> {
     4000,
     { state: "degraded" as const, detail: "Metals.dev ping timed out" }
   ).catch(() => ({ state: "degraded" as const, detail: "Metals.dev ping failed" }));
+
 
   const s3Check = process.env.AWS_REGION && process.env.AWS_ACCESS_KEY_ID
     ? ({ state: "operational" as const, detail: "S3 credentials configured" })
