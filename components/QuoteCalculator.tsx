@@ -89,6 +89,8 @@ type QuoteCalculatorProps = {
     notes: string | null;
     assumptions: string[] | null;
   };
+  companyName?: string;
+  companyLogoUrl?: string | null;
 };
 
 const ANALYSIS_STAGES = [
@@ -104,18 +106,18 @@ const QUOTE_MODE_OPTIONS: Array<{
 }> = [
   {
     value: "normal",
-    label: "Normal quote",
-    description: "Include the center stone and side stones in the estimate."
+    label: "Full jewelry piece",
+    description: "Includes metal, center stone, and side stones."
   },
   {
     value: "without-center",
-    label: "Quote without center stone",
-    description: "Exclude the center stone while keeping side stones in the quote."
+    label: "Semi-mount (no center)",
+    description: "Calculates metal and side stones; center stone is supplied by customer."
   },
   {
     value: "without-center-and-side",
-    label: "Quote without center stone and side stone",
-    description: "Exclude all center and side stone pricing from the quote."
+    label: "Mounting only (no stones)",
+    description: "Calculates metal casting and labor only; all stones supplied by customer."
   }
 ];
 
@@ -186,7 +188,9 @@ export default function QuoteCalculator({
   pricingTier = "TIER_2",
   customerMarginPct = 0,
   cadCost = 0,
-  initialQuote
+  initialQuote,
+  companyName,
+  companyLogoUrl
 }: QuoteCalculatorProps) {
   const [metalType, setMetalType] = useState<MetalType>(initialQuote?.metalType ?? "14K");
   const [quoteMode, setQuoteMode] = useState<QuoteMode>("normal");
@@ -716,9 +720,16 @@ export default function QuoteCalculator({
   return (
     <div className={showroomMode ? "estimateWorkspace showroomMode" : "estimateWorkspace"}>
       <div className="workspaceActionBar">
-        <div className="consultationPill">
-          <span className="consultationDot" aria-hidden="true" />
-          <span>{showroomMode ? "WOW Showroom Consultation Active" : "In-Store Quoting Station"}</span>
+        <div className="showroomBrandWrap">
+          {companyLogoUrl ? (
+            <img src={companyLogoUrl} alt={companyName || "Store Logo"} className="showroomBrandLogo" />
+          ) : companyName ? (
+            <strong className="showroomBrandName">{companyName}</strong>
+          ) : null}
+          <div className="consultationPill">
+            <span className="consultationDot" aria-hidden="true" />
+            <span>{showroomMode ? "WOW Showroom Consultation Active" : "In-Store Quoting Station"}</span>
+          </div>
         </div>
         <button
           type="button"

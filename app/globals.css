@@ -1473,6 +1473,26 @@ select:focus,
   border-radius: var(--radius-xl);
 }
 
+.showroomBrandWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.showroomBrandLogo {
+  max-height: 36px;
+  max-width: 140px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+.showroomBrandName {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: #ffffff;
+}
+
 .consultationPill {
   display: inline-flex;
   align-items: center;

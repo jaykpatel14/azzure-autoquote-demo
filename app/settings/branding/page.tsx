@@ -65,13 +65,15 @@ export default async function BrandingSettingsPage() {
             <input
               name="logoUrl"
               defaultValue={data.company.logoUrl ?? ""}
-              placeholder={canUseLogo ? "https://..." : "Professional or Enterprise only"}
+              placeholder={canUseLogo ? "https://..." : "Professional, Enterprise, or Ultra only"}
               disabled={!canUseLogo}
             />
           </label>
           {!canUseLogo ? (
-            <p className="muted small">Upload your logo on the Professional or Enterprise plan. The website URL remains editable on all plans.</p>
-          ) : null}
+            <p className="muted small">Upload your store logo on the Professional, Enterprise, or Ultra plan. Ultra subscribers unlock full Showroom &amp; Kiosk branding customization.</p>
+          ) : (
+            <p className="muted small">Your logo is displayed in customer quote PDFs, public customer share pages, and tablet Showroom mode.</p>
+          )}
           <div className="card logoPreviewCard" style={{ background: "var(--color-ivory)" }}>
             <p className="eyebrow" style={{ color: "rgba(28,28,30,0.58)" }}>
               Quote preview

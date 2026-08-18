@@ -34,6 +34,23 @@ const PLAN_META = {
     cta: "Contact us",
     ctaHref: "mailto:sales@azzureautoquote.com",
     featured: false
+  },
+  ultra: {
+    name: "Ultra",
+    price: 399,
+    audience: "Showrooms, tablet WOW kiosks & luxury studios",
+    highlights: [
+      "5,000 quotes / month",
+      "Photorealistic 3D Concept Generation",
+      "In-Store Tablet / WOW Showroom Mode",
+      "Custom Store Logo & Showroom Branding",
+      "Manufacturing order dispatch",
+      "White-label customer links & PDFs"
+    ],
+    badge: "Flagship",
+    cta: "Start free trial",
+    ctaHref: "/signup?plan=ultra",
+    featured: false
   }
 } as const satisfies Record<
   PlanCode,
@@ -50,19 +67,22 @@ const PLAN_META = {
 >;
 
 const FEATURE_ROWS = [
-  { section: "Core quoting", feature: "Quotes per month", starter: "100", professional: "500", enterprise: "2,500" },
-  { section: "Core quoting", feature: "AI image analysis", starter: "1-pass", professional: "Full 3-pass", enterprise: "Full 3-pass + override" },
-  { section: "Core quoting", feature: "Real-time metal pricing", starter: true, professional: true, enterprise: true },
-  { section: "Core quoting", feature: "PDF quote generation", starter: true, professional: true, enterprise: true },
-  { section: "Customisation", feature: "Custom pricing & margins", starter: false, professional: true, enterprise: true },
-  { section: "Customisation", feature: "Branded PDF output", starter: false, professional: true, enterprise: true },
-  { section: "Customisation", feature: "Quote image history", starter: false, professional: true, enterprise: true },
-  { section: "Storage", feature: "Image / quote storage", starter: "Not persisted", professional: "S3 + full history", enterprise: "S3 + retention controls" },
-  { section: "Team", feature: "User seats", starter: "1", professional: "5", enterprise: "Unlimited" },
-  { section: "Team", feature: "Overage quotes", starter: false, professional: "$0.25/quote", enterprise: "Custom rate" },
-  { section: "Enterprise", feature: "Manufacturing orders", starter: false, professional: false, enterprise: true },
-  { section: "Enterprise", feature: "Shareable customer quote links", starter: false, professional: false, enterprise: true },
-  { section: "Enterprise", feature: "Support", starter: "Email", professional: "Priority email", enterprise: "Dedicated" }
+  { section: "Core quoting", feature: "Quotes per month", starter: "100", professional: "500", enterprise: "2,500", ultra: "5,000" },
+  { section: "Core quoting", feature: "AI image analysis", starter: "1-pass", professional: "Full 3-pass", enterprise: "Full 3-pass + override", ultra: "3-Pass + 3D Concept AI" },
+  { section: "Core quoting", feature: "Real-time metal pricing", starter: true, professional: true, enterprise: true, ultra: true },
+  { section: "Core quoting", feature: "PDF quote generation", starter: true, professional: true, enterprise: true, ultra: true },
+  { section: "Customisation", feature: "Custom pricing & margins", starter: false, professional: true, enterprise: true, ultra: true },
+  { section: "Customisation", feature: "Branded PDF output", starter: false, professional: true, enterprise: true, ultra: true },
+  { section: "Customisation", feature: "Quote image history", starter: false, professional: true, enterprise: true, ultra: true },
+  { section: "Storage", feature: "Image / quote storage", starter: "Not persisted", professional: "S3 + full history", enterprise: "S3 + retention controls", ultra: "S3 + full retention" },
+  { section: "Team", feature: "User seats", starter: "1", professional: "5", enterprise: "Unlimited", ultra: "Unlimited" },
+  { section: "Team", feature: "Overage quotes", starter: false, professional: "$0.25/quote", enterprise: "Custom rate", ultra: "Custom rate" },
+  { section: "Enterprise", feature: "Manufacturing orders", starter: false, professional: false, enterprise: true, ultra: true },
+  { section: "Enterprise", feature: "Shareable customer quote links", starter: false, professional: false, enterprise: true, ultra: true },
+  { section: "Ultra Studio", feature: "Photorealistic 3D Concept Generation", starter: false, professional: false, enterprise: false, ultra: true },
+  { section: "Ultra Studio", feature: "In-Store Tablet / WOW Showroom Mode", starter: false, professional: false, enterprise: false, ultra: true },
+  { section: "Ultra Studio", feature: "Store Logo & Showroom Branding", starter: false, professional: false, enterprise: false, ultra: true },
+  { section: "Enterprise", feature: "Support", starter: "Email", professional: "Priority email", enterprise: "Dedicated", ultra: "24/7 Dedicated Concierge" }
 ] as const;
 
 const FAQ_ITEMS = [
@@ -80,7 +100,7 @@ const FAQ_ITEMS = [
   },
   {
     question: "What counts as a quote?",
-    answer: "Each photo analysis plus price generation counts as one quote."
+    answer: "Each photo analysis or text concept synthesis plus price generation counts as one quote."
   },
   {
     question: "Is my customer's data kept private?",
@@ -88,7 +108,7 @@ const FAQ_ITEMS = [
   },
   {
     question: "How do manufacturing orders work?",
-    answer: "Enterprise customers can submit a finalized quote directly to Azzure for manufacturing."
+    answer: "Enterprise and Ultra customers can submit a finalized quote directly to Azzure for manufacturing."
   }
 ] as const;
 
@@ -110,13 +130,13 @@ function FeatureCell({ value }: { value: string | boolean }) {
 }
 
 export default function PricingPage() {
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
     <main className="pricingShell">
       <section className="pricingHero">
-        <p className="eyebrow">AI-powered jewelry quoting</p>
-        <h1 className="pricingTitle">Quote any piece. In seconds.</h1>
+        <p className="eyebrow">Plans &amp; pricing</p>
+        <h1 className="pricingTitle">Simple pricing that scales with your quoting volume</h1>
         <p className="pricingLead">
           Start with the plan that matches your shop today, compare features side by side, and move into
           checkout only when you are ready to collect a card.
@@ -140,7 +160,7 @@ export default function PricingPage() {
               </div>
 
               <ul className="pricingFeatureList" aria-label={`${plan.name} features`}>
-                {plan.highlights.map((feature) => <li key={feature}>{feature}</li>)}
+                {plan.highlights.map((feature: string) => <li key={feature}>{feature}</li>)}
               </ul>
 
               {plan.ctaHref.startsWith("mailto:") ? (
@@ -177,6 +197,7 @@ export default function PricingPage() {
                 <th>Starter</th>
                 <th>Professional</th>
                 <th>Enterprise</th>
+                <th>Ultra</th>
               </tr>
             </thead>
             <tbody>
@@ -194,6 +215,9 @@ export default function PricingPage() {
                   </td>
                   <td>
                     <FeatureCell value={row.enterprise} />
+                  </td>
+                  <td>
+                    <FeatureCell value={row.ultra} />
                   </td>
                 </tr>
               ))}
