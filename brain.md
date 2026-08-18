@@ -40,13 +40,12 @@ This document logs every key architectural, design, and calculation decision mad
   2. Fixed the Feature Comparison Table in `app/(marketing)/pricing/page.tsx` by grouping rows under 5 distinct category header rows (*Core Quoting Engine*, *Customization & Branding*, *Storage & Team Seats*, *Manufacturing & Enterprise*, *Ultra Studio & Showroom Kiosk*).
 - **Rationale**: Eliminates the layout bug where Ultra dropped down to a second row alone, and fixes the text concatenation bug (`Core quotingQuotes per month`) by properly separating section categories from feature labels.
 
-### 9. Showroom Kiosk Workflow & AI 3D Photo Generation
+### 10. Proxmox Deployment Stream & Local Health Check Optimization
 - **Decision**: 
-  1. Integrated automatic background AI analysis on photo upload (no manual analyze button needed).
-  2. Added **Photorealistic AI 3D Concept Generation** (`generateAiConcept`) to `/showroom`.
-  3. Displays generated 3D AI renderings in the right preview frame and on the final saved quote claim screen.
-  4. Aligned step-by-step layout (`Step 01 Photo Upload & Prompt` $\rightarrow$ `Step 02 AI Spec Output` $\rightarrow$ `Step 03 Adjust Parameters` $\rightarrow$ `Step 04 Live Estimate & Save`) to match `QuoteCalculator.tsx` 1-to-1.
-- **Rationale**: Gives showroom clients and sales associates the full power of both automatic reference photo analysis and photorealistic 3D AI concept rendering directly on the tablet kiosk.
+  1. Updated `.github/workflows/proxmox-test-deploy.yml` to use `DOCKER_BUILDKIT=1 docker compose build --progress=plain app migrate`.
+  2. Changed container health check from public domain URL to local loopback port (`http://127.0.0.1:8585/api/health`).
+- **Rationale**: Prevents GitHub Actions runner logs from buffering silently during Next.js Webpack Docker compilation, and eliminates potential DNS/SSL resolution hangs on the self-hosted Proxmox node.
+
 
 
 

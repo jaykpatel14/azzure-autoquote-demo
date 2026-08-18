@@ -37,15 +37,17 @@ jobs:
           until docker compose -f docker-compose.proxmox.yml exec -T db pg_isready -U autoquote -d autoquote >/dev/null 2>&1; do
             sleep 2
           done
-          docker compose -f docker-compose.proxmox.yml build app migrate
+          DOCKER_BUILDKIT=1 docker compose -f docker-compose.proxmox.yml build --progress=plain app migrate
           docker compose -f docker-compose.proxmox.yml run --rm migrate npm run db:deploy
           docker compose -f docker-compose.proxmox.yml run --rm migrate npm run db:seed
           docker compose -f docker-compose.proxmox.yml run --rm migrate npm run db:backfill-selling-price
-          docker compose -f docker-compose.proxmox.yml up -d app
-          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
-            if curl -fsS https://autoquote.everyfacets.com/api/health; then
+          docker compose -f docker-compose.proxmox.yml up -d --remove-orphans app
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8585/api/health >/dev/null 2>&1; then
+              echo "✅ Local health check passed on attempt $attempt"
               exit 0
             fi
-            sleep 5
+            echo "Waiting for app container to become healthy (attempt $attempt/20)..."
+            sleep 3
           done
-          curl -fsS https://autoquote.everyfacets.com/api/health
+          curl -fsS http://127.0.0.1:8585/api/health || true

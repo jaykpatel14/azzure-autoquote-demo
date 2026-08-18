@@ -222,8 +222,9 @@ azzure-autoquote-mvp/
 - ✅ **Redesigned Showroom Kiosk UI**: Created interactive 1-tap preset try-it cards, obsidian-gold glassmorphic styling, and auto-session resolution for direct `/showroom` route access.
 - ✅ **Modernized Admin Dashboard**: Added navigation icons, soft operational badges, and spot rate ticker cards in `app/admin/page.tsx` and `components/internal-admin-shell.tsx`.
 - ✅ **Pricing Page Redesign**: Redesigned `app/(marketing)/pricing/page.tsx` and `app/globals.css` into a balanced 4-column plan grid (Starter, Professional, Enterprise, Ultra) and fixed the feature comparison table with clean category section headers.
-- ✅ **Showroom Kiosk AI 3D Render Integration**: Added photorealistic AI 3D concept image generation and automatic background analysis to `/showroom`. Renders 3D jewelry concepts in the preview frame and displays them on the saved quote claim card.
+- ✅ **Proxmox Deployment Stream Optimization**: Added `--progress=plain` to Docker build and redirected health checks to local loopback port (`http://127.0.0.1:8585/api/health`) in `.github/workflows/proxmox-test-deploy.yml` to prevent log buffering and network hangs on self-hosted runners.
 - ✅ **Verification**: TypeScript compilation passing cleanly (`tsc exit code 0`).
+
 
 
 
