@@ -41,8 +41,9 @@ flowchart TD
 3. **Dynamic Spot Pricing**:
    - Fetches live gold/platinum spot rates via `metals.dev` API.
    - Calculates metal cost, casting fees, stone-setting labor, CAD charges, and applies the jeweler's retail margin.
-4. **Showroom Kiosk Mode**:
-   - One-tap toggle transforms the screen into a full-screen consultation canvas displaying the **store's custom logo and branding** while hiding internal store settings and wholesale costs.
+4. **Two Distinct Operational Modes**:
+   - **In-Store Estimator Mode (Associate Back-Office View)**: The technical workbench where associates upload reference photos, review multi-pass AI diagnostics, adjust raw gram weights and stone quantities, configure margins, and inspect internal costs.
+   - **Showroom Presentation Mode (Client-Facing Luxury Salon View)**: When turning the tablet toward the walk-in customer, one tap transforms the interface into a full-screen luxury presentation with the **Store's Custom Logo**, a **Hero 3D Portrait Frame**, **Interactive 1-Touch Metal Swatches (14K/18K/Platinum)**, **Live AI Design Tweaking**, **Grand Glowing Retail Price Typography**, and **Zero Internal Wholesale Formulas** visible.
 5. **Customer Delivery & Sharing**:
    - **Branded Print PDF**: Export print-ready PDF proposals with store identity.
    - **Private Web Link (`/q/[token]`)**: Secure 30-day mobile links for customers to review at home.
