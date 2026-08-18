@@ -81,6 +81,22 @@ export default function WorkspaceShell({
       </aside>
 
       <main className="workspaceMain" id="content">
+        <header className="mobileTopBar" aria-label="Mobile workspace header">
+          <div className="mobileBrandBlock">
+            <div className="brandMark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 3h12l4 6-10 12L2 9l4-6z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2 9h20" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 3l-2 6 4 12 4-12-2-6" />
+              </svg>
+            </div>
+            <strong className="brand">AutoQuote</strong>
+          </div>
+          <div className="mobileTopActions">
+            <SignOutButton />
+          </div>
+        </header>
+
         <header className="pageHero">
           <div>
             <p className="eyebrow">{eyebrow}</p>

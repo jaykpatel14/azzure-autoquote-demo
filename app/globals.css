@@ -3547,6 +3547,15 @@ hr.goldRule {
   }
 }
 
+/* ==========================================================================
+   Responsive UI/UX & Mobile/Tablet Optimization
+   ========================================================================== */
+
+/* Mobile Top Bar (Hidden on desktop > 768px) */
+.mobileTopBar {
+  display: none;
+}
+
 @media (max-width: 1100px) {
   .workspaceShell,
   .shell {
@@ -3556,7 +3565,8 @@ hr.goldRule {
   .workspaceSidebar,
   .sidebar {
     border-right: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-4) var(--space-5);
   }
 
   .pageHero,
@@ -3565,6 +3575,7 @@ hr.goldRule {
   .detailRow {
     flex-direction: column;
     align-items: stretch;
+    gap: var(--space-3);
   }
 
   .statGrid,
@@ -3576,10 +3587,16 @@ hr.goldRule {
   .authGrid,
   .pricingCards {
     grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .quoteStepGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .quotePreview,
-  .livePreview {
+  .livePreview,
+  .stickyQuoteSummary {
     position: static;
   }
 
@@ -3588,7 +3605,7 @@ hr.goldRule {
   }
 
   .pricingTableCard {
-    padding: var(--space-5);
+    padding: var(--space-4);
   }
 
   .trialBannerCard,
@@ -3599,15 +3616,59 @@ hr.goldRule {
   }
 
   .trialOverview {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .upgradeGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .facetThumbRail {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--space-2);
   }
 }
 
 @media (max-width: 768px) {
+  /* Prevent iOS automatic zoom on inputs */
+  input,
+  select,
+  textarea,
+  .uiInput,
+  .conceptPromptTextarea {
+    font-size: 16px !important;
+  }
+
+  /* Touch highlight */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobileTopBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-4);
+  }
+
+  .mobileBrandBlock {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .mobileBrandBlock .brand {
+    font-family: var(--font-display);
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: #ffffff;
+  }
+
   .workspaceMain,
   .main,
   .authShell,
@@ -3616,7 +3677,7 @@ hr.goldRule {
   .pricingShell,
   .signupShell,
   .onboardingShell {
-    padding: var(--space-5);
+    padding: var(--space-4) var(--space-3) calc(var(--space-12) + env(safe-area-inset-bottom));
   }
 
   .card,
@@ -3625,7 +3686,16 @@ hr.goldRule {
   .pricingTableCard,
   .signupCard,
   .onboardingCard {
-    padding: var(--space-5);
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+  }
+
+  .pageTitle {
+    font-size: clamp(1.4rem, 5vw, 1.85rem);
+  }
+
+  .pageHero {
+    margin-bottom: var(--space-4);
   }
 
   .heroActions,
@@ -3633,80 +3703,190 @@ hr.goldRule {
   .marketingActions {
     flex-direction: column;
     align-items: stretch;
+    width: 100%;
   }
 
+  .buttonRow > .button,
+  .heroActions > .button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  /* Fixed Bottom Navigation Rail on Mobile */
   .workspaceSidebar,
   .sidebar {
-    position: sticky;
+    position: fixed;
     bottom: 0;
-    z-index: 30;
-    gap: var(--space-4);
-    padding: var(--space-4);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(18, 18, 20, 0.98);
+    left: 0;
+    right: 0;
+    top: auto;
+    z-index: 50;
+    display: block;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--color-border);
+    border-bottom: 0;
+    background: rgba(11, 15, 23, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6);
   }
 
   .brandBlock,
   .sidebarPanel.sidebarFooter,
-  .sidebarPanel[aria-label="Company context"] {
+  .sidebarPanel[aria-label="Company context"],
+  .sidebarExtra {
     display: none;
   }
 
   .workspaceNav {
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 4px;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .workspaceNavItem {
-    justify-content: center;
-    min-height: 44px;
-    white-space: nowrap;
-    padding: 0 12px;
-  }
-
-  .workspaceNavMore {
-    position: relative;
-  }
-
-  .workspaceNavMorePanel {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    right: 0;
-    min-width: 200px;
-    padding: var(--space-2);
-    background: rgba(18, 18, 20, 0.98);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius-md);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-    z-index: 40;
-  }
-
-  .workspaceNavMorePanel .workspaceNavItem {
-    justify-content: flex-start;
-  }
-
-  .billingToggle {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .billingToggleButton {
     flex: 1;
+    flex-direction: column;
     justify-content: center;
+    align-items: center;
+    min-height: 44px;
+    padding: 4px 6px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    border-radius: var(--radius-md);
   }
 
-  .passwordField {
+  .workspaceNavItem .navItemBullet {
+    display: block;
+    width: 4px;
+    height: 4px;
+    margin-bottom: 2px;
+  }
+
+  .workspaceNavItem.isActive {
+    background: rgba(2, 132, 199, 0.2);
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+  }
+
+  /* Touch-Friendly Controls */
+  .button {
+    min-height: 44px;
+  }
+
+  .quoteStepGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .statGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .statCard {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  /* Workspace Action Bar */
+  .workspaceActionBar {
     flex-direction: column;
     align-items: stretch;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .showroomBrandWrap {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .inputModeTabs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+
+  .inputModeTab {
+    justify-content: center;
+    min-height: 42px;
+    padding: 6px 8px;
+    font-size: 0.75rem;
+  }
+
+  .conceptChips {
+    gap: 6px;
+  }
+
+  .conceptChip {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    min-height: 36px;
+  }
+
+  /* Data Tables Mobile */
+  .tableShell {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-md);
+  }
+
+  .dataTable {
+    min-width: 600px;
+  }
+
+  .dataTable th,
+  .dataTable td {
+    padding: 10px 12px;
+  }
+
+  /* Upgrade Modal Mobile */
+  .upgradeModal {
+    width: 95vw;
+    max-height: 88vh;
+    padding: var(--space-4);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .upgradeGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  /* Pricing / Checkout */
+  .pricingCards {
+    grid-template-columns: 1fr;
   }
 
   .featureTable {
-    min-width: 720px;
+    min-width: 600px;
   }
 
-  .trialBannerCard {
-    flex-direction: column;
-    align-items: stretch;
+  .trialOverview {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageTitle {
+    font-size: 1.35rem;
+  }
+
+  .quotePrice {
+    font-size: 1.8rem;
+  }
+
+  .estimateWorkspace.showroomMode .quotePrice {
+    font-size: 2.1rem;
+  }
+
+  .detailCard {
+    padding: var(--space-3) var(--space-4);
   }
 }
