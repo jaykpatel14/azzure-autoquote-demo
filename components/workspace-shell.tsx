@@ -37,11 +37,17 @@ export default function WorkspaceShell({
       </a>
       <aside className="workspaceSidebar">
         <div className="brandBlock">
-          <div className="brandMark">A</div>
+          <div className="brandMark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 3h12l4 6-10 12L2 9l4-6z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2 9h20" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 3l-2 6 4 12 4-12-2-6" />
+            </svg>
+          </div>
           <div>
             <p className="eyebrow">{eyebrow}</p>
             <strong className="brand">AutoQuote</strong>
-            <p className="muted small">Multi-tenant quoting, billing, and analysis in one focused workspace.</p>
+            <p className="muted small">Multi-tenant jewelry quoting &amp; AI analysis.</p>
           </div>
         </div>
 
@@ -53,7 +59,8 @@ export default function WorkspaceShell({
               href={item.href}
               aria-current={item.active ? "page" : undefined}
             >
-              {item.label}
+              <span className="navItemBullet" aria-hidden="true" />
+              <span>{item.label}</span>
             </Link>
           ))}
         </nav>
@@ -65,9 +72,10 @@ export default function WorkspaceShell({
         {sidebarExtra ? sidebarExtra : null}
 
         <section className="sidebarPanel sidebarFooter" aria-label="Session actions">
-          <p className="muted small">
-            Signed in workspace controls stay tenant-aware and admin-only where required.
-          </p>
+          <div className="sidebarFooterHeader">
+            <span className="footerStatusDot" aria-hidden="true" />
+            <span className="muted small">Tenant Secured</span>
+          </div>
           <SignOutButton />
         </section>
       </aside>

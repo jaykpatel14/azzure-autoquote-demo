@@ -22,13 +22,19 @@ type CreateQuoteInput = {
   sideDiamondCarats: number;
   sideDiamondQuantity: number;
   estimatedPrice: number;
-  makingPrice?: number;
+  makingPrice?: number | null;
+  makingPriceBreakdown?: Prisma.InputJsonValue | null;
+  colorClarity?: string;
+  cadCost?: number;
+  customerMarginPct?: number;
+  customerMarginAmount?: number;
   pricingTierSnapshot?: PricingTier | null;
   tierDivisorSnapshot?: number | null;
   estimatedSellingPrice?: number | null;
   centerShape?: string | null;
   centerClarity?: string | null;
   settingType?: string | null;
+  notes?: string | null;
 };
 
 type QuotePayload = Quote & {
@@ -143,14 +149,18 @@ export async function createQuote(
 
         if (
           analysis &&
-          (input.centerShape !== undefined || input.centerClarity !== undefined || input.settingType !== undefined)
+          (input.centerShape !== undefined ||
+            input.centerClarity !== undefined ||
+            input.settingType !== undefined ||
+            input.notes !== undefined)
         ) {
           await tx.aiAnalysis.update({
             where: { id: analysis.id },
             data: {
               ...(input.centerShape !== undefined ? { centerShape: input.centerShape || null } : {}),
               ...(input.centerClarity !== undefined ? { centerClarity: input.centerClarity || null } : {}),
-              ...(input.settingType !== undefined ? { settingType: input.settingType || null } : {})
+              ...(input.settingType !== undefined ? { settingType: input.settingType || null } : {}),
+              ...(input.notes !== undefined ? { notes: input.notes || null } : {})
             }
           });
         }
@@ -168,10 +178,15 @@ export async function createQuote(
             sideDiamondQuantity: input.sideDiamondQuantity,
             estimatedPrice: input.estimatedPrice,
             makingPrice: input.makingPrice ?? null,
+            makingPriceBreakdown: input.makingPriceBreakdown ?? undefined,
+            colorClarity: input.colorClarity ?? "E VS1",
+            cadCost: input.cadCost ?? 0,
+            customerMarginPct: input.customerMarginPct ?? 0,
+            customerMarginAmount: input.customerMarginAmount ?? 0,
             pricingTierSnapshot: input.pricingTierSnapshot ?? null,
             tierDivisorSnapshot: input.tierDivisorSnapshot ?? null,
-            estimatedSellingPrice: input.estimatedSellingPrice ?? null
-            ,isOverage: Boolean(usage && usage.used > usage.limit)
+            estimatedSellingPrice: input.estimatedSellingPrice ?? null,
+            isOverage: Boolean(usage && usage.used > usage.limit)
           }
         });
       });
@@ -263,24 +278,25 @@ export async function getQuoteHistoryPage(params: {
       where: { companyId: params.companyId },
       orderBy: { createdAt: "desc" },
       select: {
-      id: true,
-      quoteNumber: true,
-      customerName: true,
-      metalType: true,
-      estimatedPrice: true,
-      estimatedSellingPrice: true,
-      createdAt: true,
-      pdfStoredAt: true,
-      analysis: {
-        select: {
-          imageDataUrl: true
+        id: true,
+        quoteNumber: true,
+        customerName: true,
+        metalType: true,
+        estimatedPrice: true,
+        estimatedSellingPrice: true,
+        createdAt: true,
+        pdfStoredAt: true,
+        analysis: {
+          select: {
+            imageDataUrl: true,
+            sourceImageStorageKey: true
+          }
+        },
+        order: {
+          select: {
+            id: true
+          }
         }
-      },
-      order: {
-        select: {
-          id: true
-        }
-      }
       }
     }),
     prisma.aiAnalysis.findMany({
@@ -292,7 +308,8 @@ export async function getQuoteHistoryPage(params: {
         status: true,
         errorMessage: true,
         createdAt: true,
-        imageDataUrl: true
+        imageDataUrl: true,
+        sourceImageStorageKey: true
       }
     })
   ]);
@@ -307,7 +324,11 @@ export async function getQuoteHistoryPage(params: {
       estimatedPrice: Number(quote.estimatedSellingPrice ?? quote.estimatedPrice),
       createdAt: quote.createdAt,
       pdfStoredAt: quote.pdfStoredAt,
-      thumbnailUrl: quote.analysis?.imageDataUrl ?? null,
+      thumbnailUrl: quote.analysis
+        ? quote.analysis.sourceImageStorageKey
+          ? `/api/quotes/${quote.id}/image`
+          : quote.analysis.imageDataUrl ?? null
+        : null,
       status: deriveQuoteStatus(quote),
       displayStatus: deriveQuoteStatus(quote)
     })),
@@ -320,7 +341,9 @@ export async function getQuoteHistoryPage(params: {
       estimatedPrice: null,
       createdAt: analysis.createdAt,
       pdfStoredAt: null,
-      thumbnailUrl: analysis.imageDataUrl,
+      thumbnailUrl: analysis.sourceImageStorageKey
+        ? `/api/analyze/${analysis.id}/image`
+        : analysis.imageDataUrl ?? null,
       status: "draft" as const,
       displayStatus:
         analysis.status === "FAILED"

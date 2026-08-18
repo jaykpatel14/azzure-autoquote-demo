@@ -12,32 +12,36 @@ export default async function CompanySwitcher() {
 
   if (companies.length <= 1) {
     return (
-      <div className="muted">
-        <strong>{context.company.name}</strong>
-        <div>{context.membership.role}</div>
+      <div className="companyCardSingle">
+        <div className="companyInfo">
+          <strong className="companyName">{context.company.name}</strong>
+          <span className="roleTag">{context.membership.role}</span>
+        </div>
       </div>
     );
   }
 
   return (
     <form action="/api/company/switch" method="post" className="companySwitcher">
-      <div className="muted">
-        <strong>{context.company.name}</strong>
-        <div>{context.membership.role}</div>
+      <div className="companyInfo">
+        <strong className="companyName">{context.company.name}</strong>
+        <span className="roleTag">{context.membership.role}</span>
       </div>
-      <label className="field">
-        <span>Switch company</span>
-        <select name="companyId" defaultValue={context.company.id}>
-          {companies.map((company) => (
-            <option key={company.id} value={company.id}>
-              {company.name} - {company.role}
-            </option>
-          ))}
-        </select>
-      </label>
-      <button className="button secondary" type="submit">
-        Switch
-      </button>
+      <div className="companySwitchControls">
+        <label className="field">
+          <span className="fieldLabel">Active Company</span>
+          <select name="companyId" defaultValue={context.company.id} className="companySelect">
+            {companies.map((company) => (
+              <option key={company.id} value={company.id}>
+                {company.name} ({company.role})
+              </option>
+            ))}
+          </select>
+        </label>
+        <button className="button secondary button--sm" type="submit">
+          Switch
+        </button>
+      </div>
     </form>
   );
 }

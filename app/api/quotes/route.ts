@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
+import { type Prisma } from "@prisma/client";
 import { ZodError, z } from "zod";
 import {
-  METAL_TYPES,
-  calculateQuote,
-  mergePricingProfiles,
-  type PricingProfileInput
+  METAL_TYPES
 } from "@/lib/pricing";
 import {
   requireCompanyContext,
@@ -14,27 +12,21 @@ import {
   isCompanyApproved,
   isCompanySuspended
 } from "@/lib/company";
-import { normalizePricingProfile, resolveMetalPricing } from "@/lib/metal-pricing";
 import { createQuote } from "@/src/services/quotes";
-import { calculateTierPrice } from "@/src/services/pricing";
+import { calculateMakingPrice, calculateTierPrice } from "@/src/services/pricing";
+import { getSettingValue } from "@/lib/app-settings";
 import { assertBillableSubscription, BillingAccessError } from "@/lib/billing";
 import { assertPlanFeature, getCompanyPlanFeatures, PlanError } from "@/src/stripe/plans";
 import { generateQuoteRendering } from "@/lib/ai/quote-rendering";
 
 const quoteModes = ["normal", "without-center", "without-center-and-side"] as const;
 
-const pricingOverlaySchema = z
-  .object({
-    goldSpotPerOz: z.coerce.number().min(0).optional(),
-    platinumSpotPerOz: z.coerce.number().min(0).optional(),
-    silverSpotPerOz: z.coerce.number().min(0).optional(),
-    cadCharge: z.coerce.number().min(0).optional(),
-    centerSettingPerCarat: z.coerce.number().min(0).optional(),
-    sideSettingPerStone: z.coerce.number().min(0).optional(),
-    sellingMarginDivisor: z.coerce.number().min(0).optional(),
-    finalMultiplier: z.coerce.number().min(0).optional()
-  })
-  .partial();
+const sideStoneItemSchema = z.object({
+  shape: z.string().trim().default("round"),
+  caratWeightEach: z.coerce.number().min(0),
+  count: z.coerce.number().int().min(0),
+  settingType: z.string().trim().default("prong")
+});
 
 const quoteSchema = z.object({
   analysisId: z.string().optional(),
@@ -48,7 +40,11 @@ const quoteSchema = z.object({
   centerShape: z.union([z.string().trim().max(120), z.literal("")]).optional(),
   centerClarity: z.union([z.string().trim().max(120), z.literal("")]).optional(),
   settingType: z.union([z.string().trim().max(120), z.literal("")]).optional(),
-  pricingOverlay: pricingOverlaySchema.optional()
+  customerNotes: z.string().max(1000).optional(),
+  notes: z.string().max(1000).optional(),
+  hasWeddingBand: z.boolean().optional().default(false),
+  isTwoTone: z.boolean().optional().default(false),
+  sideStones: z.array(sideStoneItemSchema).optional()
 });
 
 export async function POST(request: Request) {
@@ -68,45 +64,59 @@ export async function POST(request: Request) {
     const input = quoteSchema.parse(await request.json());
     const company = companyContext.company;
     const { features } = await getCompanyPlanFeatures(company.id);
-
-    const pricingProfile = features.canUseCustomPricingProfile && company.pricingProfile
-      ? normalizePricingProfile({
-          goldSpotPerOz: Number(company.pricingProfile.goldSpotPerOz),
-          platinumSpotPerOz: Number(company.pricingProfile.platinumSpotPerOz),
-          silverSpotPerOz: Number(company.pricingProfile.silverSpotPerOz),
-          cadCharge: Number(company.pricingProfile.cadCharge),
-          centerSettingPerCarat: Number(company.pricingProfile.centerSettingPerCarat),
-          sideSettingPerStone: Number(company.pricingProfile.sideSettingPerStone),
-          sellingMarginDivisor: Number(company.pricingProfile.sellingMarginDivisor),
-          finalMultiplier: Number(company.pricingProfile.finalMultiplier)
-        })
-      : undefined;
-
-    const livePricing = await resolveMetalPricing(pricingProfile);
-
-    const adjustedInput = applyQuoteMode(input);
-    const effectivePricingProfile = mergePricingProfiles(
-      livePricing.pricingProfile,
-      features.canUseCustomPricingProfile ? input.pricingOverlay as Partial<PricingProfileInput> | undefined : undefined
-    );
-
-    const pricing = calculateQuote(
-      {
-        metalType: adjustedInput.metalType,
-        metalWeightGrams: adjustedInput.metalWeightGrams,
-        centerDiamondCarats: adjustedInput.centerDiamondCarats,
-        sideDiamondCarats: adjustedInput.sideDiamondCarats,
-        sideDiamondQuantity: adjustedInput.sideDiamondQuantity
-      },
-      effectivePricingProfile
-    );
+    const allowCustomPricing = features.canUseCustomPricingProfile;
 
     if (!company.pricingTier) {
       throw new CompanyAccessError("Your account does not have a pricing tier assigned.");
     }
 
-    const tierPricing = calculateTierPrice(pricing.makingCost, company.pricingTier);
+    const adjustedInput = applyQuoteMode(input);
 
+    // 1. Fetch admin-configured CAD cost from platform settings
+    const cadCost = (await getSettingValue("cad_cost_per_quote")) ?? 0;
+
+    // 2. Fetch jeweler's margin percentage from company record
+    const customerMarginPct = company.customerMarginPct ?? 0;
+
+    // 3. Prepare side stones list
+    let sideStonesList = adjustedInput.sideStones;
+    if (!sideStonesList || sideStonesList.length === 0) {
+      if (adjustedInput.sideDiamondQuantity > 0 && adjustedInput.sideDiamondCarats > 0) {
+        sideStonesList = [
+          {
+            shape: "round",
+            caratWeightEach: adjustedInput.sideDiamondCarats / adjustedInput.sideDiamondQuantity,
+            count: adjustedInput.sideDiamondQuantity,
+            settingType: adjustedInput.settingType || "prong"
+          }
+        ];
+      } else {
+        sideStonesList = [];
+      }
+    }
+
+    // 4. Calculate making price breakdown
+    const centerCarat = Math.max(adjustedInput.centerDiamondCarats, 0.0001);
+    const makingPriceBreakdown = calculateMakingPrice({
+      centerStone: {
+        shape: adjustedInput.centerShape || "round",
+        caratWeight: centerCarat
+      },
+      sideStones: sideStonesList,
+      hasWeddingBand: Boolean(adjustedInput.hasWeddingBand),
+      isTwoTone: Boolean(adjustedInput.isTwoTone),
+      colorClarity: "E VS1",
+      cadCost,
+      customerMarginPct
+    });
+
+    // 5. Apply tier formula on top of making price
+    const tierResult = calculateTierPrice(
+      makingPriceBreakdown.makingPrice,
+      company.pricingTier
+    );
+
+    // 6. Save quote
     const quoteResult = await createQuote({
       companyId: company.id,
       analysisId: input.analysisId,
@@ -117,13 +127,19 @@ export async function POST(request: Request) {
       sideDiamondCarats: adjustedInput.sideDiamondCarats,
       sideDiamondQuantity: adjustedInput.sideDiamondQuantity,
       centerShape: adjustedInput.centerShape !== undefined ? adjustedInput.centerShape || null : undefined,
-      centerClarity: adjustedInput.centerClarity !== undefined ? adjustedInput.centerClarity || null : undefined,
+      centerClarity: "E VS1",
       settingType: adjustedInput.settingType !== undefined ? adjustedInput.settingType || null : undefined,
-      estimatedPrice: tierPricing.estimatedSellingPrice,
-      makingPrice: tierPricing.makingPrice,
-      pricingTierSnapshot: tierPricing.tier,
-      tierDivisorSnapshot: tierPricing.divisor,
-      estimatedSellingPrice: tierPricing.estimatedSellingPrice
+      notes: adjustedInput.customerNotes || adjustedInput.notes || undefined,
+      estimatedPrice: tierResult.estimatedSellingPrice,
+      makingPrice: makingPriceBreakdown.makingPrice,
+      makingPriceBreakdown: makingPriceBreakdown as unknown as Prisma.InputJsonValue,
+      colorClarity: "E VS1",
+      cadCost: makingPriceBreakdown.cadCost,
+      customerMarginPct: makingPriceBreakdown.customerMarginPct,
+      customerMarginAmount: makingPriceBreakdown.customerMarginAmount,
+      pricingTierSnapshot: tierResult.tier,
+      tierDivisorSnapshot: tierResult.divisor,
+      estimatedSellingPrice: tierResult.estimatedSellingPrice
     });
 
     if ("error" in quoteResult) {
@@ -177,7 +193,8 @@ function applyQuoteMode(input: z.infer<typeof quoteSchema>) {
       ...input,
       centerDiamondCarats: 0,
       sideDiamondCarats: 0,
-      sideDiamondQuantity: 0
+      sideDiamondQuantity: 0,
+      sideStones: []
     };
   }
 

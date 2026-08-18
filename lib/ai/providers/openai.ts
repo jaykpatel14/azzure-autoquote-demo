@@ -48,11 +48,17 @@ function buildPrompt(selectedMetal: string, attemptNumber: number) {
     `The currently selected finished metal is ${metal}.`,
     "Estimate the piece from the image and return a cautious preliminary assessment.",
     "Never claim exact manufacturing precision.",
-    "Return jewelry_type, selected_metal, metal_weight_grams, center_diamond_weight_ct,",
-    "side_diamond_total_weight_ct, side_diamond_quantity, optional center_shape (e.g. round, princess,",
-    "cushion, emerald, oval, pear, marquise, radiant, asscher, heart), optional center_clarity",
-    "(a standard GIA-style grade such as FL, IF, VVS1, VVS2, VS1, VS2, SI1, SI2, or I1-I3),",
-    "optional setting_type (e.g. prong, bezel, pave, halo, channel, tension, cluster), confidence, and assumptions."
+    "Identify:",
+    "- jewelry_type: e.g. Ring, Pendant, Earrings, Bracelet, etc.",
+    "- selected_metal: the selected metal.",
+    "- isTwoTone: true if the piece combines white gold and yellow gold in the same item, false otherwise.",
+    "- hasWeddingBand: true if there appear to be two separate ring bands (an engagement ring and a wedding band), false otherwise.",
+    "- metal_weight_grams: estimated metal weight in grams.",
+    "- centerStone: the primary/largest stone. Provide its shape (e.g. oval, round, radiant, cushion, marquise, emerald, pear) and estimated carat weight.",
+    "- sideStones: all other stones. Group by shape and setting type. For each group, provide the shape (round, baguette, trillion, etc.), estimated carat weight of each individual stone, the count of stones in this group, and the setting type (prong, bezel, pavé, channel, bar, etc.).",
+    "- colorClarity: always return 'E VS1' — do not attempt to assess from the image.",
+    "- confidence: low, medium, or high.",
+    "- assumptions: list of key assumptions made during analysis."
   ].join(" ");
 }
 

@@ -180,17 +180,21 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
 
           {quote.analysis?.notes ? (
             <div className="detailCard detailCard--stacked">
-              <span>Analysis notes</span>
+              <span>Photo description &amp; notes</span>
               <p className="muted">{quote.analysis.notes}</p>
             </div>
           ) : null}
 
-          {quote.analysis?.imageDataUrl ? (
-            <img className="quoteDetailImage" src={quote.analysis.imageDataUrl} alt={`${quote.metalType} jewelry for quote ${quote.quoteNumber}`} />
+          {quote.analysis?.sourceImageStorageKey || quote.analysis?.imageDataUrl ? (
+            <img
+              className="quoteDetailImage"
+              src={quote.analysis.sourceImageStorageKey ? `/api/quotes/${quote.id}/image` : (quote.analysis.imageDataUrl ?? "")}
+              alt={`${quote.metalType} jewelry for quote ${quote.quoteNumber}`}
+            />
           ) : null}
 
           {status === "sent" && !quote.order ? (
-            <div style={{ marginTop: "1rem" }}>
+            <div className="quoteOrderFormWrap">
               <PlanGate feature="canPlaceManufacturingOrder" fallbackHref="/settings/billing?upgrade=1">
                 <PlanGate requireCkVerification fallbackHref="/settings/billing?upgrade=1">
                   <form className="stack" action="/api/orders" method="post">
@@ -203,7 +207,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
                     <span>Production notes</span>
                     <textarea name="notes" rows={3} placeholder="Optional notes for the production team." />
                   </label>
-                  <button className="button primary" type="submit" style={{ width: "fit-content" }}>
+                  <button className="button primary fitContent" type="submit">
                     Place order
                   </button>
                   </form>
@@ -213,7 +217,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
           ) : null}
 
           {status === "ordered" && quote.order ? (
-            <div className="detailCard detailCard--stacked" style={{ marginTop: "1rem" }}>
+            <div className="detailCard detailCard--stacked quoteOrderCard">
               <span>Manufacturing order</span>
               <strong>{quote.order.orderNumber}</strong>
               <p className="muted small">Status: {quote.order.status}</p>

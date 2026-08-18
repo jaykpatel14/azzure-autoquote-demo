@@ -6,6 +6,7 @@ type SettingsTabsProps = {
 
 const TABS = [
   { href: "/settings/profile", label: "Profile" },
+  { href: "/settings/pricing", label: "Pricing & Margin" },
   { href: "/settings/branding", label: "Company & Branding" },
   { href: "/settings/team", label: "Team" },
   { href: "/settings/billing", label: "Billing" }

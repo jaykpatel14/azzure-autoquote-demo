@@ -197,10 +197,21 @@ describe("analysis route integration", () => {
             jewelry_type: "ring",
             selected_metal: "14K",
             metal_weight_grams: 5.0,
-            center_diamond_weight_ct: 1.0,
-            side_diamond_total_weight_ct: 0.4,
-            side_diamond_quantity: 10,
-            center_shape: "round",
+            isTwoTone: false,
+            hasWeddingBand: false,
+            centerStone: {
+              shape: "round",
+              caratWeight: 1.0
+            },
+            sideStones: [
+              {
+                shape: "round",
+                caratWeightEach: 0.04,
+                count: 10,
+                settingType: "prong"
+              }
+            ],
+            colorClarity: "E VS1",
             confidence: "low",
             assumptions: ["Visible prongs may affect weight."]
           },
@@ -208,10 +219,21 @@ describe("analysis route integration", () => {
             jewelry_type: "ring",
             selected_metal: "14K",
             metal_weight_grams: 6.0,
-            center_diamond_weight_ct: 1.2,
-            side_diamond_total_weight_ct: 0.5,
-            side_diamond_quantity: 12,
-            center_shape: "round",
+            isTwoTone: false,
+            hasWeddingBand: false,
+            centerStone: {
+              shape: "round",
+              caratWeight: 1.2
+            },
+            sideStones: [
+              {
+                shape: "round",
+                caratWeightEach: 0.5 / 12,
+                count: 12,
+                settingType: "prong"
+              }
+            ],
+            colorClarity: "E VS1",
             confidence: "medium",
             assumptions: ["Hidden gallery is estimated."]
           },
@@ -219,10 +241,21 @@ describe("analysis route integration", () => {
             jewelry_type: "ring",
             selected_metal: "14K",
             metal_weight_grams: 7.0,
-            center_diamond_weight_ct: 1.4,
-            side_diamond_total_weight_ct: 0.6,
-            side_diamond_quantity: 14,
-            center_shape: "round",
+            isTwoTone: false,
+            hasWeddingBand: false,
+            centerStone: {
+              shape: "round",
+              caratWeight: 1.4
+            },
+            sideStones: [
+              {
+                shape: "round",
+                caratWeightEach: 0.6 / 14,
+                count: 14,
+                settingType: "prong"
+              }
+            ],
+            colorClarity: "E VS1",
             confidence: "high",
             assumptions: ["Pavé density may vary."]
           }
@@ -427,10 +460,21 @@ describe("analysis route integration", () => {
             jewelry_type: "ring",
             selected_metal: "14K",
             metal_weight_grams: 5,
-            center_diamond_weight_ct: 1,
-            side_diamond_total_weight_ct: 0.4,
-            side_diamond_quantity: 10,
-            center_shape: "round",
+            isTwoTone: false,
+            hasWeddingBand: false,
+            centerStone: {
+              shape: "round",
+              caratWeight: 1
+            },
+            sideStones: [
+              {
+                shape: "round",
+                caratWeightEach: 0.04,
+                count: 10,
+                settingType: "prong"
+              }
+            ],
+            colorClarity: "E VS1",
             confidence: "high",
             assumptions: ["Concurrent reservation test."]
           },

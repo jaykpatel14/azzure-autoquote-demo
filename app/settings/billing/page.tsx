@@ -19,6 +19,7 @@ type BillingSettingsPageProps = {
     billing?: string;
     session_id?: string;
     upgrade?: string;
+    error?: string;
   }>;
 };
 
@@ -112,6 +113,24 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
       }
     >
       <SettingsTabs activeHref="/settings/billing" />
+
+      {params?.error ? (
+        <div className="errorBanner" style={{ marginBottom: "1rem" }}>
+          {params.error}
+        </div>
+      ) : null}
+
+      {params?.billing === "updated" ? (
+        <div className="successBanner" style={{ marginBottom: "1rem" }}>
+          Your plan has been updated successfully.
+        </div>
+      ) : null}
+
+      {params?.billing === "canceled" ? (
+        <div className="warningBanner" style={{ marginBottom: "1rem" }}>
+          Your subscription cancellation request has been recorded and will take effect at the end of the billing cycle.
+        </div>
+      ) : null}
 
       {!onboardingComplete ? (
         <section className="card accentCard onboardingReminder">
