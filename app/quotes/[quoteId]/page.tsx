@@ -193,23 +193,29 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
             />
           ) : null}
 
-          {status === "sent" && !quote.order ? (
+          {(status === "sent" || status === "draft") && !quote.order ? (
             <div className="quoteOrderFormWrap">
               <PlanGate feature="canPlaceManufacturingOrder" fallbackHref="/settings/billing?upgrade=1">
                 <PlanGate requireCkVerification fallbackHref="/settings/billing?upgrade=1">
                   <form className="stack" action="/api/orders" method="post">
-                  <input type="hidden" name="quoteId" value={quote.id} />
-                  <label className="field">
-                    <span>Item name</span>
-                    <input name="itemName" defaultValue={`${quote.quoteNumber} manufacturing order`} />
-                  </label>
-                  <label className="field">
-                    <span>Production notes</span>
-                    <textarea name="notes" rows={3} placeholder="Optional notes for the production team." />
-                  </label>
-                  <button className="button primary fitContent" type="submit">
-                    Place order
-                  </button>
+                    <input type="hidden" name="quoteId" value={quote.id} />
+                    <div className="sectionHeader">
+                      <div>
+                        <h3>Enterprise Manufacturing Order</h3>
+                        <p className="muted small">Submit this approved jewelry specification directly to Azzure / Custom King production.</p>
+                      </div>
+                    </div>
+                    <label className="field">
+                      <span>Item name</span>
+                      <input name="itemName" defaultValue={`${quote.quoteNumber} manufacturing order`} />
+                    </label>
+                    <label className="field">
+                      <span>Production notes</span>
+                      <textarea name="notes" rows={3} placeholder="Optional instructions for the casting & setting team..." />
+                    </label>
+                    <button className="button primary fitContent" type="submit">
+                      🚀 Place Manufacturing Order
+                    </button>
                   </form>
                 </PlanGate>
               </PlanGate>

@@ -236,6 +236,10 @@ export default function QuoteCalculator({
   const [saving, setSaving] = useState(false);
   const [savedQuote, setSavedQuote] = useState<{ id: string; quoteNumber: string } | null>(null);
   const [draftIsFresh, setDraftIsFresh] = useState(!initialQuote);
+  const [inputMode, setInputMode] = useState<"photos" | "prompt">("photos");
+  const [conceptPrompt, setConceptPrompt] = useState("");
+  const [generatingConcept, setGeneratingConcept] = useState(false);
+  const [showroomMode, setShowroomMode] = useState(false);
   const { showToast } = useToast();
 
   const facetsRef = useRef<FacetDraft[]>([]);
@@ -253,6 +257,89 @@ export default function QuoteCalculator({
       });
     };
   }, []);
+
+  async function generateConcept(customText?: string) {
+    const textToUse = customText || conceptPrompt;
+    if (!textToUse.trim()) {
+      showToast({
+        message: "Please enter a design description first.",
+        variant: "warning",
+        autoDismiss: false
+      });
+      return;
+    }
+
+    setGeneratingConcept(true);
+    setStatus("Synthesizing jewelry design concept and calculating live quote...");
+    setSavedQuote(null);
+
+    try {
+      const response = await fetch("/api/concept/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: textToUse,
+          metalType,
+          customerNotes: customerNotes || undefined
+        })
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({}));
+        throw new Error(errorPayload.error || "Concept generation failed.");
+      }
+
+      const result = await response.json();
+      const newFacet: FacetDraft = {
+        id: `concept-${Date.now()}`,
+        file: undefined,
+        title: result.centerShape ? `${result.centerShape} ${result.jewelryType || "Ring"}` : "AI Concept",
+        description: textToUse,
+        showDescription: false,
+        previewUrl: result.imageDataUrl || "",
+        isObjectUrl: false,
+        status: "done",
+        stageIndex: 0,
+        error: "",
+        output: {
+          analysisId: result.analysisId,
+          jewelryType: result.jewelryType || "Ring",
+          centerShape: result.centerShape ?? "oval",
+          centerClarity: result.centerClarity ?? DEFAULT_COLOR_CLARITY,
+          settingType: result.settingType ?? "prong",
+          metalWeightGrams: result.metalWeightGrams,
+          centerDiamondCarats: result.centerDiamondCarats,
+          sideDiamondCarats: result.sideDiamondCarats,
+          sideDiamondQuantity: result.sideDiamondQuantity,
+          hasWeddingBand: result.hasWeddingBand ?? false,
+          isTwoTone: result.isTwoTone ?? false,
+          confidence: result.confidence ?? "high",
+          notes: result.notes ?? `Customer Concept: ${textToUse}`,
+          assumptions: result.assumptions ?? []
+        }
+      };
+
+      setFacets([newFacet]);
+      setActiveFacetId(newFacet.id);
+      setDraftIsFresh(false);
+      setStatus("AI concept visualization and dynamic quote generated!");
+      showToast({
+        message: "AI concept synthesized and dynamic quote calculated!",
+        variant: "success",
+        autoDismiss: true
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to generate concept.";
+      setStatus(message);
+      showToast({
+        message,
+        variant: "error",
+        autoDismiss: false
+      });
+    } finally {
+      setGeneratingConcept(false);
+    }
+  }
 
   useEffect(() => {
     if (initialQuote) {
@@ -618,23 +705,49 @@ export default function QuoteCalculator({
 
   const activeFacet = facets.find((facet) => facet.id === activeFacetId) ?? facets[0] ?? null;
 
+  const PROMPT_SUGGESTIONS = [
+    "14K White Gold Oval Solitaire with Hidden Halo",
+    "18K Yellow Gold Cushion Pavé Halo with Split Shank",
+    "Platinum 3-Stone Emerald Cut with Tapered Baguettes",
+    "14K Rose Gold Vintage Bezel-Set Oval Ring",
+    "18K Two-Tone Radiant Cut with Diamond Pavé Band"
+  ];
+
   return (
-    <div className="estimateWorkspace">
+    <div className={showroomMode ? "estimateWorkspace showroomMode" : "estimateWorkspace"}>
+      <div className="workspaceActionBar">
+        <div className="consultationPill">
+          <span className="consultationDot" aria-hidden="true" />
+          <span>{showroomMode ? "WOW Showroom Consultation Active" : "In-Store Quoting Station"}</span>
+        </div>
+        <button
+          type="button"
+          className={`button ${showroomMode ? "primary" : "secondary"} button--sm`}
+          onClick={() => setShowroomMode((prev) => !prev)}
+        >
+          {showroomMode ? "✓ Showroom Kiosk Mode" : "📺 Enable Showroom Mode"}
+        </button>
+      </div>
+
       <section className="statGrid quoteStepGrid" aria-label="Quote creation steps">
         <article className="statCard">
           <span className="eyebrow">Step 1</span>
-          <strong>Upload Photos</strong>
-          <p className="muted small">Add one or more jewelry photos to start the draft estimate.</p>
+          <strong>{inputMode === "photos" ? "Upload Photos" : "Describe Concept"}</strong>
+          <p className="muted small">
+            {inputMode === "photos"
+              ? "Add jewelry photos or snap with tablet camera."
+              : "Describe customer dream ring for instant AI synthesis."}
+          </p>
         </article>
         <article className="statCard">
           <span className="eyebrow">Step 2</span>
-          <strong>AI Analysis</strong>
-          <p className="muted small">Each image is analyzed with editable stone & metal parameters.</p>
+          <strong>AI Analysis &amp; 3D Render</strong>
+          <p className="muted small">Extracted specifications with real-time jewelry parameters.</p>
         </article>
         <article className="statCard">
           <span className="eyebrow">Step 3</span>
-          <strong>Review &amp; Quote</strong>
-          <p className="muted small">Approve live pricing, export a PDF, or open customer preview.</p>
+          <strong>Live Retail Quote</strong>
+          <p className="muted small">Spot precious metal rates + store margin computed instantly.</p>
         </article>
       </section>
 
@@ -642,60 +755,133 @@ export default function QuoteCalculator({
         <section className="card formCard">
           <div className="sectionHeader">
             <div>
-              <h2>Step 1 · Upload Photos</h2>
-              <p className="muted">Drop photos here or browse. JPG, PNG, or WEBP up to 10 MB per image.</p>
+              <h2>Step 1 · {inputMode === "photos" ? "Reference Photos" : "Describe Design Concept"}</h2>
+              <p className="muted">
+                {inputMode === "photos"
+                  ? "Drop photos here or use tablet camera. JPG, PNG, or WEBP up to 10 MB."
+                  : "Type what your customer wants and AI will create a 3D visualization and extract specs."}
+              </p>
             </div>
-            <div className="buttonRow">
-              <button className="button secondary button--sm" type="button" disabled={!canEdit || !facets.length} onClick={clearAllFacets}>
-                Clear all
-              </button>
-              <button className="button primary button--sm" type="button" disabled={!canAnalyse} onClick={analyseAll}>
-                Analyse Photos
-              </button>
-            </div>
+            {inputMode === "photos" ? (
+              <div className="buttonRow">
+                <button className="button secondary button--sm" type="button" disabled={!canEdit || !facets.length} onClick={clearAllFacets}>
+                  Clear all
+                </button>
+                <button className="button primary button--sm" type="button" disabled={!canAnalyse} onClick={analyseAll}>
+                  Analyse Photos
+                </button>
+              </div>
+            ) : null}
           </div>
 
-          <div
-            className="dropzone dropzone--multi"
-            onDragOver={(event) => {
-              event.preventDefault();
-            }}
-            onDrop={(event) => {
-              event.preventDefault();
-              if (!canEdit) return;
-              handleFiles(Array.from(event.dataTransfer.files).filter(Boolean));
-            }}
-          >
-            <div className="dropzoneContent">
-              <svg className="dropzoneIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
-              </svg>
-              <strong>Drag &amp; drop jewelry photos</strong>
-              <span className="muted small">Take a new photo or select JPG, PNG, or WEBP files up to 10 MB.</span>
-            </div>
-            <div className="dropzoneActions">
-              <label className="button primary button--sm">
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  capture="environment"
-                  disabled={!canEdit}
-                  onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
-                />
-                Take photo
-              </label>
-              <label className="button secondary button--sm">
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  disabled={!canEdit}
-                  onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
-                />
-                Choose from files
-              </label>
-            </div>
+          <div className="inputModeTabs" role="tablist" aria-label="Input mode selection">
+            <button
+              type="button"
+              className={`inputModeTab${inputMode === "photos" ? " isActive" : ""}`}
+              onClick={() => setInputMode("photos")}
+              role="tab"
+              aria-selected={inputMode === "photos"}
+            >
+              📷 Reference Photos
+            </button>
+            <button
+              type="button"
+              className={`inputModeTab${inputMode === "prompt" ? " isActive" : ""}`}
+              onClick={() => setInputMode("prompt")}
+              role="tab"
+              aria-selected={inputMode === "prompt"}
+            >
+              ✨ Describe Design Idea
+            </button>
           </div>
+
+          {inputMode === "prompt" ? (
+            <div className="conceptPromptBox">
+              <label htmlFor="conceptPromptInput" className="conceptPromptLabel">
+                Describe the custom jewelry piece
+              </label>
+              <textarea
+                id="conceptPromptInput"
+                className="conceptPromptTextarea"
+                rows={3}
+                value={conceptPrompt}
+                onChange={(e) => setConceptPrompt(e.target.value)}
+                placeholder="e.g., 14K White Gold Oval 1.5ct Solitaire with Hidden Halo and thin Pavé diamond band..."
+                disabled={generatingConcept || !canEdit}
+              />
+              <div className="conceptSuggestions">
+                <span className="conceptSuggestionsTitle">Inspiration presets:</span>
+                <div className="conceptChips">
+                  {PROMPT_SUGGESTIONS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      className="conceptChip"
+                      onClick={() => {
+                        setConceptPrompt(preset);
+                        generateConcept(preset);
+                      }}
+                      disabled={generatingConcept || !canEdit}
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="conceptActionRow">
+                <button
+                  type="button"
+                  className="button primary button--lg fitContent"
+                  disabled={generatingConcept || !conceptPrompt.trim() || !canEdit}
+                  onClick={() => generateConcept()}
+                >
+                  {generatingConcept ? "✨ Synthesizing 3D Concept & Quote..." : "✨ Synthesize Concept & Live Quote"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="dropzone dropzone--multi"
+              onDragOver={(event) => {
+                event.preventDefault();
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (!canEdit) return;
+                handleFiles(Array.from(event.dataTransfer.files).filter(Boolean));
+              }}
+            >
+              <div className="dropzoneContent">
+                <svg className="dropzoneIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                </svg>
+                <strong>Drag &amp; drop jewelry photos</strong>
+                <span className="muted small">Take a new photo or select JPG, PNG, or WEBP files up to 10 MB.</span>
+              </div>
+              <div className="dropzoneActions">
+                <label className="button primary button--sm">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    capture="environment"
+                    disabled={!canEdit}
+                    onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
+                  />
+                  Take photo
+                </label>
+                <label className="button secondary button--sm">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    disabled={!canEdit}
+                    onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
+                  />
+                  Choose from files
+                </label>
+              </div>
+            </div>
+          )}
 
           {facets.length ? (
             <div className="facetThumbRail" aria-label="Uploaded photos">
