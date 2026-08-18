@@ -132,20 +132,56 @@ azzure-autoquote-mvp/
 
 ---
 
-## 6. Product Marketing & Positioning Kit
+## 6. Comprehensive Go-To-Market (GTM) Campaign Plan
 
-### Target Buyer (ICP)
-- Independent jewelry store owners.
-- Luxury diamond showrooms and bridal consultation studios.
-- Multi-location retail jewelers seeking standardized quoting and margin protection.
+### Campaign Master Identity: *"The 30-Second Showroom Close" (Operation Zero Walkout)*
+> **Headline**: *Stop Saying "Let Me Get Back to You."*  
+> **Subheadline**: *The ultimate AI-powered pricing engine and 3D showroom kiosk for luxury jewelry retailers. Turn Pinterest and Instagram screenshots into closed $8,000 custom bridal sales in 30 seconds.*
 
-### High-Converting Campaign Angles
-1. **"The Showroom Kiosk Revolution"**:  
-   *"Turn your showroom tablets into high-tech 3D design kiosks. Quote custom rings on the spot while your customer is in the store."*
-2. **"Never Say 'Let Me Get Back to You'"**:  
-   *"Stop losing custom bridal shoppers to 48-hour quote delays. Generate 3D visuals and spot-metal pricing in 30 seconds."*
-3. **"From Tablet to Factory in 1 Click"**:  
-   *"Design with the customer, approve the retail quote, and dispatch directly to Custom King manufacturing without leaving the counter."*
+---
+
+### The 4 Major Industry Gaps Identified by Research
+1. **The 48–72 Hour CAD Delay Trap**:
+   - In-store bridal closing rate sits at **55%** during the consultation, but plummets to **<10%** once the customer walks out the door to wait for an emailed CAD quote.
+2. **The $100–$300 Upfront CAD Expense**:
+   - Jewelers pay freelance CAD designers before knowing if a client will purchase, burning $2,000–$4,000/month on lost leads.
+3. **Gold Spot Volatility & Margin Leakage**:
+   - With gold trading at all-time highs ($2,600+/oz), static paper sheets cause $300–$600 margin leakage on miscalculated metal weights.
+4. **The Technical CAD "Imagination Gap"**:
+   - Raw CAD wireframes look cold and industrial. Consumers need emotional, photorealistic 3D portrait renders with diamond fire and luxury reflections.
+
+---
+
+### Target Audience & ICP Breakdown
+- **Tier 1 (Core)**: Independent Guild Jewelers (1–3 stores, $1M–$8M annual revenue, 20–60 custom bridal inquiries/mo).
+- **Tier 2**: Bespoke Bridal Boutiques & Diamond District Showrooms.
+- **Tier 3**: Multi-Location Jewelry Retailers & Diamond Wholesalers transitioning into custom retail.
+
+---
+
+### 5-Step High-Converting B2B Email Sequence
+- **Email 1 (Day 1 - The Walkout Agitation)**: *"How many custom bridal sales walked out of [Store Name] this weekend?"*
+- **Email 2 (Day 4 - The Financial ROI)**: *"The $2,500/month freelance CAD bill you can eliminate."*
+- **Email 3 (Day 7 - The 28-Second Demo Video)**: *"Watch this 28-second custom ring quote on a showroom iPad."*
+- **Email 4 (Day 11 - The Case Study)**: *"How a 2-store boutique closed $42,000 in custom bridal in 3 weeks."*
+- **Email 5 (Day 15 - The Breakup / Final Call)**: *"Closing your file / Last check-in for [Store Name]."*
+
+---
+
+### Paid Video Ad Creative Assets (Meta / LinkedIn B2B)
+- **Ad 1: Split-Screen Comparison (30s)**:
+  - *Left*: Associate using paper notes, saying "I'll email you Tuesday," customer walks out.
+  - *Right*: Associate taps showroom iPad, 3D ring sparkles with live spot pricing, customer hands over credit card.
+- **Ad 2: Margin Guardian (45s)**:
+  - Highlighting live gold spot sync against volatile markets to lock in 45%–55% profit margins.
+
+---
+
+### Channel Economics & Pilot Budget ($10,000 Pilot)
+- **Meta / LinkedIn B2B Ads**: $7,000 (100,000+ impressions $\rightarrow$ 115 free trials).
+- **Cold Email Outreach**: $1,500 (3,500 verified store owners $\rightarrow$ 45 free trials).
+- **Trade Show & Collateral**: $1,500 ("The 10-Second Ring Challenge" iPad kiosk).
+- **Expected Results**: 160 trial stores $\rightarrow$ 56 paid subscribers $\rightarrow$ **+$12,263 MRR (+$147k ARR)** at **$178 CAC** (Payback period < 1.2 months).
 
 ---
 

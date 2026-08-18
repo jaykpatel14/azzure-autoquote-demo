@@ -51,18 +51,18 @@ function DashboardChart({ data }: { data: Array<{ date: Date; label: string; cou
   return (
     <div className="chartShell">
       <svg viewBox="0 0 1000 200" role="img" aria-label="Quotes created in the last 30 days">
-        <line x1="0" y1="160" x2="1000" y2="160" stroke="rgba(255,255,255,0.08)" />
+        <line x1="0" y1="160" x2="1000" y2="160" stroke="var(--color-outline-variant)" />
         {data.map((point, index) => {
           const frame = getBarFrame(point.count, maxCount, index, data.length);
           const showLabel = index % 5 === 0 || index === data.length - 1;
 
           return (
             <g key={point.label}>
-              <rect x={frame.x} y={frame.y} width={frame.width} height={frame.height} rx="4" fill="rgba(201,168,76,0.6)">
+              <rect x={frame.x} y={frame.y} width={frame.width} height={frame.height} rx="4" fill="rgba(0, 90, 183, 0.6)">
                 <title>{`${point.label}: ${point.count}`}</title>
               </rect>
               {showLabel ? (
-                <text x={frame.x} y="184" fill="rgba(235,235,245,0.58)" fontSize="10">
+                <text x={frame.x} y="184" fill="var(--color-outline)" fontSize="10">
                   {point.label}
                 </text>
               ) : null}
@@ -79,6 +79,7 @@ function DashboardChart({ data }: { data: Array<{ date: Date; label: string; cou
     </div>
   );
 }
+
 
 const FEATURE_STEPS = [
   {
@@ -231,7 +232,8 @@ export default async function HomePage() {
         </>
       }
     >
-      <section className="statGrid" aria-label="Business snapshot">
+      {/* KPI Stats Grid */}
+      <section className="statGrid" aria-label="Business snapshot" style={{ marginBottom: 32 }}>
         <article className="statCard statCard--usage">
           <span className="eyebrow">Quotes this month</span>
           <strong>{dashboard.usage?.used ?? 0}</strong>
@@ -271,7 +273,7 @@ export default async function HomePage() {
           {dashboard.totalQuotes === 0 ? (
             <div className="emptyState emptyStateIllustrated">
               <QuoteOutlineIllustration />
-              <strong>Welcome to Azzure AIQuote. Upload a jewelry photo or describe a concept to generate a quote in seconds.</strong>
+              <strong>Welcome to Azzure AutoQuote. Upload a jewelry photo or describe a concept to generate a quote in seconds.</strong>
               <p className="muted">Create your first quote and this chart will begin to fill in.</p>
               <Link className="button primary" href="/quotes/new">
                 New quote
@@ -315,7 +317,7 @@ export default async function HomePage() {
         </article>
       </section>
 
-      <section className="card">
+      <section className="card" style={{ marginTop: 24 }}>
         <div className="sectionHeader">
           <div>
             <h2>Recent quotes</h2>
@@ -328,7 +330,7 @@ export default async function HomePage() {
         {dashboard.recentQuotes.length === 0 ? (
           <div className="emptyState emptyStateIllustrated">
             <QuoteOutlineIllustration />
-            <strong>Welcome to Azzure AIQuote. Upload a jewelry photo or describe a concept to generate a quote in seconds.</strong>
+            <strong>Welcome to Azzure AutoQuote. Upload a jewelry photo or describe a concept to generate a quote in seconds.</strong>
             <p className="muted">Your latest five quotes will appear here once you save your first estimate.</p>
             <Link className="button primary" href="/quotes/new">
               New quote
@@ -394,7 +396,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section className="grid twoUp">
+      <section className="grid twoUp" style={{ marginTop: 24 }}>
         <article className="card">
           <div className="sectionHeader">
             <div>
@@ -452,6 +454,7 @@ export default async function HomePage() {
   );
 }
 
+
 function QuoteOutlineIllustration() {
   return (
     <svg className="emptyStateIllustration" viewBox="0 0 240 120" role="img" aria-label="Jewelry outline illustration">
@@ -475,42 +478,118 @@ function QuoteOutlineIllustration() {
 function MarketingPage() {
   return (
     <main className="marketingPage">
-      <section className="marketingHero">
-        <div className="marketingHeroInner">
-          <div>
-            <p className="eyebrow">Azzure AIQuote</p>
-            <h1 className="marketingHeadline">Intelligent jewelry quoting &amp; 3D showroom studio.</h1>
-            <p className="marketingSubheadline">
-              Turn customer ideas and photos into photorealistic 3D concepts and spot-accurate retail estimates in 30 seconds.
-              Present luxury tablet consultations and dispatch straight to manufacturing with 1 click.
-            </p>
+      {/* Top Navigation */}
+      <header style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 50,
+        background: "rgba(249, 249, 255, 0.85)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid var(--color-outline-variant)",
+        boxShadow: "0 1px 4px rgba(26,28,35,0.04)"
+      }}>
+        <div style={{
+          maxWidth: 1440,
+          margin: "0 auto",
+          padding: "0 48px",
+          height: 80,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="font-headline-lg" style={{ color: "var(--color-primary)", fontFamily: "var(--font-display)", fontSize: "1.75rem", fontWeight: 600 }}>Azzure</span>
+            <span className="muted small" style={{ marginTop: 2 }}>AutoQuote AI</span>
           </div>
-          <div className="marketingActions">
-            <Link className="button primary button--lg" href="/pricing">
-              Start free trial
+          <nav style={{ display: "flex", alignItems: "center", gap: 48 }}>
+            <a href="#workflow" style={{ color: "var(--color-secondary)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}>Workflow</a>
+            <a href="#pricing" style={{ color: "var(--color-secondary)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}>Pricing</a>
+          </nav>
+          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+            <Link href="/signin" style={{ color: "var(--color-primary)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>
+              Log In
             </Link>
-            <Link className="button secondary button--lg" href="/signin">
-              Sign in
-            </Link>
-            <Link className="marketingLink" href="#pricing">
-              View pricing
+            <Link className="button primary" href="/pricing">
+              Start Free Trial
             </Link>
           </div>
+        </div>
+      </header>
 
-          <section className="statGrid">
-            {MARKETING_STATS.map((item) => (
-              <article key={item.label} className="statCard">
-                <span className="eyebrow">{item.label}</span>
-                <strong>{item.value}</strong>
-                <p className="muted small">{item.detail}</p>
-              </article>
-            ))}
-          </section>
+      {/* Hero Section */}
+      <section className="marketingHero" id="home">
+        <div className="marketingHeroInner">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "40px", maxWidth: 640 }}>
+            {/* AI badge */}
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 16px 6px 10px",
+              background: "var(--color-surface-container-low)",
+              border: "1px solid var(--color-outline-variant)",
+              borderRadius: "var(--radius-full)",
+              width: "fit-content"
+            }}>
+              <span style={{
+                width: 8, height: 8,
+                borderRadius: "50%",
+                background: "var(--color-primary)",
+                animation: "pulse-glow 2s infinite",
+                display: "inline-block"
+              }} />
+              <span className="font-label-sm" style={{ color: "var(--color-primary)" }}>Introducing AutoQuote v2.0</span>
+            </div>
+
+            <h1 className="marketingHeadline">
+              Stop Saying<br />
+              <em>"Let Me Get Back to You."</em>
+            </h1>
+
+            <p className="marketingSubheadline">
+              The ultimate AI-powered pricing engine for luxury jewelry retailers. Close bespoke commissions instantly on the showroom floor with real-time, mathematically perfect quotes.
+            </p>
+
+            <div className="marketingActions">
+              <Link className="button primary button--lg" href="/pricing">
+                Start Free Trial
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }} aria-hidden="true">arrow_forward</span>
+              </Link>
+              <Link className="button secondary button--lg" href="/signin">
+                Sign In
+              </Link>
+            </div>
+
+            {/* Trust indicators */}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, paddingTop: 24, borderTop: "1px solid var(--color-surface-variant)" }}>
+              <div>
+                <p style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "1.125rem", color: "var(--color-on-surface)", margin: "0 0 2px" }}>Trusted by 500+</p>
+                <p className="muted small" style={{ margin: 0 }}>luxury retailers worldwide</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="marketingSection">
-        <div className="sectionHeader">
+      {/* Stats Grid */}
+      <section style={{ background: "var(--color-surface-container-low)", padding: "60px 48px", borderTop: "1px solid var(--color-outline-variant)" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+          <div className="statGrid">
+            {MARKETING_STATS.map((item) => (
+              <article key={item.label} className="statCard">
+                <span className="eyebrow">{item.label}</span>
+                <strong style={{ fontSize: "1.25rem" }}>{item.value}</strong>
+                <p className="muted small">{item.detail}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Workflow Section */}
+      <section className="marketingSection" id="workflow">
+        <div className="sectionHeader" style={{ maxWidth: 1280, margin: "0 auto 48px" }}>
           <div>
             <p className="eyebrow">Workflow</p>
             <h2 className="heading">A calm, three-step path from image upload to approved price.</h2>
@@ -526,29 +605,40 @@ function MarketingPage() {
         </div>
       </section>
 
-      <section className="marketingSection" id="pricing">
-        <div className="sectionHeader">
-          <div>
-            <p className="eyebrow">Plans</p>
-            <h2 className="heading">Choose the level of control your shop needs.</h2>
+      {/* Pricing Section */}
+      <section className="marketingSection" id="pricing" style={{ background: "var(--color-surface-container-low)" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+          <div className="sectionHeader" style={{ marginBottom: 48 }}>
+            <div>
+              <p className="eyebrow">Plans</p>
+              <h2 className="heading">Choose the level of control your shop needs.</h2>
+            </div>
           </div>
-        </div>
-        <div className="planGrid">
-          {PLAN_CARDS.map((plan, index) => (
-            <article key={plan.name} className={`planCard${index === 2 ? " enterprise" : ""}`}>
-              {index === 0 ? <span className="trialBanner">Popular starter option</span> : null}
-              <div className="planName">{plan.name}</div>
-              <div className="planPrice">{plan.price}</div>
-              <p className="muted">{plan.description}</p>
-              <ul className="featureList">
-                {plan.features.map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
-            </article>
-          ))}
+          <div className="planGrid">
+            {PLAN_CARDS.map((plan, index) => (
+              <article key={plan.name} className={`planCard${index === 2 ? " enterprise" : ""}`}>
+                {index === 0 ? <span className="trialBanner">Popular starter option</span> : null}
+                <div className="planName">{plan.name}</div>
+                <div className="planPrice">{plan.price}</div>
+                <p className="muted">{plan.description}</p>
+                <ul className="featureList">
+                  {plan.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+                <Link
+                  className={`button ${index === 2 ? "primary" : "secondary"}`}
+                  href="/pricing"
+                  style={{ marginTop: "auto" }}
+                >
+                  Get started
+                </Link>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
     </main>
   );
 }
+

@@ -14,13 +14,20 @@ const uiFont = Inter({ subsets: ["latin"], variable: "--font-ui-loaded", display
 const monoFont = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono-loaded", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Azzure AIQuote | Intelligent Jewelry Estimation & Showroom Studio",
-  description: "Instant 3D ring visualization, live precious metal spot quotations, and direct-to-manufacturing workflow for retail jewelers."
+  title: "Azzure AutoQuote | AI Pricing for Luxury Jewelry Retailers",
+  description:
+    "The ultimate AI-powered pricing engine for luxury jewelry retailers. Close bespoke commissions instantly on the showroom floor with real-time, mathematically perfect quotes."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="light">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        />
+      </head>
       <body className={`${displayFont.variable} ${uiFont.variable} ${monoFont.variable}`}>
         <ToastProvider>{children}</ToastProvider>
       </body>

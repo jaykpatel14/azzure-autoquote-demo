@@ -1,77 +1,119 @@
 :root {
-  /* Modern High-Contrast Brand Colors: Electric Azure & Sapphire */
-  --color-primary: #0284c7;
-  --color-primary-hover: #0369a1;
-  --color-primary-active: #075985;
-  --color-primary-light: #38bdf8;
-  --color-primary-glow: rgba(56, 189, 248, 0.4);
-  --color-primary-subtle: rgba(2, 132, 199, 0.12);
-  --color-primary-border: rgba(56, 189, 248, 0.35);
+  /* ── Material Design 3 · Azzure AutoQuote · Light Mode ── */
 
-  /* Modern Midnight Slate & Obsidian Surfaces */
-  --color-obsidian: #0b0f17;
-  --color-charcoal: #111827;
-  --color-graphite: #1f2937;
-  --color-dark-deep: #070a10;
-  --color-darkest: #04060a;
+  /* Primary */
+  --color-primary: #005ab7;
+  --color-primary-hover: #004590;
+  --color-primary-container: #0072e5;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #fefcff;
+  --color-on-primary-fixed: #001b3f;
+  --color-on-primary-fixed-variant: #004590;
+  --color-primary-fixed: #d7e2ff;
+  --color-primary-fixed-dim: #abc7ff;
+  --color-inverse-primary: #abc7ff;
 
-  --surface-base: #0b0f17;
-  --surface-card: rgba(17, 24, 39, 0.92);
-  --surface-card-hover: rgba(31, 41, 55, 0.95);
-  --surface-elevated: #1f2937;
-  --surface-subtle: rgba(255, 255, 255, 0.05);
+  /* Secondary */
+  --color-secondary: #5c5e66;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #dfdfe9;
+  --color-on-secondary-container: #61626b;
+  --color-secondary-fixed: #e2e2ec;
+  --color-secondary-fixed-dim: #c5c6cf;
+  --color-on-secondary-fixed: #191b22;
+  --color-on-secondary-fixed-variant: #45464e;
 
-  /* High-Contrast Borders */
-  --color-border: rgba(148, 163, 184, 0.18);
-  --color-border-hover: rgba(56, 189, 248, 0.45);
-  --color-border-active: rgba(56, 189, 248, 0.8);
+  /* Tertiary */
+  --color-tertiary: #5b5c5c;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #747575;
+  --color-on-tertiary-container: #fdfcfc;
+  --color-tertiary-fixed: #e3e2e2;
+  --color-tertiary-fixed-dim: #c6c6c6;
+  --color-on-tertiary-fixed: #1a1c1c;
+  --color-on-tertiary-fixed-variant: #464747;
 
-  /* High-Contrast Typography Tokens (WCAG AAA/AA Compliant) */
-  --color-body: #ffffff;
-  --color-body-secondary: #f1f5f9;
-  --color-muted: #cbd5e1;
-  --color-muted-light: #94a3b8;
-  --color-text-light: #0f172a;
+  /* Surface Hierarchy */
+  --color-surface: #f9f9ff;
+  --color-surface-bright: #f9f9ff;
+  --color-surface-dim: #d7dae4;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f1f3fe;
+  --color-surface-container: #ebedf8;
+  --color-surface-container-high: #e6e8f3;
+  --color-surface-container-highest: #e0e2ed;
+  --color-surface-variant: #e0e2ed;
+  --color-surface-tint: #005cbc;
+  --color-inverse-surface: #2d3039;
+  --color-inverse-on-surface: #eef0fb;
 
-  /* Backward Compatibility Mappings for Existing Gold references -> Now Radiant Azure */
-  --color-gold: #0284c7;
-  --color-gold-light: #38bdf8;
-  --color-gold-hover: #0369a1;
-  --color-gold-subtle: rgba(2, 132, 199, 0.14);
-  --color-gold-border: rgba(56, 189, 248, 0.35);
+  /* On-Surface */
+  --color-on-surface: #181c23;
+  --color-on-surface-variant: #414754;
+  --color-on-background: #181c23;
+
+  /* Outline */
+  --color-outline: #717786;
+  --color-outline-variant: #c1c6d7;
+
+  /* Background */
+  --color-background: #f9f9ff;
+
+  /* Error */
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  /* Backward compatibility aliases */
+  --color-body: var(--color-on-surface);
+  --color-gold: var(--color-primary);
+  --color-gold-light: var(--color-primary-fixed-dim);
+  --color-gold-hover: var(--color-primary-hover);
+  --color-gold-subtle: rgba(0, 90, 183, 0.08);
+  --color-gold-border: rgba(0, 90, 183, 0.2);
   --color-ivory: #ffffff;
-  --color-ivory-dark: #f8fafc;
+  --color-ivory-dark: #f9f9ff;
+  --surface-card: var(--color-surface-container-lowest);
+  --surface-base: var(--color-background);
+  --color-muted: var(--color-on-surface-variant);
+  --color-muted-light: var(--color-outline);
+  --color-primary-glow: rgba(0, 90, 183, 0.2);
+  --color-primary-subtle: rgba(0, 90, 183, 0.06);
+  --color-primary-border: rgba(0, 90, 183, 0.2);
+  --color-border: var(--color-outline-variant);
+  --color-border-hover: var(--color-primary);
+  --color-border-active: var(--color-primary);
 
-  /* Semantic Feedback Colors */
-  --color-error: #f43f5e;
-  --color-error-light: #fb7185;
-  --color-error-subtle: rgba(244, 63, 94, 0.16);
-  --color-success: #10b981;
-  --color-success-light: #34d399;
-  --color-success-subtle: rgba(16, 185, 129, 0.16);
-  --color-warning: #f59e0b;
-  --color-warning-light: #fbbf24;
-  --color-warning-subtle: rgba(245, 158, 11, 0.16);
-
+  /* Feedback colors */
+  --color-success: #137333;
+  --color-success-subtle: #e6f4ea;
+  --color-warning: #f57f17;
+  --color-warning-subtle: #fff8e1;
+  --color-error-compat: var(--color-error);
+  --color-error-subtle: var(--color-error-container);
   --color-signup-warning: #d97706;
   --color-signup-success: #059669;
-  --color-signup-error: #e11d48;
-  --color-signup-error-strong: #9f1239;
+  --color-signup-error: #ba1a1a;
+  --color-signup-error-strong: #93000a;
 
-  --font-display: var(--font-display-loaded);
-  --font-ui: var(--font-ui-loaded);
-  --font-mono: var(--font-mono-loaded);
+  /* Typography */
+  --font-display: var(--font-display-loaded, "Playfair Display", Georgia, serif);
+  --font-ui: var(--font-ui-loaded, "Inter", system-ui, sans-serif);
+  --font-mono: var(--font-mono-loaded, "JetBrains Mono", monospace);
 
-  --text-xs: 0.75rem;
-  --text-sm: 0.85rem;
-  --text-base: 0.95rem;
-  --text-lg: 1.1rem;
-  --text-xl: 1.3rem;
-  --text-2xl: 1.7rem;
-  --text-3xl: 2.3rem;
-  --text-4xl: 3.3rem;
-  --text-display: 5rem;
+  /* Text scale */
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.875rem;   /* 14px */
+  --text-base: 1rem;     /* 16px */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.25rem;    /* 20px */
+  --text-2xl: 1.5rem;    /* 24px */
+  --text-3xl: 1.875rem;  /* 30px */
+  --text-4xl: 2.25rem;   /* 36px */
+  --text-display: 3rem;  /* 48px */
 
+  /* Spacing */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -83,44 +125,32 @@
   --space-12: 48px;
   --space-16: 64px;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 22px;
-  --radius-2xl: 26px;
-  --radius-3xl: 30px;
-  --radius-4xl: 36px;
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
   --radius-full: 9999px;
 
+  /* Breakpoints */
   --bp-sm: 640px;
   --bp-md: 768px;
   --bp-lg: 1024px;
   --bp-xl: 1280px;
 
+  /* Shadows */
   --shadow-ambient: 0 4px 20px rgba(26, 28, 35, 0.06);
-  --shadow-ambient-dark: 0 8px 30px rgba(0, 0, 0, 0.5);
-  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.3);
-  --shadow-elevated: 0 16px 40px rgba(0, 0, 0, 0.45);
-  --shadow-glow: 0 0 24px var(--color-primary-glow);
-  --shadow-glow-strong: 0 0 40px rgba(56, 189, 248, 0.6);
+  --shadow-card: 0 2px 8px rgba(26, 28, 35, 0.08);
+  --shadow-elevated: 0 8px 24px rgba(26, 28, 35, 0.1);
 
+  /* Transitions */
   --transition-fast: 160ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-medium: 260ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
-
-  /* Stitch Design Tokens */
-  --stitch-primary: #005ab7;
-  --stitch-primary-container: #0072e5;
-  --stitch-on-primary: #ffffff;
-  --stitch-surface: #f9f9ff;
-  --stitch-surface-container: #ebedf8;
-  --stitch-surface-container-lowest: #ffffff;
-  --stitch-on-surface: #181c23;
-  --stitch-outline: #717786;
-  --stitch-outline-variant: #c1c6d7;
 }
 
-/* Stitch Typography Utilities */
+/* ── Typography Scale Utilities ── */
 .font-display-lg {
   font-family: var(--font-display);
   font-size: 48px;
@@ -175,9 +205,9 @@
   text-transform: uppercase;
 }
 
-/* Stitch Luxury-Tech Visual Utilities */
+/* ── Shared Visual Utilities ── */
 .ambient-shadow {
-  box-shadow: 0 4px 20px rgba(26, 28, 35, 0.06);
+  box-shadow: var(--shadow-ambient);
 }
 
 .glassmorphic {
@@ -189,7 +219,7 @@
 }
 
 .metallic-border-top {
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-top: 1px solid var(--color-outline-variant);
 }
 
 .ai-pulse {
@@ -199,10 +229,10 @@
 @keyframes pulse-glow {
   0%, 100% {
     opacity: 1;
-    box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.3);
+    box-shadow: 0 0 0 0 rgba(0, 90, 183, 0.2);
   }
   50% {
     opacity: 0.85;
-    box-shadow: 0 0 0 12px rgba(2, 132, 199, 0);
+    box-shadow: 0 0 0 10px rgba(0, 90, 183, 0);
   }
 }

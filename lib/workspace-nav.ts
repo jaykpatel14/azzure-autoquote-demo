@@ -1,15 +1,16 @@
 export type WorkspaceNavItem = {
   href: string;
   label: string;
+  icon: string; // Material Symbol icon name
   active?: boolean;
 };
 
 const BASE_WORKSPACE_NAV: WorkspaceNavItem[] = [
-  { href: "/", label: "Dashboard" },
-  { href: "/quotes/new", label: "New estimate" },
-  { href: "/quotes", label: "Quote history" },
-  { href: "/customers", label: "Customers" },
-  { href: "/settings", label: "Subscription billing" }
+  { href: "/", label: "Dashboard", icon: "dashboard" },
+  { href: "/quotes", label: "Quotes", icon: "request_quote" },
+  { href: "/customers", label: "Customers", icon: "group" },
+  { href: "/orders", label: "Orders", icon: "shopping_bag" },
+  { href: "/settings", label: "Settings", icon: "settings" }
 ];
 
 export function getWorkspaceNav(activeHref: string): WorkspaceNavItem[] {

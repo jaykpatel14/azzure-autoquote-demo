@@ -6,6 +6,7 @@ import SignOutButton from "@/components/sign-out-button";
 type WorkspaceNavItem = {
   href: string;
   label: string;
+  icon: string;
   active?: boolean;
 };
 
@@ -21,7 +22,7 @@ type WorkspaceShellProps = {
 };
 
 export default function WorkspaceShell({
-  eyebrow = "Azzure AIQuote",
+  eyebrow = "Azzure AutoQuote",
   title,
   description,
   navItems,
@@ -30,32 +31,35 @@ export default function WorkspaceShell({
   sidebarExtra,
   children
 }: WorkspaceShellProps) {
+  const activePage = navItems.find((n) => n.active);
+
   return (
     <div className="workspaceShell">
       <a className="skipLink" href="#content">
         Skip to content
       </a>
-      <aside className="workspaceSidebar">
+
+      {/* ── Sidebar ── */}
+      <aside className="workspaceSidebar" aria-label="Workspace navigation">
+        {/* Brand */}
         <div className="brandBlock">
           <div className="brandMark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 3h12l4 6-10 12L2 9l4-6z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2 9h20" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 3l-2 6 4 12 4-12-2-6" />
-            </svg>
+            A
           </div>
           <div>
             <strong className="brandTitleText">Azzure</strong>
-            <p className="brandSubtitleText">AIQuote Studio</p>
+            <p className="brandSubtitleText" style={{ margin: 0 }}>AutoQuote AI</p>
           </div>
         </div>
 
+        {/* New Quote CTA */}
         <Link href="/quotes/new" className="sidebarNewQuoteBtn">
-          <span className="plusSign" aria-hidden="true">+</span>
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }} aria-hidden="true">add</span>
           <span>New Quote</span>
         </Link>
 
-        <nav className="workspaceNav" aria-label="Workspace navigation">
+        {/* Primary Navigation */}
+        <nav className="workspaceNav" aria-label="Primary navigation">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -63,19 +67,27 @@ export default function WorkspaceShell({
               href={item.href}
               aria-current={item.active ? "page" : undefined}
             >
-              <span className="navItemBullet" aria-hidden="true" />
+              <span
+                className="material-symbols-outlined workspaceNavIcon"
+                style={item.active ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                aria-hidden="true"
+              >
+                {item.icon}
+              </span>
               <span>{item.label}</span>
             </Link>
           ))}
         </nav>
 
-        <section className="sidebarPanel" aria-label="Company context">
+        {/* Company Switcher */}
+        <section className="sidebarPanel" aria-label="Company context" style={{ marginTop: "auto" }}>
           <CompanySwitcher />
         </section>
 
         {sidebarExtra ? sidebarExtra : null}
 
-        <section className="sidebarPanel sidebarFooter" aria-label="Session actions">
+        {/* Footer */}
+        <section className="sidebarFooter" aria-label="Session actions">
           <div className="sidebarFooterHeader">
             <span className="footerStatusDot" aria-hidden="true" />
             <span className="muted small">Tenant Secured</span>
@@ -84,26 +96,37 @@ export default function WorkspaceShell({
         </section>
       </aside>
 
+      {/* ── Main Content ── */}
       <main className="workspaceMain" id="content">
+        {/* Mobile top bar */}
         <header className="mobileTopBar" aria-label="Mobile workspace header">
           <div className="mobileBrandBlock">
-            <div className="brandMark" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 3h12l4 6-10 12L2 9l4-6z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2 9h20" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 3l-2 6 4 12 4-12-2-6" />
-              </svg>
-            </div>
-            <strong className="brand">Azzure AIQuote</strong>
+            <strong className="brand" style={{ fontSize: "1.25rem" }}>Azzure</strong>
           </div>
           <div className="mobileTopActions">
             <SignOutButton />
           </div>
         </header>
 
-        <header className="pageHero">
+        {/* Sticky top nav bar for desktop */}
+        <header
+          aria-label="Page header"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "0 0 32px",
+            borderBottom: "1px solid var(--color-outline-variant)",
+            marginBottom: "40px"
+          }}
+        >
           <div>
-            <p className="eyebrow">{eyebrow}</p>
+            {/* Breadcrumb */}
+            <nav className="breadcrumbs" aria-label="Breadcrumb" style={{ marginBottom: 12 }}>
+              <span>Azzure AutoQuote</span>
+              <span className="material-symbols-outlined" style={{ fontSize: 14 }} aria-hidden="true">chevron_right</span>
+              <span className="active">{activePage?.label ?? title}</span>
+            </nav>
             <h1 className="pageTitle">{title}</h1>
             {description ? <p className="pageLead">{description}</p> : null}
           </div>
