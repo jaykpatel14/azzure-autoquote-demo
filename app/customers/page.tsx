@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import WorkspaceShell from "@/components/workspace-shell";
+import { StatusBadge } from "@/src/components/ui/StatusBadge";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getCustomerDirectory } from "@/src/services/customers";
@@ -113,10 +114,12 @@ export default async function CustomersPage() {
                       <strong>{customer.name}</strong>
                     </td>
                     <td>{customer.quoteCount}</td>
-                    <td>{formatCurrency(customer.totalQuotedValue)}</td>
-                    <td>{customer.latestQuoteNumber}</td>
+                    <td className="quoteValue">{formatCurrency(customer.totalQuotedValue)}</td>
+                    <td className="monoCell">{customer.latestQuoteNumber}</td>
                     <td title={customer.latestQuoteAt.toLocaleString()}>{formatRelativeTime(customer.latestQuoteAt)}</td>
-                    <td>{customer.latestStatus}</td>
+                    <td>
+                      <StatusBadge status={customer.latestStatus as "draft" | "sent" | "ordered" | "expired"} />
+                    </td>
                   </tr>
                 ))}
                 {directory.unnamed ? (
@@ -125,12 +128,14 @@ export default async function CustomersPage() {
                       <strong>{directory.unnamed.name}</strong>
                     </td>
                     <td>{directory.unnamed.quoteCount}</td>
-                    <td>{formatCurrency(directory.unnamed.totalQuotedValue)}</td>
-                    <td>{directory.unnamed.latestQuoteNumber}</td>
+                    <td className="quoteValue">{formatCurrency(directory.unnamed.totalQuotedValue)}</td>
+                    <td className="monoCell">{directory.unnamed.latestQuoteNumber}</td>
                     <td title={directory.unnamed.latestQuoteAt.toLocaleString()}>
                       {formatRelativeTime(directory.unnamed.latestQuoteAt)}
                     </td>
-                    <td>{directory.unnamed.latestStatus}</td>
+                    <td>
+                      <StatusBadge status={directory.unnamed.latestStatus as "draft" | "sent" | "ordered" | "expired"} />
+                    </td>
                   </tr>
                 ) : null}
               </tbody>

@@ -609,18 +609,18 @@ export default function QuoteCalculator({
       <section className="statGrid quoteStepGrid" aria-label="Quote creation steps">
         <article className="statCard">
           <span className="eyebrow">Step 1</span>
-          <strong>Upload</strong>
-          <p className="muted small">Add one or more jewelry photos to start the draft.</p>
+          <strong>Upload Photos</strong>
+          <p className="muted small">Add one or more jewelry photos to start the draft estimate.</p>
         </article>
         <article className="statCard">
           <span className="eyebrow">Step 2</span>
-          <strong>AI analysis</strong>
-          <p className="muted small">Each facet gets its own analysis card and editable result set.</p>
+          <strong>AI Analysis</strong>
+          <p className="muted small">Each image is analyzed with editable stone & metal parameters.</p>
         </article>
         <article className="statCard">
           <span className="eyebrow">Step 3</span>
-          <strong>Review &amp; generate</strong>
-          <p className="muted small">Approve the estimate, download the PDF, or open the public quote.</p>
+          <strong>Review &amp; Quote</strong>
+          <p className="muted small">Approve live pricing, export a PDF, or open customer preview.</p>
         </article>
       </section>
 
@@ -628,14 +628,14 @@ export default function QuoteCalculator({
         <section className="card formCard">
           <div className="sectionHeader">
             <div>
-              <h2>Step 1 · Upload photos</h2>
-              <p className="muted">Drop multiple photos here or click to upload. JPG, PNG, or WEBP up to 10 MB each.</p>
+              <h2>Step 1 · Upload Photos</h2>
+              <p className="muted">Drop photos here or browse. JPG, PNG, or WEBP up to 10 MB per image.</p>
             </div>
             <div className="buttonRow">
-              <button className="button secondary" type="button" disabled={!canEdit} onClick={clearAllFacets}>
+              <button className="button secondary button--sm" type="button" disabled={!canEdit || !facets.length} onClick={clearAllFacets}>
                 Clear all
               </button>
-              <button className="button primary" type="button" disabled={!canAnalyse} onClick={analyseAll}>
+              <button className="button primary button--sm" type="button" disabled={!canAnalyse} onClick={analyseAll}>
                 Analyse Photos
               </button>
             </div>
@@ -652,10 +652,15 @@ export default function QuoteCalculator({
               handleFiles(Array.from(event.dataTransfer.files).filter(Boolean));
             }}
           >
-            <strong>Add jewelry photos</strong>
-            <span className="muted small">Use your camera or choose JPG, PNG, or WEBP images up to 10 MB.</span>
+            <div className="dropzoneContent">
+              <svg className="dropzoneIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+              </svg>
+              <strong>Drag &amp; drop jewelry photos</strong>
+              <span className="muted small">Take a new photo or select JPG, PNG, or WEBP files up to 10 MB.</span>
+            </div>
             <div className="dropzoneActions">
-              <label className="button primary">
+              <label className="button primary button--sm">
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
@@ -663,9 +668,9 @@ export default function QuoteCalculator({
                   disabled={!canEdit}
                   onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
                 />
-                Take a photo
+                Take photo
               </label>
-              <label className="button secondary">
+              <label className="button secondary button--sm">
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
@@ -673,7 +678,7 @@ export default function QuoteCalculator({
                   disabled={!canEdit}
                   onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
                 />
-                Choose from library
+                Choose from files
               </label>
             </div>
           </div>
@@ -688,7 +693,7 @@ export default function QuoteCalculator({
                   onClick={() => setActiveFacetId(facet.id)}
                 >
                   {facet.previewUrl ? (
-                    <img src={facet.previewUrl} alt={`${facet.title} jewelry preview`} className="facetThumbImage" />
+                    <img src={facet.previewUrl} alt={`${facet.title} preview`} className="facetThumbImage" />
                   ) : (
                     <div className="facetThumbImage facetThumbImage--fallback">
                       <span>{facet.title}</span>
@@ -707,7 +712,7 @@ export default function QuoteCalculator({
                 id="customerName"
                 value={customerName}
                 onChange={(event) => setCustomerName(event.target.value)}
-                placeholder="Optional"
+                placeholder="e.g. Eleanor Vance (Optional)"
                 disabled={!canEdit}
               />
             </div>
@@ -743,33 +748,33 @@ export default function QuoteCalculator({
               </select>
             </div>
             <div className="field">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
-                <label htmlFor="customerNotes" style={{ marginBottom: 0 }}>
-                  Photo description &amp; special instructions <span className="muted small" style={{ fontWeight: "normal" }}>(Optional)</span>
+              <div className="charCountHeader">
+                <label htmlFor="customerNotes">
+                  Photo description &amp; special instructions <span className="muted small font-normal">(Optional)</span>
                 </label>
-                <span className="muted small" style={{ fontSize: "0.75rem", fontVariantNumeric: "tabular-nums" }}>
-                  {customerNotes.length} / 1000 characters
+                <span className="charCountBadge">
+                  {customerNotes.length} / 1000
                 </span>
               </div>
               <textarea
                 id="customerNotes"
-                rows={4}
+                rows={3}
                 maxLength={1000}
                 value={customerNotes}
                 onChange={(event) => setCustomerNotes(event.target.value)}
-                placeholder="Optional: Explain details about the uploaded photo (e.g. style preferences, stone modifications, custom engraving, or specific design requests)..."
+                placeholder="Optional: Detail styling preferences, stone requests, custom engravings, or sizing..."
                 disabled={!canEdit}
               />
               <p className="muted small">
-                Add an optional description (up to 1,000 characters) so the customer or jeweler can explain details about the uploaded photo.
+                Help the AI and team understand key design details for this quote.
               </p>
             </div>
           </div>
 
           <div className="sectionHeader quoteSectionHeader">
             <div>
-              <h3>Step 2 - Facet analysis</h3>
-              <p className="muted">Each uploaded image gets its own card. Modify values below to see real-time price updates.</p>
+              <h3>Step 2 · Facet Analysis</h3>
+              <p className="muted">Each uploaded image is broken down below. Values update real-time pricing automatically.</p>
             </div>
           </div>
 
@@ -819,13 +824,13 @@ export default function QuoteCalculator({
                   </div>
 
                   {facet.showDescription || facet.description ? (
-                    <div style={{ marginTop: "0.75rem", padding: "0.75rem", borderRadius: "var(--radius-sm, 6px)", backgroundColor: "var(--color-surface-subtle, #f9fafb)", border: "1px solid var(--color-border, #e5e7eb)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
-                        <span style={{ fontSize: "0.8125rem", fontWeight: 500 }}>
-                          Photo explanation <span className="muted small" style={{ fontWeight: "normal" }}>(Optional)</span>
+                    <div className="facetDescPanel">
+                      <div className="charCountHeader">
+                        <span className="fieldLabel">
+                          Photo explanation <span className="muted small font-normal">(Optional)</span>
                         </span>
-                        <span className="muted small" style={{ fontSize: "0.75rem", fontVariantNumeric: "tabular-nums" }}>
-                          {facet.description.length} / 1000 characters
+                        <span className="charCountBadge">
+                          {facet.description.length} / 1000
                         </span>
                       </div>
                       <textarea
@@ -838,7 +843,6 @@ export default function QuoteCalculator({
                         }
                         placeholder="Optional description explaining this specific photo (max 1000 characters)..."
                         disabled={!canEdit}
-                        style={{ width: "100%", margin: 0 }}
                       />
                     </div>
                   ) : null}
@@ -947,21 +951,16 @@ export default function QuoteCalculator({
                       >
                         <span>Color / Clarity</span>
                         <input
-                          value="E VS1 (fixed)"
+                          value="E VS1 (standard)"
                           readOnly
                           disabled
-                          style={{
-                            cursor: "not-allowed",
-                            backgroundColor: "var(--color-surface-subtle, #f3f4f6)",
-                            color: "var(--color-text-muted, #6b7280)",
-                            fontWeight: 500
-                          }}
+                          className="facetReadOnlyInput"
                         />
                       </div>
 
                       {/* Piece configuration toggles */}
-                      <div className="facetResolvedField facetResolvedField--full" style={{ gridColumn: "1 / -1", display: "flex", gap: "1.5rem", marginTop: "0.5rem" }}>
-                        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                      <div className="facetCheckboxGroup">
+                        <label className="facetCheckboxLabel">
                           <input
                             type="checkbox"
                             checked={facet.output.hasWeddingBand ?? false}
@@ -970,9 +969,9 @@ export default function QuoteCalculator({
                             }
                             disabled={!canEdit}
                           />
-                          <span style={{ fontSize: "0.875rem" }}>Ring + wedding band (2 pieces)</span>
+                          <span>Ring + wedding band (2 pieces)</span>
                         </label>
-                        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                        <label className="facetCheckboxLabel">
                           <input
                             type="checkbox"
                             checked={facet.output.isTwoTone ?? false}
@@ -981,11 +980,11 @@ export default function QuoteCalculator({
                             }
                             disabled={!canEdit}
                           />
-                          <span style={{ fontSize: "0.875rem" }}>Two-tone gold (2 pieces)</span>
+                          <span>Two-tone gold (2 pieces)</span>
                         </label>
                       </div>
 
-                      <div className="facetResolvedNotes" style={{ gridColumn: "1 / -1" }}>
+                      <div className="facetResolvedNotes facetFullWidth">
                         <span>Notes</span>
                         <p className="muted small">{facet.output.notes || "No notes provided."}</p>
                       </div>
@@ -1011,13 +1010,13 @@ export default function QuoteCalculator({
         <section className="card previewCard">
           <div className="sectionHeader">
             <div>
-              <h2>Step 3 - Review and generate</h2>
-              <p className="muted">Approve the final customer price and save the quote when ready.</p>
+              <h2>Step 3 · Review &amp; Generate</h2>
+              <p className="muted">Approve the estimated price and save to company records.</p>
             </div>
           </div>
 
           <div className="quotePreview">
-            <p className="eyebrow">Quote price</p>
+            <p className="eyebrow">Quote Price</p>
             <div className="quotePrice">{formatCurrency(estimatedSellingPrice)}</div>
             <div className="quoteMeta">
               <div>
@@ -1033,18 +1032,18 @@ export default function QuoteCalculator({
                 <strong>{QUOTE_MODE_OPTIONS.find((option) => option.value === quoteMode)?.label}</strong>
               </div>
               <div>
-                <span>Facet count</span>
+                <span>Facets</span>
                 <strong>{completedFacets.length} analysed</strong>
               </div>
             </div>
-            {aggregateQuote?.notes ? <p className="muted small">{aggregateQuote.notes}</p> : null}
+            {aggregateQuote?.notes ? <p className="muted small quoteSummaryNotes">{aggregateQuote.notes}</p> : null}
             <p className="disclaimer">
               Final pricing is an approved estimate, not a manufacturing invoice. Production review may change the
               quote after CAD, stone verification, or metal confirmation.
             </p>
           </div>
 
-          <div className="buttonRow">
+          <div className="buttonRow quoteActionButtons">
             <button
               className="button primary"
               type="button"

@@ -54,7 +54,7 @@ export default async function PricingSettingsPage() {
         <form className="stack" action="/api/settings/pricing" method="post">
           <label className="field">
             <span>Customer margin (%)</span>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div className="inputUnitRow">
               <input
                 type="number"
                 name="customerMarginPct"
@@ -64,9 +64,9 @@ export default async function PricingSettingsPage() {
                 defaultValue={company.customerMarginPct ?? 0}
                 placeholder="0"
                 disabled={!canEdit}
-                style={{ maxWidth: "200px" }}
+                className="shortInput"
               />
-              <span className="muted">%</span>
+              <span className="unitBadge">%</span>
             </div>
             <p className="muted small">
               Allowed range: 0% to 200%. New quotes will snapshot this percentage at creation time. Existing quotes are not affected.
@@ -74,7 +74,7 @@ export default async function PricingSettingsPage() {
           </label>
 
           {canEdit ? (
-            <button className="button primary" type="submit" style={{ width: "fit-content" }}>
+            <button className="button primary fitContent" type="submit">
               Save margin settings
             </button>
           ) : (
