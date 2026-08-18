@@ -295,20 +295,32 @@
 .signupButton { width: 100%; justify-content: center; }
 .signupFootnote, .signupStatus, .signupFooter, .pricingFootnote { color: var(--color-on-surface-variant); font-size: var(--text-sm); text-align: center; }
 
-.pricingHero { max-width: 760px; margin: 0 auto 42px; text-align: center; }
-.pricingCards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; max-width: 1120px; margin: 0 auto; }
-.pricingCardTop { display: grid; gap: 8px; }
-.pricingCardName { margin: 0; }
-.pricingCardPrice { font-family: var(--font-display); font-size: var(--text-3xl); font-weight: 700; }
-.pricingBadge { width: fit-content; padding: 4px 8px; border-radius: 999px; color: var(--color-primary); background: var(--color-primary-container); font-size: 10px; font-weight: 700; text-transform: uppercase; }
-.pricingFeatureList, .faqList { display: grid; gap: 10px; padding: 0; list-style: none; }
-.pricingTableShell { max-width: 1120px; margin: 32px auto 0; }
-.pricingTableCard { overflow-x: auto; }
-.featureTable { width: 100%; border-collapse: collapse; }
-.featureTable th, .featureTable td { padding: 12px 14px; border-bottom: 1px solid var(--color-outline-variant); text-align: left; }
-.pricingFaq { max-width: 820px; margin: 44px auto 0; }
-.faqTrigger { width: 100%; padding: 14px 0; border: 0; border-bottom: 1px solid var(--color-outline-variant); text-align: left; color: inherit; background: transparent; font: inherit; font-weight: 700; cursor: pointer; }
-.faqAnswer { color: var(--color-on-surface-variant); line-height: 1.65; }
+.pricingHero { max-width: 800px; margin: 0 auto 48px; text-align: center; }
+.pricingCards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; max-width: 1280px; margin: 0 auto; align-items: stretch; }
+.pricingCard { display: flex; flex-direction: column; justify-content: space-between; padding: 28px 24px; border: 1px solid var(--color-outline-variant); border-radius: var(--radius-lg); background: var(--color-surface-container-lowest); position: relative; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.pricingCard:hover { transform: translateY(-4px); box-shadow: var(--shadow-elevated); }
+.pricingCard--featured { border: 2px solid var(--color-primary); background: var(--color-surface-container-low); box-shadow: var(--shadow-elevated); }
+.pricingCardTop { display: grid; gap: 8px; margin-bottom: 20px; }
+.pricingCardName { margin: 0; font-size: var(--text-xl); font-weight: 700; color: var(--color-on-surface); }
+.pricingCardPrice { font-family: var(--font-display, Georgia, serif); font-size: clamp(2rem, 3vw, 2.5rem); font-weight: 700; color: var(--color-on-surface); margin: 8px 0 0; }
+.pricingCardPrice span { font-size: var(--text-sm); font-weight: 400; color: var(--color-on-surface-variant); }
+.pricingTrial { font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); margin: 0; }
+.pricingBadge { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); padding: 4px 14px; border-radius: 999px; color: #fff; background: var(--color-primary); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3); }
+.pricingFeatureList { display: grid; gap: 12px; padding: 0; margin: 0 0 24px; list-style: none; flex: 1; }
+.pricingFeatureList li { font-size: var(--text-sm); color: var(--color-on-surface); display: flex; align-items: flex-start; gap: 8px; }
+.pricingFeatureList li::before { content: "✓"; color: var(--color-primary); font-weight: 700; }
+.pricingTableShell { max-width: 1280px; margin: 32px auto 0; }
+.pricingTableCard { overflow-x: auto; background: var(--color-surface-container-lowest); border: 1px solid var(--color-outline-variant); border-radius: var(--radius-lg); padding: 32px; max-width: 1280px; margin: 48px auto 0; }
+.featureTable { width: 100%; border-collapse: collapse; text-align: left; }
+.featureTable th, .featureTable td { padding: 14px 16px; border-bottom: 1px solid var(--color-outline-variant); font-size: var(--text-sm); }
+.featureTable thead th { font-size: var(--text-base); font-weight: 700; color: var(--color-on-surface); border-bottom: 2px solid var(--color-outline-variant); }
+.featureCategoryHeader { background: var(--color-surface-container-low); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); padding: 12px 16px !important; }
+.featureMark--yes { color: #10b981; font-weight: 700; }
+.featureMark--no { color: #94a3b8; }
+.pricingFaq { max-width: 820px; margin: 56px auto 0; }
+.faqTrigger { width: 100%; padding: 18px 0; border: 0; border-bottom: 1px solid var(--color-outline-variant); text-align: left; color: inherit; background: transparent; font: inherit; font-size: var(--text-base); font-weight: 700; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.faqAnswer { color: var(--color-on-surface-variant); line-height: 1.65; margin-top: 10px; font-size: var(--text-sm); }
+
 
 .logoUploadContainer, .logoLivePreviewBox, .logoLockedBox { padding: 18px; border: 1px solid var(--color-outline-variant); border-radius: var(--radius-lg); }
 .logoDropzonePrompt, .logoPreviewInner { display: grid; place-items: center; gap: 10px; min-height: 180px; text-align: center; }
@@ -370,12 +382,17 @@
 .pricingTrial { margin: 18px auto 0; text-align: center; }
 .featureSection { padding-block: clamp(40px, 7vw, 80px); }
 
-@media (max-width: 800px) {
+@media (max-width: 1100px) {
+  .pricingCards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
   .quotesHeader, .quotesToolbar, .paginationBar, .historyRow { align-items: stretch; flex-direction: column; }
   .quotesUsageBlock, .quoteSearchForm, .quoteSearchInput { width: 100%; }
   .quoteTabs, .settingsTabs { width: 100%; }
   .upgradeGrid, .pricingCards { grid-template-columns: 1fr; }
   .upgradeActions { grid-column: auto; }
+
   .detailRow { align-items: flex-start; flex-direction: column; gap: 4px; }
   .tableShell { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .dataTable { min-width: 720px; }

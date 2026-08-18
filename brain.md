@@ -34,12 +34,23 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision**: Upgraded `/showroom` into a Luxury Dark Obsidian & Gold Touchscreen Studio featuring 4 1-Tap End-Customer Try-It Inspiration Cards (*"2.5ct Pear Halo Solitaire"*, *"3.0ct Oval Hidden Halo"*, *"2.0ct Emerald Cut 3-Stone"*, *"1.5ct Cushion Pavé Split Shank"*), touch camera support, and golden consultation claim cards (`QT-0042`).
 - **Rationale**: Walk-in clients standing at a Workstation on Wheels (WOW) kiosk or tablet in a showroom may not have inspiration photos on their mobile phones. Preset cards allow 1-touch interaction, letting any client experience 3D AI quoting in 30 seconds.
 
-### 7. CustomKing Staging API Live HTTP Dispatch Integration
+### 8. Pricing Page 4-Column Grid & Category Comparison Table Redesign
 - **Decision**: 
-  1. Updated `lib/customking-api.ts` to dispatch live HTTP POST requests (`/orders`) to the CustomKing Staging API endpoint configured in `CUSTOMKING_API_URL`.
-  2. Integrated automatic dispatch into `app/api/admin/orders/[orderId]/route.ts` when assigning orders to CustomKing.
-  3. Formatted JSON payload with full order specifications (`externalOrderId`, `orderNumber`, `itemName`, `metalType`, `metalWeightGrams`, `centerDiamondCarats`, `sideDiamondCarats`, `notes`, `renderingImageUrl`).
-- **Rationale**: Allows testing real API request/response flows against the user's active CustomKing Staging server while keeping live production dispatches gated under explicit release control.
+  1. Updated `app/globals.css` to render `.pricingCards` in a balanced 4-column grid (`repeat(4, minmax(0, 1fr))`) for Starter ($49), Professional ($99), Enterprise ($199), and Ultra ($399).
+  2. Fixed the Feature Comparison Table in `app/(marketing)/pricing/page.tsx` by grouping rows under 5 distinct category header rows (*Core Quoting Engine*, *Customization & Branding*, *Storage & Team Seats*, *Manufacturing & Enterprise*, *Ultra Studio & Showroom Kiosk*).
+- **Rationale**: Eliminates the layout bug where Ultra dropped down to a second row alone, and fixes the text concatenation bug (`Core quotingQuotes per month`) by properly separating section categories from feature labels.
+
+### 9. Showroom Kiosk Workflow & AI 3D Photo Generation
+- **Decision**: 
+  1. Integrated automatic background AI analysis on photo upload (no manual analyze button needed).
+  2. Added **Photorealistic AI 3D Concept Generation** (`generateAiConcept`) to `/showroom`.
+  3. Displays generated 3D AI renderings in the right preview frame and on the final saved quote claim screen.
+  4. Aligned step-by-step layout (`Step 01 Photo Upload & Prompt` $\rightarrow$ `Step 02 AI Spec Output` $\rightarrow$ `Step 03 Adjust Parameters` $\rightarrow$ `Step 04 Live Estimate & Save`) to match `QuoteCalculator.tsx` 1-to-1.
+- **Rationale**: Gives showroom clients and sales associates the full power of both automatic reference photo analysis and photorealistic 3D AI concept rendering directly on the tablet kiosk.
+
+
+
+
 
 
 
