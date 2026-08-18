@@ -244,10 +244,21 @@ export default function QuoteCalculator({
   const [conceptPrompt, setConceptPrompt] = useState("");
   const [generatingConcept, setGeneratingConcept] = useState(false);
   const [showroomMode, setShowroomMode] = useState(false);
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
   const { showToast } = useToast();
 
   const facetsRef = useRef<FacetDraft[]>([]);
   const showroomFileInputRef = useRef<HTMLInputElement | null>(null);
+  const lastAnalysedDescriptionRef = useRef("");
+
+  function toggleNotes(id: string) {
+    setExpandedNotes((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   useEffect(() => {
     facetsRef.current = facets;
@@ -442,7 +453,7 @@ export default function QuoteCalculator({
       file,
       previewUrl: URL.createObjectURL(file),
       isObjectUrl: true,
-      title: `Facet ${facetsRef.current.length + index + 1}`,
+      title: `Photo ${facetsRef.current.length + index + 1}`,
       description: "",
       showDescription: false,
       status: "pending" as FacetStatus,
@@ -453,12 +464,14 @@ export default function QuoteCalculator({
 
     setFacets((current) => [...current, ...nextFacets]);
     setActiveFacetId((current) => current ?? nextFacets[0].id);
-    setStatus(`${selectedFiles.length} image${selectedFiles.length === 1 ? "" : "s"} added.`);
-    showToast({
-      message: `${selectedFiles.length} image${selectedFiles.length === 1 ? "" : "s"} added to the quote.`,
-      variant: "info"
+    setStatus("Analysing photos with AI...");
+
+    // Auto-trigger analysis for all new photos
+    Promise.all(nextFacets.map((facet) => analyseFacet(facet))).then(() => {
+      setStatus("AI analysis complete. Adjust parameters below to refine the quote.");
     });
   }
+
 
   async function handleShowroomPhotoSelect(fileList: FileList | File[] | null) {
     if (!fileList || !fileList.length) return;
@@ -651,6 +664,17 @@ export default function QuoteCalculator({
     });
   }
 
+  async function refreshAnalysisFromDescription() {
+    const description = customerNotes.trim();
+    if (!description || description === lastAnalysedDescriptionRef.current || !facetsRef.current.length) return;
+
+    lastAnalysedDescriptionRef.current = description;
+    setSavedQuote(null);
+    setStatus("Updating the AI analysis from the customer description...");
+    await Promise.all(facetsRef.current.filter((facet) => facet.file).map((facet) => analyseFacet(facet)));
+    setStatus("AI analysis and live quote updated automatically.");
+  }
+
   async function persistQuote(options?: { resetDraftAfterSave?: boolean }) {
     if (!aggregateQuote || !costBreakdown) {
       setStatus("Analyse the photos before saving the quote.");
@@ -755,680 +779,427 @@ export default function QuoteCalculator({
     "18K Two-Tone Radiant Cut with Diamond Pavé Band"
   ];
 
-  if (showroomMode) {
-    return (
-      <div className="estimateWorkspace showroomKioskLayout">
-        {/* Luxury Showroom Top Header */}
-        <header className="showroomTopNav">
-          <div className="showroomBrandIdentity">
-            {companyLogoUrl ? (
-              <img src={companyLogoUrl} alt={companyName || "Store Logo"} className="showroomHeroLogo" />
-            ) : (
-              <strong className="showroomStoreTitle">{companyName || "Bespoke Jewelry Studio"}</strong>
-            )}
-            <div className="showroomConsultationBadge">
-              <span className="consultationDot" aria-hidden="true" />
-              <span>{customerName ? `Custom Design for ${customerName}` : "Bespoke Ring Consultation"}</span>
-            </div>
-          </div>
-
-          <div className="showroomTopControls">
-            <div className="showroomMetalPills" role="radiogroup" aria-label="Select precious metal">
-              {(["14K", "18K", "Platinum"] as MetalType[]).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  className={`showroomMetalPill${metalType === type ? " isActive" : ""}`}
-                  onClick={() => setMetalType(type)}
-                  disabled={!canEdit}
-                >
-                  {type === "14K" ? "14K Gold" : type === "18K" ? "18K Gold" : "Platinum"}
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className="button secondary button--sm showroomExitButton"
-              onClick={() => setShowroomMode(false)}
-            >
-              ← Back to Estimator
-            </button>
-          </div>
-        </header>
-
-        {/* Showroom Dual Showcase */}
-        <div className="showroomShowcaseGrid">
-          {/* Left: Photorealistic 3D Concept & Interactive Visualizer */}
-          <section className="card showroomVisualCard">
-            <input
-              ref={showroomFileInputRef}
-              type="file"
-              accept="image/png, image/jpeg, image/webp"
-              capture="environment"
-              style={{ display: "none" }}
-              onChange={(e) => handleShowroomPhotoSelect(e.target.files)}
-            />
-
-            <div className="showroomVisualHeader">
-              <span className="eyebrow">Photorealistic 3D Visualization</span>
-              <div className="showroomTitleRow">
-                <h2>{aggregateQuote?.centerShape ? `${aggregateQuote.centerShape} Bespoke Ring` : "Custom Jewelry Design"}</h2>
-                <button
-                  type="button"
-                  className="button secondary button--sm"
-                  onClick={() => showroomFileInputRef.current?.click()}
-                  title="Upload a reference photo or snap with tablet camera"
-                >
-                  📷 {facets[0]?.previewUrl ? "Change Photo" : "Upload / Snap Photo"}
-                </button>
-              </div>
-            </div>
-
-            <div
-              className={`showroomHeroImageFrame${!facets[0]?.previewUrl ? " isDropTarget" : ""}`}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                handleShowroomPhotoSelect(e.dataTransfer.files);
-              }}
-              onClick={() => {
-                if (!facets[0]?.previewUrl) {
-                  showroomFileInputRef.current?.click();
-                }
-              }}
-              role="button"
-              tabIndex={0}
-              aria-label="Upload reference photo or view 3D rendering"
-            >
-              {facets[0]?.previewUrl ? (
-                <div className="showroomImageWrapper">
-                  <img
-                    src={facets[0].previewUrl}
-                    alt="3D Photorealistic Jewelry Concept"
-                    className="showroomHeroImage"
-                  />
-                  <button
-                    type="button"
-                    className="showroomPhotoBadgeBtn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      showroomFileInputRef.current?.click();
-                    }}
-                  >
-                    📷 Snap / Change Photo
-                  </button>
-                </div>
-              ) : (
-                <div className="showroomEmptyRender">
-                  <div className="showroomCameraCircle" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                  <strong>Upload or Snap Customer Reference Photo</strong>
-                  <p className="muted small">Tap to use tablet camera or drag &amp; drop an inspiration photo (Pinterest/IG). Or type a prompt below!</p>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Interactive Prompt Bar for live customer tweaks */}
-            <div className="showroomPromptRefiner">
-              <span className="conceptPromptLabel">✨ Refine Design Live with AI</span>
-              <div className="showroomPromptInputRow">
-                <input
-                  className="uiInput"
-                  value={conceptPrompt}
-                  onChange={(e) => setConceptPrompt(e.target.value)}
-                  placeholder="e.g. Add hidden halo, make prongs rose gold, 2ct oval..."
-                  disabled={generatingConcept}
-                />
-                <button
-                  type="button"
-                  className="button primary button--sm"
-                  onClick={() => generateConcept()}
-                  disabled={generatingConcept || !conceptPrompt.trim()}
-                >
-                  {generatingConcept ? "Synthesizing..." : "✨ Synthesize"}
-                </button>
-              </div>
-
-              <div className="conceptSuggestions">
-                <div className="conceptChips">
-                  {PROMPT_SUGGESTIONS.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      className="conceptChip"
-                      onClick={() => {
-                        setConceptPrompt(preset);
-                        generateConcept(preset);
-                      }}
-                      disabled={generatingConcept}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Right: Luxury Client Proposal & Instant Price */}
-          <section className="card showroomProposalCard">
-            <div className="showroomPriceHero">
-              <span className="showroomPriceEyebrow">✦ Guaranteed Retail Estimate</span>
-              <div className="showroomHeroPrice">{formatCurrency(estimatedSellingPrice)}</div>
-              <p className="showroomPriceSubtext">
-                Live precious metal spot pricing + master jeweler handcrafting included.
-              </p>
-            </div>
-
-            <div className="showroomSpecsSuite">
-              <div className="showroomSpecItem">
-                <div className="showroomSpecIcon">💍</div>
-                <div className="showroomSpecContent">
-                  <span className="showroomSpecLabel">Precious Metal</span>
-                  <strong>{metalType} Solid Precious Metal</strong>
-                  <p className="muted small">Precision vacuum-cast and hand-finished to mirror luster.</p>
-                </div>
-              </div>
-
-              <div className="showroomSpecItem">
-                <div className="showroomSpecIcon">💎</div>
-                <div className="showroomSpecContent">
-                  <span className="showroomSpecLabel">Center Gemstone</span>
-                  <strong>{aggregateQuote?.centerDiamondCarats || 0} Carats {aggregateQuote?.centerShape || "Diamond"}</strong>
-                  <p className="muted small">Premium E VS1 standard color and brilliance clarity.</p>
-                </div>
-              </div>
-
-              <div className="showroomSpecItem">
-                <div className="showroomSpecIcon">✨</div>
-                <div className="showroomSpecContent">
-                  <span className="showroomSpecLabel">Accents &amp; Setting</span>
-                  <strong>{aggregateQuote?.settingType || "Pavé / Claw Prong"} ({aggregateQuote?.sideDiamondQuantity || 0} Stones)</strong>
-                  <p className="muted small">Micro-pavé handset with certified conflict-free melee diamonds.</p>
-                </div>
-              </div>
-
-              <div className="showroomSpecItem">
-                <div className="showroomSpecIcon">🛡️</div>
-                <div className="showroomSpecContent">
-                  <span className="showroomSpecLabel">Craftsmanship Guarantee</span>
-                  <strong>100% Certified Ethical Stones</strong>
-                  <p className="muted small">Includes bespoke 3D CAD design, wax proof, and lifetime care warranty.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="showroomActionSuite">
-              <button
-                type="button"
-                className="button primary button--lg showroomPrimaryAction"
-                onClick={() => persistQuote()}
-                disabled={saving || !facets.length}
-              >
-                {saving ? "Saving Consultation..." : "✦ Approve & Save Consultation"}
-              </button>
-
-              <div className="showroomSecondaryActions">
-                {savedQuote ? (
-                  <a
-                    href={`/quotes/${savedQuote.id}`}
-                    className="button secondary button--sm"
-                  >
-                    View Official Proposal PDF
-                  </a>
-                ) : null}
-              </div>
-            </div>
-          </section>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="estimateWorkspace">
-      <div className="workspaceActionBar">
-        <div className="showroomBrandWrap">
-          {companyLogoUrl ? (
-            <img src={companyLogoUrl} alt={companyName || "Store Logo"} className="showroomBrandLogo" />
-          ) : companyName ? (
-            <strong className="showroomBrandName">{companyName}</strong>
-          ) : null}
-          <div className="consultationPill">
-            <span className="consultationDot" aria-hidden="true" />
-            <span>In-Store Quoting Station</span>
-          </div>
+    <div className={`estimateWorkspace${showroomMode ? " showroomUnifiedWorkspace" : ""}`}>
+      <div className="quoteWorkspaceModeBar">
+        <div>
+          <span className="eyebrow">{showroomMode ? "Showroom consultation" : "Jeweler workspace"}</span>
+          <p className="muted small">Upload and describe once. Analysis, visualization, and pricing update automatically.</p>
         </div>
         <button
           type="button"
-          className="button primary button--sm"
-          onClick={() => setShowroomMode(true)}
+          className="button secondary button--sm"
+          onClick={() => setShowroomMode((current) => !current)}
         >
-          📺 Enter Showroom Presentation Mode
+          {showroomMode ? "Return to jeweler view" : "Open showroom view"}
         </button>
       </div>
+      {/* Two-column layout: left steps / right preview */}
+      <div className="quoteBuilderLayout">
 
-      <div className="twoColumnLayout">
-        <section className="card formCard">
-          <div className="sectionHeader">
-            <div>
-              <h2>Step 1 · {inputMode === "photos" ? "Reference Photos" : "Describe Design Concept"}</h2>
-              <p className="muted">
-                {inputMode === "photos"
-                  ? "Drop photos here or use tablet camera. JPG, PNG, or WEBP up to 10 MB."
-                  : "Type what your customer wants and AI will create a 3D visualization and extract specs."}
-              </p>
-            </div>
-            {inputMode === "photos" ? (
-              <div className="buttonRow">
-                <button className="button secondary button--sm" type="button" disabled={!canEdit || !facets.length} onClick={clearAllFacets}>
-                  Clear all
-                </button>
-                <button className="button primary button--sm" type="button" disabled={!canAnalyse} onClick={analyseAll}>
-                  Analyse Photos
-                </button>
+        {/* ── LEFT: Steps 1 → 2 → 3 ── */}
+        <div className="quoteBuilderSteps">
+
+          {/* ── Step 1: Upload Reference Photos + Description ── */}
+          <section className="card quoteStepCard">
+            <div className="quoteStepLabel">
+              <span className="quoteStepNumber">01</span>
+              <div>
+                <h2 className="quoteStepTitle">Reference Photos &amp; Description</h2>
+                <p className="muted small">Upload inspiration photos and describe what your customer wants.</p>
               </div>
-            ) : null}
-          </div>
+            </div>
 
-          <div className="inputModeTabs" role="tablist" aria-label="Input mode selection">
-            <button
-              type="button"
-              className={`inputModeTab${inputMode === "photos" ? " isActive" : ""}`}
-              onClick={() => setInputMode("photos")}
-              role="tab"
-              aria-selected={inputMode === "photos"}
-            >
-              📷 Reference Photos
-            </button>
-            <button
-              type="button"
-              className={`inputModeTab${inputMode === "prompt" ? " isActive" : ""}`}
-              onClick={() => setInputMode("prompt")}
-              role="tab"
-              aria-selected={inputMode === "prompt"}
-            >
-              ✨ Describe Design Idea
-            </button>
-          </div>
+            {/* Input Mode Tabs */}
+            <div className="inputModeTabs" role="tablist" aria-label="Input mode">
+              <button
+                type="button"
+                className={`inputModeTab${inputMode === "photos" ? " isActive" : ""}`}
+                onClick={() => setInputMode("photos")}
+                role="tab"
+                aria-selected={inputMode === "photos"}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>photo_camera</span>
+                Reference Photos
+              </button>
+              <button
+                type="button"
+                className={`inputModeTab${inputMode === "prompt" ? " isActive" : ""}`}
+                onClick={() => setInputMode("prompt")}
+                role="tab"
+                aria-selected={inputMode === "prompt"}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>auto_awesome</span>
+                Describe Design
+              </button>
+            </div>
 
-          {inputMode === "prompt" ? (
-            <div className="conceptPromptBox">
-              <label htmlFor="conceptPromptInput" className="conceptPromptLabel">
-                Describe the custom jewelry piece
-              </label>
-              <textarea
-                id="conceptPromptInput"
-                className="conceptPromptTextarea"
-                rows={3}
-                value={conceptPrompt}
-                onChange={(e) => setConceptPrompt(e.target.value)}
-                placeholder="e.g., 14K White Gold Oval 1.5ct Solitaire with Hidden Halo and thin Pavé diamond band..."
-                disabled={generatingConcept || !canEdit}
-              />
-              <div className="conceptSuggestions">
-                <span className="conceptSuggestionsTitle">Inspiration presets:</span>
-                <div className="conceptChips">
-                  {PROMPT_SUGGESTIONS.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      className="conceptChip"
-                      onClick={() => {
-                        setConceptPrompt(preset);
-                        generateConcept(preset);
-                      }}
-                      disabled={generatingConcept || !canEdit}
-                    >
-                      + {preset}
-                    </button>
-                  ))}
+            {inputMode === "prompt" ? (
+              <div className="conceptPromptBox">
+                <textarea
+                  id="conceptPromptInput"
+                  className="conceptPromptTextarea"
+                  rows={3}
+                  value={conceptPrompt}
+                  onChange={(e) => setConceptPrompt(e.target.value)}
+                  onBlur={() => {
+                    if (conceptPrompt.trim() && !generatingConcept && canEdit) void generateConcept();
+                  }}
+                  placeholder="e.g., 14K White Gold Oval 1.5ct Solitaire with Hidden Halo and thin Pavé diamond band..."
+                  disabled={generatingConcept || !canEdit}
+                />
+                <div className="conceptSuggestions">
+                  <span className="conceptSuggestionsTitle">Quick presets:</span>
+                  <div className="conceptChips">
+                    {PROMPT_SUGGESTIONS.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        className="conceptChip"
+                        onClick={() => { setConceptPrompt(preset); generateConcept(preset); }}
+                        disabled={generatingConcept || !canEdit}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <p className="muted small conceptAutoHint">
+                  {generatingConcept ? "Creating the visualization and quote…" : "AI starts automatically when you finish the description."}
+                </p>
+              </div>
+            ) : (
+              <div
+                className="dropzone dropzone--multi"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (!canEdit) return;
+                  handleFiles(Array.from(e.dataTransfer.files).filter(Boolean));
+                }}
+              >
+                <div className="dropzoneContent">
+                  <div className="dropzoneIcon">
+                    <span className="material-symbols-outlined" style={{ fontSize: 28, color: "var(--color-primary)" }}>cloud_upload</span>
+                  </div>
+                  <strong>Drag &amp; drop reference photos</strong>
+                  <span className="muted small">JPG, PNG, or WEBP · up to 10 MB each</span>
+                </div>
+                <div className="dropzoneActions">
+                  <label className="button primary button--sm">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      capture="environment"
+                      disabled={!canEdit}
+                      onChange={(e) => handleFiles(Array.from(e.target.files ?? []))}
+                    />
+                    <span className="material-symbols-outlined" style={{ fontSize: 15 }}>photo_camera</span>
+                    Take photo
+                  </label>
+                  <label className="button secondary button--sm">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      disabled={!canEdit}
+                      onChange={(e) => handleFiles(Array.from(e.target.files ?? []))}
+                    />
+                    <span className="material-symbols-outlined" style={{ fontSize: 15 }}>folder_open</span>
+                    Choose files
+                  </label>
                 </div>
               </div>
-              <div className="conceptActionRow">
-                <button
-                  type="button"
-                  className="button primary button--lg fitContent"
-                  disabled={generatingConcept || !conceptPrompt.trim() || !canEdit}
-                  onClick={() => generateConcept()}
-                >
-                  {generatingConcept ? "✨ Synthesizing 3D Concept & Quote..." : "✨ Synthesize Concept & Live Quote"}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="dropzone dropzone--multi"
-              onDragOver={(event) => {
-                event.preventDefault();
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                if (!canEdit) return;
-                handleFiles(Array.from(event.dataTransfer.files).filter(Boolean));
-              }}
-            >
-              <div className="dropzoneContent">
-                <svg className="dropzoneIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
-                </svg>
-                <strong>Drag &amp; drop jewelry photos</strong>
-                <span className="muted small">Take a new photo or select JPG, PNG, or WEBP files up to 10 MB.</span>
-              </div>
-              <div className="dropzoneActions">
-                <label className="button primary button--sm">
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    capture="environment"
-                    disabled={!canEdit}
-                    onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
-                  />
-                  Take photo
-                </label>
-                <label className="button secondary button--sm">
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    multiple
-                    disabled={!canEdit}
-                    onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
-                  />
-                  Choose from files
-                </label>
-              </div>
-            </div>
-          )}
+            )}
 
-          {facets.length ? (
-            <div className="facetThumbRail" aria-label="Uploaded photos">
-              {facets.map((facet, index) => (
-                <button
-                  key={facet.id}
-                  type="button"
-                  className={activeFacet?.id === facet.id ? "facetThumb isActive" : "facetThumb"}
-                  onClick={() => setActiveFacetId(facet.id)}
-                >
-                  {facet.previewUrl ? (
-                    <img src={facet.previewUrl} alt={`${facet.title} preview`} className="facetThumbImage" />
-                  ) : (
-                    <div className="facetThumbImage facetThumbImage--fallback">
-                      <span>{facet.title}</span>
-                    </div>
-                  )}
-                  <span className="facetThumbBadge">#{index + 1}</span>
-                </button>
-              ))}
+            {/* Photo thumbnail strip */}
+            {facets.length > 0 && inputMode === "photos" ? (
+              <div className="facetThumbRail" aria-label="Uploaded photos">
+                {facets.map((facet, index) => (
+                  <button
+                    key={facet.id}
+                    type="button"
+                    className={activeFacet?.id === facet.id ? "facetThumb isActive" : "facetThumb"}
+                    onClick={() => setActiveFacetId(facet.id)}
+                  >
+                    {facet.previewUrl ? (
+                      <img src={facet.previewUrl} alt={`Photo ${index + 1}`} className="facetThumbImage" />
+                    ) : (
+                      <div className="facetThumbImage facetThumbImage--fallback"><span>{index + 1}</span></div>
+                    )}
+                    <span className="facetThumbBadge">#{index + 1}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            {/* Customer info fields */}
+            <div className="fields" style={{ marginTop: 16 }}>
+              <div className="field">
+                <label htmlFor="customerName">Customer name <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span></label>
+                <input
+                  id="customerName"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="e.g. Eleanor Vance"
+                  disabled={!canEdit}
+                />
+              </div>
+              <div className="field">
+                <div className="charCountHeader">
+                  <label htmlFor="customerNotes">Special instructions <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span></label>
+                  <span className="charCountBadge">{customerNotes.length} / 1000</span>
+                </div>
+                <textarea
+                  id="customerNotes"
+                  rows={2}
+                  maxLength={1000}
+                  value={customerNotes}
+                  onChange={(e) => setCustomerNotes(e.target.value)}
+                  onBlur={() => void refreshAnalysisFromDescription()}
+                  placeholder="Detail stone preferences, sizing, engravings, or styling notes..."
+                  disabled={!canEdit}
+                />
+              </div>
             </div>
+          </section>
+
+          {/* ── Step 2: AI Analysis Results ── */}
+          {facets.length > 0 ? (
+            <section className="card quoteStepCard">
+              <div className="quoteStepLabel">
+                <span className="quoteStepNumber">02</span>
+                <div>
+                  <h2 className="quoteStepTitle">AI Analysis</h2>
+                  <p className="muted small">What the AI identified from your photos and description.</p>
+                </div>
+              </div>
+
+              <div className="facetGrid">
+                {facets.map((facet, index) => (
+                  <article
+                    key={facet.id}
+                    className={facet.id === activeFacet?.id ? "facetCard facetCard--active" : "facetCard"}
+                  >
+                    <div className="facetCardHeader">
+                      {facet.previewUrl ? (
+                        <img src={facet.previewUrl} alt={`Photo ${index + 1} preview`} className="facetCardImage" />
+                      ) : (
+                        <div className="facetCardImage facetCardImage--fallback"><span>{facet.title}</span></div>
+                      )}
+                      <div className="facetCardHeading">
+                        <div className="facetCardTitleRow">
+                          <span style={{ fontSize: "var(--text-sm)", fontWeight: 600 }}>{facet.title}</span>
+                          <span className={`statusPill statusPill--${facet.status}`}>{facet.status}</span>
+                        </div>
+                        <div className="facetCardMeta">
+                          <span className="monoCell">#{index + 1}</span>
+                          <button className="textLink destructive" type="button" onClick={() => removeFacet(facet.id)}>
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Processing indicator */}
+                    {facet.status === "processing" ? (
+                      <div className="facetProgressList">
+                        {ANALYSIS_STAGES.map((stage, stageIndex) => (
+                          <div
+                            key={stage}
+                            className={stageIndex <= facet.stageIndex ? "facetProgressRow isActive" : "facetProgressRow"}
+                          >
+                            <span className="facetProgressDot" aria-hidden="true" />
+                            <span>{stage}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {facet.status === "error" ? <p className="fieldError">{facet.error}</p> : null}
+
+                    {/* AI analysis output — shown when done, notes hidden by default */}
+                    {facet.status === "done" && facet.output ? (
+                      <div className="facetResolvedGrid">
+                        {/* AI type + key parameters — always visible */}
+                        <label className="facetResolvedField">
+                          <span>Jewelry type</span>
+                          <input value={facet.output.jewelryType} readOnly disabled className="facetReadOnlyInput" />
+                        </label>
+                        <label className="facetResolvedField">
+                          <span>Setting</span>
+                          <input value={facet.output.settingType ?? ""} readOnly disabled className="facetReadOnlyInput" />
+                        </label>
+                        <label className="facetResolvedField">
+                          <span>Center shape</span>
+                          <input value={facet.output.centerShape ?? ""} readOnly disabled className="facetReadOnlyInput" />
+                        </label>
+                        <label className="facetResolvedField">
+                          <span>Metal weight (g)</span>
+                          <input value={facet.output.metalWeightGrams} readOnly disabled className="facetReadOnlyInput" />
+                        </label>
+                        <label className="facetResolvedField">
+                          <span>Center stone (ct)</span>
+                          <input value={facet.output.centerDiamondCarats} readOnly disabled className="facetReadOnlyInput" />
+                        </label>
+                        <label className="facetResolvedField">
+                          <span>Side stones (ct)</span>
+                          <input value={facet.output.sideDiamondCarats} readOnly disabled className="facetReadOnlyInput" />
+                        </label>
+
+                        {/* AI Notes — hidden by default, collapsible */}
+                        {facet.output.notes ? (
+                          <div className="facetFullWidth">
+                            <button
+                              type="button"
+                              className="textLink"
+                              style={{ fontSize: "var(--text-xs)", gap: 4 }}
+                              onClick={() => toggleNotes(facet.id)}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
+                                {expandedNotes.has(facet.id) ? "expand_less" : "expand_more"}
+                              </span>
+                              {expandedNotes.has(facet.id) ? "Hide AI notes" : "Show AI notes"}
+                            </button>
+                            {expandedNotes.has(facet.id) ? (
+                              <div className="facetResolvedNotes" style={{ marginTop: 8 }}>
+                                <p className="muted small">{facet.output.notes}</p>
+                                {facet.output.assumptions && facet.output.assumptions.length > 0 ? (
+                                  <ul style={{ margin: "6px 0 0", paddingLeft: 16, fontSize: "var(--text-xs)", color: "var(--color-on-surface-variant)" }}>
+                                    {facet.output.assumptions.map((a) => <li key={a}>{a}</li>)}
+                                  </ul>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : facet.status === "pending" ? (
+                      <div className="emptyState emptyState--compact">
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span className="material-symbols-outlined ai-pulse" style={{ fontSize: 20, color: "var(--color-primary)" }}>psychology</span>
+                          <span className="muted small">AI is preparing to analyse this photo…</span>
+                        </div>
+                      </div>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+            </section>
           ) : null}
 
-          <div className="fields">
-            <div className="field">
-              <label htmlFor="customerName">Customer name</label>
-              <input
-                id="customerName"
-                value={customerName}
-                onChange={(event) => setCustomerName(event.target.value)}
-                placeholder="e.g. Eleanor Vance (Optional)"
-                disabled={!canEdit}
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="quoteMode">Quote mode</label>
-              <select
-                id="quoteMode"
-                value={quoteMode}
-                disabled={!canEdit}
-                onChange={(event) => setQuoteMode(event.target.value as QuoteMode)}
-              >
-                {QUOTE_MODE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <p className="muted small">{QUOTE_MODE_OPTIONS.find((option) => option.value === quoteMode)?.description}</p>
-            </div>
-            <div className="field">
-              <label htmlFor="metalType">Metal type</label>
-              <select
-                id="metalType"
-                value={metalType}
-                disabled={!canEdit}
-                onChange={(event) => setMetalType(event.target.value as MetalType)}
-              >
-                {["10K", "14K", "18K", "Platinum", "Silver"].map((metal) => (
-                  <option key={metal} value={metal}>
-                    {metal}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <div className="charCountHeader">
-                <label htmlFor="customerNotes">
-                  Photo description &amp; special instructions <span className="muted small font-normal">(Optional)</span>
-                </label>
-                <span className="charCountBadge">
-                  {customerNotes.length} / 1000
-                </span>
+          {/* ── Step 3: Customer Tweaks (auto-updates quote) ── */}
+          {completedFacets.length > 0 ? (
+            <section className="card quoteStepCard">
+              <div className="quoteStepLabel">
+                <span className="quoteStepNumber">03</span>
+                <div>
+                  <h2 className="quoteStepTitle">Adjust Parameters</h2>
+                  <p className="muted small">Tweak any value — the quote on the right updates automatically.</p>
+                </div>
               </div>
-              <textarea
-                id="customerNotes"
-                rows={3}
-                maxLength={1000}
-                value={customerNotes}
-                onChange={(event) => setCustomerNotes(event.target.value)}
-                placeholder="Optional: Detail styling preferences, stone requests, custom engravings, or sizing..."
-                disabled={!canEdit}
-              />
-              <p className="muted small">
-                Help the AI and team understand key design details for this quote.
-              </p>
-            </div>
-          </div>
 
-          <div className="sectionHeader quoteSectionHeader">
-            <div>
-              <h3>Step 2 · Facet Analysis</h3>
-              <p className="muted">Each uploaded image is broken down below. Values update real-time pricing automatically.</p>
-            </div>
-          </div>
+              <div className="fields">
+                <div className="field">
+                  <label htmlFor="metalType">Metal type</label>
+                  <select
+                    id="metalType"
+                    value={metalType}
+                    disabled={!canEdit}
+                    onChange={(e) => setMetalType(e.target.value as MetalType)}
+                  >
+                    {["10K", "14K", "18K", "Platinum", "Silver"].map((metal) => (
+                      <option key={metal} value={metal}>{metal}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label htmlFor="quoteMode">Quote mode</label>
+                  <select
+                    id="quoteMode"
+                    value={quoteMode}
+                    disabled={!canEdit}
+                    onChange={(e) => setQuoteMode(e.target.value as QuoteMode)}
+                  >
+                    {QUOTE_MODE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <p className="muted small">{QUOTE_MODE_OPTIONS.find((o) => o.value === quoteMode)?.description}</p>
+                </div>
+              </div>
 
-          <div className="facetGrid">
-            {facets.length ? (
-              facets.map((facet, index) => (
-                <article
-                  key={facet.id}
-                  className={facet.id === activeFacet?.id ? "facetCard facetCard--active" : "facetCard"}
-                >
-                  <div className="facetCardHeader">
-                    {facet.previewUrl ? (
-                      <img src={facet.previewUrl} alt={`${facet.title} jewelry analysis`} className="facetCardImage" />
-                    ) : (
-                      <div className="facetCardImage facetCardImage--fallback">
-                        <span>{facet.title}</span>
-                      </div>
-                    )}
-                    <div className="facetCardHeading">
-                      <div className="facetCardTitleRow">
-                        <input
-                          className="inlineTitleInput"
-                          value={facet.title}
-                          onChange={(event) =>
-                            updateFacet(facet.id, (current) => ({ ...current, title: event.target.value }))
-                          }
-                          disabled={!canEdit}
-                        />
-                        <span className={`statusPill statusPill--${facet.status}`}>{facet.status}</span>
-                      </div>
-                      <div className="facetCardMeta">
-                        <span className="monoCell">#{index + 1}</span>
-                        <button
-                          className="textLink"
-                          type="button"
-                          onClick={() =>
-                            updateFacet(facet.id, (current) => ({ ...current, showDescription: !current.showDescription }))
-                          }
-                        >
-                          {facet.showDescription ? "Hide description" : (facet.description ? "Edit photo description" : "+ Add photo description")}
-                        </button>
-                        <button className="textLink destructive" type="button" onClick={() => removeFacet(facet.id)}>
-                          Remove
-                        </button>
-                      </div>
+              {/* Per-photo editable parameters */}
+              <div className="facetGrid" style={{ marginTop: 16 }}>
+                {facets.filter((f) => f.status === "done" && f.output).map((facet, index) => (
+                  <article key={facet.id} className="facetCard">
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                      {facet.previewUrl ? (
+                        <img src={facet.previewUrl} alt={`Photo ${index + 1}`} style={{ width: 36, height: 36, borderRadius: "var(--radius-md)", objectFit: "cover", border: "1px solid var(--color-outline-variant)" }} />
+                      ) : null}
+                      <strong style={{ fontSize: "var(--text-sm)" }}>{facet.title}</strong>
                     </div>
-                  </div>
-
-                  {facet.showDescription || facet.description ? (
-                    <div className="facetDescPanel">
-                      <div className="charCountHeader">
-                        <span className="fieldLabel">
-                          Photo explanation <span className="muted small font-normal">(Optional)</span>
-                        </span>
-                        <span className="charCountBadge">
-                          {facet.description.length} / 1000
-                        </span>
-                      </div>
-                      <textarea
-                        className="facetDescription"
-                        rows={2}
-                        maxLength={1000}
-                        value={facet.description}
-                        onChange={(event) =>
-                          updateFacet(facet.id, (current) => ({ ...current, description: event.target.value }))
-                        }
-                        placeholder="Optional description explaining this specific photo (max 1000 characters)..."
-                        disabled={!canEdit}
-                      />
-                    </div>
-                  ) : null}
-
-                  {facet.status === "processing" ? (
-                    <div className="facetProgressList">
-                      {ANALYSIS_STAGES.map((stage, stageIndex) => (
-                        <div
-                          key={stage}
-                          className={stageIndex <= facet.stageIndex ? "facetProgressRow isActive" : "facetProgressRow"}
-                        >
-                          <span className="facetProgressDot" aria-hidden="true" />
-                          <span>{stage}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-
-                  {facet.status === "error" ? <p className="fieldError">{facet.error}</p> : null}
-
-                  {facet.status === "done" && facet.output ? (
                     <div className="facetResolvedGrid">
-                      <label className="facetResolvedField">
-                        <span>Jewelry type</span>
-                        <input
-                          value={facet.output.jewelryType}
-                          onChange={(event) => updateFacetOutput(facet.id, "jewelryType", event.target.value)}
-                          disabled={!canEdit}
-                        />
-                      </label>
                       <label className="facetResolvedField">
                         <span>Metal weight (g)</span>
                         <input
-                          type="number"
-                          min={0}
-                          step={0.01}
-                          value={facet.output.metalWeightGrams}
-                          onChange={(event) =>
-                            updateFacetOutput(facet.id, "metalWeightGrams", Number(event.target.value) || 0)
-                          }
+                          type="number" min={0} step={0.01}
+                          value={facet.output!.metalWeightGrams}
+                          onChange={(e) => updateFacetOutput(facet.id, "metalWeightGrams", Number(e.target.value) || 0)}
                           disabled={!canEdit}
                         />
                       </label>
                       <label className="facetResolvedField">
                         <span>Center stone (ct)</span>
                         <input
-                          type="number"
-                          min={0}
-                          step={0.01}
-                          value={facet.output.centerDiamondCarats}
-                          onChange={(event) =>
-                            updateFacetOutput(facet.id, "centerDiamondCarats", Number(event.target.value) || 0)
-                          }
+                          type="number" min={0} step={0.01}
+                          value={facet.output!.centerDiamondCarats}
+                          onChange={(e) => updateFacetOutput(facet.id, "centerDiamondCarats", Number(e.target.value) || 0)}
                           disabled={!canEdit}
                         />
                       </label>
                       <label className="facetResolvedField">
                         <span>Center shape</span>
                         <input
-                          value={facet.output.centerShape ?? ""}
-                          onChange={(event) => updateFacetOutput(facet.id, "centerShape", event.target.value)}
+                          value={facet.output!.centerShape ?? ""}
+                          onChange={(e) => updateFacetOutput(facet.id, "centerShape", e.target.value)}
                           disabled={!canEdit}
-                          placeholder="e.g. Oval, Round, Cushion"
+                          placeholder="e.g. Oval, Round"
                         />
                       </label>
                       <label className="facetResolvedField">
                         <span>Side stones (ct)</span>
                         <input
-                          type="number"
-                          min={0}
-                          step={0.01}
-                          value={facet.output.sideDiamondCarats}
-                          onChange={(event) =>
-                            updateFacetOutput(facet.id, "sideDiamondCarats", Number(event.target.value) || 0)
-                          }
+                          type="number" min={0} step={0.01}
+                          value={facet.output!.sideDiamondCarats}
+                          onChange={(e) => updateFacetOutput(facet.id, "sideDiamondCarats", Number(e.target.value) || 0)}
                           disabled={!canEdit}
                         />
                       </label>
                       <label className="facetResolvedField">
                         <span>Side stone qty</span>
                         <input
-                          type="number"
-                          min={0}
-                          step={1}
-                          value={facet.output.sideDiamondQuantity}
-                          onChange={(event) =>
-                            updateFacetOutput(facet.id, "sideDiamondQuantity", Number(event.target.value) || 0)
-                          }
+                          type="number" min={0} step={1}
+                          value={facet.output!.sideDiamondQuantity}
+                          onChange={(e) => updateFacetOutput(facet.id, "sideDiamondQuantity", Number(e.target.value) || 0)}
                           disabled={!canEdit}
                         />
                       </label>
                       <label className="facetResolvedField">
                         <span>Setting type</span>
                         <input
-                          value={facet.output.settingType ?? ""}
-                          onChange={(event) => updateFacetOutput(facet.id, "settingType", event.target.value)}
+                          value={facet.output!.settingType ?? ""}
+                          onChange={(e) => updateFacetOutput(facet.id, "settingType", e.target.value)}
                           disabled={!canEdit}
-                          placeholder="e.g. Prong, Bezel, Pavé"
+                          placeholder="e.g. Prong, Bezel"
                         />
                       </label>
-
-                      {/* Color / Clarity: Fixed read-only display */}
-                      <div
-                        className="facetResolvedField"
-                        title="Color and clarity are standardised to E VS1 for all quotes"
-                      >
-                        <span>Color / Clarity</span>
-                        <input
-                          value="E VS1 (standard)"
-                          readOnly
-                          disabled
-                          className="facetReadOnlyInput"
-                        />
-                      </div>
-
-                      {/* Piece configuration toggles */}
-                      <div className="facetCheckboxGroup">
+                      <div className="facetCheckboxGroup facetFullWidth">
                         <label className="facetCheckboxLabel">
                           <input
                             type="checkbox"
-                            checked={facet.output.hasWeddingBand ?? false}
-                            onChange={(event) =>
-                              updateFacetOutput(facet.id, "hasWeddingBand", event.target.checked)
-                            }
+                            checked={facet.output!.hasWeddingBand ?? false}
+                            onChange={(e) => updateFacetOutput(facet.id, "hasWeddingBand", e.target.checked)}
                             disabled={!canEdit}
                           />
                           <span>Ring + wedding band (2 pieces)</span>
@@ -1436,119 +1207,122 @@ export default function QuoteCalculator({
                         <label className="facetCheckboxLabel">
                           <input
                             type="checkbox"
-                            checked={facet.output.isTwoTone ?? false}
-                            onChange={(event) =>
-                              updateFacetOutput(facet.id, "isTwoTone", event.target.checked)
-                            }
+                            checked={facet.output!.isTwoTone ?? false}
+                            onChange={(e) => updateFacetOutput(facet.id, "isTwoTone", e.target.checked)}
                             disabled={!canEdit}
                           />
-                          <span>Two-tone gold (2 pieces)</span>
+                          <span>Two-tone gold</span>
                         </label>
                       </div>
-
-                      <div className="facetResolvedNotes facetFullWidth">
-                        <span>Notes</span>
-                        <p className="muted small">{facet.output.notes || "No notes provided."}</p>
-                      </div>
                     </div>
-                  ) : (
-                    <div className="emptyState emptyState--compact">
-                      <strong>{facet.status === "pending" ? "Awaiting analysis" : "Ready to analyse"}</strong>
-                      <p className="muted small">This card will populate after you run the AI review.</p>
-                    </div>
-                  )}
-                </article>
-              ))
-            ) : (
-              <div className="emptyState emptyStateIllustrated">
-                <QuoteUploadIllustration />
-                <strong>Drop in one or more jewelry photos to start the quote.</strong>
-                <p className="muted">Each uploaded photo becomes a facet card with its own analysis and editable values.</p>
+                  </article>
+                ))}
               </div>
-            )}
-          </div>
-        </section>
+            </section>
+          ) : null}
+        </div>
 
-        <section className="card previewCard">
-          <div className="sectionHeader">
-            <div>
-              <h2>Step 3 · Review &amp; Generate</h2>
-              <p className="muted">Approve the estimated price and save to company records.</p>
-            </div>
-          </div>
-
-          <div className="quotePreview">
-            <p className="eyebrow">Quote Price</p>
-            <div className="quotePrice">{formatCurrency(estimatedSellingPrice)}</div>
-            <div className="quoteMeta">
+        {/* ── RIGHT: AI Photo Preview + Live Quote + Actions ── */}
+        <aside className="quoteBuilderPreview">
+          <div className="quotePreviewSticky">
+            <div className="quotePreviewHeader">
+              <span className="quoteStepNumber">04</span>
               <div>
-                <span>Customer</span>
-                <strong>{customerName || "Unassigned"}</strong>
-              </div>
-              <div>
-                <span>Metal</span>
-                <strong>{metalType}</strong>
-              </div>
-              <div>
-                <span>Quote mode</span>
-                <strong>{QUOTE_MODE_OPTIONS.find((option) => option.value === quoteMode)?.label}</strong>
-              </div>
-              <div>
-                <span>Facets</span>
-                <strong>{completedFacets.length} analysed</strong>
+                <p className="eyebrow">AI visualization &amp; quote</p>
+                <p className="muted small">Updates automatically as the design changes.</p>
               </div>
             </div>
-            {aggregateQuote?.notes ? <p className="muted small quoteSummaryNotes">{aggregateQuote.notes}</p> : null}
-            <p className="disclaimer">
-              Final pricing is an approved estimate, not a manufacturing invoice. Production review may change the
-              quote after CAD, stone verification, or metal confirmation.
-            </p>
-          </div>
 
-          <div className="buttonRow quoteActionButtons">
-            <button
-              className="button primary"
-              type="button"
-              disabled={!canEdit || saving || !aggregateQuote || draftIsFresh}
-              onClick={() => persistQuote({ resetDraftAfterSave: false })}
-            >
-              {saving ? "Creating quote and rendering..." : "Get the quote"}
-            </button>
-            {savedQuote ? (
-              <a className="button secondary" href={`/api/quotes/${savedQuote.id}/pdf`} target="_blank" rel="noreferrer">
-                Download PDF
-              </a>
+            {/* AI Generated Image */}
+            <div className="quotePreviewImageFrame">
+              {savedQuote || activeFacet?.previewUrl ? (
+                <img
+                  src={savedQuote ? `/api/quotes/${savedQuote.id}/image` : activeFacet?.previewUrl ?? ""}
+                  alt="AI generated jewelry visualization"
+                  className="quotePreviewImage"
+                />
+              ) : (
+                <div className="quotePreviewImagePlaceholder">
+                  <span className="material-symbols-outlined" style={{ fontSize: 40, color: "var(--color-outline-variant)" }}>diamond</span>
+                  <p className="muted small" style={{ margin: "8px 0 0", textAlign: "center" }}>Upload photos or describe a design to see the AI visualization here</p>
+                </div>
+              )}
+              {activeFacet?.status === "processing" ? (
+                <div className="quotePreviewProcessingOverlay">
+                  <span className="material-symbols-outlined ai-pulse" style={{ fontSize: 32, color: "white" }}>psychology</span>
+                  <span style={{ color: "white", fontSize: "var(--text-sm)", fontWeight: 600, marginTop: 8 }}>AI Analysing…</span>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Live Quote Price */}
+            <div className="quotePreviewPriceBlock">
+              <p className="eyebrow" style={{ marginBottom: 4 }}>Live Estimate</p>
+              <div className="quotePrice" style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}>
+                {formatCurrency(estimatedSellingPrice)}
+              </div>
+              <div className="quoteMeta" style={{ marginTop: 12 }}>
+                <div>
+                  <span>Customer</span>
+                  <strong>{customerName || "Unassigned"}</strong>
+                </div>
+                <div>
+                  <span>Metal</span>
+                  <strong>{metalType}</strong>
+                </div>
+                <div>
+                  <span>Mode</span>
+                  <strong>{QUOTE_MODE_OPTIONS.find((o) => o.value === quoteMode)?.label ?? quoteMode}</strong>
+                </div>
+                <div>
+                  <span>Photos</span>
+                  <strong>{completedFacets.length} analysed</strong>
+                </div>
+              </div>
+              <p className="disclaimer" style={{ marginTop: 12 }}>
+                Final pricing is an approved estimate. Production review may adjust after CAD and stone verification.
+              </p>
+            </div>
+
+            {/* Save + PDF actions */}
+            <div className="quotePreviewActions">
+              <button
+                className="button primary"
+                style={{ width: "100%" }}
+                type="button"
+                disabled={!canEdit || saving || !aggregateQuote || draftIsFresh}
+                onClick={() => persistQuote({ resetDraftAfterSave: false })}
+              >
+                {saving ? (
+                  <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>hourglass_top</span> Saving…</>
+                ) : (
+                  <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>save</span> Save Quote</>
+                )}
+              </button>
+              {savedQuote ? (
+                <a
+                  className="button secondary"
+                  style={{ width: "100%" }}
+                  href={`/api/quotes/${savedQuote.id}/pdf`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>download</span>
+                  Download PDF
+                </a>
+              ) : null}
+            </div>
+
+            {/* Status message */}
+            {status ? (
+              <div className="status" role="status" aria-live="polite" style={{ marginTop: 8 }}>
+                {status}
+              </div>
             ) : null}
-            <button className="button secondary" type="button" onClick={() => window.print()}>
-              Print preview
-            </button>
           </div>
+        </aside>
 
-          <div className="status" role="status" aria-live="polite">
-            {status || "Ready to quote."}
-          </div>
-        </section>
       </div>
     </div>
-  );
-}
-
-function QuoteUploadIllustration() {
-  return (
-    <svg className="emptyStateIllustration" viewBox="0 0 240 120" role="img" aria-label="Jewelry outline illustration">
-      <path
-        d="M64 56c12-16 30-24 56-24s44 8 56 24c-12 16-30 24-56 24s-44-8-56-24Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <path d="M72 68h96" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path
-        d="M103 58l17-20 17 20-17 26-17-26Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-    </svg>
   );
 }

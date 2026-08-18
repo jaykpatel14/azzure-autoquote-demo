@@ -544,7 +544,7 @@ function MarketingPage() {
 
             <h1 className="marketingHeadline">
               Stop Saying<br />
-              <em>"Let Me Get Back to You."</em>
+              <em>&ldquo;Let Me Get Back to You.&rdquo;</em>
             </h1>
 
             <p className="marketingSubheadline">

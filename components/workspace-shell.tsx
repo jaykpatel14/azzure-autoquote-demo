@@ -109,17 +109,7 @@ export default function WorkspaceShell({
         </header>
 
         {/* Sticky top nav bar for desktop */}
-        <header
-          aria-label="Page header"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "0 0 32px",
-            borderBottom: "1px solid var(--color-outline-variant)",
-            marginBottom: "40px"
-          }}
-        >
+        <header className="workspacePageHeader" aria-label="Page header">
           <div>
             {/* Breadcrumb */}
             <nav className="breadcrumbs" aria-label="Breadcrumb" style={{ marginBottom: 12 }}>
