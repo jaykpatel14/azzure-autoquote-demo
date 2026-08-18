@@ -36,16 +36,16 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams?:
 
   return (
     <InternalAdminShell
-      title="Manufacturing order queue"
-      description="Track order status, hand work to production, and jump to the tenant that submitted the order."
+      title="Manufacturing Order Queue [Staging Feature]"
+      description="Track order status, hand work to production, and test CustomKing staging dispatches."
       navItems={getInternalAdminNav("/admin/orders")}
       adminName={context.user.name || context.user.email}
       actions={
         <>
-          <Link className="button secondary" href="/admin/analytics">
+          <Link className="button secondary button--sm" href="/admin/analytics">
             Analytics
           </Link>
-          <Link className="button secondary" href="/admin/tenants">
+          <Link className="button secondary button--sm" href="/admin/tenants">
             Tenants
           </Link>
         </>
@@ -53,7 +53,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams?:
     >
       <section className="statGrid">
         <article className="statCard statCard--admin">
-          <span className="eyebrow">Total</span>
+          <span className="eyebrow">Total (Staging)</span>
           <strong>{data.counts.total}</strong>
         </article>
         <article className="statCard statCard--admin">
@@ -87,8 +87,8 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams?:
         </nav>
         <div className="sectionHeader">
           <div>
-            <h2>Order queue</h2>
-            <p className="muted">Every order is editable from this queue view.</p>
+            <h2>Order Queue (Staging Feature)</h2>
+            <p className="muted">Manufacturing integration is currently restricted to Staging/Dev mode.</p>
           </div>
         </div>
         <div className="tableShell">

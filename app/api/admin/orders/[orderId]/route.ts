@@ -6,6 +6,8 @@ import { sendOrderCompletedEmail, sendOrderPlacedEmail } from "@/lib/order-workf
 import { prisma } from "@/lib/prisma";
 import { assignCkOrderId, cancelOrder, completeOrder } from "@/src/services/orders";
 import { buildPublicUrl } from "@/lib/security";
+import { dispatchCustomKingOrder } from "@/lib/customking-api";
+
 
 export const runtime = "nodejs";
 
@@ -71,11 +73,48 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     if (input.status === OrderStatus.CK_ORDER_PLACED) {
+      let finalCkId = input.ckOrderId?.trim() || "";
+      let finalCkUrl = input.ckOrderUrl?.trim() || null;
+
+      // Try automatic dispatch to CustomKing Staging API if no manual ID provided
+      if (!finalCkId) {
+        try {
+          const fullOrder = await prisma.order.findUnique({
+            where: { id: order.id },
+            include: { quote: true }
+          });
+
+          if (fullOrder && fullOrder.quote) {
+            const ckResult = await dispatchCustomKingOrder({
+              companyId: order.companyId,
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+              itemName: fullOrder.itemName,
+              quoteNumber: fullOrder.quote.quoteNumber,
+              metalType: fullOrder.quote.metalType,
+              metalWeightGrams: Number(fullOrder.quote.metalWeightGrams || 6),
+              centerDiamondCarats: Number(fullOrder.quote.centerDiamondCarats || 1),
+              sideDiamondCarats: Number(fullOrder.quote.sideDiamondCarats || 0),
+              customerNotes: fullOrder.notes
+            });
+
+            finalCkId = ckResult.ckOrderId;
+            finalCkUrl = ckResult.ckOrderUrl;
+          }
+        } catch (e) {
+          console.warn("[CustomKing Staging Dispatch]", e);
+        }
+      }
+
+      if (!finalCkId) {
+        finalCkId = order.orderNumber;
+      }
+
       const result = await assignCkOrderId({
         companyId: order.companyId,
         orderId: order.id,
-        ckOrderId: input.ckOrderId?.trim() || order.orderNumber,
-        ckOrderUrl: input.ckOrderUrl?.trim() || null,
+        ckOrderId: finalCkId,
+        ckOrderUrl: finalCkUrl,
         placedBy: admin.user.id,
         adminUserId: admin.user.id
       });
@@ -87,8 +126,8 @@ export async function POST(request: Request, context: RouteContext) {
       await sendOrderPlacedEmail({
         companyName: order.company.name,
         orderNumber: order.orderNumber,
-        ckOrderId: input.ckOrderId?.trim() || order.orderNumber,
-        ckOrderUrl: input.ckOrderUrl?.trim() || null,
+        ckOrderId: finalCkId,
+        ckOrderUrl: finalCkUrl,
         orderUrl: buildPublicUrl(`/admin/orders/${order.id}`).toString()
       });
     } else if (input.status === OrderStatus.COMPLETED) {

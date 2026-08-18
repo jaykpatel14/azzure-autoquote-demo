@@ -34,6 +34,16 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision**: Upgraded `/showroom` into a Luxury Dark Obsidian & Gold Touchscreen Studio featuring 4 1-Tap End-Customer Try-It Inspiration Cards (*"2.5ct Pear Halo Solitaire"*, *"3.0ct Oval Hidden Halo"*, *"2.0ct Emerald Cut 3-Stone"*, *"1.5ct Cushion Pavé Split Shank"*), touch camera support, and golden consultation claim cards (`QT-0042`).
 - **Rationale**: Walk-in clients standing at a Workstation on Wheels (WOW) kiosk or tablet in a showroom may not have inspiration photos on their mobile phones. Preset cards allow 1-touch interaction, letting any client experience 3D AI quoting in 30 seconds.
 
+### 7. CustomKing Staging API Live HTTP Dispatch Integration
+- **Decision**: 
+  1. Updated `lib/customking-api.ts` to dispatch live HTTP POST requests (`/orders`) to the CustomKing Staging API endpoint configured in `CUSTOMKING_API_URL`.
+  2. Integrated automatic dispatch into `app/api/admin/orders/[orderId]/route.ts` when assigning orders to CustomKing.
+  3. Formatted JSON payload with full order specifications (`externalOrderId`, `orderNumber`, `itemName`, `metalType`, `metalWeightGrams`, `centerDiamondCarats`, `sideDiamondCarats`, `notes`, `renderingImageUrl`).
+- **Rationale**: Allows testing real API request/response flows against the user's active CustomKing Staging server while keeping live production dispatches gated under explicit release control.
+
+
+
+
 ---
 
 ## Last Updated

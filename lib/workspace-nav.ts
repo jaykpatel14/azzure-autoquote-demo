@@ -9,7 +9,7 @@ const BASE_WORKSPACE_NAV: WorkspaceNavItem[] = [
   { href: "/", label: "Dashboard", icon: "dashboard" },
   { href: "/quotes", label: "Quotes", icon: "request_quote" },
   { href: "/customers", label: "Customers", icon: "group" },
-  { href: "/orders", label: "Orders", icon: "shopping_bag" },
+  { href: "/orders", label: "Orders [Staging]", icon: "shopping_bag" },
   { href: "/showroom", label: "Showroom", icon: "storefront" },
   { href: "/settings", label: "Settings", icon: "settings" }
 ];

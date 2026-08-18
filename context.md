@@ -221,5 +221,9 @@ azzure-autoquote-mvp/
 - ✅ **Fixed Metals.dev API 401 & Health Checks**: Sanitized API key quotes, added browser headers, and updated default offline fallback spot rate to $4,500/oz.
 - ✅ **Redesigned Showroom Kiosk UI**: Created interactive 1-tap preset try-it cards, obsidian-gold glassmorphic styling, and auto-session resolution for direct `/showroom` route access.
 - ✅ **Modernized Admin Dashboard**: Added navigation icons, soft operational badges, and spot rate ticker cards in `app/admin/page.tsx` and `components/internal-admin-shell.tsx`.
+- ✅ **CustomKing Staging API Integration**: Updated `lib/customking-api.ts` and `app/api/admin/orders/[orderId]/route.ts` to dispatch live HTTP POST requests to your CustomKing Staging API server, transmitting order numbers, metal weights, diamond specs, customer notes, and 3D render URLs.
 - ✅ **Verification**: TypeScript compilation passing cleanly (`tsc exit code 0`).
+
+
+
 

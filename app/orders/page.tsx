@@ -35,15 +35,30 @@ export default async function OrdersPage() {
 
   return (
     <WorkspaceShell
-      title="Manufacturing Orders"
-      description="Track submitted jobs, in-production work, and completed orders."
-      navItems={getWorkspaceNav("/")}
+      title="Manufacturing Orders [Staging Feature]"
+      description="Track submitted jobs, in-production work, and staging order dispatches."
+      navItems={getWorkspaceNav("/orders")}
       actions={
-        <Link className="button primary" href="/quotes">
-          Place New Order
+        <Link className="button secondary button--sm" href="/quotes">
+          View Quotes
         </Link>
       }
     >
+      {/* ── Staging Notice Banner ── */}
+      <section className="warningBanner" style={{ background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.3)", padding: 18, borderRadius: "var(--radius-lg)", marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span className="material-symbols-outlined" style={{ color: "#f59e0b", fontSize: 24 }}>engineering</span>
+          <div>
+            <strong style={{ fontSize: "var(--text-base)", color: "var(--color-on-surface)" }}>
+              CustomKing Manufacturing Orders — Staging Feature Mode
+            </strong>
+            <p className="muted small" style={{ margin: "2px 0 0" }}>
+              Quotes, Live Metal Spot Pricing, Showroom Kiosks, and PDF Exports are Live. CustomKing Manufacturing Integration is restricted to Staging/Dev mode until explicit go-ahead is granted.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {!canPlaceOrders ? (
         <section className="card">
           <div className="sectionHeader">
@@ -67,12 +82,12 @@ export default async function OrdersPage() {
 
       <section className="statGrid">
         <article className="statCard">
-          <span className="eyebrow">Submitted</span>
+          <span className="eyebrow">Submitted (Staging)</span>
           <strong>{overview.counts.SUBMITTED}</strong>
           <p className="muted small">Ready to be sent to manufacturing.</p>
         </article>
         <article className="statCard">
-          <span className="eyebrow">CK placed</span>
+          <span className="eyebrow">CK placed (Staging)</span>
           <strong>{overview.counts.CK_ORDER_PLACED}</strong>
           <p className="muted small">Accepted by Custom King and waiting on production.</p>
         </article>
@@ -91,14 +106,14 @@ export default async function OrdersPage() {
       <section className="card">
         <div className="sectionHeader">
           <div>
-            <h2>Orders dashboard</h2>
+            <h2>Orders dashboard (Staging Queue)</h2>
             <p className="muted">Open orders from finalized quotes. Cancelation is only available while the order is still active.</p>
           </div>
         </div>
         {overview.recentOrders.length === 0 ? (
           <div className="emptyState">
             <strong>No orders submitted yet</strong>
-            <p className="muted">Place your first manufacturing order from a finalized quote.</p>
+            <p className="muted">Place your first staging manufacturing order from a finalized quote.</p>
             <Link className="button primary" href="/quotes">
               View quotes
             </Link>
