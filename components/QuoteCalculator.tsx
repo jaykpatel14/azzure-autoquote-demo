@@ -717,8 +717,195 @@ export default function QuoteCalculator({
     "18K Two-Tone Radiant Cut with Diamond Pavé Band"
   ];
 
+  if (showroomMode) {
+    return (
+      <div className="estimateWorkspace showroomKioskLayout">
+        {/* Luxury Showroom Top Header */}
+        <header className="showroomTopNav">
+          <div className="showroomBrandIdentity">
+            {companyLogoUrl ? (
+              <img src={companyLogoUrl} alt={companyName || "Store Logo"} className="showroomHeroLogo" />
+            ) : (
+              <strong className="showroomStoreTitle">{companyName || "Bespoke Jewelry Studio"}</strong>
+            )}
+            <div className="showroomConsultationBadge">
+              <span className="consultationDot" aria-hidden="true" />
+              <span>{customerName ? `Custom Design for ${customerName}` : "Bespoke Ring Consultation"}</span>
+            </div>
+          </div>
+
+          <div className="showroomTopControls">
+            <div className="showroomMetalPills" role="radiogroup" aria-label="Select precious metal">
+              {(["14K", "18K", "Platinum"] as MetalType[]).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  className={`showroomMetalPill${metalType === type ? " isActive" : ""}`}
+                  onClick={() => setMetalType(type)}
+                  disabled={!canEdit}
+                >
+                  {type === "14K" ? "14K Gold" : type === "18K" ? "18K Gold" : "Platinum"}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="button secondary button--sm showroomExitButton"
+              onClick={() => setShowroomMode(false)}
+            >
+              ← Back to Estimator
+            </button>
+          </div>
+        </header>
+
+        {/* Showroom Dual Showcase */}
+        <div className="showroomShowcaseGrid">
+          {/* Left: Photorealistic 3D Concept & Interactive Visualizer */}
+          <section className="card showroomVisualCard">
+            <div className="showroomVisualHeader">
+              <span className="eyebrow">Photorealistic 3D Visualization</span>
+              <h2>{aggregateQuote?.centerShape ? `${aggregateQuote.centerShape} Bespoke Ring` : "Custom Jewelry Design"}</h2>
+            </div>
+
+            <div className="showroomHeroImageFrame">
+              {facets[0]?.previewUrl ? (
+                <img
+                  src={facets[0].previewUrl}
+                  alt="3D Photorealistic Jewelry Concept"
+                  className="showroomHeroImage"
+                />
+              ) : (
+                <div className="showroomEmptyRender">
+                  <QuoteUploadIllustration />
+                  <p>Describe an idea or upload a photo to generate a photorealistic 3D presentation rendering.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Interactive Prompt Bar for live customer tweaks */}
+            <div className="showroomPromptRefiner">
+              <span className="conceptPromptLabel">✨ Refine Design Live with AI</span>
+              <div className="showroomPromptInputRow">
+                <input
+                  className="uiInput"
+                  value={conceptPrompt}
+                  onChange={(e) => setConceptPrompt(e.target.value)}
+                  placeholder="e.g. Add hidden halo, make prongs rose gold..."
+                  disabled={generatingConcept}
+                />
+                <button
+                  type="button"
+                  className="button primary button--sm"
+                  onClick={() => generateConcept()}
+                  disabled={generatingConcept || !conceptPrompt.trim()}
+                >
+                  {generatingConcept ? "Synthesizing..." : "Re-render"}
+                </button>
+              </div>
+
+              <div className="conceptSuggestions">
+                <div className="conceptChips">
+                  {PROMPT_SUGGESTIONS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      className="conceptChip"
+                      onClick={() => setConceptPrompt(preset)}
+                      disabled={generatingConcept}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Right: Luxury Client Proposal & Instant Price */}
+          <section className="card showroomProposalCard">
+            <div className="showroomPriceHero">
+              <span className="showroomPriceEyebrow">✦ Guaranteed Retail Estimate</span>
+              <div className="showroomHeroPrice">{formatCurrency(estimatedSellingPrice)}</div>
+              <p className="showroomPriceSubtext">
+                Live precious metal spot pricing + master jeweler handcrafting included.
+              </p>
+            </div>
+
+            <div className="showroomSpecsSuite">
+              <div className="showroomSpecItem">
+                <div className="showroomSpecIcon">💍</div>
+                <div className="showroomSpecContent">
+                  <span className="showroomSpecLabel">Precious Metal</span>
+                  <strong>{metalType} Solid Precious Metal</strong>
+                  <p className="muted small">Precision vacuum-cast and hand-finished to mirror luster.</p>
+                </div>
+              </div>
+
+              <div className="showroomSpecItem">
+                <div className="showroomSpecIcon">💎</div>
+                <div className="showroomSpecContent">
+                  <span className="showroomSpecLabel">Center Gemstone</span>
+                  <strong>{aggregateQuote?.centerDiamondCarats || 0} Carats {aggregateQuote?.centerShape || "Diamond"}</strong>
+                  <p className="muted small">Premium E VS1 standard color and brilliance clarity.</p>
+                </div>
+              </div>
+
+              <div className="showroomSpecItem">
+                <div className="showroomSpecIcon">✨</div>
+                <div className="showroomSpecContent">
+                  <span className="showroomSpecLabel">Accents &amp; Setting</span>
+                  <strong>{aggregateQuote?.settingType || "Pavé / Claw Prong"} ({aggregateQuote?.sideDiamondQuantity || 0} Stones)</strong>
+                  <p className="muted small">Micro-pavé handset with certified conflict-free melee diamonds.</p>
+                </div>
+              </div>
+
+              <div className="showroomSpecItem">
+                <div className="showroomSpecIcon">🛡️</div>
+                <div className="showroomSpecContent">
+                  <span className="showroomSpecLabel">Craftsmanship Guarantee</span>
+                  <strong>100% Certified Ethical Stones</strong>
+                  <p className="muted small">Includes bespoke 3D CAD design, wax proof, and lifetime care warranty.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="showroomActionSuite">
+              <button
+                type="button"
+                className="button primary button--lg showroomPrimaryAction"
+                onClick={() => persistQuote()}
+                disabled={saving || !facets.length}
+              >
+                {saving ? "Saving Consultation..." : "✦ Approve & Save Consultation"}
+              </button>
+
+              <div className="showroomSecondaryActions">
+                {savedQuote ? (
+                  <a
+                    href={`/quotes/${savedQuote.id}`}
+                    className="button secondary button--sm"
+                  >
+                    View Official Proposal PDF
+                  </a>
+                ) : null}
+                <button
+                  type="button"
+                  className="button ghost button--sm"
+                  onClick={() => setShowroomMode(false)}
+                >
+                  Adjust Internal Labor &amp; Margins
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={showroomMode ? "estimateWorkspace showroomMode" : "estimateWorkspace"}>
+    <div className="estimateWorkspace">
       <div className="workspaceActionBar">
         <div className="showroomBrandWrap">
           {companyLogoUrl ? (
@@ -728,15 +915,15 @@ export default function QuoteCalculator({
           ) : null}
           <div className="consultationPill">
             <span className="consultationDot" aria-hidden="true" />
-            <span>{showroomMode ? "WOW Showroom Consultation Active" : "In-Store Quoting Station"}</span>
+            <span>In-Store Quoting Station</span>
           </div>
         </div>
         <button
           type="button"
-          className={`button ${showroomMode ? "primary" : "secondary"} button--sm`}
-          onClick={() => setShowroomMode((prev) => !prev)}
+          className="button primary button--sm"
+          onClick={() => setShowroomMode(true)}
         >
-          {showroomMode ? "✓ Showroom Kiosk Mode" : "📺 Enable Showroom Mode"}
+          📺 Enter Showroom Presentation Mode
         </button>
       </div>
 
