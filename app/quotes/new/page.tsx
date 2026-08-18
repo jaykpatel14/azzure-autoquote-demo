@@ -9,6 +9,7 @@ import { normalizePricingProfile, resolveMetalPricing } from "@/lib/metal-pricin
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getQuote } from "@/src/services/quotes";
 import { getSettingValue } from "@/lib/app-settings";
+import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 
 type NewQuotePageProps = {
   searchParams?: Promise<{
@@ -41,6 +42,10 @@ export default async function NewQuotePage({ searchParams }: NewQuotePageProps) 
     : undefined;
   const livePricing = await resolveMetalPricing(basePricingProfile);
   const canEdit = canCreateQuotes(context.membership?.role ?? "CUSTOMER");
+  const subscription = context.company.subscription;
+  const planFeatures = subscription
+    ? getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status))
+    : null;
   const trialDaysRemaining = getTrialDaysRemaining(context.company.subscription);
   const trialQuotesRemaining = getTrialQuotesRemaining(context.company.subscription);
   const sourceQuoteId = params?.sourceQuoteId?.trim();
@@ -95,6 +100,8 @@ export default async function NewQuotePage({ searchParams }: NewQuotePageProps) 
             : "Using stored pricing values because live metal pricing is unavailable."
         }
         pricingNote={livePricing.message}
+        canShareQuoteLink={Boolean(planFeatures?.canShareQuoteLink)}
+        canPlaceManufacturingOrder={Boolean(planFeatures?.canPlaceManufacturingOrder)}
         initialQuote={
           sourceQuote
             ? {

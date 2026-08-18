@@ -13,6 +13,7 @@ import { getQuoteHistoryPage, type QuoteHistoryFilter } from "@/src/services/quo
 import { getUsageSummary } from "@/src/services/usage";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 import { PlanGate } from "@/src/components/ui/PlanGate";
+import ShowroomQuoteLookup from "@/components/showroom-quote-lookup";
 
 export const dynamic = "force-dynamic";
 
@@ -184,6 +185,7 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
       </section>
 
       <section className="quotesToolbar">
+        {planFeatures.canUseShowroomMode ? <ShowroomQuoteLookup /> : null}
         <nav className="quoteTabs" aria-label="Quote filters" role="tablist">
           {FILTERS.map((filter) => (
             <Link

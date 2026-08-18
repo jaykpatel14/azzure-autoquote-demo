@@ -12,7 +12,8 @@ const schema = z.object({
   companyName: z.string().trim().min(2).max(120),
   aboutUs: z.string().trim().max(300).optional().or(z.literal("")),
   websiteUrl: z.string().trim().url().optional().or(z.literal("")),
-  logoUrl: z.string().trim().optional().or(z.literal(""))
+  logoUrl: z.string().trim().optional().or(z.literal("")),
+  primaryColor: z.string().regex(/^#[0-9a-f]{6}$/i).optional().or(z.literal(""))
 });
 
 async function parseInput(request: Request) {
@@ -26,7 +27,8 @@ async function parseInput(request: Request) {
     companyName: String(formData.get("companyName") || ""),
     aboutUs: String(formData.get("aboutUs") || ""),
     websiteUrl: String(formData.get("websiteUrl") || ""),
-    logoUrl: String(formData.get("logoUrl") || "")
+    logoUrl: String(formData.get("logoUrl") || ""),
+    primaryColor: String(formData.get("primaryColor") || "")
   });
 }
 
@@ -54,7 +56,8 @@ export async function POST(request: Request) {
         name: input.companyName,
         aboutUs: input.aboutUs || null,
         websiteUrl: input.websiteUrl || null,
-        logoUrl: input.logoUrl || null
+        logoUrl: input.logoUrl || null,
+        primaryColor: input.primaryColor || null
       }
     });
 

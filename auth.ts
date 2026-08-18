@@ -141,7 +141,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role === "AZZURE_ADMIN" ? "AZZURE_ADMIN" : "CUSTOMER";
         session.user.companyId = typeof token.companyId === "string" ? token.companyId : "";
         session.user.companyName = typeof token.companyName === "string" ? token.companyName : "";
-        session.user.planId = typeof token.planId === "string" ? token.planId : "";
+        session.user.planId = token.planId === "plan_starter" || token.planId === "plan_professional" || token.planId === "plan_enterprise" || token.planId === "plan_ultra" ? token.planId : "plan_starter";
         session.user.accountStatus =
           token.accountStatus === "APPROVED" ||
           token.accountStatus === "SUSPENDED" ||

@@ -24,16 +24,17 @@ const publicPagePrefixes = [
   "/verify-email",
   "/pending-approval",
   "/configuration",
-  "/suspended"
+  "/suspended",
+  "/showroom"
 ];
 
-const publicApiPrefixes = ["/api/auth", "/api/health", "/api/billing/webhook", "/api/account/status"];
+const publicApiPrefixes = ["/api/auth", "/api/health", "/api/billing/webhook", "/api/account/status", "/api/showroom/validate", "/api/showroom/analyze", "/api/showroom/quotes"];
 
 function withSecurityHeaders(response: NextResponse) {
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  response.headers.set("Permissions-Policy", "camera=(self), microphone=(), geolocation=()");
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
   response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
   response.headers.set("X-DNS-Prefetch-Control", "off");

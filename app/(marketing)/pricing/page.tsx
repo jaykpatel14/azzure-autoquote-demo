@@ -40,7 +40,7 @@ const PLAN_META = {
     price: 399,
     audience: "Showrooms, tablet WOW kiosks & luxury studios",
     highlights: [
-      "5,000 quotes / month",
+      "10,000 quotes / month",
       "Photorealistic 3D Concept Generation",
       "In-Store Tablet / WOW Showroom Mode",
       "Custom Store Logo & Showroom Branding",
@@ -67,7 +67,7 @@ const PLAN_META = {
 >;
 
 const FEATURE_ROWS = [
-  { section: "Core quoting", feature: "Quotes per month", starter: "100", professional: "500", enterprise: "2,500", ultra: "5,000" },
+  { section: "Core quoting", feature: "Quotes per month", starter: "100", professional: "500", enterprise: "2,500", ultra: "10,000" },
   { section: "Core quoting", feature: "AI image analysis", starter: "1-pass", professional: "Full 3-pass", enterprise: "Full 3-pass + override", ultra: "3-Pass + 3D Concept AI" },
   { section: "Core quoting", feature: "Real-time metal pricing", starter: true, professional: true, enterprise: true, ultra: true },
   { section: "Core quoting", feature: "PDF quote generation", starter: true, professional: true, enterprise: true, ultra: true },

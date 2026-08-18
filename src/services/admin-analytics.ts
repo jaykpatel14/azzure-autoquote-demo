@@ -27,7 +27,7 @@ function buildSeries<T extends { createdAt: Date }>(rows: T[], days: number) {
 }
 
 export async function getAdminAnalytics() {
-  const [companies, quotes, orders, analyses, subscriptions, auditLogs] = await Promise.all([
+  const [companies, quotes, orders, analyses, subscriptions, auditLogs, showroomQuotes] = await Promise.all([
     prisma.company.findMany({
       select: {
         id: true,
@@ -61,7 +61,8 @@ export async function getAdminAnalytics() {
       select: { createdAt: true, action: true, companyId: true },
       orderBy: { createdAt: "desc" },
       take: 500
-    })
+    }),
+    prisma.showroomQuote.findMany({ select: { status: true } })
   ]);
 
   const completedOrders = orders.filter((order) => order.status === "COMPLETED");
@@ -92,7 +93,10 @@ export async function getAdminAnalytics() {
       completedOrders: completedOrders.length,
       analyses: analyses.length,
       analysisFailures,
-      moderationFlags
+      moderationFlags,
+      showroomQuotes: showroomQuotes.length,
+      showroomClaimRate: showroomQuotes.length ? Math.round(showroomQuotes.filter((quote) => quote.status !== "PENDING").length / showroomQuotes.length * 100) : 0,
+      showroomConversionRate: showroomQuotes.length ? Math.round(showroomQuotes.filter((quote) => quote.status === "CONVERTED").length / showroomQuotes.length * 100) : 0
     },
     series: {
       quotes: buildSeries(quotes, 14),

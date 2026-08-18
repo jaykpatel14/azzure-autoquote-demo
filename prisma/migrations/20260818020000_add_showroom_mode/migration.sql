@@ -1,0 +1,12 @@
+CREATE TYPE "ShowroomQuoteStatus" AS ENUM ('PENDING', 'CLAIMED', 'CONVERTED', 'EXPIRED');
+ALTER TABLE "Company" ADD COLUMN "primaryColor" TEXT;
+CREATE TABLE "ShowroomSession" ("id" TEXT NOT NULL, "companyId" TEXT NOT NULL, "token" TEXT NOT NULL, "isActive" BOOLEAN NOT NULL DEFAULT true, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "lastUsedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "ShowroomSession_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "ShowroomQuote" ("id" TEXT NOT NULL, "quoteId" TEXT NOT NULL, "companyId" TEXT NOT NULL, "displayCode" TEXT NOT NULL, "status" "ShowroomQuoteStatus" NOT NULL DEFAULT 'PENDING', "customerNotes" TEXT, "jewelerNotes" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "claimedAt" TIMESTAMP(3), "claimedBy" TEXT, "convertedAt" TIMESTAMP(3), CONSTRAINT "ShowroomQuote_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "ShowroomSession_companyId_key" ON "ShowroomSession"("companyId");
+CREATE UNIQUE INDEX "ShowroomSession_token_key" ON "ShowroomSession"("token");
+CREATE UNIQUE INDEX "ShowroomQuote_quoteId_key" ON "ShowroomQuote"("quoteId");
+CREATE UNIQUE INDEX "ShowroomQuote_companyId_displayCode_key" ON "ShowroomQuote"("companyId", "displayCode");
+CREATE INDEX "ShowroomQuote_companyId_status_createdAt_idx" ON "ShowroomQuote"("companyId", "status", "createdAt");
+ALTER TABLE "ShowroomSession" ADD CONSTRAINT "ShowroomSession_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ShowroomQuote" ADD CONSTRAINT "ShowroomQuote_quoteId_fkey" FOREIGN KEY ("quoteId") REFERENCES "Quote"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ShowroomQuote" ADD CONSTRAINT "ShowroomQuote_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE CASCADE ON UPDATE CASCADE;

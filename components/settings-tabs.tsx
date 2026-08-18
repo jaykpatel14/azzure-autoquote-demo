@@ -2,6 +2,7 @@ import Link from "next/link";
 
 type SettingsTabsProps = {
   activeHref: string;
+  showShowroom?: boolean;
 };
 
 const TABS = [
@@ -12,10 +13,11 @@ const TABS = [
   { href: "/settings/billing", label: "Billing" }
 ];
 
-export default function SettingsTabs({ activeHref }: SettingsTabsProps) {
+export default function SettingsTabs({ activeHref, showShowroom = false }: SettingsTabsProps) {
+  const tabs = showShowroom ? [...TABS, { href: "/settings/showroom", label: "Showroom" }] : TABS;
   return (
     <nav className="settingsTabs" aria-label="Settings tabs">
-      {TABS.map((tab) => (
+      {tabs.map((tab) => (
         <Link key={tab.href} className={`settingsTab${activeHref === tab.href ? " isActive" : ""}`} href={tab.href}>
           {tab.label}
         </Link>

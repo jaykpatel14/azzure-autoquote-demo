@@ -53,6 +53,13 @@ enum AccountStatus {
   SUSPENDED
 }
 
+enum ShowroomQuoteStatus {
+  PENDING
+  CLAIMED
+  CONVERTED
+  EXPIRED
+}
+
 enum PricingTier {
   TIER_1
   TIER_2
@@ -66,6 +73,7 @@ model Company {
   logoUrl         String?
   websiteUrl      String?
   aboutUs         String?
+  primaryColor    String?
   quoteSequence   Int              @default(0)
   accountStatus   AccountStatus    @default(PENDING_APPROVAL)
   pricingTier     PricingTier?
@@ -92,6 +100,8 @@ model Company {
   orders          Order[]
   usagePeriods    UsagePeriod[]
   auditLogs       AuditLog[]
+  showroomSession ShowroomSession?
+  showroomQuotes  ShowroomQuote[]
 }
 
 model AppSetting {
@@ -270,6 +280,7 @@ model Quote {
   id                    String      @id @default(cuid())
   companyId             String
   analysisId            String?     @unique
+  referenceAnalysisIds  Json?
   order                 Order?
   quoteNumber           String
   customerName          String?
@@ -304,8 +315,38 @@ model Quote {
   createdAt             DateTime    @default(now())
   company               Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   analysis              AiAnalysis? @relation(fields: [analysisId], references: [id])
+  showroomQuote          ShowroomQuote?
 
   @@unique([companyId, quoteNumber])
+}
+
+model ShowroomSession {
+  id         String   @id @default(cuid())
+  companyId  String   @unique
+  token      String   @unique @default(cuid())
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model ShowroomQuote {
+  id            String              @id @default(cuid())
+  quoteId       String              @unique
+  companyId     String
+  displayCode   String
+  status        ShowroomQuoteStatus @default(PENDING)
+  customerNotes String?
+  jewelerNotes  String?
+  createdAt     DateTime            @default(now())
+  claimedAt     DateTime?
+  claimedBy     String?
+  convertedAt   DateTime?
+  quote         Quote               @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  company       Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, displayCode])
+  @@index([companyId, status, createdAt])
 }
 
 model Order {

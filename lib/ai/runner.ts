@@ -132,6 +132,8 @@ export async function runReviewAttempt(params: {
   selectedMetal: MetalType;
   attemptNumber: number;
   attemptLimit?: number;
+  customerDescription?: string;
+  learnedGuidance?: string[];
 }): Promise<
   | {
       kind: "success";
@@ -154,7 +156,9 @@ export async function runReviewAttempt(params: {
         params.provider.analyzeImage({
           imageDataUrl: params.imageDataUrl,
           selectedMetal: params.selectedMetal,
-          attemptNumber: params.attemptNumber
+          attemptNumber: params.attemptNumber,
+          customerDescription: params.customerDescription,
+          learnedGuidance: params.learnedGuidance
         }),
       params.attemptLimit ?? 2
     );

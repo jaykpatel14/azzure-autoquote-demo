@@ -37,12 +37,17 @@ function normalizeUsage(usage: unknown): TokenUsageSnapshot | undefined {
   return { inputTokens, outputTokens, totalTokens };
 }
 
-function buildPrompt(selectedMetal: string, attemptNumber: number) {
+function buildPrompt(
+  selectedMetal: string,
+  attemptNumber: number,
+  customerDescription?: string,
+  learnedGuidance: string[] = []
+) {
   const metal = METAL_TYPES.includes(selectedMetal as (typeof METAL_TYPES)[number])
     ? selectedMetal
     : "14K";
 
-  return [
+  const prompt = [
     "You are a jewelry production estimator.",
     `This is independent review ${attemptNumber}.`,
     `The currently selected finished metal is ${metal}.`,
@@ -58,8 +63,20 @@ function buildPrompt(selectedMetal: string, attemptNumber: number) {
     "- sideStones: all other stones. Group by shape and setting type. For each group, provide the shape (round, baguette, trillion, etc.), estimated carat weight of each individual stone, the count of stones in this group, and the setting type (prong, bezel, pavé, channel, bar, etc.).",
     "- colorClarity: always return 'E VS1' — do not attempt to assess from the image.",
     "- confidence: low, medium, or high.",
-    "- assumptions: list of key assumptions made during analysis."
-  ].join(" ");
+    "- assumptions: list of key assumptions made during analysis.",
+    customerDescription?.trim()
+      ? `Customer-provided design description: ${customerDescription.trim()}. Use it as supporting context, but flag any conflict with visible evidence as an assumption.`
+      : "No customer description was supplied."
+  ];
+
+  if (learnedGuidance.length) {
+    prompt.push(
+      "The following tenant-specific examples come from previously saved and human-confirmed quotes. Use them only as pattern guidance when visually relevant; never copy values blindly:",
+      ...learnedGuidance.map((guidance, index) => `${index + 1}. ${guidance}`)
+    );
+  }
+
+  return prompt.join(" ");
 }
 
 export async function createOpenAIJewelryAnalysisProvider(
@@ -122,7 +139,7 @@ export async function createOpenAIJewelryAnalysisProvider(
         rawResponse: response
       };
     },
-    async analyzeImage({ imageDataUrl, selectedMetal, attemptNumber }): Promise<JewelryReviewSnapshot> {
+    async analyzeImage({ imageDataUrl, selectedMetal, attemptNumber, customerDescription, learnedGuidance }): Promise<JewelryReviewSnapshot> {
       const start = Date.now();
       const response = await client.responses.parse({
         model,
@@ -138,7 +155,7 @@ export async function createOpenAIJewelryAnalysisProvider(
             content: [
               {
                 type: "input_text",
-                text: buildPrompt(selectedMetal, attemptNumber)
+                text: buildPrompt(selectedMetal, attemptNumber, customerDescription, learnedGuidance)
               },
               {
                 type: "input_image",

@@ -49,6 +49,9 @@ export default async function AdminAnalyticsPage() {
           <span className="eyebrow">Analyses</span>
           <strong>{data.overview.analyses}</strong>
         </article>
+        <article className="statCard statCard--admin"><span className="eyebrow">Showroom quotes</span><strong>{data.overview.showroomQuotes}</strong></article>
+        <article className="statCard statCard--admin"><span className="eyebrow">Showroom claimed</span><strong>{data.overview.showroomClaimRate}%</strong></article>
+        <article className="statCard statCard--admin"><span className="eyebrow">Showroom converted</span><strong>{data.overview.showroomConversionRate}%</strong></article>
       </section>
 
       <section className="grid twoUp">

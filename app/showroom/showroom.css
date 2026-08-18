@@ -1,0 +1,26 @@
+.showroomRoot{width:100vw;min-height:100vh;background:#111214;color:#f7f3ea;overflow-x:hidden}
+.showroom{--color-brand:#c9a84c;min-height:100vh;display:grid;grid-template-rows:auto 1fr auto;padding:24px;box-sizing:border-box}
+.showroomBrand{text-align:center;min-height:76px;display:flex;align-items:center;justify-content:center}
+.showroomBrand img{max-width:220px;max-height:72px;object-fit:contain}
+.showroomBrand strong{font:600 32px Georgia,serif}
+.showroomPanel{width:min(850px,100%);margin:auto;text-align:center;padding:40px;box-sizing:border-box}
+.showroomPanel h1{font:600 clamp(42px,6vw,72px) Georgia,serif;margin:12px 0 20px}
+.showroomPanel p{font-size:20px;line-height:1.5;color:#c8c5be}
+.showroomStage{width:100%;max-width:1200px;margin:0 auto;text-align:left;box-sizing:border-box}
+.showroomEyebrow,.showroomSuccess{color:var(--color-brand)!important;text-transform:uppercase;letter-spacing:.14em;font-weight:700}
+.showroomButton{display:block;width:min(520px,100%);min-height:76px;margin:36px auto 16px;border:0;border-radius:14px;background:var(--color-brand);color:#111214;font-size:21px;font-weight:800;padding:18px 28px;cursor:pointer}
+.showroomButton:disabled{opacity:.4}
+.showroomBack{position:absolute;left:32px;top:120px;min-height:60px;background:transparent;color:#eee;border:1px solid #555;border-radius:12px;padding:0 24px;font-size:18px;cursor:pointer}
+.showroomSmall{font-size:14px!important}
+.showroomCode{font:700 clamp(54px,10vw,96px) monospace;letter-spacing:.08em;color:var(--color-brand);margin:24px}
+.showroomPrice{font-size:28px!important;color:#fff!important}
+.showroomError{color:#ff9696!important}
+.showroomWarning{position:fixed;inset:auto 24px 24px;background:#292217;border:1px solid var(--color-brand);padding:18px;border-radius:12px;text-align:center}
+.showroom footer{text-align:center;color:#777;font-size:11px}
+.showroomInactive{height:100vh;display:grid;place-content:center;text-align:center}
+.showroomInactive h1{font:600 48px Georgia,serif}
+@media(max-width:700px){
+  .showroom{padding:14px}
+  .showroomPanel{padding:20px 4px}
+  .showroomBack{position:static;display:block;margin-bottom:12px}
+}

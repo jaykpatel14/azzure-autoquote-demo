@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { type MetalType, type PricingProfileInput } from "@/lib/pricing";
 import { mergeConfidence, median } from "@/lib/statistics";
 import { useToast } from "@/components/toast-provider";
+import { QuoteCreationLayout, QuoteStepCard, QuoteBuilderPreview } from "@/components/QuoteCreationLayout";
 import {
   calculateMakingPrice as calculateProductionCost,
   calculateTierPrice,
@@ -91,6 +92,8 @@ type QuoteCalculatorProps = {
   };
   companyName?: string;
   companyLogoUrl?: string | null;
+  canShareQuoteLink?: boolean;
+  canPlaceManufacturingOrder?: boolean;
 };
 
 const ANALYSIS_STAGES = [
@@ -190,7 +193,9 @@ export default function QuoteCalculator({
   cadCost = 0,
   initialQuote,
   companyName,
-  companyLogoUrl
+  companyLogoUrl,
+  canShareQuoteLink = false,
+  canPlaceManufacturingOrder = false
 }: QuoteCalculatorProps) {
   const [metalType, setMetalType] = useState<MetalType>(initialQuote?.metalType ?? "14K");
   const [quoteMode, setQuoteMode] = useState<QuoteMode>("normal");
@@ -238,10 +243,10 @@ export default function QuoteCalculator({
   const [activeFacetId, setActiveFacetId] = useState<string | null>(() => initialQuote?.quoteId ?? null);
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
+  const [savingProgress, setSavingProgress] = useState(0);
   const [savedQuote, setSavedQuote] = useState<{ id: string; quoteNumber: string } | null>(null);
+  const [renderingImageUrl, setRenderingImageUrl] = useState<string | null>(null);
   const [draftIsFresh, setDraftIsFresh] = useState(!initialQuote);
-  const [inputMode, setInputMode] = useState<"photos" | "prompt">("photos");
-  const [conceptPrompt, setConceptPrompt] = useState("");
   const [generatingConcept, setGeneratingConcept] = useState(false);
   const [showroomMode, setShowroomMode] = useState(false);
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
@@ -275,7 +280,7 @@ export default function QuoteCalculator({
   }, []);
 
   async function generateConcept(customText?: string) {
-    const textToUse = customText || conceptPrompt;
+    const textToUse = customText || customerNotes;
     if (!textToUse.trim()) {
       showToast({
         message: "Please enter a design description first.",
@@ -288,6 +293,7 @@ export default function QuoteCalculator({
     setGeneratingConcept(true);
     setStatus("Synthesizing jewelry design concept and calculating live quote...");
     setSavedQuote(null);
+    setRenderingImageUrl(null);
 
     try {
       const response = await fetch("/api/concept/generate", {
@@ -447,6 +453,7 @@ export default function QuoteCalculator({
     if (!selectedFiles.length) return;
 
     setSavedQuote(null);
+    setRenderingImageUrl(null);
     setDraftIsFresh(false);
     const nextFacets = selectedFiles.map((file, index) => ({
       id: uid(),
@@ -485,6 +492,7 @@ export default function QuoteCalculator({
     }
 
     setSavedQuote(null);
+    setRenderingImageUrl(null);
     setDraftIsFresh(false);
     const newFacet: FacetDraft = {
       id: uid(),
@@ -519,6 +527,7 @@ export default function QuoteCalculator({
     setFacets([]);
     setActiveFacetId(null);
     setSavedQuote(null);
+    setRenderingImageUrl(null);
     setDraftIsFresh(true);
     setStatus("Draft cleared.");
     showToast({
@@ -650,6 +659,7 @@ export default function QuoteCalculator({
 
     setStatus("Starting analysis for all facets.");
     setSavedQuote(null);
+    setRenderingImageUrl(null);
 
     for (const facet of facetsRef.current) {
       if (facet.status === "done" && facet.output) continue;
@@ -670,6 +680,7 @@ export default function QuoteCalculator({
 
     lastAnalysedDescriptionRef.current = description;
     setSavedQuote(null);
+    setRenderingImageUrl(null);
     setStatus("Updating the AI analysis from the customer description...");
     await Promise.all(facetsRef.current.filter((facet) => facet.file).map((facet) => analyseFacet(facet)));
     setStatus("AI analysis and live quote updated automatically.");
@@ -691,69 +702,80 @@ export default function QuoteCalculator({
     }
 
     setSaving(true);
+    setSavingProgress(0);
     setStatus("Creating quote and realistic presentation rendering...");
 
-    const response = await fetch("/api/quotes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        analysisId: aggregateQuote.analysisId,
-        customerName,
-        quoteMode,
-        metalType,
-        metalWeightGrams: aggregateQuote.metalWeightGrams,
-        centerDiamondCarats: aggregateQuote.centerDiamondCarats,
-        sideDiamondCarats: aggregateQuote.sideDiamondCarats,
-        sideDiamondQuantity: aggregateQuote.sideDiamondQuantity,
-        centerShape: aggregateQuote.centerShape ?? "round",
-        centerClarity: DEFAULT_COLOR_CLARITY,
-        settingType: aggregateQuote.settingType ?? "prong",
-        customerNotes,
-        notes: customerNotes,
-        hasWeddingBand: aggregateQuote.hasWeddingBand,
-        isTwoTone: aggregateQuote.isTwoTone
-      })
-    });
+    const progressTimer = window.setInterval(() => {
+      setSavingProgress((current) => Math.min(90, current + 6));
+    }, 1600);
 
-    const result = (await response.json().catch(() => ({}))) as {
-      id?: string;
-      quoteNumber?: string;
-      error?: string;
-      renderingStatus?: "COMPLETED" | "FAILED";
-      renderingError?: string;
-    };
-    if (!response.ok) {
-      setStatus(result.error || "Unable to save quote.");
-      showToast({
-        message: result.error || "Unable to save quote.",
-        variant: "error",
-        autoDismiss: false
+    try {
+      const response = await fetch("/api/quotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          analysisId: aggregateQuote.analysisId,
+          analysisIds: completedFacets.map((facet) => facet.output?.analysisId).filter(Boolean),
+          customerName,
+          quoteMode,
+          metalType,
+          metalWeightGrams: aggregateQuote.metalWeightGrams,
+          centerDiamondCarats: aggregateQuote.centerDiamondCarats,
+          sideDiamondCarats: aggregateQuote.sideDiamondCarats,
+          sideDiamondQuantity: aggregateQuote.sideDiamondQuantity,
+          centerShape: aggregateQuote.centerShape ?? "round",
+          centerClarity: DEFAULT_COLOR_CLARITY,
+          settingType: aggregateQuote.settingType ?? "prong",
+          customerNotes,
+          notes: customerNotes,
+          hasWeddingBand: aggregateQuote.hasWeddingBand,
+          isTwoTone: aggregateQuote.isTwoTone
+        })
       });
-      setSaving(false);
-      return;
-    }
 
-    if (result.id && result.quoteNumber) {
-      setSavedQuote({ id: result.id, quoteNumber: result.quoteNumber });
-      const renderingFailed = result.renderingStatus === "FAILED";
-      setStatus(
-        renderingFailed
-          ? `Quote ${result.quoteNumber} saved, but its rendering could not be created. You can still download the quote.`
-          : `Quote ${result.quoteNumber} and its realistic rendering are ready. You can download the PDF or open the public view.`
-      );
-      showToast({
-        message: renderingFailed
-          ? `Quote ${result.quoteNumber} saved without a rendering.`
-          : `Quote ${result.quoteNumber} and rendering created successfully.`,
-        variant: renderingFailed ? "warning" : "success",
-        autoDismiss: !renderingFailed
-      });
-      if (options?.resetDraftAfterSave) {
-        setDraftIsFresh(true);
+      const result = (await response.json().catch(() => ({}))) as {
+        id?: string;
+        quoteNumber?: string;
+        error?: string;
+        renderingStatus?: "COMPLETED" | "FAILED";
+        renderingError?: string;
+        renderingImageUrl?: string | null;
+      };
+      setSavingProgress(100);
+      if (!response.ok) {
+        setStatus(result.error || "Unable to save quote.");
+        showToast({
+          message: result.error || "Unable to save quote.",
+          variant: "error",
+          autoDismiss: false
+        });
+        return;
       }
-    }
 
-    setSaving(false);
+      if (result.id && result.quoteNumber) {
+        setSavedQuote({ id: result.id, quoteNumber: result.quoteNumber });
+        setRenderingImageUrl(result.renderingImageUrl ?? null);
+        const renderingFailed = result.renderingStatus === "FAILED";
+        setStatus(
+          renderingFailed
+            ? `Quote ${result.quoteNumber} saved, but its rendering could not be created. You can still download the quote.`
+            : `Quote ${result.quoteNumber} and its realistic rendering are ready. You can download the PDF or open the public view.`
+        );
+        showToast({
+          message: renderingFailed
+            ? `Quote ${result.quoteNumber} saved without a rendering.`
+            : `Quote ${result.quoteNumber} and rendering created successfully.`,
+          variant: renderingFailed ? "warning" : "success",
+          autoDismiss: !renderingFailed
+        });
+        if (options?.resetDraftAfterSave) {
+          setDraftIsFresh(true);
+        }
+      }
+    } finally {
+      window.clearInterval(progressTimer);
+      setSaving(false);
+    }
   }
 
   function updateFacetOutput(id: string, field: keyof FacetOutput, value: string | number | boolean) {
@@ -771,14 +793,6 @@ export default function QuoteCalculator({
 
   const activeFacet = facets.find((facet) => facet.id === activeFacetId) ?? facets[0] ?? null;
 
-  const PROMPT_SUGGESTIONS = [
-    "14K White Gold Oval Solitaire with Hidden Halo",
-    "18K Yellow Gold Cushion Pavé Halo with Split Shank",
-    "Platinum 3-Stone Emerald Cut with Tapered Baguettes",
-    "14K Rose Gold Vintage Bezel-Set Oval Ring",
-    "18K Two-Tone Radiant Cut with Diamond Pavé Band"
-  ];
-
   return (
     <div className={`estimateWorkspace${showroomMode ? " showroomUnifiedWorkspace" : ""}`}>
       <div className="quoteWorkspaceModeBar">
@@ -795,125 +809,67 @@ export default function QuoteCalculator({
         </button>
       </div>
       {/* Two-column layout: left steps / right preview */}
-      <div className="quoteBuilderLayout">
-
-        {/* ── LEFT: Steps 1 → 2 → 3 ── */}
-        <div className="quoteBuilderSteps">
-
+      <QuoteCreationLayout
+        steps={
+          <>
           {/* ── Step 1: Upload Reference Photos + Description ── */}
-          <section className="card quoteStepCard">
-            <div className="quoteStepLabel">
-              <span className="quoteStepNumber">01</span>
-              <div>
-                <h2 className="quoteStepTitle">Reference Photos &amp; Description</h2>
-                <p className="muted small">Upload inspiration photos and describe what your customer wants.</p>
+          <QuoteStepCard
+            number="01"
+            title="Reference Photos & Description"
+            description="Upload inspiration photos and describe what your customer wants."
+          >
+            <div className="field quoteDesignDescription">
+              <div className="charCountHeader">
+                <label htmlFor="customerNotes">Describe the requested design <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span></label>
+                <span className="charCountBadge">{customerNotes.length} / 1000</span>
               </div>
-            </div>
-
-            {/* Input Mode Tabs */}
-            <div className="inputModeTabs" role="tablist" aria-label="Input mode">
-              <button
-                type="button"
-                className={`inputModeTab${inputMode === "photos" ? " isActive" : ""}`}
-                onClick={() => setInputMode("photos")}
-                role="tab"
-                aria-selected={inputMode === "photos"}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>photo_camera</span>
-                Reference Photos
-              </button>
-              <button
-                type="button"
-                className={`inputModeTab${inputMode === "prompt" ? " isActive" : ""}`}
-                onClick={() => setInputMode("prompt")}
-                role="tab"
-                aria-selected={inputMode === "prompt"}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>auto_awesome</span>
-                Describe Design
-              </button>
-            </div>
-
-            {inputMode === "prompt" ? (
-              <div className="conceptPromptBox">
-                <textarea
-                  id="conceptPromptInput"
-                  className="conceptPromptTextarea"
-                  rows={3}
-                  value={conceptPrompt}
-                  onChange={(e) => setConceptPrompt(e.target.value)}
-                  onBlur={() => {
-                    if (conceptPrompt.trim() && !generatingConcept && canEdit) void generateConcept();
-                  }}
-                  placeholder="e.g., 14K White Gold Oval 1.5ct Solitaire with Hidden Halo and thin Pavé diamond band..."
-                  disabled={generatingConcept || !canEdit}
-                />
-                <div className="conceptSuggestions">
-                  <span className="conceptSuggestionsTitle">Quick presets:</span>
-                  <div className="conceptChips">
-                    {PROMPT_SUGGESTIONS.map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        className="conceptChip"
-                        onClick={() => { setConceptPrompt(preset); generateConcept(preset); }}
-                        disabled={generatingConcept || !canEdit}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <p className="muted small conceptAutoHint">
-                  {generatingConcept ? "Creating the visualization and quote…" : "AI starts automatically when you finish the description."}
-                </p>
-              </div>
-            ) : (
-              <div
-                className="dropzone dropzone--multi"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (!canEdit) return;
-                  handleFiles(Array.from(e.dataTransfer.files).filter(Boolean));
+              <textarea
+                id="customerNotes"
+                rows={3}
+                maxLength={1000}
+                value={customerNotes}
+                onChange={(event) => setCustomerNotes(event.target.value)}
+                onBlur={() => {
+                  if (facetsRef.current.length) void refreshAnalysisFromDescription();
                 }}
-              >
-                <div className="dropzoneContent">
-                  <div className="dropzoneIcon">
-                    <span className="material-symbols-outlined" style={{ fontSize: 28, color: "var(--color-primary)" }}>cloud_upload</span>
-                  </div>
-                  <strong>Drag &amp; drop reference photos</strong>
-                  <span className="muted small">JPG, PNG, or WEBP · up to 10 MB each</span>
+                placeholder="Describe the piece, stone preferences, sizing, engravings, or changes you want..."
+                disabled={!canEdit}
+              />
+              <p className="muted small">Add the description first, then upload the reference photos. AI uses both together automatically.</p>
+            </div>
+
+            <div
+              className="dropzone dropzone--multi"
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (!canEdit) return;
+                handleFiles(Array.from(event.dataTransfer.files).filter(Boolean));
+              }}
+            >
+              <div className="dropzoneContent">
+                <div className="dropzoneIcon">
+                  <span className="material-symbols-outlined" style={{ fontSize: 28, color: "var(--color-primary)" }}>cloud_upload</span>
                 </div>
-                <div className="dropzoneActions">
-                  <label className="button primary button--sm">
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      capture="environment"
-                      disabled={!canEdit}
-                      onChange={(e) => handleFiles(Array.from(e.target.files ?? []))}
-                    />
-                    <span className="material-symbols-outlined" style={{ fontSize: 15 }}>photo_camera</span>
-                    Take photo
-                  </label>
-                  <label className="button secondary button--sm">
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      multiple
-                      disabled={!canEdit}
-                      onChange={(e) => handleFiles(Array.from(e.target.files ?? []))}
-                    />
-                    <span className="material-symbols-outlined" style={{ fontSize: 15 }}>folder_open</span>
-                    Choose files
-                  </label>
-                </div>
+                <strong>Add customer reference photos</strong>
+                <span className="muted small">JPG, PNG, or WEBP · up to 10 MB each</span>
               </div>
-            )}
+              <div className="dropzoneActions">
+                <label className="button primary button--sm">
+                  <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} />
+                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>photo_camera</span>
+                  Take photo
+                </label>
+                <label className="button secondary button--sm">
+                  <input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} />
+                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>folder_open</span>
+                  Choose files
+                </label>
+              </div>
+            </div>
 
             {/* Photo thumbnail strip */}
-            {facets.length > 0 && inputMode === "photos" ? (
+            {facets.length > 0 ? (
               <div className="facetThumbRail" aria-label="Uploaded photos">
                 {facets.map((facet, index) => (
                   <button
@@ -945,36 +901,16 @@ export default function QuoteCalculator({
                   disabled={!canEdit}
                 />
               </div>
-              <div className="field">
-                <div className="charCountHeader">
-                  <label htmlFor="customerNotes">Special instructions <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span></label>
-                  <span className="charCountBadge">{customerNotes.length} / 1000</span>
-                </div>
-                <textarea
-                  id="customerNotes"
-                  rows={2}
-                  maxLength={1000}
-                  value={customerNotes}
-                  onChange={(e) => setCustomerNotes(e.target.value)}
-                  onBlur={() => void refreshAnalysisFromDescription()}
-                  placeholder="Detail stone preferences, sizing, engravings, or styling notes..."
-                  disabled={!canEdit}
-                />
-              </div>
             </div>
-          </section>
+          </QuoteStepCard>
 
           {/* ── Step 2: AI Analysis Results ── */}
           {facets.length > 0 ? (
-            <section className="card quoteStepCard">
-              <div className="quoteStepLabel">
-                <span className="quoteStepNumber">02</span>
-                <div>
-                  <h2 className="quoteStepTitle">AI Analysis</h2>
-                  <p className="muted small">What the AI identified from your photos and description.</p>
-                </div>
-              </div>
-
+            <QuoteStepCard
+              number="02"
+              title="AI Analysis"
+              description="What the AI identified from your photos and description."
+            >
               <div className="facetGrid">
                 {facets.map((facet, index) => (
                   <article
@@ -1085,20 +1021,16 @@ export default function QuoteCalculator({
                   </article>
                 ))}
               </div>
-            </section>
+            </QuoteStepCard>
           ) : null}
 
           {/* ── Step 3: Customer Tweaks (auto-updates quote) ── */}
           {completedFacets.length > 0 ? (
-            <section className="card quoteStepCard">
-              <div className="quoteStepLabel">
-                <span className="quoteStepNumber">03</span>
-                <div>
-                  <h2 className="quoteStepTitle">Adjust Parameters</h2>
-                  <p className="muted small">Tweak any value — the quote on the right updates automatically.</p>
-                </div>
-              </div>
-
+            <QuoteStepCard
+              number="03"
+              title="Adjust Parameters"
+              description="Tweak any value — the quote on the right updates automatically."
+            >
               <div className="fields">
                 <div className="field">
                   <label htmlFor="metalType">Metal type</label>
@@ -1218,13 +1150,12 @@ export default function QuoteCalculator({
                   </article>
                 ))}
               </div>
-            </section>
+            </QuoteStepCard>
           ) : null}
-        </div>
-
-        {/* ── RIGHT: AI Photo Preview + Live Quote + Actions ── */}
-        <aside className="quoteBuilderPreview">
-          <div className="quotePreviewSticky">
+          </>
+        }
+        preview={
+          <QuoteBuilderPreview>
             <div className="quotePreviewHeader">
               <span className="quoteStepNumber">04</span>
               <div>
@@ -1235,9 +1166,9 @@ export default function QuoteCalculator({
 
             {/* AI Generated Image */}
             <div className="quotePreviewImageFrame">
-              {savedQuote || activeFacet?.previewUrl ? (
+              {renderingImageUrl || activeFacet?.previewUrl ? (
                 <img
-                  src={savedQuote ? `/api/quotes/${savedQuote.id}/image` : activeFacet?.previewUrl ?? ""}
+                  src={renderingImageUrl ?? activeFacet?.previewUrl ?? ""}
                   alt="AI generated jewelry visualization"
                   className="quotePreviewImage"
                 />
@@ -1251,6 +1182,15 @@ export default function QuoteCalculator({
                 <div className="quotePreviewProcessingOverlay">
                   <span className="material-symbols-outlined ai-pulse" style={{ fontSize: 32, color: "white" }}>psychology</span>
                   <span style={{ color: "white", fontSize: "var(--text-sm)", fontWeight: 600, marginTop: 8 }}>AI Analysing…</span>
+                </div>
+              ) : null}
+              {saving ? (
+                <div className="quotePreviewProcessingOverlay">
+                  <span className="material-symbols-outlined ai-pulse" style={{ fontSize: 32, color: "white" }}>diamond</span>
+                  <span style={{ color: "white", fontSize: "var(--text-sm)", fontWeight: 600, marginTop: 8 }}>Creating your ring…</span>
+                  <div style={{ width: "70%", height: 6, borderRadius: 999, background: "rgb(255 255 255 / 25%)", overflow: "hidden", marginTop: 10 }}>
+                    <div style={{ height: "100%", width: `${savingProgress}%`, background: "white", transition: "width 400ms linear" }} />
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -1311,6 +1251,18 @@ export default function QuoteCalculator({
                   Download PDF
                 </a>
               ) : null}
+              {savedQuote && canShareQuoteLink ? (
+                <a className="button secondary" style={{ width: "100%" }} href={`/quotes/${savedQuote.id}`}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>ios_share</span>
+                  Share with Customer
+                </a>
+              ) : null}
+              {savedQuote && canPlaceManufacturingOrder ? (
+                <a className="button secondary" style={{ width: "100%" }} href={`/quotes/${savedQuote.id}`}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>precision_manufacturing</span>
+                  Send to Manufacturing
+                </a>
+              ) : null}
             </div>
 
             {/* Status message */}
@@ -1319,10 +1271,9 @@ export default function QuoteCalculator({
                 {status}
               </div>
             ) : null}
-          </div>
-        </aside>
-
-      </div>
+          </QuoteBuilderPreview>
+        }
+      />
     </div>
   );
 }

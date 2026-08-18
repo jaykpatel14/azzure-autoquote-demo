@@ -7,7 +7,8 @@ describe("jeweler price visibility", () => {
     "app/quotes/[quoteId]/page.tsx",
     "app/quotes/page.tsx",
     "app/q/[token]/page.tsx",
-    "components/QuoteCalculator.tsx"
+    "components/QuoteCalculator.tsx",
+    "app/showroom/showroom-kiosk.tsx"
   ])("%s does not render making price", (path) => {
     expect(readFileSync(path, "utf8")).not.toContain("makingPrice");
   });

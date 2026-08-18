@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { type Prisma } from "@prisma/client";
 import { ZodError, z } from "zod";
+import { prisma } from "@/lib/prisma";
 import {
   METAL_TYPES
 } from "@/lib/pricing";
@@ -18,6 +19,7 @@ import { getSettingValue } from "@/lib/app-settings";
 import { assertBillableSubscription, BillingAccessError } from "@/lib/billing";
 import { assertPlanFeature, getCompanyPlanFeatures, PlanError } from "@/src/stripe/plans";
 import { generateQuoteRendering } from "@/lib/ai/quote-rendering";
+import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 
 const quoteModes = ["normal", "without-center", "without-center-and-side"] as const;
 
@@ -30,6 +32,7 @@ const sideStoneItemSchema = z.object({
 
 const quoteSchema = z.object({
   analysisId: z.string().optional(),
+  analysisIds: z.array(z.string()).max(12).optional(),
   customerName: z.union([z.string().trim().min(1).max(200), z.literal("")]).optional(),
   quoteMode: z.enum(quoteModes).default("normal"),
   metalType: z.enum(METAL_TYPES),
@@ -120,6 +123,7 @@ export async function POST(request: Request) {
     const quoteResult = await createQuote({
       companyId: company.id,
       analysisId: input.analysisId,
+      referenceAnalysisIds: input.analysisIds,
       customerName: adjustedInput.customerName,
       metalType: adjustedInput.metalType,
       metalWeightGrams: adjustedInput.metalWeightGrams,
@@ -154,12 +158,24 @@ export async function POST(request: Request) {
       companyId: company.id
     });
 
+    let renderingImageUrl: string | null = null;
+    if (rendering.status === "COMPLETED") {
+      const renderedQuote = await prisma.quote.findUnique({
+        where: { id: quoteResult.data.id },
+        select: { renderingStorageKey: true, renderingDataUrl: true }
+      });
+      renderingImageUrl = renderedQuote?.renderingStorageKey
+        ? await loadQuoteRenderingDataUrlFromS3(renderedQuote.renderingStorageKey)
+        : renderedQuote?.renderingDataUrl ?? null;
+    }
+
     return NextResponse.json({
       id: quoteResult.data.id,
       quoteNumber: quoteResult.data.quoteNumber,
       estimatedPrice: Number(quoteResult.data.estimatedPrice),
       renderingStatus: rendering.status,
-      renderingError: rendering.status === "FAILED" ? "The quote was saved, but its rendering could not be generated." : undefined
+      renderingError: rendering.status === "FAILED" ? "The quote was saved, but its rendering could not be generated." : undefined,
+      renderingImageUrl
     });
   } catch (error) {
     if (error instanceof PlanError || error instanceof BillingAccessError) {

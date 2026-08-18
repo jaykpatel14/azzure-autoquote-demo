@@ -1,0 +1,4 @@
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+export default function ShowroomQuoteLookup() { const [code,setCode]=useState(""); const [error,setError]=useState(""); const router=useRouter(); async function lookup(e:React.FormEvent){e.preventDefault();setError("");const r=await fetch(`/api/showroom/quotes/${encodeURIComponent(code)}`);const b=await r.json();if(!r.ok)return setError("Quote not found");router.push(`/quotes/${b.quoteId}`)} return <form className="showroomLookup" onSubmit={lookup}><strong>Look up showroom quote</strong><input value={code} onChange={e=>setCode(e.target.value.toUpperCase())} placeholder="QT-____" maxLength={7} pattern="QT-[0-9]{4}"/><button className="button secondary" type="submit">Look up</button>{error&&<span className="errorText">{error}</span>}</form> }

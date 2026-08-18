@@ -100,6 +100,8 @@
 }
 
 .dropzone--multi { min-height: 245px; gap: 20px; padding: 36px 24px; cursor: default; }
+.quoteDesignDescription { margin-bottom: 16px; }
+.quoteDesignDescription p { margin: 0; }
 .dropzoneContent { display: grid; justify-items: center; gap: 7px; }
 .dropzoneContent strong { font-size: var(--text-base); }
 .dropzoneActions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }

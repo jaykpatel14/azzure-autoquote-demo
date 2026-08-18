@@ -8,7 +8,7 @@ declare module "next-auth" {
       role: "AZZURE_ADMIN" | "CUSTOMER";
       companyId: string;
       companyName: string;
-      planId: string;
+      planId: "plan_starter" | "plan_professional" | "plan_enterprise" | "plan_ultra";
       accountStatus: "PENDING_APPROVAL" | "APPROVED" | "SUSPENDED";
       pricingTier: "TIER_1" | "TIER_2" | "TIER_3" | null;
       ckCustomerVerified: boolean;
@@ -21,7 +21,7 @@ declare module "next-auth/jwt" {
     sessionVersion?: number;
     companyId?: string;
     companyName?: string;
-    planId?: string;
+    planId?: "plan_starter" | "plan_professional" | "plan_enterprise" | "plan_ultra";
     accountStatus?: "PENDING_APPROVAL" | "APPROVED" | "SUSPENDED";
     pricingTier?: "TIER_1" | "TIER_2" | "TIER_3" | null;
     ckCustomerVerified?: boolean;

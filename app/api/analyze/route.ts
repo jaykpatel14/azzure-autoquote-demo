@@ -58,6 +58,7 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const image = form.get("image");
     const selectedMetal = metalTypeSchema.parse(form.get("metalType") || "14K");
+    const customerDescription = String(form.get("description") || "").trim().slice(0, 1000);
 
     if (!(image instanceof File)) {
       return NextResponse.json({ error: "Image is required." }, { status: 400 });
@@ -90,6 +91,38 @@ export async function POST(request: Request) {
     const features = getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status));
     const entitledReviewCount = features.aiPasses;
     const reviewCount = Math.min(configuredLimit, entitledReviewCount);
+    const confirmedExamples = await prisma.quote.findMany({
+      where: {
+        companyId: companyContext.company.id,
+        analysis: { isNot: null }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: {
+        metalType: true,
+        metalWeightGrams: true,
+        centerDiamondCarats: true,
+        sideDiamondCarats: true,
+        sideDiamondQuantity: true,
+        analysis: {
+          select: {
+            jewelryType: true,
+            centerShape: true,
+            settingType: true
+          }
+        }
+      }
+    });
+    const learnedGuidance = confirmedExamples.map((example) =>
+      [
+        example.analysis?.jewelryType || "Jewelry",
+        `${example.metalType} metal`,
+        `${Number(example.metalWeightGrams).toFixed(2)} g`,
+        `${example.analysis?.centerShape || "unspecified"} center at ${Number(example.centerDiamondCarats).toFixed(2)} ct`,
+        `${Number(example.sideDiamondCarats).toFixed(2)} ct across ${example.sideDiamondQuantity} side stones`,
+        `${example.analysis?.settingType || "unspecified"} setting`
+      ].join(", ")
+    );
 
     const analysis = await prisma.aiAnalysis.create({
       data: {
@@ -147,7 +180,9 @@ export async function POST(request: Request) {
         provider,
         imageDataUrl,
         selectedMetal,
-        attemptNumber
+        attemptNumber,
+        customerDescription: customerDescription || undefined,
+        learnedGuidance
       });
 
       if (attemptResult.kind === "success") {

@@ -53,6 +53,35 @@ export async function GET(_request: Request, { params }: RouteContext) {
           mimeType: quoteResult.data.analysis.sourceImageMimeType || "image/jpeg"
         })) || quoteResult.data.analysis.imageDataUrl
       : quoteResult.data.analysis?.imageDataUrl;
+    const referenceAnalysisIds = Array.isArray(quoteResult.data.referenceAnalysisIds)
+      ? quoteResult.data.referenceAnalysisIds.filter((value): value is string => typeof value === "string")
+      : [];
+    const referenceAnalyses = referenceAnalysisIds.length
+      ? await prisma.aiAnalysis.findMany({
+          where: { id: { in: referenceAnalysisIds }, companyId: context.company.id },
+          select: {
+            id: true,
+            sourceImageStorageKey: true,
+            sourceImageMimeType: true,
+            imageDataUrl: true
+          }
+        })
+      : [];
+    const referenceById = new Map(referenceAnalyses.map((analysis) => [analysis.id, analysis]));
+    const referenceImageDataUrls = (
+      await Promise.all(
+        referenceAnalysisIds.map(async (analysisId) => {
+          const analysis = referenceById.get(analysisId);
+          if (!analysis) return null;
+          return analysis.sourceImageStorageKey
+            ? (await loadAnalysisImageDataUrlFromS3({
+                key: analysis.sourceImageStorageKey,
+                mimeType: analysis.sourceImageMimeType || "image/jpeg"
+              })) || analysis.imageDataUrl
+            : analysis.imageDataUrl;
+        })
+      )
+    ).filter((value): value is string => Boolean(value));
     const renderingDataUrl = quoteResult.data.renderingStorageKey
       ? await loadQuoteRenderingDataUrlFromS3(quoteResult.data.renderingStorageKey)
       : quoteResult.data.renderingDataUrl;
@@ -63,6 +92,11 @@ export async function GET(_request: Request, { params }: RouteContext) {
       createdAt: quoteResult.data.createdAt,
       customerName: quoteResult.data.customerName?.trim() || quoteResult.data.company.name || context.user.name || "Customer",
       customerImageDataUrl: sourceImageDataUrl,
+      referenceImageDataUrls: referenceImageDataUrls.length
+        ? referenceImageDataUrls
+        : sourceImageDataUrl
+          ? [sourceImageDataUrl]
+          : [],
       renderingDataUrl,
       metalType: quoteResult.data.metalType,
       metalWeightGrams: Number(quoteResult.data.metalWeightGrams),

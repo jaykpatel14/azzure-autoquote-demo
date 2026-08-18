@@ -150,6 +150,7 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
                 logoUrl: true,
                 websiteUrl: true,
                 aboutUs: true,
+                primaryColor: true,
                 quoteSequence: true,
                 accountStatus: true,
                 pricingTier: true,

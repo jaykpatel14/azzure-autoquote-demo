@@ -38,5 +38,7 @@ export interface JewelryAnalysisProvider {
     imageDataUrl: string;
     selectedMetal: string;
     attemptNumber: number;
+    customerDescription?: string;
+    learnedGuidance?: string[];
   }): Promise<JewelryReviewSnapshot>;
 }

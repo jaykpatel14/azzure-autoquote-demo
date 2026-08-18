@@ -5,7 +5,7 @@ export const PLAN_FEATURES = {
   plan_starter: { quotesPerMonth: 100, aiPasses: 1, canCreateQuotes: true, canDownloadPDF: true, canViewQuoteHistory: false, canShareQuoteLink: false, canUseCustomPricingProfile: false, pdfBranding: "azzure_watermark", canPlaceManufacturingOrder: false, maxSeats: 1, overageEnabled: false, s3ImagePersistence: false, canGenerateAIImages: false, canUseShowroomMode: false, canCustomizeShowroomBranding: false },
   plan_professional: { quotesPerMonth: 500, aiPasses: 3, canCreateQuotes: true, canDownloadPDF: true, canViewQuoteHistory: true, canShareQuoteLink: false, canUseCustomPricingProfile: true, pdfBranding: "custom_logo", canPlaceManufacturingOrder: false, maxSeats: 5, overageEnabled: true, s3ImagePersistence: true, canGenerateAIImages: false, canUseShowroomMode: false, canCustomizeShowroomBranding: false },
   plan_enterprise: { quotesPerMonth: 2500, aiPasses: 3, canCreateQuotes: true, canDownloadPDF: true, canViewQuoteHistory: true, canShareQuoteLink: true, canUseCustomPricingProfile: true, pdfBranding: "white_label", canPlaceManufacturingOrder: true, maxSeats: Number.POSITIVE_INFINITY, overageEnabled: true, s3ImagePersistence: true, canGenerateAIImages: true, canUseShowroomMode: false, canCustomizeShowroomBranding: false },
-  plan_ultra: { quotesPerMonth: 5000, aiPasses: 3, canCreateQuotes: true, canDownloadPDF: true, canViewQuoteHistory: true, canShareQuoteLink: true, canUseCustomPricingProfile: true, pdfBranding: "white_label", canPlaceManufacturingOrder: true, maxSeats: Number.POSITIVE_INFINITY, overageEnabled: true, s3ImagePersistence: true, canGenerateAIImages: true, canUseShowroomMode: true, canCustomizeShowroomBranding: true }
+  plan_ultra: { quotesPerMonth: 10000, aiPasses: 3, canCreateQuotes: true, canDownloadPDF: true, canViewQuoteHistory: true, canShareQuoteLink: true, canUseCustomPricingProfile: true, pdfBranding: "white_label", canPlaceManufacturingOrder: true, maxSeats: Number.POSITIVE_INFINITY, overageEnabled: true, s3ImagePersistence: true, canGenerateAIImages: true, canUseShowroomMode: true, canCustomizeShowroomBranding: true }
 } as const;
 
 export type PlanId = keyof typeof PLAN_FEATURES;
@@ -53,7 +53,7 @@ export const BASE_PLAN_DEFINITIONS = [
   { id: "plan_starter", code: "starter", name: "Starter", monthlyPriceCents: 4900, monthlyLimit: 100, isConfigurable: false },
   { id: "plan_professional", code: "professional", name: "Professional", monthlyPriceCents: 9900, monthlyLimit: 500, isConfigurable: false },
   { id: "plan_enterprise", code: "enterprise", name: "Enterprise", monthlyPriceCents: 19900, monthlyLimit: 2500, isConfigurable: true },
-  { id: "plan_ultra", code: "ultra", name: "Ultra", monthlyPriceCents: 39900, monthlyLimit: 5000, isConfigurable: true }
+  { id: "plan_ultra", code: "ultra", name: "Ultra", monthlyPriceCents: 39900, monthlyLimit: 10000, isConfigurable: true }
 ] as const;
 export const PLAN_CODES = ["starter", "professional", "enterprise", "ultra"] as const;
 export type PlanCode = (typeof PLAN_CODES)[number];

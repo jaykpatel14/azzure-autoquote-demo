@@ -20,6 +20,7 @@ export async function getSettingsProfileData(companyId: string, userId: string) 
         logoUrl: true,
         websiteUrl: true,
         aboutUs: true,
+        primaryColor: true,
         memberships: {
           orderBy: { id: "asc" },
           select: {
@@ -52,6 +53,7 @@ export async function getSettingsTeamData(companyId: string) {
       logoUrl: true,
       websiteUrl: true,
       aboutUs: true,
+      primaryColor: true,
       memberships: {
         orderBy: { id: "asc" },
         select: {

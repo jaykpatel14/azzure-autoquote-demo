@@ -81,7 +81,7 @@ export default async function AdminTenantsPage({ searchParams }: { searchParams?
       <section className="grid twoUp">
         <article className="card">
           <form className="quotesToolbar" method="get">
-            <label>Plan <select name="plan" defaultValue={filters.plan ?? "all"}><option value="all">All</option><option value="starter">Starter</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option></select></label>
+            <label>Plan <select name="plan" defaultValue={filters.plan ?? "all"}><option value="all">All</option><option value="starter">Starter</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option><option value="ultra">Ultra</option></select></label>
             <label>Status <select name="status" defaultValue={filters.status ?? "all"}><option value="all">All</option><option value="ACTIVE">Active</option><option value="TRIALING">Trial</option><option value="PAST_DUE">Past due</option><option value="CANCELED">Cancelled</option><option value="pending">Pending approval</option></select></label>
             <label>Tier <select name="tier" defaultValue={filters.tier ?? "all"}><option value="all">All</option><option value="TIER_1">Tier 1</option><option value="TIER_2">Tier 2</option><option value="TIER_3">Tier 3</option><option value="unassigned">Unassigned</option></select></label>
             <label>CK <select name="ck" defaultValue={filters.ck ?? "all"}><option value="all">All</option><option value="verified">Verified</option><option value="unverified">Not verified</option></select></label>

@@ -22,7 +22,7 @@ describe("subscription feature matrix", () => {
     expect(PLAN_FEATURES.plan_ultra.canGenerateAIImages).toBe(true);
     expect(PLAN_FEATURES.plan_ultra.canUseShowroomMode).toBe(true);
     expect(PLAN_FEATURES.plan_ultra.canCustomizeShowroomBranding).toBe(true);
-    expect(PLAN_FEATURES.plan_ultra.quotesPerMonth).toBe(5000);
+    expect(PLAN_FEATURES.plan_ultra.quotesPerMonth).toBe(10000);
     expect(PLAN_FEATURES.plan_ultra.canPlaceManufacturingOrder).toBe(true);
     expect(PLAN_FEATURES.plan_ultra.pdfBranding).toBe("white_label");
   });

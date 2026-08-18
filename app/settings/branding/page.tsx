@@ -61,6 +61,13 @@ export default async function BrandingSettingsPage() {
             <span>Website URL</span>
             <input name="websiteUrl" defaultValue={data.company.websiteUrl ?? ""} placeholder="https://..." />
           </label>
+          <label className="field">
+            <span>Primary brand color</span>
+            <div className="buttonRow">
+              <input type="color" name="primaryColor" defaultValue={data.company.primaryColor ?? "#c9a84c"} style={{ width: 72, minHeight: 48, padding: 4 }} />
+              <span className="muted small">Used for buttons and accents in Showroom Mode.</span>
+            </div>
+          </label>
 
           <LogoDropzone
             initialLogoUrl={data.company.logoUrl}

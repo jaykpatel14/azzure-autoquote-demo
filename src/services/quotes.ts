@@ -15,6 +15,7 @@ async function assertApprovedCompany(companyId: string) {
 type CreateQuoteInput = {
   companyId: string;
   analysisId?: string;
+  referenceAnalysisIds?: string[];
   customerName?: string | null;
   metalType: string;
   metalWeightGrams: number;
@@ -139,6 +140,15 @@ export async function createQuote(
   if (input.analysisId && !analysis) {
     return { error: NotFoundError("Selected estimate") };
   }
+  const referenceAnalyses = input.referenceAnalysisIds?.length
+    ? await prisma.aiAnalysis.findMany({
+        where: { id: { in: input.referenceAnalysisIds }, companyId: input.companyId },
+        select: { id: true }
+      })
+    : [];
+  if (input.referenceAnalysisIds?.length && referenceAnalyses.length !== new Set(input.referenceAnalysisIds).size) {
+    return { error: NotFoundError("One or more reference images") };
+  }
 
   const maxAttempts = 3;
 
@@ -170,6 +180,9 @@ export async function createQuote(
             companyId: input.companyId,
             quoteNumber,
             analysisId: analysis?.id,
+            referenceAnalysisIds: referenceAnalyses.length
+              ? referenceAnalyses.map((reference) => reference.id)
+              : undefined,
             customerName: input.customerName || null,
             metalType: input.metalType,
             metalWeightGrams: input.metalWeightGrams,
