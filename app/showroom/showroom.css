@@ -1,26 +1,295 @@
-.showroomRoot{width:100vw;min-height:100vh;background:#111214;color:#f7f3ea;overflow-x:hidden}
-.showroom{--color-brand:#c9a84c;min-height:100vh;display:grid;grid-template-rows:auto 1fr auto;padding:24px;box-sizing:border-box}
-.showroomBrand{text-align:center;min-height:76px;display:flex;align-items:center;justify-content:center}
-.showroomBrand img{max-width:220px;max-height:72px;object-fit:contain}
-.showroomBrand strong{font:600 32px Georgia,serif}
-.showroomPanel{width:min(850px,100%);margin:auto;text-align:center;padding:40px;box-sizing:border-box}
-.showroomPanel h1{font:600 clamp(42px,6vw,72px) Georgia,serif;margin:12px 0 20px}
-.showroomPanel p{font-size:20px;line-height:1.5;color:#c8c5be}
-.showroomStage{width:100%;max-width:1200px;margin:0 auto;text-align:left;box-sizing:border-box}
-.showroomEyebrow,.showroomSuccess{color:var(--color-brand)!important;text-transform:uppercase;letter-spacing:.14em;font-weight:700}
-.showroomButton{display:block;width:min(520px,100%);min-height:76px;margin:36px auto 16px;border:0;border-radius:14px;background:var(--color-brand);color:#111214;font-size:21px;font-weight:800;padding:18px 28px;cursor:pointer}
-.showroomButton:disabled{opacity:.4}
-.showroomBack{position:absolute;left:32px;top:120px;min-height:60px;background:transparent;color:#eee;border:1px solid #555;border-radius:12px;padding:0 24px;font-size:18px;cursor:pointer}
-.showroomSmall{font-size:14px!important}
-.showroomCode{font:700 clamp(54px,10vw,96px) monospace;letter-spacing:.08em;color:var(--color-brand);margin:24px}
-.showroomPrice{font-size:28px!important;color:#fff!important}
-.showroomError{color:#ff9696!important}
-.showroomWarning{position:fixed;inset:auto 24px 24px;background:#292217;border:1px solid var(--color-brand);padding:18px;border-radius:12px;text-align:center}
-.showroom footer{text-align:center;color:#777;font-size:11px}
-.showroomInactive{height:100vh;display:grid;place-content:center;text-align:center}
-.showroomInactive h1{font:600 48px Georgia,serif}
-@media(max-width:700px){
-  .showroom{padding:14px}
-  .showroomPanel{padding:20px 4px}
-  .showroomBack{position:static;display:block;margin-bottom:12px}
+/* ── Azzure Showroom Luxury Kiosk Styling ── */
+
+.showroomRoot {
+  width: 100vw;
+  min-height: 100vh;
+  background: #08090b;
+  color: #f8f6f0;
+  overflow-x: hidden;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+}
+
+.showroom {
+  --color-brand: #c9a84c;
+  --color-brand-light: #e6cb78;
+  --color-brand-glow: rgba(201, 168, 76, 0.15);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 48px;
+  box-sizing: border-box;
+  background: radial-gradient(circle at 50% 0%, rgba(201, 168, 76, 0.08) 0%, transparent 60%), #08090b;
+}
+
+/* Header */
+.showroomBrand {
+  text-align: center;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 20px;
+  margin-bottom: 32px;
+}
+
+.showroomBrand img {
+  max-width: 200px;
+  max-height: 60px;
+  object-fit: contain;
+}
+
+.showroomBrand strong {
+  font-family: var(--font-display, "Playfair Display", Georgia, serif);
+  font-size: 1.85rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.showroomBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: rgba(201, 168, 76, 0.1);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-brand-light);
+}
+
+.showroomBadgeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-brand);
+  box-shadow: 0 0 10px var(--color-brand);
+}
+
+/* Landing Panel */
+.showroomPanel {
+  width: min(1000px, 100%);
+  margin: auto;
+  text-align: center;
+  padding: 60px 40px;
+  box-sizing: border-box;
+}
+
+.showroomEyebrow {
+  color: var(--color-brand) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.showroomHeroTitle {
+  font-family: var(--font-display, "Playfair Display", Georgia, serif);
+  font-size: clamp(2.5rem, 5.5vw, 4.25rem);
+  font-weight: 600;
+  line-height: 1.1;
+  color: #ffffff;
+  margin: 0 0 20px;
+  letter-spacing: -0.02em;
+}
+
+.showroomHeroTitle em {
+  font-style: italic;
+  color: var(--color-brand-light);
+}
+
+.showroomSubtext {
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: #a19f99;
+  max-width: 680px;
+  margin: 0 auto 40px;
+}
+
+/* Preset Cards Gallery for End Customers */
+.showroomPresetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin: 40px 0 48px;
+}
+
+.showroomPresetCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.showroomPresetCard:hover {
+  background: rgba(201, 168, 76, 0.08);
+  border-color: rgba(201, 168, 76, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.showroomPresetIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(201, 168, 76, 0.12);
+  color: var(--color-brand-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.showroomPresetCard strong {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.showroomPresetCard p {
+  font-size: 0.8125rem;
+  color: #8e8b84;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Big Action Button */
+.showroomButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: min(440px, 100%);
+  min-height: 64px;
+  margin: 0 auto;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #c9a84c 0%, #e6cb78 100%);
+  color: #08090b;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(201, 168, 76, 0.3);
+  transition: all 0.2s ease;
+}
+
+.showroomButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(201, 168, 76, 0.45);
+}
+
+.showroomButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.showroomBack {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #d4d1c9;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 10px 24px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 24px;
+  transition: all 0.2s ease;
+}
+
+.showroomBack:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Success Screen */
+.showroomSuccessCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  border-radius: 24px;
+  padding: 48px;
+  max-width: 600px;
+  margin: 0 auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.showroomCode {
+  font-family: var(--font-mono, monospace);
+  font-size: clamp(3rem, 7vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-brand-light);
+  margin: 24px 0;
+  text-shadow: 0 0 20px rgba(201, 168, 76, 0.4);
+}
+
+.showroomPrice {
+  font-size: 2rem !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  margin-bottom: 16px;
+}
+
+.showroomWarning {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1712;
+  border: 1px solid var(--color-brand);
+  padding: 16px 28px;
+  border-radius: 999px;
+  text-align: center;
+  color: var(--color-brand-light);
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  z-index: 999;
+}
+
+.showroom footer {
+  margin-top: auto;
+  text-align: center;
+  color: #55534e;
+  font-size: 0.75rem;
+  padding-top: 24px;
+}
+
+.showroomInactive {
+  height: 100vh;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  background: #08090b;
+  color: #fff;
+}
+
+.showroomInactive h1 {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+  .showroom {
+    padding: 20px;
+  }
+  .showroomPanel {
+    padding: 30px 10px;
+  }
 }

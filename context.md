@@ -203,3 +203,23 @@ azzure-autoquote-mvp/
 
 ### Phase 6: Custom King Live Creation Journey Portal
 - Customer SMS updates tracking the physical manufacturing journey (*CAD Approved* $\rightarrow$ *Wax Printed* $\rightarrow$ *Cast in Gold* $\rightarrow$ *Diamonds Hand-Set* $\rightarrow$ *Ready for Pickup*).
+
+---
+
+## 8. Current Goals & Progress Summary
+
+### Project Goals
+1. **Frontend Redesign**: Full migration to Azzure AutoQuote luxury light-mode design system with responsive workspace sidebar and topbar navigation.
+2. **Quote Dashboard Automation**: Auto-trigger AI analysis on photo/prompt input, hide AI notes by default with expandable toggle, and position Save/Download PDF actions on the right preview panel.
+3. **Precious Metal Pricing Accuracy**: Include exact gold weight, 25%–28.5% casting wastage allowance, and live gold spot rates in all quote calculations.
+4. **Showroom Kiosk WOW Experience**: Full luxury dark obsidian & gold theme with 4 1-tap end-customer try-it presets, camera support, auto-session resolution, and golden claim cards.
+5. **Admin Operations Console Clean-Up**: Add Material Symbol navigation icons, soft status badges for platform health, financial market spot tickers, and quick shortcuts.
+
+### Progress Accomplished Till Now
+- ✅ **Redesigned Quote Calculator Dashboard**: Built 3-step left panel with automated analysis and real-time live preview panel.
+- ✅ **Fixed Pricing Engine**: Added gold metal weight calculation, 25% casting loss factor, and standard lab diamond pricing ($125/ct center stone) in `src/services/pricing.ts`.
+- ✅ **Fixed Metals.dev API 401 & Health Checks**: Sanitized API key quotes, added browser headers, and updated default offline fallback spot rate to $4,500/oz.
+- ✅ **Redesigned Showroom Kiosk UI**: Created interactive 1-tap preset try-it cards, obsidian-gold glassmorphic styling, and auto-session resolution for direct `/showroom` route access.
+- ✅ **Modernized Admin Dashboard**: Added navigation icons, soft operational badges, and spot rate ticker cards in `app/admin/page.tsx` and `components/internal-admin-shell.tsx`.
+- ✅ **Verification**: TypeScript compilation passing cleanly (`tsc exit code 0`).
+

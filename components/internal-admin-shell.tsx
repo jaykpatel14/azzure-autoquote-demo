@@ -22,83 +22,81 @@ export default async function InternalAdminShell({
   children
 }: InternalAdminShellProps) {
   const pendingCount = await prisma.company.count({ where: { accountStatus: "PENDING_APPROVAL" } });
+
   return (
     <div className="workspaceShell">
       <a className="skipLink" href="#content">
         Skip to content
       </a>
+
+      {/* ── Admin Sidebar Navigation ── */}
       <aside className="workspaceSidebar workspaceSidebar--admin">
         <div className="brandBlock">
-          <div className="brandMark">A</div>
+          <div className="brandMark" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", color: "#38bdf8" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>shield_person</span>
+          </div>
           <div>
-            <p className="eyebrow">Azzure Internal</p>
-            <strong className="brand">Operations console</strong>
-            <p className="adminBadge">ADMIN</p>
-            <p className="muted small">
-              Internal support, billing recovery, and key rotation for the Azzure team.
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <strong className="brand" style={{ fontSize: "var(--text-base)" }}>Azzure Admin</strong>
+              <span className="adminBadge" style={{ background: "#0284c7", color: "white", padding: "1px 6px", borderRadius: 4, fontSize: 10, fontWeight: 700 }}>OPERATIONS</span>
+            </div>
+            <p className="muted small" style={{ margin: "2px 0 0", fontSize: "var(--text-xs)" }}>
+              Platform console &amp; tenant controls
             </p>
           </div>
         </div>
 
         <nav className="workspaceNav" aria-label="Admin navigation">
-          {navItems
-            .filter((item) => item.priority === "primary")
-            .map((item) => (
-              <Link
-                key={item.href}
-                className={`workspaceNavItem${item.active ? " isActive" : ""}`}
-                href={item.href}
-                aria-current={item.active ? "page" : undefined}
-              >
-                <span>{item.label}</span>
-                {item.href === "/admin/tenants" && pendingCount > 0 ? (
-                  <span className="badge">{pendingCount}</span>
-                ) : null}
-              </Link>
-            ))}
-          <details className="workspaceNavMore">
-            <summary className="workspaceNavItem">More</summary>
-            <div className="workspaceNavMorePanel">
-              {navItems
-                .filter((item) => item.priority === "secondary")
-                .map((item) => (
-                  <Link
-                    key={item.href}
-                    className={`workspaceNavItem${item.active ? " isActive" : ""}`}
-                    href={item.href}
-                    aria-current={item.active ? "page" : undefined}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-            </div>
-          </details>
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              className={`workspaceNavItem${item.active ? " isActive" : ""}`}
+              href={item.href}
+              aria-current={item.active ? "page" : undefined}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 18, color: item.active ? "var(--color-primary)" : "var(--color-on-surface-variant)" }}>
+                {item.icon}
+              </span>
+              <span>{item.label}</span>
+              {item.href === "/admin/tenants/pending" && pendingCount > 0 ? (
+                <span className="badge" style={{ background: "#f59e0b", color: "#111", marginLeft: "auto" }}>{pendingCount}</span>
+              ) : null}
+            </Link>
+          ))}
         </nav>
 
         <section className="sidebarPanel sidebarFooter" aria-label="Admin session actions">
-          <p className="muted small">Only the allowlisted Azzure team can access this console.</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 16, color: "#10b981" }}>verified_user</span>
+            <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--color-on-surface)" }}>
+              {adminName || "Admin Session"}
+            </span>
+          </div>
           <SignOutButton />
         </section>
       </aside>
 
+      {/* ── Main Operations Content ── */}
       <main className="workspaceMain workspaceMain--admin" id="content">
         <header className="adminTopbar">
           <div className="adminTopbarIdentity">
-            <span className="adminTopbarLabel">ADMIN</span>
+            <span className="adminTopbarLabel" style={{ background: "#0284c7", color: "white", padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700 }}>
+              AZZURE OPERATIONS
+            </span>
             <span className="adminTopbarDivider" aria-hidden="true" />
-            <span className="adminTopbarTitle">AI AutoQuote</span>
+            <span className="adminTopbarTitle">Platform Console</span>
           </div>
           <div className="adminTopbarActions">
-            {adminName ? <span className="adminTopbarUser">{adminName}</span> : null}
-            <Link className="textLink" href="/">
-              Exit admin
+            <Link className="button secondary button--sm" href="/">
+              <span className="material-symbols-outlined" style={{ fontSize: 15 }}>store</span>
+              Jeweler Workspace
             </Link>
           </div>
         </header>
 
         <header className="pageHero">
           <div>
-            <p className="eyebrow">Azzure team</p>
+            <p className="eyebrow" style={{ color: "#0284c7" }}>Platform Overview</p>
             <h1 className="pageTitle">{title}</h1>
             {description ? <p className="pageLead">{description}</p> : null}
           </div>
