@@ -12,17 +12,68 @@ export class BillingAccessError extends Error {
   }
 }
 
-export function isBillableSubscription(
-  subscription: Pick<Subscription, "status"> | null | undefined
-) {
-  return Boolean(subscription && BILLABLE_SUBSCRIPTION_STATUSES.includes(subscription.status));
+export type SubscriptionInput = {
+  status: SubscriptionStatus;
+  trialEndsAt?: Date | null;
+  trialQuotesUsed?: number;
+  trialQuoteCap?: number;
+  currentPeriodStart?: Date | null;
+  currentPeriodEnd?: Date | null;
+};
+
+export function isBillableSubscription(subscription: SubscriptionInput | null | undefined) {
+  if (!subscription || !BILLABLE_SUBSCRIPTION_STATUSES.includes(subscription.status)) {
+    return false;
+  }
+
+  // Check trial expiration
+  if (subscription.status === "TRIALING") {
+    const endsAt = subscription.trialEndsAt || subscription.currentPeriodEnd;
+    if (endsAt && endsAt < new Date()) {
+      return false;
+    }
+    if (
+      subscription.trialQuotesUsed !== undefined &&
+      subscription.trialQuoteCap !== undefined &&
+      subscription.trialQuotesUsed >= subscription.trialQuoteCap
+    ) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
-export function assertBillableSubscription(
-  subscription: Pick<Subscription, "status"> | null | undefined
-) {
-  if (!isBillableSubscription(subscription)) {
-    throw new BillingAccessError();
+export function assertBillableSubscription(subscription: SubscriptionInput | null | undefined) {
+  if (!subscription) {
+    throw new BillingAccessError("An active subscription is required to create estimates.");
+  }
+
+  const status = subscription.status as string;
+
+  if (status === "CANCELED") {
+    throw new BillingAccessError("Your subscription has been canceled. Please select a plan to continue.");
+  }
+
+  if (status === "PAST_DUE" || status === "UNPAID") {
+    throw new BillingAccessError("Your subscription payment is past due. Please update your payment method to continue.");
+  }
+
+  if (status === "TRIALING") {
+    const endsAt = subscription.trialEndsAt || subscription.currentPeriodEnd;
+    if (endsAt && endsAt < new Date()) {
+      throw new BillingAccessError("Your 14-day free trial has expired. Please choose a paid plan to continue creating quotes.");
+    }
+    const used = subscription.trialQuotesUsed ?? 0;
+    const cap = subscription.trialQuoteCap ?? DEFAULT_TRIAL_QUOTE_CAP;
+    if (used >= cap) {
+      throw new BillingAccessError(`You have used all ${cap} trial estimates. Please upgrade to a paid plan to continue.`);
+    }
+    return;
+  }
+
+  if (status !== "ACTIVE") {
+    throw new BillingAccessError(`Your subscription is ${status.toLowerCase()}. Please update billing to continue.`);
   }
 }
 
@@ -78,24 +129,34 @@ export function getUsageWarningMessage(usage: UsageSnapshot) {
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export function getTrialDaysRemaining(
-  subscription: Pick<Subscription, "status" | "trialEndsAt"> | null | undefined,
+  subscription: (Pick<Subscription, "status"> & Partial<Pick<Subscription, "trialEndsAt" | "currentPeriodEnd" | "currentPeriodStart">>) | null | undefined,
   now = new Date()
-) {
-  if (!subscription || subscription.status !== "TRIALING" || !subscription.trialEndsAt) {
-    return null;
-  }
-
-  return Math.max(Math.ceil((subscription.trialEndsAt.getTime() - now.getTime()) / MS_PER_DAY), 0);
-}
-
-export function getTrialQuotesRemaining(
-  subscription: Pick<Subscription, "status" | "trialQuoteCap" | "trialQuotesUsed"> | null | undefined
 ) {
   if (!subscription || subscription.status !== "TRIALING") {
     return null;
   }
 
-  return Math.max(subscription.trialQuoteCap - subscription.trialQuotesUsed, 0);
+  const endsAt =
+    subscription.trialEndsAt ||
+    subscription.currentPeriodEnd ||
+    (subscription.currentPeriodStart
+      ? new Date(subscription.currentPeriodStart.getTime() + 14 * MS_PER_DAY)
+      : new Date(now.getTime() + 14 * MS_PER_DAY));
+
+  const diffMs = endsAt.getTime() - now.getTime();
+  return Math.max(Math.ceil(diffMs / MS_PER_DAY), 0);
+}
+
+export function getTrialQuotesRemaining(
+  subscription: (Pick<Subscription, "status"> & Partial<Pick<Subscription, "trialQuoteCap" | "trialQuotesUsed">>) | null | undefined
+) {
+  if (!subscription || subscription.status !== "TRIALING") {
+    return null;
+  }
+
+  const cap = subscription.trialQuoteCap ?? DEFAULT_TRIAL_QUOTE_CAP;
+  const used = subscription.trialQuotesUsed ?? 0;
+  return Math.max(cap - used, 0);
 }
 
 export async function getCurrentUsagePeriod(companyId: string) {

@@ -27,7 +27,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
       <main className="publicQuoteShell onboardingPublicShell">
         <article className="publicQuoteCard card onboardingPublicCard">
           <header className="publicQuoteHeader">
-            <p className="publicQuoteTitle">Welcome to Azzure AIQuote</p>
+            <p className="publicQuoteTitle">Welcome to Azzure AutoQuote</p>
             <p className="publicQuoteBlurb">
               Your 14-day free trial has started. Sign in to finish the guided setup and move into your workspace.
             </p>
@@ -56,134 +56,167 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
   }
 
   const subscription = context.company.subscription;
-  const trialDaysRemaining = getTrialDaysRemaining(subscription) ?? 0;
-  const trialQuotesRemaining = getTrialQuotesRemaining(subscription) ?? 0;
+  const trialDaysRemaining = getTrialDaysRemaining(subscription) ?? 14;
+  const trialQuotesRemaining = getTrialQuotesRemaining(subscription) ?? 25;
+  const planName = subscription?.plan.name ?? "Professional";
+  const trialEndDate = subscription?.trialEndsAt
+    ? subscription.trialEndsAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : subscription?.currentPeriodEnd
+    ? subscription.currentPeriodEnd.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : new Date(Date.now() + 14 * 86400000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   return (
     <main className="onboardingShell">
-      <section className="onboardingCard">
-        <div className="onboardingHero">
-          <p className="eyebrow">Azzure AIQuote</p>
-          <h1 className="onboardingTitle">Your 14-day free trial has started.</h1>
+      <div className="onboardingContainer">
+        {/* Brand Header */}
+        <header className="onboardingHero">
+          <div className="onboardingBrandBadge">
+            <span className="onboardingDiamondIcon">✦</span>
+            <span>AZZURE AUTOQUOTE AI</span>
+          </div>
+          <h1 className="onboardingTitle">Your 14-Day Free Trial Has Started</h1>
           <p className="onboardingLead">
-            You&apos;re on the Professional plan with full access, no charge today.
+            Welcome to your intelligent jewelry pricing workspace. Let&apos;s get your showroom and studio configured in just 2 minutes.
           </p>
-        </div>
+        </header>
 
-        <section className="onboardingStep onboardingStep--highlight">
-          <div className="onboardingStepHeader">
-            <span className="onboardingStepNumber">1</span>
-            <div>
-              <h2>Confirm your trial</h2>
-              <p className="muted">
-                Trial ends: {subscription?.trialEndsAt?.toLocaleDateString() ?? "Not set"}. You have{" "}
-                {subscription?.trialQuoteCap ?? 25} quotes to use during your trial.
-              </p>
+        <section className="onboardingCard">
+          {/* STEP 1: Trial Confirmation Banner */}
+          <div className="onboardingStep onboardingStep--active">
+            <div className="onboardingStepHeader">
+              <div className="onboardingStepBadge">1</div>
+              <div className="onboardingStepTitleGroup">
+                <h2>Confirm Your Trial Tier</h2>
+                <p className="muted">
+                  Full <strong>{planName}</strong> features enabled with no charge during your 14-day evaluation.
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="trialOverview">
-            <div className="detailCard">
-              <span>Plan</span>
-              <strong>{subscription?.plan.name ?? "Professional"}</strong>
-            </div>
-            <div className="detailCard">
-              <span>Trial time remaining</span>
-              <strong>
-                {trialDaysRemaining} day{trialDaysRemaining === 1 ? "" : "s"}
-              </strong>
-            </div>
-            <div className="detailCard">
-              <span>Trial quotes remaining</span>
-              <strong>{trialQuotesRemaining} remaining</strong>
-            </div>
-          </div>
-        </section>
 
-        <section className="onboardingStep" id="step-2">
-          <div className="onboardingStepHeader">
-            <span className="onboardingStepNumber">2</span>
-            <div>
-              <h2>Business profile</h2>
-              <p className="muted">
-                Business name is pre-filled from signup. Website URL and About us are used later on shareable quote pages.
-              </p>
+            <div className="trialStatusBanner">
+              <div className="trialMetricCard">
+                <span className="trialMetricLabel">Active Tier</span>
+                <strong className="trialMetricValue">{planName}</strong>
+                <span className="trialMetricSub">14-Day Free Trial</span>
+              </div>
+              <div className="trialMetricCard">
+                <span className="trialMetricLabel">Trial Time Remaining</span>
+                <strong className="trialMetricValue">{trialDaysRemaining} Days</strong>
+                <span className="trialMetricSub">Renews {trialEndDate}</span>
+              </div>
+              <div className="trialMetricCard">
+                <span className="trialMetricLabel">Included Estimates</span>
+                <strong className="trialMetricValue">{trialQuotesRemaining} Quotes</strong>
+                <span className="trialMetricSub">Full calculation engine</span>
+              </div>
             </div>
           </div>
 
-          <form className="onboardingForm" action="/api/onboarding/complete" method="post">
-            <input type="hidden" name="action" value="save" />
-            <input type="hidden" name="next" value="/onboarding#step-3" />
-
-            <label className="field">
-              <span>Business name</span>
-              <input name="companyName" defaultValue={context.company.name} required />
-            </label>
-            <label className="field">
-              <span>Website URL</span>
-              <input
-                name="websiteUrl"
-                type="url"
-                placeholder="https://yourshop.com"
-                defaultValue={context.company.websiteUrl ?? ""}
-              />
-            </label>
-            <label className="field">
-              <span>About us</span>
-              <textarea
-                name="aboutUs"
-                rows={4}
-                placeholder="A short description of your jewelry business."
-                defaultValue={context.company.aboutUs ?? ""}
-              />
-            </label>
-
-            <div className="buttonRow">
-              <button className="button primary" type="submit">
-                Save and continue
-              </button>
-              <Link className="button secondary" href="#step-3">
-                Skip for now
-              </Link>
+          {/* STEP 2: Store Identity & Profile */}
+          <div className="onboardingStep" id="step-2">
+            <div className="onboardingStepHeader">
+              <div className="onboardingStepBadge">2</div>
+              <div className="onboardingStepTitleGroup">
+                <h2>Store Profile & Branding</h2>
+                <p className="muted">
+                  Customize your business information. These details will appear on your customer-facing quotes and PDFs.
+                </p>
+              </div>
             </div>
-          </form>
-        </section>
 
-        <section className="onboardingStep" id="step-3">
-          <div className="onboardingStepHeader">
-            <span className="onboardingStepNumber">3</span>
-            <div>
-              <h2>Create your first quote</h2>
-              <p className="muted">
-                You&apos;re all set. Create your first quote to mark onboarding complete and enter the dashboard.
-              </p>
-            </div>
-          </div>
+            <form className="onboardingForm" action="/api/onboarding/complete" method="post">
+              <input type="hidden" name="action" value="save" />
+              <input type="hidden" name="next" value="/onboarding#step-3" />
 
-          <div className="onboardingStepActions">
-            <form action="/api/onboarding/complete" method="post">
-              <input type="hidden" name="action" value="finish" />
-              <input type="hidden" name="next" value="/quotes/new" />
-              <input type="hidden" name="companyName" value={context.company.name} />
-              <input type="hidden" name="websiteUrl" value={context.company.websiteUrl ?? ""} />
-              <input type="hidden" name="aboutUs" value={context.company.aboutUs ?? ""} />
-              <button className="button primary button--lg" type="submit">
-                Create my first quote
-              </button>
-            </form>
+              <div className="formGroup">
+                <label className="formLabel">
+                  <span>Business / Jewelry Store Name <strong className="requiredMark">*</strong></span>
+                  <input
+                    className="formInput"
+                    name="companyName"
+                    defaultValue={context.company.name}
+                    placeholder="e.g. Diamond District Fine Jewelry"
+                    required
+                  />
+                </label>
+              </div>
 
-            <form action="/api/onboarding/complete" method="post">
-              <input type="hidden" name="action" value="finish" />
-              <input type="hidden" name="next" value="/" />
-              <input type="hidden" name="companyName" value={context.company.name} />
-              <input type="hidden" name="websiteUrl" value={context.company.websiteUrl ?? ""} />
-              <input type="hidden" name="aboutUs" value={context.company.aboutUs ?? ""} />
-              <button className="button secondary button--lg" type="submit">
-                Explore the dashboard
-              </button>
+              <div className="formGroup">
+                <label className="formLabel">
+                  <span>Website URL</span>
+                  <input
+                    className="formInput"
+                    name="websiteUrl"
+                    type="url"
+                    placeholder="https://yourjewelrystore.com"
+                    defaultValue={context.company.websiteUrl ?? ""}
+                  />
+                </label>
+              </div>
+
+              <div className="formGroup">
+                <label className="formLabel">
+                  <span>About Your Store & Specialty</span>
+                  <textarea
+                    className="formTextarea"
+                    name="aboutUs"
+                    rows={3}
+                    placeholder="e.g. Bespoke bridal engagement rings, GIA-certified diamonds, and fine handcrafted jewelry."
+                    defaultValue={context.company.aboutUs ?? ""}
+                  />
+                </label>
+              </div>
+
+              <div className="onboardingFormActions">
+                <button className="button primary" type="submit">
+                  Save Store Details
+                </button>
+                <Link className="button secondary" href="#step-3">
+                  Skip for now
+                </Link>
+              </div>
             </form>
           </div>
+
+          {/* STEP 3: Complete & Launch */}
+          <div className="onboardingStep" id="step-3">
+            <div className="onboardingStepHeader">
+              <div className="onboardingStepBadge">3</div>
+              <div className="onboardingStepTitleGroup">
+                <h2>Ready to Generate Quotes</h2>
+                <p className="muted">
+                  Your workspace is ready. Generate your first live quote or proceed directly to your jeweler dashboard.
+                </p>
+              </div>
+            </div>
+
+            <div className="onboardingLaunchActions">
+              <form action="/api/onboarding/complete" method="post" className="launchForm">
+                <input type="hidden" name="action" value="finish" />
+                <input type="hidden" name="next" value="/quotes/new" />
+                <input type="hidden" name="companyName" value={context.company.name} />
+                <input type="hidden" name="websiteUrl" value={context.company.websiteUrl ?? ""} />
+                <input type="hidden" name="aboutUs" value={context.company.aboutUs ?? ""} />
+                <button className="button primary button--lg launchPrimaryBtn" type="submit">
+                  <span className="btnIcon">💎</span>
+                  <span>Create My First Quote</span>
+                </button>
+              </form>
+
+              <form action="/api/onboarding/complete" method="post" className="launchForm">
+                <input type="hidden" name="action" value="finish" />
+                <input type="hidden" name="next" value="/" />
+                <input type="hidden" name="companyName" value={context.company.name} />
+                <input type="hidden" name="websiteUrl" value={context.company.websiteUrl ?? ""} />
+                <input type="hidden" name="aboutUs" value={context.company.aboutUs ?? ""} />
+                <button className="button secondary button--lg launchSecondaryBtn" type="submit">
+                  Explore Dashboard &amp; Settings
+                </button>
+              </form>
+            </div>
+          </div>
         </section>
-      </section>
+      </div>
     </main>
   );
 }

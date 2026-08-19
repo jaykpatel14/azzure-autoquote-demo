@@ -238,6 +238,13 @@ model AiAnalysis {
   notes                 String?
   output                Json?
   errorMessage          String?
+  renderingStatus       RenderingStatus @default(PENDING)
+  renderingStorageKey   String?         @unique
+  renderingDataUrl      String?
+  renderingMimeType     String?         @default("image/jpeg")
+  renderingModel        String?
+  renderingError        String?
+  renderingCreatedAt    DateTime?
   createdAt             DateTime       @default(now())
   completedAt           DateTime?
   company               Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)

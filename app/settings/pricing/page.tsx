@@ -6,6 +6,7 @@ import { getAuthenticatedCompanyContext, canManageBilling } from "@/lib/company"
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { prisma } from "@/lib/prisma";
 import { resolveMetalPricing } from "@/lib/metal-pricing";
+import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 import PricingMarginSimulator from "@/components/pricing-margin-simulator";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,10 @@ export default async function PricingSettingsPage() {
         name: true,
         customerMarginPct: true,
         pricingTier: true,
-        pricingProfile: true
+        pricingProfile: true,
+        subscription: {
+          include: { plan: true }
+        }
       }
     }),
     resolveMetalPricing()
@@ -42,6 +46,11 @@ export default async function PricingSettingsPage() {
   if (!company) {
     redirect("/settings");
   }
+
+  const subscription = company.subscription;
+  const planId = subscription ? resolvePlanId(subscription.plan, subscription.status) : "plan_starter";
+  const features = getFeaturesForPlan(planId);
+  const canUseCustomPricing = features.canUseCustomPricingProfile;
 
   const canEdit = canManageBilling(context.membership?.role ?? "CUSTOMER");
   const profile = livePricing.pricingProfile;
@@ -72,6 +81,20 @@ export default async function PricingSettingsPage() {
       <SettingsTabs activeHref="/settings/pricing" />
 
       <div className="stack" style={{ gap: "var(--space-6)" }}>
+        {!canUseCustomPricing && (
+          <div className="banner" style={{ background: "rgba(201, 168, 76, 0.08)", border: "1px solid rgba(201, 168, 76, 0.3)", borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+            <div>
+              <strong style={{ color: "#dfc674", display: "block", marginBottom: 4 }}>Standard Live Spot Engine (Starter Plan)</strong>
+              <p className="muted small" style={{ margin: 0 }}>
+                Custom pricing profiles, granular formula controls, and white-label margin configurations are unlocked on Professional, Enterprise, and Ultra plans.
+              </p>
+            </div>
+            <Link href="/settings/billing?upgrade=professional" className="button primary" style={{ whiteSpace: "nowrap" }}>
+              Upgrade Plan
+            </Link>
+          </div>
+        )}
+
         {/* Live Market Feeds */}
         <section className="card">
           <div className="sectionHeader">

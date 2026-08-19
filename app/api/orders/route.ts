@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireCompanyContext } from "@/lib/company";
-import { sendOrderSubmittedEmail } from "@/lib/order-workflow";
+import { sendOrderPlacedEmail, sendOrderSubmittedEmail } from "@/lib/order-workflow";
 import { submitOrder } from "@/src/services/orders";
 import { buildPublicUrl } from "@/lib/security";
 import { PlanError } from "@/src/stripe/plans";
@@ -45,13 +45,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: result.error.userMessage }, { status: result.error.statusCode });
     }
 
-    await sendOrderSubmittedEmail({
-      companyName: context.company.name,
-      orderNumber: result.data.orderNumber,
-      quoteNumber: result.data.quote.quoteNumber,
-      itemName: result.data.itemName,
-      orderUrl: buildPublicUrl(`/orders/${result.data.id}`).toString()
-    });
+    const orderUrl = buildPublicUrl(`/orders/${result.data.id}`).toString();
+
+    if (result.data.ckOrderId) {
+      await sendOrderPlacedEmail({
+        companyName: context.company.name,
+        orderNumber: result.data.orderNumber,
+        ckOrderId: result.data.ckOrderId,
+        ckOrderUrl: result.data.ckOrderUrl,
+        orderUrl
+      });
+    } else {
+      await sendOrderSubmittedEmail({
+        companyName: context.company.name,
+        orderNumber: result.data.orderNumber,
+        quoteNumber: result.data.quote.quoteNumber,
+        itemName: result.data.itemName,
+        orderUrl
+      });
+    }
 
     return NextResponse.redirect(buildPublicUrl(`/orders/${result.data.id}`), 303);
   } catch (error) {

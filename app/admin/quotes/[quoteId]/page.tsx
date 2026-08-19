@@ -4,12 +4,14 @@ import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
-import { getPricingTierLabel, type MakingPriceBreakdown } from "@/src/services/pricing";
+import { getPricingTierLabel, type MakingPriceBreakdown, calculateMetalCost } from "@/src/services/pricing";
+import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
+import { QuotePricingKpis, QuotePricingBreakdown, money, num } from "@/components/admin/quote-pricing-breakdown";
 
 export const dynamic = "force-dynamic";
 
-function money(value: unknown) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value ?? 0));
+function formatDate(date: Date) {
+  return new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeStyle: "medium" }).format(date);
 }
 
 export default async function AdminQuotePage({ params }: { params: Promise<{ quoteId: string }> }) {
@@ -19,122 +21,318 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
   const { quoteId } = await params;
   const quote = await prisma.quote.findUnique({
     where: { id: quoteId },
-    include: { company: true, order: true, analysis: true }
+    include: {
+      company: {
+        include: {
+          pricingProfile: true,
+          subscription: { include: { plan: true } },
+        },
+      },
+      order: true,
+      analysis: true,
+    },
   });
   if (!quote) notFound();
 
   const breakdown = (quote.makingPriceBreakdown as unknown as MakingPriceBreakdown) || null;
-  const tierDivisor = quote.tierDivisorSnapshot?.toString() ?? "0.7";
+  const tierDivisor = Number(quote.tierDivisorSnapshot ?? 0.7);
+  const makingPrice = Number(quote.makingPrice ?? 0);
+  const sellingPrice = Number(quote.estimatedSellingPrice ?? quote.estimatedPrice ?? 0);
+  const estimatedPrice = Number(quote.estimatedPrice ?? 0);
+  const margin = breakdown ? breakdown.customerMarginPct : null;
+  const profit = sellingPrice - makingPrice;
+  const profitPct = makingPrice > 0 ? (profit / makingPrice) * 100 : 0;
+
+  const goldSpot = breakdown
+    ? Number(quote.company.pricingProfile?.goldSpotPerOz ?? 4500)
+    : Number(quote.company.pricingProfile?.goldSpotPerOz ?? 4500);
+  const computedMetalCost = calculateMetalCost(
+    quote.metalType ?? "14K",
+    Number(quote.metalWeightGrams ?? 0),
+    goldSpot,
+    25
+  );
+
+  const renderingDataUrl = quote.renderingStorageKey
+    ? await loadQuoteRenderingDataUrlFromS3(quote.renderingStorageKey)
+    : quote.renderingDataUrl;
+
+  const sourceImageUrl = quote.analysis?.sourceImageStorageKey
+    ? await loadQuoteRenderingDataUrlFromS3(quote.analysis.sourceImageStorageKey)
+    : quote.analysis?.imageDataUrl ?? null;
+
+  const planName = quote.company.subscription?.plan.name ?? "No plan";
+  const planStatus = quote.company.subscription?.status ?? "inactive";
 
   return (
     <InternalAdminShell
       title={`Quote ${quote.quoteNumber}`}
-      description="ADMIN VIEW — this financial breakdown is never visible to the jeweler."
-      navItems={getInternalAdminNav("/admin/tenants")}
+      description="Internal pricing audit — full cost ledger, margin analysis, and tier mechanics."
+      navItems={getInternalAdminNav("/admin/quotes")}
       adminName={admin.user.name || admin.user.email}
-      actions={<Link className="button secondary" href={`/admin/tenants/${quote.companyId}`}>Back to tenant</Link>}
+      actions={
+        <>
+          <Link className="button secondary button--sm" href="/admin/quotes">
+            ← All Quotes
+          </Link>
+          <Link className="button secondary button--sm" href={`/admin/tenants/${quote.companyId}`}>
+            View Tenant
+          </Link>
+        </>
+      }
     >
-      <section className="card accentCard">
-        <div className="sectionHeader">
-          <div>
-            <p className="eyebrow">Cost &amp; pricing audit breakdown</p>
-            <h2>Making Price &amp; Tier Calculation</h2>
-          </div>
-          <span className="badge">Internal Only</span>
-        </div>
+      {/* ── Admin-only banner ── */}
+      <div className="adminAuditBanner">
+        <span className="adminAuditBannerIcon">🔒</span>
+        <span>
+          <strong>Internal Audit View</strong> — This pricing breakdown is never exposed to the jeweler or customer. Contains Azzure cost structure and margin data.
+        </span>
+        <span className="badge" style={{ background: "rgba(239,68,68,0.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>
+          ADMIN ONLY
+        </span>
+      </div>
 
-        <div className="detailStack" style={{ marginTop: "1rem" }}>
+      {breakdown ? (
+        <QuotePricingKpis
+          breakdown={breakdown}
+          pricingTier={quote.pricingTierSnapshot}
+          tierDivisor={tierDivisor}
+          makingPrice={makingPrice}
+          sellingPrice={sellingPrice}
+        />
+      ) : (
+        <section className="adminKpiGrid">
+          <div className="adminKpi adminKpi--production">
+            <span className="adminKpiLabel">Production Cost</span>
+            <strong className="adminKpiValue">{money(makingPrice)}</strong>
+            <span className="adminKpiSub">Azzure making price</span>
+          </div>
+          <div className="adminKpi adminKpi--selling">
+            <span className="adminKpiLabel">Customer Selling Price</span>
+            <strong className="adminKpiValue adminKpiValue--green">{money(sellingPrice)}</strong>
+            <span className="adminKpiSub">What the end customer pays</span>
+          </div>
+          <div className="adminKpi adminKpi--profit">
+            <span className="adminKpiLabel">Jeweler Gross Profit</span>
+            <strong className="adminKpiValue adminKpiValue--blue">{money(profit)}</strong>
+            <span className="adminKpiSub">{profitPct.toFixed(1)}% return on cost</span>
+          </div>
+          <div className="adminKpi adminKpi--margin">
+            <span className="adminKpiLabel">Jeweler Margin</span>
+            <strong className="adminKpiValue adminKpiValue--amber">{margin !== null ? `${margin}%` : "—"}</strong>
+            <span className="adminKpiSub">Applied at quote time</span>
+          </div>
+          <div className="adminKpi adminKpi--tier">
+            <span className="adminKpiLabel">Pricing Tier</span>
+            <strong className="adminKpiValue">{getPricingTierLabel(quote.pricingTierSnapshot) ?? "—"}</strong>
+            <span className="adminKpiSub">Divisor: {tierDivisor}</span>
+          </div>
+        </section>
+      )}
+
+      <div className="adminQuoteDetailGrid">
+        {/* ── COLUMN 1: Full Pricing Breakdown ── */}
+        <section>
           {breakdown ? (
-            <>
+            <QuotePricingBreakdown
+              breakdown={breakdown}
+              computedMetalCost={computedMetalCost}
+              goldSpot={goldSpot}
+              metalType={quote.metalType}
+              metalWeightGrams={quote.metalWeightGrams}
+              centerDiamondCarats={quote.centerDiamondCarats}
+              centerShape={quote.analysis?.centerShape}
+              sideDiamondQuantity={quote.sideDiamondQuantity}
+              sideDiamondCarats={quote.sideDiamondCarats}
+              settingType={quote.analysis?.settingType}
+              colorClarity={quote.colorClarity}
+              pricingTier={quote.pricingTierSnapshot}
+              tierDivisor={tierDivisor}
+              makingPrice={makingPrice}
+              sellingPrice={sellingPrice}
+            />
+          ) : (
+            <div className="card adminBreakdownCard">
+              <div className="sectionHeader">
+                <div>
+                  <p className="eyebrow">Cost & Margin Audit</p>
+                  <h2>Full Pricing Breakdown</h2>
+                </div>
+                <span className="badge" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>
+                  Internal Only
+                </span>
+              </div>
+
+              {/* Fallback for legacy quotes without full breakdown */}
+              <div className="adminBreakdownTable">
+                <div className="adminBreakdownRow">
+                  <span>Making Price (Azzure cost)</span>
+                  <strong>{money(quote.makingPrice)}</strong>
+                </div>
+                <div className="adminBreakdownRow">
+                  <span>Tier applied</span>
+                  <strong>{getPricingTierLabel(quote.pricingTierSnapshot) ?? "Not recorded"}</strong>
+                </div>
+                <div className="adminBreakdownRow">
+                  <span>Tier divisor at quote time</span>
+                  <strong>{tierDivisor}</strong>
+                </div>
+                <div className="adminBreakdownRow">
+                  <span>Formula</span>
+                  <code className="adminBreakdownFormula">
+                    {money(makingPrice)} ÷ {tierDivisor} = {money(sellingPrice)}
+                  </code>
+                </div>
+                <div className="adminBreakdownDivider adminBreakdownDivider--heavy" />
+                <div className="adminBreakdownRow adminBreakdownRow--final">
+                  <span><strong>End Customer Price</strong></span>
+                  <strong className="adminBreakdownFinal">{money(sellingPrice)}</strong>
+                </div>
+                <p className="muted small" style={{ marginTop: "1rem" }}>
+                  ⚠️ This quote was created before full breakdown snapshots were stored. Only top-level figures are available.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Spot prices card */}
+          <div className="card" style={{ marginTop: "1.25rem" }}>
+            <p className="eyebrow">Live Rates at Quote Time</p>
+            <h3 style={{ margin: "0.25rem 0 1rem" }}>Metal Spot Pricing Snapshot</h3>
+            <div className="adminSpotGrid">
+              <div className="adminSpotCard">
+                <span>Gold / oz</span>
+                <strong>${num(quote.company.pricingProfile?.goldSpotPerOz ?? 0, 2)}</strong>
+              </div>
+              <div className="adminSpotCard">
+                <span>Platinum / oz</span>
+                <strong>${num(quote.company.pricingProfile?.platinumSpotPerOz ?? 0, 2)}</strong>
+              </div>
+              <div className="adminSpotCard">
+                <span>Silver / oz</span>
+                <strong>${num(quote.company.pricingProfile?.silverSpotPerOz ?? 0, 2)}</strong>
+              </div>
+              <div className="adminSpotCard">
+                <span>Computed metal cost</span>
+                <strong>{money(breakdown?.metalCost ?? computedMetalCost)}</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── COLUMN 2: Quote Details + Images ── */}
+        <section>
+          {/* Tenant & Quote Info */}
+          <div className="card">
+            <p className="eyebrow">Tenant & Quote</p>
+            <h3 style={{ margin: "0.25rem 0 1rem" }}>
+              <Link href={`/admin/tenants/${quote.companyId}`} style={{ color: "inherit", textDecoration: "none" }}>
+                {quote.company.name}
+              </Link>
+            </h3>
+            <div className="detailStack">
               <div className="detailRow">
-                <span>Center stone ({Number(quote.centerDiamondCarats).toFixed(2)}ct {quote.analysis?.centerShape || "stone"})</span>
-                <strong>{money(breakdown.centerStoneCost)}</strong>
+                <span>Quote number</span>
+                <strong className="monoCell">{quote.quoteNumber}</strong>
               </div>
               <div className="detailRow">
-                <span>Side stones ({quote.sideDiamondQuantity}× stones, {Number(quote.sideDiamondCarats).toFixed(2)}ct total)</span>
-                <strong>{money(breakdown.sideStoneCost)}</strong>
+                <span>Customer</span>
+                <strong>{quote.customerName || "Unassigned"}</strong>
               </div>
               <div className="detailRow">
-                <span>Center stone setting ({Number(quote.centerDiamondCarats).toFixed(2)}ct @ $20/ct)</span>
-                <strong>{money(breakdown.centerStoneSettingCost)}</strong>
+                <span>Created</span>
+                <strong>{formatDate(quote.createdAt)}</strong>
               </div>
               <div className="detailRow">
-                <span>Side stone setting ({quote.sideDiamondQuantity}× {quote.analysis?.settingType || "prong"})</span>
-                <strong>{money(breakdown.sideStoneSettingCost)}</strong>
-              </div>
-              <div className="detailRow">
-                <span>Wax ({breakdown.pieces} piece{breakdown.pieces === 1 ? "" : "s"} @ $15/ea)</span>
-                <strong>{money(breakdown.waxCost)}</strong>
-              </div>
-              <div className="detailRow">
-                <span>Polishing ({breakdown.pieces} piece{breakdown.pieces === 1 ? "" : "s"} @ $20/ea)</span>
-                <strong>{money(breakdown.polishingCost)}</strong>
-              </div>
-              <div className="detailRow">
-                <span>CAD cost (platform fee)</span>
-                <strong>{money(breakdown.cadCost)}</strong>
-              </div>
-              <div className="detailRow" style={{ borderTop: "1px dashed var(--color-border, #e5e7eb)", paddingTop: "0.75rem", fontWeight: 600 }}>
-                <span>Subtotal (production cost)</span>
-                <strong>{money(breakdown.subtotal)}</strong>
-              </div>
-              <div className="detailRow">
-                <span>Customer margin ({breakdown.customerMarginPct}%)</span>
-                <strong>+{money(breakdown.customerMarginAmount)}</strong>
-              </div>
-              <div className="detailRow" style={{ borderTop: "1px solid var(--color-border, #e5e7eb)", paddingTop: "0.75rem" }}>
-                <span><strong>Making price</strong></span>
-                <strong style={{ fontSize: "1.125rem", color: "var(--color-primary, #10172a)" }}>{money(breakdown.makingPrice)}</strong>
-              </div>
-              <div className="detailRow">
-                <span>Tier formula (÷ {tierDivisor} × 2) [{getPricingTierLabel(quote.pricingTierSnapshot) ?? "Tier 2"}]</span>
-                <span className="monoCell">÷ {tierDivisor} × 2</span>
-              </div>
-              <div className="detailRow" style={{ borderTop: "2px solid var(--color-obsidian, #111827)", paddingTop: "0.75rem" }}>
-                <span><strong>End customer price</strong></span>
-                <strong style={{ fontSize: "1.25rem", color: "var(--color-obsidian, #111827)" }}>
-                  {money(quote.estimatedSellingPrice ?? quote.estimatedPrice)}
+                <span>Plan at quote time</span>
+                <strong>
+                  {planName}
+                  <span className="muted small">&nbsp;({planStatus})</span>
                 </strong>
               </div>
-            </>
-          ) : (
-            <>
-              <div className="detailRow"><span>Making price (Azzure cost)</span><strong>{money(quote.makingPrice)}</strong></div>
-              <div className="detailRow"><span>Tier applied</span><strong>{getPricingTierLabel(quote.pricingTierSnapshot) ?? "Not recorded"}</strong></div>
-              <div className="detailRow"><span>Tier divisor at quote time</span><strong>{tierDivisor}</strong></div>
-              <div className="detailRow"><span>End customer price</span><strong>{money(quote.estimatedSellingPrice ?? quote.estimatedPrice)}</strong></div>
-            </>
-          )}
-        </div>
-      </section>
+              {quote.order && (
+                <div className="detailRow">
+                  <span>Manufacturing order</span>
+                  <strong className="monoCell">{quote.order.orderNumber}</strong>
+                </div>
+              )}
+            </div>
+          </div>
 
-      <section className="grid twoUp">
-        <article className="card">
-          <span className="eyebrow">Company</span>
-          <h2>{quote.company.name}</h2>
-          <p>{quote.customerName || "Unassigned customer"}</p>
-          <div className="detailStack" style={{ marginTop: "1rem" }}>
-            <div className="detailRow"><span>Color / Clarity</span><strong>{quote.colorClarity}</strong></div>
-            <div className="detailRow"><span>Created on</span><strong>{quote.createdAt.toLocaleString()}</strong></div>
-            {quote.analysis?.notes ? (
-              <div className="detailRow" style={{ flexDirection: "column", alignItems: "flex-start", gap: "0.25rem" }}>
-                <span>Photo description &amp; notes</span>
-                <p className="muted small" style={{ margin: 0 }}>{quote.analysis.notes}</p>
+          {/* Specification */}
+          <div className="card" style={{ marginTop: "1.25rem" }}>
+            <p className="eyebrow">Specification</p>
+            <h3 style={{ margin: "0.25rem 0 1rem" }}>{quote.metalType}</h3>
+            <div className="detailStack">
+              <div className="detailRow">
+                <span>Metal weight</span>
+                <strong>{num(quote.metalWeightGrams, 2)} g</strong>
               </div>
-            ) : null}
+              <div className="detailRow">
+                <span>Center stone</span>
+                <strong>
+                  {num(quote.centerDiamondCarats, 2)} ct {quote.analysis?.centerShape || ""}
+                </strong>
+              </div>
+              <div className="detailRow">
+                <span>Side stones</span>
+                <strong>
+                  {Number(quote.sideDiamondCarats).toFixed(2)} ct · {quote.sideDiamondQuantity} stones
+                </strong>
+              </div>
+              <div className="detailRow">
+                <span>Color / Clarity</span>
+                <strong>{quote.colorClarity || "E VS1"}</strong>
+              </div>
+              {quote.analysis?.settingType && (
+                <div className="detailRow">
+                  <span>Setting type</span>
+                  <strong>{quote.analysis.settingType}</strong>
+                </div>
+              )}
+              {quote.analysis?.centerClarity && (
+                <div className="detailRow">
+                  <span>Center clarity (AI)</span>
+                  <strong>{quote.analysis.centerClarity}</strong>
+                </div>
+              )}
+            </div>
           </div>
-        </article>
-        <article className="card">
-          <span className="eyebrow">Quote specification</span>
-          <h2>{quote.metalType}</h2>
-          <p>{Number(quote.metalWeightGrams).toFixed(2)} g · {Number(quote.centerDiamondCarats).toFixed(2)} ct center</p>
-          <div className="detailStack" style={{ marginTop: "1rem" }}>
-            <div className="detailRow"><span>Side stones</span><strong>{Number(quote.sideDiamondCarats).toFixed(2)} ct ({quote.sideDiamondQuantity} stones)</strong></div>
-            <div className="detailRow"><span>Center shape</span><strong>{quote.analysis?.centerShape || "Not recorded"}</strong></div>
-            <div className="detailRow"><span>Setting type</span><strong>{quote.analysis?.settingType || "Not recorded"}</strong></div>
-          </div>
-        </article>
-      </section>
+
+          {/* AI Analysis Notes */}
+          {quote.analysis?.notes && (
+            <div className="card" style={{ marginTop: "1.25rem" }}>
+              <p className="eyebrow">AI Analysis Notes</p>
+              <p className="muted small" style={{ marginTop: "0.5rem", lineHeight: 1.6 }}>
+                {quote.analysis.notes}
+              </p>
+            </div>
+          )}
+
+          {/* Images */}
+          {(renderingDataUrl || sourceImageUrl) && (
+            <div className="card" style={{ marginTop: "1.25rem" }}>
+              <p className="eyebrow">Images</p>
+              <div className="adminImageGrid">
+                {sourceImageUrl && (
+                  <div className="adminImageCell">
+                    <span className="adminImageLabel">Customer Reference</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={sourceImageUrl} alt="Customer reference photo" className="adminQuoteImage" />
+                  </div>
+                )}
+                {renderingDataUrl && (
+                  <div className="adminImageCell">
+                    <span className="adminImageLabel">AI Visualization</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={renderingDataUrl} alt="AI-generated rendering" className="adminQuoteImage" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
     </InternalAdminShell>
   );
 }

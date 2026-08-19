@@ -86,20 +86,16 @@ export function isProngSetting(settingType: string): boolean {
 }
 
 export function sideStoneSettingCost(input: SideStoneSettingInput): number {
-  const { caratWeightEach, count, shape, settingType } = input;
-  const totalCarats = caratWeightEach * count;
+  const { caratWeightEach, count, settingType } = input;
 
-  // Rule A: base cost by shape
-  const baseRatePerCarat = isSideStoneRound(shape) ? 1.25 : 5.0;
-  const ruleA = totalCarats * baseRatePerCarat;
+  // Rule A: base cost by setting type, per stone (not per carat)
+  const ratePerStone = isProngSetting(settingType) ? 1.25 : 5.0;
+  const ruleA = count * ratePerStone;
 
   // Rule B: large stone surcharge (> 0.5ct each)
   const ruleB = caratWeightEach > 0.5 ? count * 10 : 0;
 
-  // Rule C: non-prong setting surcharge
-  const ruleC = isProngSetting(settingType) ? 0 : count * 5;
-
-  return ruleA + ruleB + ruleC;
+  return ruleA + ruleB;
 }
 
 export type WaxInput = {
@@ -306,7 +302,7 @@ export function calculateTierPrice(makingPrice: number, tier: PricingTier): Tier
   }
 
   const divisor = TIER_DIVISORS[tier];
-  const estimatedSellingPrice = roundMoney((makingPrice / divisor) * 2);
+  const estimatedSellingPrice = roundMoney(makingPrice / divisor);
 
   return {
     makingPrice: roundMoney(makingPrice),

@@ -14,7 +14,15 @@ export async function getActiveShowroom(token: string) {
   if (!token || token.length > 160) return null;
   const session = await prisma.showroomSession.findUnique({
     where: { token },
-    include: { company: true }
+    include: {
+      company: {
+        include: {
+          subscription: {
+            include: { plan: true }
+          }
+        }
+      }
+    }
   });
   if (!session?.isActive || session.company.accountStatus !== "APPROVED") return null;
   return session;

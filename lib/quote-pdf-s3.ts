@@ -57,6 +57,11 @@ export function buildQuoteRenderingStorageKey(companyId: string, quoteId: string
   return `renderings/${companyId}/${safeQuoteId}.jpg`;
 }
 
+export function buildAnalysisRenderingStorageKey(companyId: string, analysisId: string) {
+  const safeAnalysisId = analysisId.replace(/[^a-zA-Z0-9._-]+/g, "_");
+  return `renderings/${companyId}/analysis-${safeAnalysisId}.jpg`;
+}
+
 export async function storeQuotePdfInS3({ key, buffer, contentType = "application/pdf" }: QuotePdfStorageInput) {
   const bucket = getQuotePdfBucketName();
   if (!bucket) {

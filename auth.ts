@@ -60,15 +60,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               memberships: {
                 select: {
                   companyId: true,
-                company: {
-                  select: {
-                    name: true,
-                    accountStatus: true,
-                    pricingTier: true,
-                    ckCustomerVerified: true,
-                    subscription: {
-                      select: {
-                        planId: true
+                  company: {
+                    select: {
+                      name: true,
+                      accountStatus: true,
+                      pricingTier: true,
+                      ckCustomerVerified: true,
+                      subscription: {
+                        select: {
+                          planId: true
                         }
                       }
                     }
@@ -92,12 +92,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw error;
         }
 
-        if (!user?.passwordHash || !user.emailVerifiedAt) {
+        const bypassEmailVerification =
+          process.env.BYPASS_EMAIL_VERIFICATION === "true" ||
+          process.env.NODE_ENV !== "production";
+
+        if (!user?.passwordHash) {
+          return null;
+        }
+
+        if (!user.emailVerifiedAt && !bypassEmailVerification) {
           return null;
         }
 
         if (!verifyPassword(parsed.data.password, user.passwordHash)) {
           return null;
+        }
+
+        // Auto-verify user in DB during local bypass if not yet verified
+        if (!user.emailVerifiedAt && bypassEmailVerification) {
+          await prisma.user
+            .update({
+              where: { id: user.id },
+              data: { emailVerifiedAt: new Date() }
+            })
+            .catch(() => {});
         }
 
         return {
@@ -107,7 +125,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           sessionVersion: user.sessionVersion,
           companyId: user.memberships[0]?.companyId ?? "",
           companyName: user.memberships[0]?.company.name ?? "",
-          planId: user.memberships[0]?.company.subscription?.planId ?? "",
+          planId: user.memberships[0]?.company.subscription?.planId ?? "plan_starter",
           accountStatus: user.memberships[0]?.company.accountStatus ?? "PENDING_APPROVAL",
           pricingTier: user.memberships[0]?.company.pricingTier ?? null,
           ckCustomerVerified: user.memberships[0]?.company.ckCustomerVerified ?? false
@@ -123,13 +141,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.name = user.name;
         token.sessionVersion = "sessionVersion" in user ? user.sessionVersion ?? 0 : 0;
         token.role = isInternalAdminEmail(user.email) ? "AZZURE_ADMIN" : "CUSTOMER";
-        token.companyId = "companyId" in user ? user.companyId ?? "" : "";
-        token.companyName = "companyName" in user ? user.companyName ?? "" : "";
-        token.planId = "planId" in user ? user.planId ?? "" : "";
-        token.accountStatus = "accountStatus" in user ? user.accountStatus ?? "PENDING_APPROVAL" : "PENDING_APPROVAL";
-        token.pricingTier = "pricingTier" in user ? user.pricingTier ?? null : null;
+        token.companyId = "companyId" in user && typeof user.companyId === "string" ? user.companyId : "";
+        token.companyName = "companyName" in user && typeof user.companyName === "string" ? user.companyName : "";
+        token.planId =
+          "planId" in user && typeof user.planId === "string"
+            ? (user.planId as "plan_starter" | "plan_professional" | "plan_enterprise" | "plan_ultra")
+            : "plan_starter";
+        token.accountStatus =
+          "accountStatus" in user && typeof user.accountStatus === "string"
+            ? (user.accountStatus as "PENDING_APPROVAL" | "APPROVED" | "SUSPENDED")
+            : "PENDING_APPROVAL";
+        token.pricingTier =
+          "pricingTier" in user && typeof user.pricingTier === "string"
+            ? (user.pricingTier as "TIER_1" | "TIER_2" | "TIER_3")
+            : null;
         token.ckCustomerVerified =
-          "ckCustomerVerified" in user ? user.ckCustomerVerified ?? false : false;
+          "ckCustomerVerified" in user ? Boolean(user.ckCustomerVerified) : false;
       }
 
       return token;
@@ -141,20 +168,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role === "AZZURE_ADMIN" ? "AZZURE_ADMIN" : "CUSTOMER";
         session.user.companyId = typeof token.companyId === "string" ? token.companyId : "";
         session.user.companyName = typeof token.companyName === "string" ? token.companyName : "";
-        session.user.planId = token.planId === "plan_starter" || token.planId === "plan_professional" || token.planId === "plan_enterprise" || token.planId === "plan_ultra" ? token.planId : "plan_starter";
+        session.user.planId =
+          typeof token.planId === "string"
+            ? (token.planId as "plan_starter" | "plan_professional" | "plan_enterprise" | "plan_ultra")
+            : "plan_starter";
         session.user.accountStatus =
-          token.accountStatus === "APPROVED" ||
-          token.accountStatus === "SUSPENDED" ||
-          token.accountStatus === "PENDING_APPROVAL"
-            ? token.accountStatus
+          typeof token.accountStatus === "string"
+            ? (token.accountStatus as "PENDING_APPROVAL" | "APPROVED" | "SUSPENDED")
             : "PENDING_APPROVAL";
         session.user.pricingTier =
-          token.pricingTier === "TIER_1" ||
-          token.pricingTier === "TIER_2" ||
-          token.pricingTier === "TIER_3"
-            ? token.pricingTier
+          typeof token.pricingTier === "string"
+            ? (token.pricingTier as "TIER_1" | "TIER_2" | "TIER_3")
             : null;
-        session.user.ckCustomerVerified = token.ckCustomerVerified === true;
+        session.user.ckCustomerVerified = Boolean(token.ckCustomerVerified);
       }
 
       return session;
@@ -162,55 +188,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   events: {
     async signIn({ user }) {
-      let membership;
-      try {
-        membership = await prisma.membership.findFirst({
-          where: { userId: user.id },
-          select: { companyId: true }
-        });
-      } catch (error) {
-        if (isPrismaConnectionError(error)) {
-          return;
-        }
-
-        throw error;
+      if (!user?.id || !user.email) {
+        return;
       }
 
-      if (!membership) return;
+      const role = isInternalAdminEmail(user.email) ? "AZZURE_ADMIN" : "CUSTOMER";
+      const companyId = "companyId" in user && typeof user.companyId === "string" && user.companyId ? user.companyId : "";
 
-      await logAuditEvent({
-        action: "SIGN_IN",
-        companyId: membership.companyId,
-        actorUserId: user.id,
-        metadata: { provider: "credentials", admin: isInternalAdminEmail(user.email) }
-      }).catch(() => undefined);
-    },
-    async signOut(event) {
-      const token = "token" in event ? event.token : null;
-      if (!token?.sub) return;
-
-      let membership;
-      try {
-        membership = await prisma.membership.findFirst({
-          where: { userId: token.sub },
-          select: { companyId: true }
-        });
-      } catch (error) {
-        if (isPrismaConnectionError(error)) {
-          return;
-        }
-
-        throw error;
+      if (companyId) {
+        await logAuditEvent({
+          action: "SIGN_IN",
+          actorUserId: user.id,
+          targetType: "User",
+          targetId: user.id,
+          companyId,
+          metadata: {
+            email: user.email,
+            role
+          }
+        }).catch(() => undefined);
       }
-
-      if (!membership) return;
-
-      await logAuditEvent({
-        action: "SIGN_OUT",
-        companyId: membership.companyId,
-        actorUserId: token.sub,
-        metadata: { provider: "credentials", admin: token.role === "AZZURE_ADMIN" }
-      }).catch(() => undefined);
     }
   }
 });

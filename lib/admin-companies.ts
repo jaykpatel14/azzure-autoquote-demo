@@ -2,6 +2,7 @@ import type { MembershipRole, Prisma, PrismaClient, SubscriptionStatus } from "@
 import { getEffectiveMonthlyLimit } from "@/lib/billing";
 import { generateToken } from "@/lib/tokens";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
+import { DEFAULT_TRIAL_QUOTE_CAP } from "@/lib/subscription-plans";
 
 const MEMBERSHIP_ROLES: MembershipRole[] = ["OWNER", "ADMIN", "ESTIMATOR", "VIEWER", "CUSTOMER", "MANUFACTURING"];
 
@@ -250,7 +251,7 @@ export async function addAdminCompanyMember(
   await client.auditLog.create({
     data: {
       action: "MEMBERSHIP_CREATED",
-     companyId: company.id,
+      companyId: company.id,
       actorUserId: adminUserId,
       targetType: "Membership",
       targetId: user.id,
@@ -308,12 +309,20 @@ export async function updateAdminCompanyBilling(
     }
   });
 
+  const isTrial = input.subscription.status === "TRIALING";
+  const trialEndsAt = isTrial ? input.subscription.currentPeriodEnd : null;
+  const trialStartedAt = isTrial ? input.subscription.currentPeriodStart : null;
+  const trialQuoteCap = isTrial ? DEFAULT_TRIAL_QUOTE_CAP : null;
+
   const subscription = await client.subscription.upsert({
     where: { companyId },
     create: {
       companyId,
       planId: selectedPlan.id,
       status: input.subscription.status,
+      trialStartedAt,
+      trialEndsAt,
+      trialQuoteCap: trialQuoteCap ?? undefined,
       stripeCustomerId: normalizeOptionalText(input.subscription.stripeCustomerId),
       stripeSubscriptionId: normalizeOptionalText(input.subscription.stripeSubscriptionId),
       stripeProductId: normalizeOptionalText(input.subscription.stripeProductId),
@@ -327,6 +336,9 @@ export async function updateAdminCompanyBilling(
     update: {
       planId: selectedPlan.id,
       status: input.subscription.status,
+      trialStartedAt: isTrial ? trialStartedAt : undefined,
+      trialEndsAt: isTrial ? trialEndsAt : undefined,
+      trialQuoteCap: trialQuoteCap ?? undefined,
       stripeCustomerId: normalizeOptionalText(input.subscription.stripeCustomerId),
       stripeSubscriptionId: normalizeOptionalText(input.subscription.stripeSubscriptionId),
       stripeProductId: normalizeOptionalText(input.subscription.stripeProductId),

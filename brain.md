@@ -55,9 +55,18 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision**: Created `components/pricing-margin-simulator.tsx` embedded into `/settings/pricing`.
 - **Rationale**: Provides jewelers with an interactive range slider and live sample quote breakdown (14K Oval Solitaire) that calculates in real-time how their markup % impacts base production cost, retail presentation price, and net profit per piece.
 
-### 16. Proxmox Deployment Workflow Visual Stage Transparency
-- **Decision**: Updated `.github/workflows/proxmox-test-deploy.yml` with explicit visual step banners (`[1/5] Starting DB`, `[2/5] Building Next.js Docker Container`, `[3/5] Migrations & Seeds`, `[4/5] Starting App`, `[5/5] Health Check`).
-- **Rationale**: Previously, when `docker compose up -d db` finished, the runner immediately started `docker compose build app migrate` (compiling Next.js for 5-8 minutes) without printing a transitional header, making it look like the workflow was stuck on the `db` step when it was actually executing the heavy JavaScript compiler.
+### 21. Luxury Onboarding Flow & Trial Days Resolution
+- **Decision**: Redesigned `/onboarding` UI into a modern 3-step luxury onboarding setup with obsidian/gold cards, real-time trial metric status banner, and structured form fields. Updated `getTrialDaysRemaining` in `lib/billing.ts` and `updateAdminCompanyBilling` in `lib/admin-companies.ts` to compute remaining trial days dynamically from `trialEndsAt`, `currentPeriodEnd`, or `currentPeriodStart + 14 days`.
+- **Rationale**: Eliminates the "0 days left" calculation bug on trialing accounts and gives jewelers a luxury guided setup experience.
+
+### 22. AI 3D Image Concept Feature Gating in Quote Creation
+- **Decision**: Wrapped `generateQuoteRendering` in `app/api/quotes/route.ts` with `if (features.canGenerateAIImages)`. When creating a quote on Starter or Professional tiers, AI image synthesis is safely skipped, and the quote view cleanly displays the customer's uploaded reference image.
+- **Rationale**: Strict subscription enforcement ensures AI image rendering is exclusively available on Enterprise and Ultra plans.
+
+
+
+
+
 
 
 

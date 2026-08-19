@@ -32,9 +32,11 @@ import { hasAllowedImageSignature } from "@/lib/security";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 import {
   buildAnalysisImageStorageKey,
-  storeAnalysisImageInS3
+  storeAnalysisImageInS3,
+  loadQuoteRenderingDataUrlFromS3
 } from "@/lib/quote-pdf-s3";
 import { recordQuoteOverage } from "@/lib/stripe-metering";
+import { generateAnalysisRendering } from "@/lib/ai/quote-rendering";
 
 export const runtime = "nodejs";
 
@@ -290,11 +292,30 @@ export async function POST(request: Request) {
     });
     reservation = undefined;
 
+    let renderingImageUrl: string | null = null;
+    let renderingStatus: "COMPLETED" | "FAILED" | "SKIPPED" = "SKIPPED";
+
+    if (features.canGenerateAIImages) {
+      const rendering = await generateAnalysisRendering({
+        analysisId: analysis.id,
+        companyId: companyContext.company.id
+      });
+      renderingStatus = rendering.status;
+
+      if (rendering.status === "COMPLETED") {
+        renderingImageUrl = rendering.storageKey
+          ? await loadQuoteRenderingDataUrlFromS3(rendering.storageKey)
+          : rendering.imageUrl;
+      }
+    }
+
     return NextResponse.json({
       analysisId: analysis.id,
       provider: provider.name,
       modelVersion: provider.modelVersion,
       promptVersion: provider.promptVersion,
+      renderingStatus,
+      renderingImageUrl,
       ...merged
     });
   } catch (error) {

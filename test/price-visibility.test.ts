@@ -20,9 +20,9 @@ describe("jeweler price visibility", () => {
 
 describe("selling-price backfill", () => {
   test.each([
-    ["TIER_1", 1666.67],
-    ["TIER_2", 1428.57],
-    ["TIER_3", 1250]
+    ["TIER_1", 833.33],
+    ["TIER_2", 714.29],
+    ["TIER_3", 625]
   ] as const)("calculates %s", (pricingTier, expected) => {
     expect(calculateMissingSellingPrice({ makingPrice: 500, pricingTier, estimatedSellingPrice: null })).toBeCloseTo(expected, 2);
   });

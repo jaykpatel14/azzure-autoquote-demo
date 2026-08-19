@@ -11,13 +11,16 @@ import {
 import { assertBillableSubscription, BillingAccessError } from "@/lib/billing";
 import {
   reserveMonthlyUsage,
-  releaseMonthlyUsage
+  consumeMonthlyUsage,
+  releaseMonthlyUsage,
+  UsageLimitError
 } from "@/lib/usage";
 import { resolveRuntimeSetting } from "@/lib/app-settings";
 import {
   buildAnalysisImageStorageKey,
   storeAnalysisImageInS3
 } from "@/lib/quote-pdf-s3";
+import { assertPlanFeature, PlanError } from "@/src/stripe/plans";
 
 export const runtime = "nodejs";
 
@@ -113,6 +116,7 @@ export async function POST(request: Request) {
       throw new CompanyAccessError("Account approval and a pricing tier are required to create quotes.");
     }
     assertBillableSubscription(companyContext.company.subscription);
+    await assertPlanFeature(companyContext.company.id, "canGenerateAIImages");
 
     const body = await request.json();
     const { prompt, metalType, customerNotes } = conceptRequestSchema.parse(body);
@@ -139,7 +143,7 @@ export async function POST(request: Request) {
           `Crafted in authentic ${metalType} metal with a ${extractedSpecs.centerShape} center diamond in a ${extractedSpecs.settingType}.`,
           extractedSpecs.sideDiamondQuantity > 0 ? `Features ${extractedSpecs.sideDiamondQuantity} accent side diamonds.` : "",
           "Show only one complete jewelry piece in a refined three-quarter product view.",
-          "Realistic precious-metal reflections, physically believable gemstone refraction, crisp edges, premium jewelry studio lighting, neutral warm-gray seamless background, subtle natural shadow, centered composition.",
+          "Realistic precious-metal reflections, physically believable gemstone refraction, crisp edges, premium jewelry studio lighting. Plain, seamless, evenly lit solid white studio background — no props, no gradients, no scenery, no surface texture. Subtle natural shadow, centered composition.",
           "No hands, no person, no packaging, no text, no logo, no watermark, no dimensions, no duplicate jewelry.",
           "This is a customer-facing showroom visualization."
         ].filter(Boolean).join(" ");
@@ -149,6 +153,7 @@ export async function POST(request: Request) {
           prompt: imagePrompt,
           size: "1024x1536",
           quality: "medium",
+          background: "opaque",
           output_format: "jpeg",
           output_compression: 85,
           n: 1
@@ -205,6 +210,10 @@ export async function POST(request: Request) {
       }
     });
 
+    // 5. Consume reserved monthly usage
+    await consumeMonthlyUsage(reservation.usagePeriodId, companyContext.company.id);
+    reservation = undefined;
+
     return NextResponse.json({
       analysisId: analysis.id,
       imageDataUrl: imageDataUrl || (imageStorageKey ? `/api/analyze/${analysis.id}/image` : null),
@@ -225,7 +234,16 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     if (reservation) {
-      await releaseMonthlyUsage(reservation.usagePeriodId);
+      await releaseMonthlyUsage(reservation.usagePeriodId).catch(() => undefined);
+    }
+    if (error instanceof PlanError) {
+      return NextResponse.json(
+        { error: "AI Concept Photo Generation is available exclusively on Enterprise and Ultra plans. Please upgrade to unlock." },
+        { status: 403 }
+      );
+    }
+    if (error instanceof UsageLimitError) {
+      return NextResponse.json({ error: error.message }, { status: 429 });
     }
     if (error instanceof CompanyAccessError) {
       return NextResponse.json({ error: error.message }, { status: 403 });

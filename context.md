@@ -219,11 +219,15 @@ azzure-autoquote-mvp/
 - ✅ **Redesigned Quote Calculator Dashboard**: Built 3-step left panel with automated analysis and real-time live preview panel.
 - ✅ **Fixed Pricing Engine**: Added gold metal weight calculation, 25% casting loss factor, and standard lab diamond pricing ($125/ct center stone) in `src/services/pricing.ts`.
 - ✅ **Fixed Metals.dev API 401 & Health Checks**: Sanitized API key quotes, added browser headers, and updated default offline fallback spot rate to $4,500/oz.
-- ✅ **Redesigned Showroom Kiosk UI**: Created interactive 1-tap preset try-it cards, obsidian-gold glassmorphic styling, and auto-session resolution for direct `/showroom` route access.
-- ✅ **Modernized Admin Dashboard**: Added navigation icons, soft operational badges, and spot rate ticker cards in `app/admin/page.tsx` and `components/internal-admin-shell.tsx`.
-- ✅ **Pricing Page Redesign**: Redesigned `app/(marketing)/pricing/page.tsx` and `app/globals.css` into a balanced 4-column plan grid (Starter, Professional, Enterprise, Ultra) and fixed the feature comparison table with clean category section headers.
-- ✅ **Proxmox Deployment Stage Transparency**: Added explicit stage headers (`[1/5] Starting DB`, `[2/5] Building Next.js`, etc.) to `.github/workflows/proxmox-test-deploy.yml` so that multi-minute Next.js compilation steps are clearly distinguishable from database startup.
-- ✅ **Verification**: `npm run lint` and `npx tsc --noEmit` passing with **0 errors**.
+- ✅ **Luxury Onboarding Flow**: Completely redesigned `/onboarding` page and styling in `app/globals.css` with 3 guided steps, obsidian-gold glassmorphism cards, and real-time trial metric status banner.
+- ✅ **Trial Duration & Days Remaining Fix**: Fixed `getTrialDaysRemaining` in `lib/billing.ts` and `lib/admin-companies.ts` to compute remaining trial days dynamically from `trialEndsAt`, `currentPeriodEnd`, or `currentPeriodStart + 14 days`, fixing the "0 days left" display.
+- ✅ **AI 3D Image Concept Gating in Quotes**: Gated `generateQuoteRendering` in `app/api/quotes/route.ts` with `features.canGenerateAIImages`. For Professional & Starter tiers, synthetic AI rendering is skipped and the customer's uploaded reference image is displayed in the quote details view.
+- ✅ **Verification**: `npx tsc --noEmit` (0 errors), `npm run lint` (0 errors), all test suites passing.
+
+
+
+
+
 
 
 

@@ -62,26 +62,36 @@ describe("calculateMakingPrice", () => {
     expect(result.centerStoneSettingCost).toBe(40);
   });
 
-  it("side stone setting rule A: round uses $1.25/ct, fancy uses $5.00/ct", () => {
-    const round = calculateMakingPrice({
+  it("side stone setting rule A: prong/claw uses $1.25/stone, other settings use $5.00/stone", () => {
+    const prong = calculateMakingPrice({
       centerStone: { shape: "round", caratWeight: 1.0 },
       sideStones: [{ shape: "round", caratWeightEach: 0.05, count: 10, settingType: "prong" }],
       hasWeddingBand: false,
       isTwoTone: false,
       colorClarity: "E VS1"
     });
-    // 0.5ct × $1.25 = $0.625
-    expect(round.sideStoneSettingCost).toBeCloseTo(0.625, 3);
+    // 10 stones × $1.25 = $12.50
+    expect(prong.sideStoneSettingCost).toBeCloseTo(12.5, 2);
 
-    const fancy = calculateMakingPrice({
+    const claw = calculateMakingPrice({
       centerStone: { shape: "round", caratWeight: 1.0 },
-      sideStones: [{ shape: "baguette", caratWeightEach: 0.05, count: 10, settingType: "prong" }],
+      sideStones: [{ shape: "round", caratWeightEach: 0.05, count: 10, settingType: "claw" }],
       hasWeddingBand: false,
       isTwoTone: false,
       colorClarity: "E VS1"
     });
-    // 0.5ct × $5.00 = $2.50
-    expect(fancy.sideStoneSettingCost).toBeCloseTo(2.5, 2);
+    // 10 stones × $1.25 = $12.50
+    expect(claw.sideStoneSettingCost).toBeCloseTo(12.5, 2);
+
+    const bezel = calculateMakingPrice({
+      centerStone: { shape: "round", caratWeight: 1.0 },
+      sideStones: [{ shape: "round", caratWeightEach: 0.05, count: 10, settingType: "bezel" }],
+      hasWeddingBand: false,
+      isTwoTone: false,
+      colorClarity: "E VS1"
+    });
+    // 10 stones × $5.00 = $50.00
+    expect(bezel.sideStoneSettingCost).toBeCloseTo(50, 2);
   });
 
   it("side stone setting rule B: large stone surcharge of $10 per stone (> 0.5ct)", () => {
@@ -92,35 +102,10 @@ describe("calculateMakingPrice", () => {
       isTwoTone: false,
       colorClarity: "E VS1"
     });
-    // Rule A: 1.2ct × $1.25 = $1.50
+    // Rule A: 2 stones × $1.25 = $2.50
     // Rule B: 2 stones × $10 = $20.00
-    // Total = $21.50
-    expect(result.sideStoneSettingCost).toBeCloseTo(21.5, 2);
-  });
-
-  it("side stone setting rule C: non-prong surcharge of $5 per stone", () => {
-    const bezel = calculateMakingPrice({
-      centerStone: { shape: "round", caratWeight: 1.0 },
-      sideStones: [{ shape: "round", caratWeightEach: 0.05, count: 4, settingType: "bezel" }],
-      hasWeddingBand: false,
-      isTwoTone: false,
-      colorClarity: "E VS1"
-    });
-    // Rule A: 0.2ct × $1.25 = $0.25
-    // Rule B: <= 0.5ct = $0
-    // Rule C: 4 × $5 = $20.00
-    // Total = $20.25
-    expect(bezel.sideStoneSettingCost).toBeCloseTo(20.25, 2);
-
-    const prong = calculateMakingPrice({
-      centerStone: { shape: "round", caratWeight: 1.0 },
-      sideStones: [{ shape: "round", caratWeightEach: 0.05, count: 4, settingType: "prong" }],
-      hasWeddingBand: false,
-      isTwoTone: false,
-      colorClarity: "E VS1"
-    });
-    // Rule C: prong = $0
-    expect(prong.sideStoneSettingCost).toBeCloseTo(0.25, 2);
+    // Total = $22.50
+    expect(result.sideStoneSettingCost).toBeCloseTo(22.5, 2);
   });
 
   it("wax is $15 for single piece, $30 for piece + wedding band", () => {
@@ -236,8 +221,8 @@ describe("calculateMakingPrice", () => {
       customerMarginPct: 20
     });
     const tierResult = calculateTierPrice(makingResult.makingPrice, "TIER_2");
-    // End customer price = (makingPrice / 0.7) * 2
-    const expected = (makingResult.makingPrice / 0.7) * 2;
+    // End customer price = makingPrice / 0.7 (jeweler applies their own margin on top)
+    const expected = makingResult.makingPrice / 0.7;
     expect(tierResult.estimatedSellingPrice).toBeCloseTo(expected, 2);
   });
 
@@ -261,45 +246,44 @@ describe("calculateMakingPrice", () => {
     // Center stone:         1.5 × $125   = $187.50
     // Side stones:          0.4ct × $80  = $32.00
     // Center setting:       1.5 × $20    = $30.00
-    // Side setting (RuleA): 0.4 × $1.25  = $0.50
+    // Side setting (RuleA): 20 × $1.25   = $25.00
     // Side setting (RuleB): 0.02 < 0.5   = $0
-    // Side setting (RuleC): prong        = $0
     // Wax:                  1 × $15      = $15.00
     // Polishing:            1 × $20      = $20.00
     // CAD:                               = $50.00
     // ─────────────────────────────────────────────
-    // Subtotal:                          = $335.00
-    // Customer margin (20%):             = $67.00
+    // Subtotal:                          = $359.50
+    // Customer margin (20%):             = $71.90
     // ─────────────────────────────────────────────
-    // Making price:                      = $402.00
-    expect(result.subtotal).toBeCloseTo(335.0, 2);
-    expect(result.customerMarginAmount).toBeCloseTo(67.0, 2);
-    expect(result.makingPrice).toBeCloseTo(402.0, 2);
+    // Making price:                      = $431.40
+    expect(result.subtotal).toBeCloseTo(359.5, 2);
+    expect(result.customerMarginAmount).toBeCloseTo(71.9, 2);
+    expect(result.makingPrice).toBeCloseTo(431.4, 2);
   });
 });
 
 describe("calculateTierPrice", () => {
-  it("Tier 1: (500 / 0.6) * 2 = 1666.67", () => {
+  it("Tier 1: 500 / 0.6 = 833.33", () => {
     const result = calculateTierPrice(500, "TIER_1");
-    expect(result.estimatedSellingPrice).toBeCloseTo(1666.67, 2);
+    expect(result.estimatedSellingPrice).toBeCloseTo(833.33, 2);
     expect(result.divisor).toBe(0.6);
   });
 
-  it("Tier 2: (500 / 0.7) * 2 = 1428.57", () => {
+  it("Tier 2: 500 / 0.7 = 714.29", () => {
     const result = calculateTierPrice(500, "TIER_2");
-    expect(result.estimatedSellingPrice).toBeCloseTo(1428.57, 2);
+    expect(result.estimatedSellingPrice).toBeCloseTo(714.29, 2);
     expect(result.divisor).toBe(0.7);
   });
 
-  it("Tier 3: (500 / 0.8) * 2 = 1250.00", () => {
+  it("Tier 3: 500 / 0.8 = 625.00", () => {
     const result = calculateTierPrice(500, "TIER_3");
-    expect(result.estimatedSellingPrice).toBeCloseTo(1250.0, 2);
+    expect(result.estimatedSellingPrice).toBeCloseTo(625.0, 2);
     expect(result.divisor).toBe(0.8);
   });
 
   it("Tier 1 with $1,200 making price", () => {
     const result = calculateTierPrice(1200, "TIER_1");
-    expect(result.estimatedSellingPrice).toBeCloseTo(4000.0, 2);
+    expect(result.estimatedSellingPrice).toBeCloseTo(2000.0, 2);
   });
 
   it("returns error on zero making price", () => {

@@ -176,28 +176,67 @@ export async function POST(request: Request) {
       );
     }
 
-    const rendering = await generateQuoteRendering({
-      quoteId: quoteResult.data.id,
-      companyId: company.id
-    });
-
     let renderingImageUrl: string | null = null;
-    if (rendering.status === "COMPLETED") {
-      const renderedQuote = await prisma.quote.findUnique({
-        where: { id: quoteResult.data.id },
-        select: { renderingStorageKey: true, renderingDataUrl: true }
-      });
-      renderingImageUrl = renderedQuote?.renderingStorageKey
-        ? await loadQuoteRenderingDataUrlFromS3(renderedQuote.renderingStorageKey)
-        : renderedQuote?.renderingDataUrl ?? null;
+    let renderingStatus: "COMPLETED" | "FAILED" | "SKIPPED" = "SKIPPED";
+
+    if (features.canGenerateAIImages) {
+      // The analysis step already generates a rendering automatically. Reuse it
+      // instead of paying for a second OpenAI image generation on save.
+      const existingRendering = input.analysisId
+        ? await prisma.aiAnalysis.findUnique({
+            where: { id: input.analysisId },
+            select: {
+              renderingStatus: true,
+              renderingStorageKey: true,
+              renderingDataUrl: true,
+              renderingMimeType: true,
+              renderingModel: true,
+              renderingCreatedAt: true
+            }
+          })
+        : null;
+
+      if (existingRendering?.renderingStatus === "COMPLETED") {
+        await prisma.quote.update({
+          where: { id: quoteResult.data.id },
+          data: {
+            renderingStatus: "COMPLETED",
+            renderingStorageKey: existingRendering.renderingStorageKey,
+            renderingDataUrl: existingRendering.renderingDataUrl,
+            renderingMimeType: existingRendering.renderingMimeType,
+            renderingModel: existingRendering.renderingModel,
+            renderingCreatedAt: existingRendering.renderingCreatedAt
+          }
+        });
+        renderingStatus = "COMPLETED";
+        renderingImageUrl = existingRendering.renderingStorageKey
+          ? await loadQuoteRenderingDataUrlFromS3(existingRendering.renderingStorageKey)
+          : existingRendering.renderingDataUrl ?? null;
+      } else {
+        const rendering = await generateQuoteRendering({
+          quoteId: quoteResult.data.id,
+          companyId: company.id
+        });
+        renderingStatus = rendering.status;
+
+        if (rendering.status === "COMPLETED") {
+          const renderedQuote = await prisma.quote.findUnique({
+            where: { id: quoteResult.data.id },
+            select: { renderingStorageKey: true, renderingDataUrl: true }
+          });
+          renderingImageUrl = renderedQuote?.renderingStorageKey
+            ? await loadQuoteRenderingDataUrlFromS3(renderedQuote.renderingStorageKey)
+            : renderedQuote?.renderingDataUrl ?? null;
+        }
+      }
     }
 
     return NextResponse.json({
       id: quoteResult.data.id,
       quoteNumber: quoteResult.data.quoteNumber,
       estimatedPrice: Number(quoteResult.data.estimatedPrice),
-      renderingStatus: rendering.status,
-      renderingError: rendering.status === "FAILED" ? "The quote was saved, but its rendering could not be generated." : undefined,
+      renderingStatus,
+      renderingError: renderingStatus === "FAILED" ? "The quote was saved, but its rendering could not be generated." : undefined,
       renderingImageUrl
     });
   } catch (error) {

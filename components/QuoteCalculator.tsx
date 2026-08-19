@@ -30,6 +30,7 @@ type FacetOutput = {
   confidence: "low" | "medium" | "high";
   notes?: string;
   assumptions?: string[];
+  renderingImageUrl?: string | null;
 };
 
 type FacetDraft = {
@@ -634,7 +635,8 @@ export default function QuoteCalculator({
           isTwoTone: result.isTwoTone ?? false,
           confidence: result.confidence,
           notes: result.notes,
-          assumptions: result.assumptions
+          assumptions: result.assumptions,
+          renderingImageUrl: result.renderingImageUrl ?? null
         }
       }));
     } catch (error) {
@@ -799,6 +801,8 @@ export default function QuoteCalculator({
   }
 
   const activeFacet = facets.find((facet) => facet.id === activeFacetId) ?? facets[0] ?? null;
+  // Prefer the saved-quote rendering once saved; otherwise show the AI rendering generated during analysis.
+  const displayRenderingImageUrl = renderingImageUrl ?? activeFacet?.output?.renderingImageUrl ?? null;
 
   return (
     <div className={`estimateWorkspace${showroomMode ? " showroomUnifiedWorkspace" : ""}`}>
@@ -1173,9 +1177,9 @@ export default function QuoteCalculator({
 
             {/* AI Generated Image */}
             <div className="quotePreviewImageFrame">
-              {renderingImageUrl || activeFacet?.previewUrl ? (
+              {displayRenderingImageUrl || activeFacet?.previewUrl ? (
                 <img
-                  src={renderingImageUrl ?? activeFacet?.previewUrl ?? ""}
+                  src={displayRenderingImageUrl ?? activeFacet?.previewUrl ?? ""}
                   alt="AI generated jewelry visualization"
                   className="quotePreviewImage"
                 />

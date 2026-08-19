@@ -2,6 +2,9 @@ import type { Company, Order, OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ConflictError, NotFoundError, type AppError, type AppResult } from "@/src/lib/errors";
 import { assertPlanFeature } from "@/src/stripe/plans";
+import { dispatchCustomKingOrder } from "@/lib/customking-api";
+import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
+import { generateAndStoreQuotePdf } from "@/src/services/quote-pdf";
 
 export type OrderTimelineStep = {
   status: OrderStatus | "SUBMITTED" | "CK_ORDER_PLACED" | "CANCELLED";
@@ -159,7 +162,14 @@ export async function submitOrder(params: {
   }
 
   if (!quote.pdfStoredAt) {
-    return { error: ConflictError("The quote must be finalized by generating its PDF before placing an order.") };
+    // Finalize the quote automatically instead of forcing a separate download step.
+    const pdfResult = await generateAndStoreQuotePdf({
+      quoteId: quote.id,
+      companyId: params.companyId
+    });
+    if ("error" in pdfResult) {
+      return { error: pdfResult.error };
+    }
   }
 
   const company = await prisma.company.findUnique({
@@ -220,6 +230,44 @@ export async function submitOrder(params: {
     return createdOrder;
   });
 
+  // Automatically dispatch to Custom King right away. If this fails (network
+  // issue, CK API down, etc.) the order stays SUBMITTED and Azzure staff can
+  // still push it manually from the admin console.
+  try {
+    const renderingImageUrl = quote.renderingStorageKey
+      ? await loadQuoteRenderingDataUrlFromS3(quote.renderingStorageKey)
+      : quote.renderingDataUrl;
+
+    const ckResult = await dispatchCustomKingOrder({
+      companyId: params.companyId,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      itemName: order.itemName,
+      quoteNumber: quote.quoteNumber,
+      metalType: quote.metalType,
+      metalWeightGrams: Number(quote.metalWeightGrams),
+      centerDiamondCarats: Number(quote.centerDiamondCarats),
+      sideDiamondCarats: Number(quote.sideDiamondCarats),
+      customerNotes: order.notes,
+      renderingImageUrl
+    });
+
+    const dispatched = await assignCkOrderId({
+      companyId: params.companyId,
+      orderId: order.id,
+      ckOrderId: ckResult.ckOrderId,
+      ckOrderUrl: ckResult.ckOrderUrl,
+      placedBy: params.createdBy,
+      isAdminAction: false
+    });
+
+    if (!("error" in dispatched)) {
+      return { data: dispatched.data };
+    }
+  } catch (dispatchError) {
+    console.warn("[CustomKing auto-dispatch]", dispatchError);
+  }
+
   return { data: order };
 }
 
@@ -270,6 +318,7 @@ export async function assignCkOrderId(params: {
   ckOrderUrl?: string | null;
   placedBy?: string | null;
   adminUserId?: string | null;
+  isAdminAction?: boolean;
 }): Promise<AppResult<OrderPayload>> {
   const order = await prisma.order.findFirst({
     where: {
@@ -332,14 +381,15 @@ export async function assignCkOrderId(params: {
       }
     });
 
+    const isAdminAction = params.isAdminAction ?? true;
     await tx.orderEvent.create({
       data: {
         orderId: nextOrder.id,
         status: "CK_ORDER_PLACED",
-        note: "Order placed with Custom King",
+        note: isAdminAction ? "Order placed with Custom King" : "Order automatically placed with Custom King",
         internalNote: params.ckOrderId.trim(),
         createdBy: params.adminUserId ?? params.placedBy ?? params.companyId,
-        isAdminAction: true
+        isAdminAction
       }
     });
 

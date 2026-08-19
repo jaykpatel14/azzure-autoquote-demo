@@ -61,6 +61,9 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
   const renderingDataUrl = quote.renderingStorageKey
     ? await loadQuoteRenderingDataUrlFromS3(quote.renderingStorageKey)
     : quote.renderingDataUrl;
+  const sourceImageDataUrl = quote.analysis?.sourceImageStorageKey
+    ? await loadQuoteRenderingDataUrlFromS3(quote.analysis.sourceImageStorageKey)
+    : quote.analysis?.imageDataUrl ?? null;
   const status = deriveQuoteStatus(quote);
   const subscription = context.company.subscription;
   const canShare = Boolean(subscription && getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status)).canShareQuoteLink);
@@ -92,6 +95,12 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <span>Realistic design visualization</span>
               <img className="quoteDetailImage" src={renderingDataUrl} alt={`AI design visualization for quote ${quote.quoteNumber}`} />
               <p className="muted small">AI-generated design visualization. Appearance is illustrative and may differ from the finished product.</p>
+            </div>
+          ) : sourceImageDataUrl ? (
+            <div className="detailCard detailCard--stacked" style={{ marginBottom: "1rem" }}>
+              <span>Customer Reference Image</span>
+              <img className="quoteDetailImage" src={sourceImageDataUrl} alt={`Customer reference image for quote ${quote.quoteNumber}`} />
+              <p className="muted small">Uploaded customer reference photograph analyzed for this estimate.</p>
             </div>
           ) : quote.renderingStatus === "FAILED" ? (
             <p className="fieldError">The presentation rendering could not be generated.</p>
