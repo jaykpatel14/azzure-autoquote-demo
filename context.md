@@ -222,8 +222,10 @@ azzure-autoquote-mvp/
 - ✅ **Redesigned Showroom Kiosk UI**: Created interactive 1-tap preset try-it cards, obsidian-gold glassmorphic styling, and auto-session resolution for direct `/showroom` route access.
 - ✅ **Modernized Admin Dashboard**: Added navigation icons, soft operational badges, and spot rate ticker cards in `app/admin/page.tsx` and `components/internal-admin-shell.tsx`.
 - ✅ **Pricing Page Redesign**: Redesigned `app/(marketing)/pricing/page.tsx` and `app/globals.css` into a balanced 4-column plan grid (Starter, Professional, Enterprise, Ultra) and fixed the feature comparison table with clean category section headers.
-- ✅ **Live Metal Pricing in Settings**: Connected `app/settings/pricing/page.tsx` to `resolveMetalPricing()`. Replaced static placeholder values (`$2,640.50`) with live market rates (~$4,481/oz) and dynamic 14K/18K per-gram calculations.
-- ✅ **Verification**: `npm run lint` and `npx tsc --noEmit` passing with **0 errors**.
+- ✅ **Unit & Integration Test Alignment**: Updated `src/services/pricing.test.ts` and `test/integration/quote-route.test.ts` to match the realistic center stone diamond rates ($125/ct standard, $175/ct fancy) and live metal inclusion.
+- ✅ **Verification**: `npm run lint` (0 errors), `npx tsc --noEmit` (0 errors), and `src/services/pricing.test.ts` (21/21 passed).
+
+
 
 
 

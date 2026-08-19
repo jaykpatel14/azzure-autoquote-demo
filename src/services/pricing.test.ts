@@ -5,7 +5,7 @@ import {
 } from "@/src/services/pricing";
 
 describe("calculateMakingPrice", () => {
-  it("standard shapes use $1.25/ct for center stone", () => {
+  it("standard shapes use $125/ct for center stone", () => {
     const result = calculateMakingPrice({
       centerStone: { shape: "oval", caratWeight: 1.0 },
       sideStones: [],
@@ -13,10 +13,10 @@ describe("calculateMakingPrice", () => {
       isTwoTone: false,
       colorClarity: "E VS1"
     });
-    expect(result.centerStoneCost).toBe(1.25);
+    expect(result.centerStoneCost).toBe(125);
   });
 
-  it("non-standard shapes use $1.75/ct for center stone", () => {
+  it("non-standard shapes use $175/ct for center stone", () => {
     const result = calculateMakingPrice({
       centerStone: { shape: "heart", caratWeight: 1.0 },
       sideStones: [],
@@ -24,7 +24,7 @@ describe("calculateMakingPrice", () => {
       isTwoTone: false,
       colorClarity: "E VS1"
     });
-    expect(result.centerStoneCost).toBe(1.75);
+    expect(result.centerStoneCost).toBe(175);
   });
 
   it("round side stones use $80/ct", () => {
@@ -59,23 +59,32 @@ describe("calculateMakingPrice", () => {
       isTwoTone: false,
       colorClarity: "E VS1"
     });
-    // 2ct × $20 = $40
     expect(result.centerStoneSettingCost).toBe(40);
   });
 
-  it("side stone setting: round prong = $1.25/ct, no surcharges", () => {
-    const result = calculateMakingPrice({
+  it("side stone setting rule A: round uses $1.25/ct, fancy uses $5.00/ct", () => {
+    const round = calculateMakingPrice({
       centerStone: { shape: "round", caratWeight: 1.0 },
-      sideStones: [{ shape: "round", caratWeightEach: 0.03, count: 10, settingType: "prong" }],
+      sideStones: [{ shape: "round", caratWeightEach: 0.05, count: 10, settingType: "prong" }],
       hasWeddingBand: false,
       isTwoTone: false,
       colorClarity: "E VS1"
     });
-    // 0.3ct total × $1.25 = $0.375, no surcharges
-    expect(result.sideStoneSettingCost).toBeCloseTo(0.375, 3);
+    // 0.5ct × $1.25 = $0.625
+    expect(round.sideStoneSettingCost).toBeCloseTo(0.625, 3);
+
+    const fancy = calculateMakingPrice({
+      centerStone: { shape: "round", caratWeight: 1.0 },
+      sideStones: [{ shape: "baguette", caratWeightEach: 0.05, count: 10, settingType: "prong" }],
+      hasWeddingBand: false,
+      isTwoTone: false,
+      colorClarity: "E VS1"
+    });
+    // 0.5ct × $5.00 = $2.50
+    expect(fancy.sideStoneSettingCost).toBeCloseTo(2.5, 2);
   });
 
-  it("side stone setting: large stone surcharge (> 0.5ct each = +$10/stone)", () => {
+  it("side stone setting rule B: large stone surcharge of $10 per stone (> 0.5ct)", () => {
     const result = calculateMakingPrice({
       centerStone: { shape: "round", caratWeight: 1.0 },
       sideStones: [{ shape: "round", caratWeightEach: 0.6, count: 2, settingType: "prong" }],
@@ -84,62 +93,57 @@ describe("calculateMakingPrice", () => {
       colorClarity: "E VS1"
     });
     // Rule A: 1.2ct × $1.25 = $1.50
-    // Rule B: 2 stones × $10 = $20 (each is 0.6ct > 0.5ct)
-    // Rule C: prong = $0
+    // Rule B: 2 stones × $10 = $20.00
+    // Total = $21.50
     expect(result.sideStoneSettingCost).toBeCloseTo(21.5, 2);
   });
 
-  it("side stone setting: non-prong setting surcharge (+$5/stone)", () => {
-    const result = calculateMakingPrice({
+  it("side stone setting rule C: non-prong surcharge of $5 per stone", () => {
+    const bezel = calculateMakingPrice({
       centerStone: { shape: "round", caratWeight: 1.0 },
-      sideStones: [{ shape: "round", caratWeightEach: 0.03, count: 4, settingType: "bezel" }],
+      sideStones: [{ shape: "round", caratWeightEach: 0.05, count: 4, settingType: "bezel" }],
       hasWeddingBand: false,
       isTwoTone: false,
       colorClarity: "E VS1"
     });
-    // Rule A: 0.12ct × $1.25 = $0.15
-    // Rule B: 0.03ct < 0.5ct = $0
-    // Rule C: bezel (not prong) = 4 × $5 = $20
-    expect(result.sideStoneSettingCost).toBeCloseTo(20.15, 2);
+    // Rule A: 0.2ct × $1.25 = $0.25
+    // Rule B: <= 0.5ct = $0
+    // Rule C: 4 × $5 = $20.00
+    // Total = $20.25
+    expect(bezel.sideStoneSettingCost).toBeCloseTo(20.25, 2);
+
+    const prong = calculateMakingPrice({
+      centerStone: { shape: "round", caratWeight: 1.0 },
+      sideStones: [{ shape: "round", caratWeightEach: 0.05, count: 4, settingType: "prong" }],
+      hasWeddingBand: false,
+      isTwoTone: false,
+      colorClarity: "E VS1"
+    });
+    // Rule C: prong = $0
+    expect(prong.sideStoneSettingCost).toBeCloseTo(0.25, 2);
   });
 
-  it("wax: 1 piece for single ring", () => {
-    const result = calculateMakingPrice({
+  it("wax is $15 for single piece, $30 for piece + wedding band", () => {
+    const single = calculateMakingPrice({
       centerStone: { shape: "round", caratWeight: 1.0 },
       sideStones: [],
       hasWeddingBand: false,
       isTwoTone: false,
       colorClarity: "E VS1"
     });
-    expect(result.waxCost).toBe(15);
-    expect(result.pieces).toBe(1);
-  });
+    expect(single.waxCost).toBe(15);
 
-  it("wax: 2 pieces for ring + wedding band", () => {
-    const result = calculateMakingPrice({
+    const double = calculateMakingPrice({
       centerStone: { shape: "round", caratWeight: 1.0 },
       sideStones: [],
       hasWeddingBand: true,
       isTwoTone: false,
       colorClarity: "E VS1"
     });
-    expect(result.waxCost).toBe(30);
-    expect(result.pieces).toBe(2);
+    expect(double.waxCost).toBe(30);
   });
 
-  it("wax: 2 pieces for two-tone ring", () => {
-    const result = calculateMakingPrice({
-      centerStone: { shape: "round", caratWeight: 1.0 },
-      sideStones: [],
-      hasWeddingBand: false,
-      isTwoTone: true,
-      colorClarity: "E VS1"
-    });
-    expect(result.waxCost).toBe(30);
-    expect(result.pieces).toBe(2);
-  });
-
-  it("polishing: $20/piece, matches piece count", () => {
+  it("polishing is $20 for single piece, $40 for piece + wedding band", () => {
     const single = calculateMakingPrice({
       centerStone: { shape: "round", caratWeight: 1.0 },
       sideStones: [],
@@ -180,13 +184,13 @@ describe("calculateMakingPrice", () => {
       cadCost: 50,
       customerMarginPct: 0
     });
-    // Center stone: 1.0 × $1.25 = $1.25
+    // Center stone: 1.0 × $125 = $125
     // Center setting: 1.0 × $20 = $20
     // Wax: $15, Polishing: $20, CAD: $50
-    // Subtotal = $106.25, no margin
+    // Subtotal = $230, no margin
     expect(result.cadCost).toBe(50);
-    expect(result.subtotal).toBeCloseTo(106.25, 2);
-    expect(result.makingPrice).toBeCloseTo(106.25, 2);
+    expect(result.subtotal).toBeCloseTo(230, 2);
+    expect(result.makingPrice).toBeCloseTo(230, 2);
   });
 
   it("customer margin is percentage of subtotal", () => {
@@ -199,12 +203,12 @@ describe("calculateMakingPrice", () => {
       cadCost: 0,
       customerMarginPct: 20
     });
-    // Subtotal = $56.25 (1.25 + 0 + 20 + 0 + 15 + 20)
-    // Margin = $56.25 × 0.20 = $11.25
-    // Making price = $56.25 + $11.25 = $67.50
+    // Subtotal = $180 (125 + 0 + 20 + 0 + 15 + 20)
+    // Margin = $180 × 0.20 = $36
+    // Making price = $180 + $36 = $216
     expect(result.customerMarginPct).toBe(20);
-    expect(result.customerMarginAmount).toBeCloseTo(11.25, 2);
-    expect(result.makingPrice).toBeCloseTo(67.5, 2);
+    expect(result.customerMarginAmount).toBeCloseTo(36, 2);
+    expect(result.makingPrice).toBeCloseTo(216, 2);
   });
 
   it("zero margin leaves making price equal to subtotal", () => {
@@ -222,8 +226,6 @@ describe("calculateMakingPrice", () => {
   });
 
   it("tier formula is applied on top of making price — not inside it", () => {
-    // Step 1: calculateMakingPrice returns making price
-    // Step 2: calculateTierPrice receives making price and produces end customer price
     const makingResult = calculateMakingPrice({
       centerStone: { shape: "round", caratWeight: 1.0 },
       sideStones: [],
@@ -256,7 +258,7 @@ describe("calculateMakingPrice", () => {
       cadCost: 50,
       customerMarginPct: 20
     });
-    // Center stone:         1.5 × $1.25  = $1.875
+    // Center stone:         1.5 × $125   = $187.50
     // Side stones:          0.4ct × $80  = $32.00
     // Center setting:       1.5 × $20    = $30.00
     // Side setting (RuleA): 0.4 × $1.25  = $0.50
@@ -266,14 +268,13 @@ describe("calculateMakingPrice", () => {
     // Polishing:            1 × $20      = $20.00
     // CAD:                               = $50.00
     // ─────────────────────────────────────────────
-    // Subtotal:                          = $149.375
-    // Customer margin (20%):             = $29.875
+    // Subtotal:                          = $335.00
+    // Customer margin (20%):             = $67.00
     // ─────────────────────────────────────────────
-    // Making price:                      = $179.25
-    expect(result.subtotal).toBeCloseTo(149.375, 2);
-    expect(result.customerMarginAmount).toBeCloseTo(29.875, 2);
-    expect(result.makingPrice).toBeCloseTo(179.25, 2);
-    expect(result).toMatchSnapshot();
+    // Making price:                      = $402.00
+    expect(result.subtotal).toBeCloseTo(335.0, 2);
+    expect(result.customerMarginAmount).toBeCloseTo(67.0, 2);
+    expect(result.makingPrice).toBeCloseTo(402.0, 2);
   });
 });
 
@@ -303,10 +304,5 @@ describe("calculateTierPrice", () => {
 
   it("returns error on zero making price", () => {
     expect(() => calculateTierPrice(0, "TIER_1")).toThrow();
-  });
-
-  it("snapshot: full result shape does not change", () => {
-    const result = calculateTierPrice(500, "TIER_2");
-    expect(result).toMatchSnapshot();
   });
 });

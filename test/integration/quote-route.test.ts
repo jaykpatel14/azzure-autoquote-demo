@@ -220,6 +220,9 @@ describe("quote route integration", () => {
     });
 
     const expectedMakingPrice = calculateMakingPrice({
+      metalType: payload.metalType,
+      metalWeightGrams: payload.metalWeightGrams,
+      goldSpotPerOz: 4500,
       centerStone: {
         shape: "round",
         caratWeight: payload.centerDiamondCarats

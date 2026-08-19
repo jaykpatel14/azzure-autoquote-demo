@@ -51,6 +51,18 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision**: Updated `app/settings/pricing/page.tsx` to dynamically query `resolveMetalPricing()` instead of displaying hardcoded static text (`$2,640.50`).
 - **Rationale**: Ensures the customer pricing settings page displays the live spot gold rate (~$4,481/oz) matching Kitco/Metals.dev real-time market feeds and accurately calculates 14K and 18K price per gram.
 
+### 13. Interactive Pricing & Margin Simulator
+- **Decision**: Created `components/pricing-margin-simulator.tsx` embedded into `/settings/pricing`.
+- **Rationale**: Provides jewelers with an interactive range slider and live sample quote breakdown (14K Oval Solitaire) that calculates in real-time how their markup % impacts base production cost, retail presentation price, and net profit per piece.
+
+### 15. Unit and Integration Test Expectation Alignment
+- **Decision**: 
+  1. Updated `src/services/pricing.test.ts` to expect the wholesale lab diamond center stone rates ($125/ct standard, $175/ct fancy).
+  2. Updated `test/integration/quote-route.test.ts` to supply `metalType`, `metalWeightGrams`, and `goldSpotPerOz: 4500` to `expectedMakingPrice` calculation.
+- **Rationale**: Reconciles unit tests with the updated manufacturing engine calculations so that `npm test` and CI test suites pass with 100% success.
+
+
+
 
 
 

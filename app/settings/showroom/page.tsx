@@ -2,10 +2,13 @@ import { redirect } from "next/navigation";
 import WorkspaceShell from "@/components/workspace-shell";
 import SettingsTabs from "@/components/settings-tabs";
 import ShowroomSettingsActions from "@/components/showroom-settings-actions";
+import ShowroomCustomizer from "@/components/showroom-customizer";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 async function fetchShowroomStats(companyId: string) {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
@@ -29,23 +32,40 @@ export default async function ShowroomSettingsPage() {
 
   return (
     <WorkspaceShell
-      title="Showroom Mode"
-      description="Turn a display into a customer-facing quote kiosk with your branding."
+      title="Showroom Mode & Customization"
+      description="Turn a display or tablet into a luxury customer-facing quote kiosk with your custom branding and colors."
       navItems={getWorkspaceNav("/settings")}
     >
       <SettingsTabs activeHref="/settings/showroom" showShowroom />
-      <section className="card stack">
-        <h2>Customer quote kiosk</h2>
-        <p className="muted">
-          Customers can upload inspiration, receive an estimate, and save a short code for your team. No personal information is collected.
-        </p>
-        <ShowroomSettingsActions initialToken={session?.isActive ? session.token : null} />
-        <hr />
-        <h3>Last 30 days</h3>
-        <p>
-          <strong>{generated}</strong> generated · <strong>{claimed}</strong> claimed · <strong>{converted}</strong> converted
-        </p>
-      </section>
+
+      <div className="stack" style={{ gap: "var(--space-6)" }}>
+        {/* Kiosk Activation & Access Token */}
+        <section className="card stack">
+          <div className="sectionHeader">
+            <div>
+              <span className="eyebrow">Kiosk Activation</span>
+              <h2>Customer Quote Kiosk</h2>
+              <p className="muted">
+                Walk-in clients can upload inspiration photos, adjust parameters, receive an estimate, and save a consultation claim code for your team.
+              </p>
+            </div>
+          </div>
+          <ShowroomSettingsActions initialToken={session?.isActive ? session.token : null} />
+          <hr />
+          <h3>Last 30 days Performance</h3>
+          <p>
+            <strong>{generated}</strong> generated · <strong>{claimed}</strong> claimed · <strong>{converted}</strong> converted
+          </p>
+        </section>
+
+        {/* Luxury Showroom Theme & Color Customizer */}
+        <ShowroomCustomizer
+          initialPrimaryColor={context.company.primaryColor}
+          initialAboutUs={context.company.aboutUs}
+          companyName={context.company.name}
+          logoUrl={context.company.logoUrl}
+        />
+      </div>
     </WorkspaceShell>
   );
 }
