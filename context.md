@@ -222,8 +222,9 @@ azzure-autoquote-mvp/
 - ✅ **Redesigned Showroom Kiosk UI**: Created interactive 1-tap preset try-it cards, obsidian-gold glassmorphic styling, and auto-session resolution for direct `/showroom` route access.
 - ✅ **Modernized Admin Dashboard**: Added navigation icons, soft operational badges, and spot rate ticker cards in `app/admin/page.tsx` and `components/internal-admin-shell.tsx`.
 - ✅ **Pricing Page Redesign**: Redesigned `app/(marketing)/pricing/page.tsx` and `app/globals.css` into a balanced 4-column plan grid (Starter, Professional, Enterprise, Ultra) and fixed the feature comparison table with clean category section headers.
-- ✅ **Unit & Integration Test Alignment**: Updated `src/services/pricing.test.ts` and `test/integration/quote-route.test.ts` to match the realistic center stone diamond rates ($125/ct standard, $175/ct fancy) and live metal inclusion.
-- ✅ **Verification**: `npm run lint` (0 errors), `npx tsc --noEmit` (0 errors), and `src/services/pricing.test.ts` (21/21 passed).
+- ✅ **Proxmox Deployment Stage Transparency**: Added explicit stage headers (`[1/5] Starting DB`, `[2/5] Building Next.js`, etc.) to `.github/workflows/proxmox-test-deploy.yml` so that multi-minute Next.js compilation steps are clearly distinguishable from database startup.
+- ✅ **Verification**: `npm run lint` and `npx tsc --noEmit` passing with **0 errors**.
+
 
 
 

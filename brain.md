@@ -55,11 +55,10 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision**: Created `components/pricing-margin-simulator.tsx` embedded into `/settings/pricing`.
 - **Rationale**: Provides jewelers with an interactive range slider and live sample quote breakdown (14K Oval Solitaire) that calculates in real-time how their markup % impacts base production cost, retail presentation price, and net profit per piece.
 
-### 15. Unit and Integration Test Expectation Alignment
-- **Decision**: 
-  1. Updated `src/services/pricing.test.ts` to expect the wholesale lab diamond center stone rates ($125/ct standard, $175/ct fancy).
-  2. Updated `test/integration/quote-route.test.ts` to supply `metalType`, `metalWeightGrams`, and `goldSpotPerOz: 4500` to `expectedMakingPrice` calculation.
-- **Rationale**: Reconciles unit tests with the updated manufacturing engine calculations so that `npm test` and CI test suites pass with 100% success.
+### 16. Proxmox Deployment Workflow Visual Stage Transparency
+- **Decision**: Updated `.github/workflows/proxmox-test-deploy.yml` with explicit visual step banners (`[1/5] Starting DB`, `[2/5] Building Next.js Docker Container`, `[3/5] Migrations & Seeds`, `[4/5] Starting App`, `[5/5] Health Check`).
+- **Rationale**: Previously, when `docker compose up -d db` finished, the runner immediately started `docker compose build app migrate` (compiling Next.js for 5-8 minutes) without printing a transitional header, making it look like the workflow was stuck on the `db` step when it was actually executing the heavy JavaScript compiler.
+
 
 
 
