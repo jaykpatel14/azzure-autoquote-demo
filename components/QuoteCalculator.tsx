@@ -448,7 +448,7 @@ export default function QuoteCalculator({
     } catch {
       return { costBreakdown: null, estimatedSellingPrice: 0 };
     }
-  }, [aggregateQuote, cadCost, customerMarginPct, pricingTier]);
+  }, [aggregateQuote, cadCost, customerMarginPct, pricingTier, metalType, pricingProfile?.goldSpotPerOz]);
 
   const canAnalyse = canEdit && facets.some((facet) => facet.status === "pending" || facet.status === "error");
 

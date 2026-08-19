@@ -40,11 +40,18 @@ This document logs every key architectural, design, and calculation decision mad
   2. Fixed the Feature Comparison Table in `app/(marketing)/pricing/page.tsx` by grouping rows under 5 distinct category header rows (*Core Quoting Engine*, *Customization & Branding*, *Storage & Team Seats*, *Manufacturing & Enterprise*, *Ultra Studio & Showroom Kiosk*).
 - **Rationale**: Eliminates the layout bug where Ultra dropped down to a second row alone, and fixes the text concatenation bug (`Core quotingQuotes per month`) by properly separating section categories from feature labels.
 
-### 10. Proxmox Deployment Stream & Local Health Check Optimization
+### 11. CI Lint Purity Fixes & Dependency Resolution
 - **Decision**: 
-  1. Updated `.github/workflows/proxmox-test-deploy.yml` to use `DOCKER_BUILDKIT=1 docker compose build --progress=plain app migrate`.
-  2. Changed container health check from public domain URL to local loopback port (`http://127.0.0.1:8585/api/health`).
-- **Rationale**: Prevents GitHub Actions runner logs from buffering silently during Next.js Webpack Docker compilation, and eliminates potential DNS/SSL resolution hangs on the self-hosted Proxmox node.
+  1. Extracted `Date.now()` query in `app/settings/showroom/page.tsx` into a `fetchShowroomStats` helper function outside the render scope.
+  2. Replaced `Math.random()` in `app/showroom/page.tsx` with `crypto.randomUUID()` in `resolveOrCreateShowroomSession` helper.
+  3. Added missing dependencies (`metalType`, `pricingProfile?.goldSpotPerOz`) to `useMemo` in `components/QuoteCalculator.tsx`.
+- **Rationale**: Fixes React 19 `react-hooks/purity` compiler lint errors, ensuring `npm run lint` exits cleanly with code 0 in GitHub Actions CI.
+
+### 12. Live Precious Metal Pricing Integration in Settings Page
+- **Decision**: Updated `app/settings/pricing/page.tsx` to dynamically query `resolveMetalPricing()` instead of displaying hardcoded static text (`$2,640.50`).
+- **Rationale**: Ensures the customer pricing settings page displays the live spot gold rate (~$4,481/oz) matching Kitco/Metals.dev real-time market feeds and accurately calculates 14K and 18K price per gram.
+
+
 
 
 

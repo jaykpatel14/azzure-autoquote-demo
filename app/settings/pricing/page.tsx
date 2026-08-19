@@ -5,6 +5,18 @@ import WorkspaceShell from "@/components/workspace-shell";
 import { getAuthenticatedCompanyContext, canManageBilling } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { prisma } from "@/lib/prisma";
+import { resolveMetalPricing, toPricingProfileInput } from "@/lib/metal-pricing";
+
+export const dynamic = "force-dynamic";
+
+function formatUsd(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(amount);
+}
 
 export default async function PricingSettingsPage() {
   const context = await getAuthenticatedCompanyContext();
@@ -12,21 +24,38 @@ export default async function PricingSettingsPage() {
     redirect("/signin");
   }
 
-  const company = await prisma.company.findUnique({
-    where: { id: context.company.id },
-    select: {
-      id: true,
-      name: true,
-      customerMarginPct: true,
-      pricingTier: true
-    }
-  });
+  const [company, livePricing] = await Promise.all([
+    prisma.company.findUnique({
+      where: { id: context.company.id },
+      select: {
+        id: true,
+        name: true,
+        customerMarginPct: true,
+        pricingTier: true,
+        pricingProfile: true
+      }
+    }),
+    resolveMetalPricing()
+  ]);
 
   if (!company) {
     redirect("/settings");
   }
 
   const canEdit = canManageBilling(context.membership?.role ?? "CUSTOMER");
+  const profile = livePricing.pricingProfile;
+
+  const goldSpot = profile.goldSpotPerOz ?? 4500;
+  const platSpot = profile.platinumSpotPerOz ?? 985.2;
+  const silverSpot = profile.silverSpotPerOz ?? 31.4;
+
+  // Pure metal rate per gram (1 troy oz = 31.1034768 grams)
+  const TROY_OZ_TO_GRAMS = 31.1034768;
+  const goldPerGram24K = goldSpot / TROY_OZ_TO_GRAMS;
+  const goldPerGram14K = goldPerGram24K * (14 / 24);
+  const goldPerGram18K = goldPerGram24K * (18 / 24);
+  const platPerGram950 = (platSpot / TROY_OZ_TO_GRAMS) * 0.95;
+  const silverPerGram925 = (silverSpot / TROY_OZ_TO_GRAMS) * 0.925;
 
   return (
     <WorkspaceShell
@@ -53,27 +82,27 @@ export default async function PricingSettingsPage() {
           </div>
           <div className="consultationPill">
             <span className="consultationDot" aria-hidden="true" />
-            <span>Active Live Engine</span>
+            <span>{livePricing.source === "metals.dev" ? "Live Market Feed" : "Active Live Engine"}</span>
           </div>
         </div>
 
         <div className="statGrid">
           <article className="statCard">
             <span className="eyebrow">XAU · Fine Gold (24K)</span>
-            <strong>$2,640.50<span className="small muted"> / oz</span></strong>
-            <p className="muted small">14K: ~$44.80/g | 18K: ~$57.60/g</p>
+            <strong>{formatUsd(goldSpot)}<span className="small muted"> / oz</span></strong>
+            <p className="muted small">14K: ~{formatUsd(goldPerGram14K)}/g | 18K: ~{formatUsd(goldPerGram18K)}/g</p>
           </article>
 
           <article className="statCard">
             <span className="eyebrow">XPT · Pure Platinum</span>
-            <strong>$985.20<span className="small muted"> / oz</span></strong>
-            <p className="muted small">950 Plat: ~$31.50/g</p>
+            <strong>{formatUsd(platSpot)}<span className="small muted"> / oz</span></strong>
+            <p className="muted small">950 Plat: ~{formatUsd(platPerGram950)}/g</p>
           </article>
 
           <article className="statCard">
             <span className="eyebrow">XAG · Sterling Silver</span>
-            <strong>$31.40<span className="small muted"> / oz</span></strong>
-            <p className="muted small">925 Silver: ~$0.98/g</p>
+            <strong>{formatUsd(silverSpot)}<span className="small muted"> / oz</span></strong>
+            <p className="muted small">925 Silver: ~{formatUsd(silverPerGram925)}/g</p>
           </article>
         </div>
       </section>

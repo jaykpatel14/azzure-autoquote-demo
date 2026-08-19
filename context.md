@@ -222,8 +222,10 @@ azzure-autoquote-mvp/
 - ✅ **Redesigned Showroom Kiosk UI**: Created interactive 1-tap preset try-it cards, obsidian-gold glassmorphic styling, and auto-session resolution for direct `/showroom` route access.
 - ✅ **Modernized Admin Dashboard**: Added navigation icons, soft operational badges, and spot rate ticker cards in `app/admin/page.tsx` and `components/internal-admin-shell.tsx`.
 - ✅ **Pricing Page Redesign**: Redesigned `app/(marketing)/pricing/page.tsx` and `app/globals.css` into a balanced 4-column plan grid (Starter, Professional, Enterprise, Ultra) and fixed the feature comparison table with clean category section headers.
-- ✅ **Proxmox Deployment Stream Optimization**: Added `--progress=plain` to Docker build and redirected health checks to local loopback port (`http://127.0.0.1:8585/api/health`) in `.github/workflows/proxmox-test-deploy.yml` to prevent log buffering and network hangs on self-hosted runners.
-- ✅ **Verification**: TypeScript compilation passing cleanly (`tsc exit code 0`).
+- ✅ **Live Metal Pricing in Settings**: Connected `app/settings/pricing/page.tsx` to `resolveMetalPricing()`. Replaced static placeholder values (`$2,640.50`) with live market rates (~$4,481/oz) and dynamic 14K/18K per-gram calculations.
+- ✅ **Verification**: `npm run lint` and `npx tsc --noEmit` passing with **0 errors**.
+
+
 
 
 
