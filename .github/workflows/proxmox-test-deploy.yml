@@ -39,11 +39,27 @@ jobs:
           docker compose -f docker-compose.proxmox.yml up -d db
 
           echo "⏳ Waiting for PostgreSQL to be ready..."
-          until docker compose -f docker-compose.proxmox.yml exec -T db pg_isready -U autoquote -d autoquote >/dev/null 2>&1; do
-            echo "   ...waiting for postgres..."
+          DB_READY=0
+          for attempt in $(seq 1 30); do
+            if docker compose -f docker-compose.proxmox.yml exec -T db pg_isready -U autoquote -d autoquote >/dev/null 2>&1 || \
+               docker compose -f docker-compose.proxmox.yml exec -T db pg_isready -U postgres >/dev/null 2>&1 || \
+               docker compose -f docker-compose.proxmox.yml exec -T db pg_isready >/dev/null 2>&1; then
+              echo "✅ PostgreSQL is ready and accepting queries on attempt $attempt!"
+              DB_READY=1
+              break
+            fi
+            echo "   ...waiting for postgres (attempt $attempt/30)..."
             sleep 2
           done
-          echo "✅ PostgreSQL is ready and accepting queries!"
+
+          if [ "$DB_READY" -ne 1 ]; then
+            echo "❌ ERROR: PostgreSQL failed to become ready within 60 seconds."
+            echo "📋 PostgreSQL container status:"
+            docker compose -f docker-compose.proxmox.yml ps
+            echo "📋 PostgreSQL container logs:"
+            docker compose -f docker-compose.proxmox.yml logs --tail=100 db
+            exit 1
+          fi
 
           echo "🔨 [2/5] Building Next.js app and migrator Docker containers..."
           DOCKER_BUILDKIT=1 docker compose -f docker-compose.proxmox.yml build --progress=plain app migrate
@@ -68,5 +84,9 @@ jobs:
             sleep 3
           done
 
-          echo "⚠️ Final health check verification..."
-          curl -fsS http://127.0.0.1:8585/api/health || true
+          echo "⚠️ Health check timed out. Showing application container logs:"
+          docker compose -f docker-compose.proxmox.yml logs --tail=100 app
+          docker compose -f docker-compose.proxmox.yml ps
+          echo "⚠️ Final health check attempt..."
+          curl -fsS http://127.0.0.1:8585/api/health
+          exit 1

@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const companyContextMock = vi.hoisted(() => vi.fn());
 const reserveUsageMock = vi.hoisted(() => vi.fn());
-const releaseUsageMock = vi.hoisted(() => vi.fn());
+const releaseUsageMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const consumeUsageMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const prismaMock = vi.hoisted(() => ({
   aiAnalysis: {
     create: vi.fn()
@@ -26,7 +27,9 @@ vi.mock("@/lib/billing", () => ({
 
 vi.mock("@/lib/usage", () => ({
   reserveMonthlyUsage: reserveUsageMock,
-  releaseMonthlyUsage: releaseUsageMock
+  releaseMonthlyUsage: releaseUsageMock,
+  consumeMonthlyUsage: consumeUsageMock,
+  UsageLimitError: class UsageLimitError extends Error {}
 }));
 
 vi.mock("@/lib/app-settings", () => ({
@@ -38,13 +41,22 @@ vi.mock("@/lib/quote-pdf-s3", () => ({
   storeAnalysisImageInS3: vi.fn(() => Promise.resolve(null))
 }));
 
+vi.mock("@/src/stripe/plans", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/src/stripe/plans")>();
+  return {
+    ...actual,
+    assertPlanFeature: vi.fn().mockResolvedValue(undefined)
+  };
+});
+
 import { POST as generateConcept } from "@/app/api/concept/generate/route";
 
 describe("POST /api/concept/generate", () => {
   beforeEach(() => {
     companyContextMock.mockReset();
     reserveUsageMock.mockReset();
-    releaseUsageMock.mockReset();
+    releaseUsageMock.mockReset().mockResolvedValue(undefined);
+    consumeUsageMock.mockReset().mockResolvedValue(undefined);
     prismaMock.aiAnalysis.create.mockReset();
   });
 

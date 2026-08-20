@@ -163,9 +163,9 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
           <label className="field">
             <span>New pricing tier</span>
             <select name="pricingTier" defaultValue={company.pricingTier ?? ""} required>
-              <option value="TIER_1" disabled={company.pricingTier === "TIER_1"}>Tier 1 - Premium (divide by 0.6, then multiply by 2)</option>
-              <option value="TIER_2" disabled={company.pricingTier === "TIER_2"}>Tier 2 - Standard (divide by 0.7, then multiply by 2)</option>
-              <option value="TIER_3" disabled={company.pricingTier === "TIER_3"}>Tier 3 - Basic (divide by 0.8, then multiply by 2)</option>
+              <option value="TIER_1" disabled={company.pricingTier === "TIER_1"}>Tier 1 - Premium (divide by 0.6)</option>
+              <option value="TIER_2" disabled={company.pricingTier === "TIER_2"}>Tier 2 - Standard (divide by 0.7)</option>
+              <option value="TIER_3" disabled={company.pricingTier === "TIER_3"}>Tier 3 - Basic (divide by 0.8)</option>
             </select>
           </label>
           <label className="field">

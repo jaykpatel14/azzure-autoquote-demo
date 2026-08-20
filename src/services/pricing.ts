@@ -86,16 +86,9 @@ export function isProngSetting(settingType: string): boolean {
 }
 
 export function sideStoneSettingCost(input: SideStoneSettingInput): number {
-  const { caratWeightEach, count, settingType } = input;
-
-  // Rule A: base cost by setting type, per stone (not per carat)
+  const { count, settingType } = input;
   const ratePerStone = isProngSetting(settingType) ? 1.25 : 5.0;
-  const ruleA = count * ratePerStone;
-
-  // Rule B: large stone surcharge (> 0.5ct each)
-  const ruleB = caratWeightEach > 0.5 ? count * 10 : 0;
-
-  return ruleA + ruleB;
+  return count * ratePerStone;
 }
 
 export type WaxInput = {

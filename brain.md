@@ -63,26 +63,20 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision**: Wrapped `generateQuoteRendering` in `app/api/quotes/route.ts` with `if (features.canGenerateAIImages)`. When creating a quote on Starter or Professional tiers, AI image synthesis is safely skipped, and the quote view cleanly displays the customer's uploaded reference image.
 - **Rationale**: Strict subscription enforcement ensures AI image rendering is exclusively available on Enterprise and Ultra plans.
 
+### 23. Prisma Client Sync & Windows File Lock Resolution
+- **Decision**: Identified that the runtime error `Unknown argument 'renderingStatus' in prisma.aiAnalysis.update()` occurred because `prisma/schema.prisma` had been updated with new rendering fields (`renderingStatus`, `renderingStorageKey`, `renderingDataUrl`, etc.), but the generated Prisma client in `node_modules/@prisma/client` had not been rebuilt due to Windows file locking (`EPERM` on `query_engine-windows.dll.node`) by the active Next.js development server process. Stopped the locking Next.js dev server, regenerated Prisma Client using `npx prisma generate`, verified database sync with `prisma db push`, and updated unit test mocks in `test/concept-generate.test.ts`.
+- **Rationale**: Prisma on Windows locks the C++ engine DLL during runtime. Rebuilding the client ensures full TypeScript and runtime ORM support for all new columns on `AiAnalysis` and `Quote`, eliminating runtime crashes during AI analysis image synthesis.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+### 24. Proxmox Deploy Workflow PostgreSQL Wait Loop & Diagnostics Resilience
+- **Decision**: 
+  1. Replaced the unbounded `until docker compose exec pg_isready ...` loop in `.github/workflows/proxmox-test-deploy.yml` with a bounded 30-attempt (60-second) retry loop that checks both `autoquote` and `postgres` roles/database readiness.
+  2. Added automatic failure diagnostics (`docker compose logs --tail=100 db` and `docker compose ps`) if PostgreSQL does not become ready within 60 seconds, preventing GitHub Actions jobs from hanging indefinitely and getting cancelled after hours of silent retries.
+  3. Updated the healthcheck test in `docker-compose.proxmox.yml` to include fallback role checks (`pg_isready -U autoquote -d autoquote || pg_isready -U postgres || pg_isready`) with 3s intervals.
+  4. Added application log dumping to Step 5 if `/api/health` fails to respond within 20 attempts.
+- **Rationale**: An unbounded loop suppressing stdout/stderr (`>/dev/null 2>&1`) hides the actual reason for connection failure (such as container crash loop, existing volume role mismatch, or socket permission issues) and causes the runner to hang until timeout cancellation. Bounded retries with diagnostic log outputs guarantee fast failure feedback and immediate visibility into runner issues.
 
 ---
 
 ## Last Updated
-- Date: August 18, 2026
-- Status: Production Ready, All Tests Passing (`tsc exit code 0`).
+- Date: August 20, 2026
+- Status: Production Ready, All 21 Test Suites Passing (97/97 tests), TypeScript zero errors.

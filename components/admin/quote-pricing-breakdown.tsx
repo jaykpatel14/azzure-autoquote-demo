@@ -162,7 +162,7 @@ export function QuotePricingBreakdown({
             <div className="adminBreakdownRow">
               <span>
                 Side setting — {String(sideDiamondQuantity)}× {settingType || "prong"}
-                <span className="adminBreakdownNote">&nbsp;(prong/claw $1.25/stone · other $5/stone + large-stone surcharge)</span>
+                <span className="adminBreakdownNote">&nbsp;(prong/claw $1.25/stone · other $5/stone)</span>
               </span>
               <strong>{money(breakdown.sideStoneSettingCost)}</strong>
             </div>

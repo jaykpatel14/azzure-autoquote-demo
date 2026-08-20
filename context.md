@@ -221,8 +221,9 @@ azzure-autoquote-mvp/
 - ✅ **Fixed Metals.dev API 401 & Health Checks**: Sanitized API key quotes, added browser headers, and updated default offline fallback spot rate to $4,500/oz.
 - ✅ **Luxury Onboarding Flow**: Completely redesigned `/onboarding` page and styling in `app/globals.css` with 3 guided steps, obsidian-gold glassmorphism cards, and real-time trial metric status banner.
 - ✅ **Trial Duration & Days Remaining Fix**: Fixed `getTrialDaysRemaining` in `lib/billing.ts` and `lib/admin-companies.ts` to compute remaining trial days dynamically from `trialEndsAt`, `currentPeriodEnd`, or `currentPeriodStart + 14 days`, fixing the "0 days left" display.
-- ✅ **AI 3D Image Concept Gating in Quotes**: Gated `generateQuoteRendering` in `app/api/quotes/route.ts` with `features.canGenerateAIImages`. For Professional & Starter tiers, synthetic AI rendering is skipped and the customer's uploaded reference image is displayed in the quote details view.
-- ✅ **Verification**: `npx tsc --noEmit` (0 errors), `npm run lint` (0 errors), all test suites passing.
+- ✅ **Prisma Client Sync & DLL Lock Fix**: Resolved the runtime `Unknown argument 'renderingStatus'` error by stopping the locking Next.js dev server on Windows and regenerating the Prisma client (`npx prisma generate`).
+- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 21 test suites passing (97/97 tests), database fully in sync.
+
 
 
 

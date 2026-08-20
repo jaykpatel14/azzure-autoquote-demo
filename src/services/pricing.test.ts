@@ -94,7 +94,7 @@ describe("calculateMakingPrice", () => {
     expect(bezel.sideStoneSettingCost).toBeCloseTo(50, 2);
   });
 
-  it("side stone setting rule B: large stone surcharge of $10 per stone (> 0.5ct)", () => {
+  it("side stone setting: prong/claw is $1.25 per stone regardless of carat size", () => {
     const result = calculateMakingPrice({
       centerStone: { shape: "round", caratWeight: 1.0 },
       sideStones: [{ shape: "round", caratWeightEach: 0.6, count: 2, settingType: "prong" }],
@@ -102,10 +102,8 @@ describe("calculateMakingPrice", () => {
       isTwoTone: false,
       colorClarity: "E VS1"
     });
-    // Rule A: 2 stones × $1.25 = $2.50
-    // Rule B: 2 stones × $10 = $20.00
-    // Total = $22.50
-    expect(result.sideStoneSettingCost).toBeCloseTo(22.5, 2);
+    // 2 stones × $1.25 = $2.50
+    expect(result.sideStoneSettingCost).toBeCloseTo(2.5, 2);
   });
 
   it("wax is $15 for single piece, $30 for piece + wedding band", () => {
