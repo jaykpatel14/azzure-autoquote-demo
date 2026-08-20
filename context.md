@@ -229,7 +229,18 @@ azzure-autoquote-mvp/
 - ✅ **Showroom Kiosk 10-Point Luxury Experience Complete**: Built a friction-free touchscreen experience meeting all customer trust standards: dedicated luxury welcome/standby screen with 1-tap start and 4 inspiration presets, photo upload + custom notes, animated progressive AI facet extraction, photorealistic 3D concept visualization render, instant live price updates without asterisks or small print, large glowing claim codes (e.g. `QT-0042`), explicit next-step guidance for the jeweler, and clean privacy reset with 90s inactivity timer.
 - ✅ **CustomKing Integration API Endpoint Normalization**: Updated `lib/customking-api.ts` to automatically target CustomKing's `/api/v1/integration/orders` endpoint, preventing 404s and enabling live order creation from AutoQuote directly into the CustomKing staging manufacturing pipeline.
 - ✅ **CustomKing Manufacturing Order Studio**: Built an interactive modal studio in `components/manufacturing-order-modal.tsx` on `/quotes/[quoteId]` that automatically pre-fills all AI-detected visual specifications (metal alloy, gram weight, diamond carats, shape, side stones, setting type, and 3D render) while allowing jewelers to customize production details (ring size, polish finish, diamond origin/color/clarity, stone provider, matching wedding band, engraving text and font, target delivery date, and workshop notes) before 1-click dispatching to CustomKing NYC.
-- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 21 test suites passing (97/97 tests), clean CI ready.
+- ✅ **Pricing Engine Formulas & Pricing Flow Overhaul**:
+  - **Side Stone Pricing**: Round side stones = $80/ct; Non-round / fancy side stones (baguette, trapezoid, pear, emerald, etc.) = $130/ct.
+  - **Side Stone Setting Labor**: Round side stones = $1.25/stone; Non-round side stones = $5.00/stone.
+  - **CAD Design Fee**: Flat $20.00 default.
+  - **3-Step Pricing Hierarchy**:
+    1. **Production Subtotal** = Metal + Center Stone + Side Stone + Setting Labor + Wax ($15) + Polish ($20) + CAD ($20) *(Azzure raw manufacturing cost)*.
+    2. **Azzure Making Price** = `Production Subtotal / Tier Divisor` (e.g. `Subtotal / 0.7` for Tier 2) *(Azzure wholesale invoice to jeweler)*.
+- ✅ **Explicit AI Analyze Button on Jeweler & Showroom Dashboards**:
+  - Replaced automatic image upload and blur-triggered AI analysis with an explicit **"Analyze with AI"** / **"Analyze Design with AI"** button on both the Jeweler's Workspace (`components/QuoteCalculator.tsx`) and the Showroom Kiosk (`app/showroom/showroom-kiosk.tsx`).
+  - Users can now comfortably upload reference photos, view thumbnails, draft custom description notes, remove unwanted photos, and trigger analysis only when they choose.
+- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 21 test suites passing (91/91 tests), clean CI ready.
+
 
 
 

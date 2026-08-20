@@ -52,16 +52,23 @@ export default async function AdminUnsavedAnalysisPage({
   let computedMetalCost = 0;
 
   if (hasSpec) {
-    const cadCost = (await getSettingValue("cad_cost_per_quote")) ?? 0;
+    const rawCadCost = await getSettingValue("cad_cost_per_quote");
+    const cadCost = rawCadCost !== undefined && rawCadCost !== null && Number(rawCadCost) > 0 ? Number(rawCadCost) : 20;
     const customerMarginPct = analysis.company.customerMarginPct ?? 0;
     const centerCarat = Math.max(Number(analysis.centerDiamondCarats), 0.0001);
     const sideDiamondQuantity = analysis.sideDiamondQuantity ?? 0;
     const sideDiamondCarats = Number(analysis.sideDiamondCarats ?? 0);
+    
+    const detectedSideShape = (analysis.output as any)?.sideStones?.[0]?.shape ||
+      (analysis.centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(analysis.centerShape.toLowerCase()) && sideDiamondQuantity <= 4
+        ? "fancy"
+        : "round");
+
     const sideStones =
       sideDiamondQuantity > 0 && sideDiamondCarats > 0
         ? [
             {
-              shape: "round",
+              shape: detectedSideShape,
               caratWeightEach: sideDiamondCarats / sideDiamondQuantity,
               count: sideDiamondQuantity,
               settingType: analysis.settingType || "prong"
@@ -79,11 +86,11 @@ export default async function AdminUnsavedAnalysisPage({
       isTwoTone: false,
       colorClarity: "E VS1",
       cadCost,
+      pricingTier: analysis.company.pricingTier!,
       customerMarginPct
     });
-    const tierResult = calculateTierPrice(breakdown.makingPrice, analysis.company.pricingTier!);
-    tierDivisor = tierResult.divisor;
-    sellingPrice = tierResult.estimatedSellingPrice;
+    tierDivisor = breakdown.tierDivisor;
+    sellingPrice = breakdown.estimatedSellingPrice;
     computedMetalCost = calculateMetalCost(
       analysis.selectedMetal,
       Number(analysis.metalWeightGrams ?? 0),

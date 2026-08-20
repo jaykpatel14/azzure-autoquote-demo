@@ -104,8 +104,26 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision**: Architected an interactive Manufacturing Order Studio on `/quotes/[quoteId]` that automatically pre-populates all AI visual extraction parameters (metal, gram weight, center stone carats, shape, side stones, quantity, setting type, and 3D render) while allowing jewelers to add granular CustomKing production specifications (ring size, polish finish, diamond origin/color/clarity, stone provider, matching wedding band, engraving text and font, target delivery date, and workshop notes) before 1-click dispatching to CustomKing NYC.
 - **Rationale**: While AI provides rapid visual estimates from photos, actual manufacturing requires precise workshop specifications (e.g. exact finger size 6.5, high polish finish, custom inside-band engraving, or whether diamonds are supplied by CustomKing vs from store stock). Bridging AI estimates with an interactive configuration studio ensures 100% compliance with CustomKing's production schema without manual re-entry.
 
+### 30. Pricing Engine Formulas & 3-Step Pricing Hierarchy Overhaul
+- **Decision**: Overhauled the core pricing engine formulas across `src/services/pricing.ts`, `components/admin/quote-pricing-breakdown.tsx`, `app/admin/quotes/unsaved/[analysisId]/page.tsx`, `QuoteCalculator.tsx`, and `app/showroom/showroom-kiosk.tsx`:
+  1. **Side Stone Shape Pricing**: If side stones are round, pricing is `$80/ct`. If side stones are not round (fancy shapes: baguette, trapezoid, pear, emerald, oval, princess, etc.), pricing is `$130/ct`.
+  2. **Side Stone Setting Labor**: Setting labor depends on stone shape — `$1.25 per stone` for round side stones, and `$5.00 per stone` for non-round / fancy side stones.
+  3. **CAD Design Fee**: Set CAD design fee default to a flat `$20.00` fee (previously defaulting to $0.00).
+  4. **Strict 3-Step Pricing Hierarchy**:
+     - **Step 1: Production Subtotal**: Sum of Metal Cost + Center Stone Cost + Side Stone Cost + Center Stone Setting + Side Stone Setting + Wax ($15) + Polishing ($20) + CAD Fee ($20). *(Represents Azzure's raw manufacturing cost).*
+     - **Step 2: Azzure Making Price (Wholesale to Jeweler)**: Apply Tier formula directly on Production Subtotal: `Production Subtotal / Tier Divisor` (e.g. `Subtotal / 0.7` for Tier 2 Standard). *(Represents Azzure's wholesale invoice to the jeweler).*
+     - **Step 3: End Customer Selling Price**: Apply Jeweler Markup on top of the Azzure Making Price (Tier Price): `Making Price + (Making Price * Jeweler Margin %)` or `Making Price * (1 + Jeweler Margin %)`. *(Represents what the jeweler charges the retail customer).*
+     - **Jeweler Gross Profit**: Strictly `End Customer Price - Azzure Making Price`.
+- **Rationale**: The previous calculation mistakenly added the jeweler markup to the raw subtotal first, and then applied the wholesale tier divisor second. The corrected 3-step hierarchy cleanly separates Azzure's manufacturing cost and tier multiplier from the jeweler's downstream retail markup, and ensures non-round side diamonds and fancy setting labor are priced accurately.
+
+### 31. Explicit Analyze Action Button on Jeweler and Showroom Dashboards
+- **Decision**: Removed automatic analysis on photo selection/drop and description field `onBlur`. Added prominent, high-contrast **"Analyze with AI"** / **"Analyze Design with AI"** buttons to both the Jeweler's Workspace (`components/QuoteCalculator.tsx`) and the Showroom Tablet Kiosk (`app/showroom/showroom-kiosk.tsx`).
+- **Rationale**: Automatic analysis firing immediately upon file selection prevented users from typing custom design instructions first, verifying their selected image, or managing multiple image attachments before spending API analysis credits. Adding explicit Analyze triggers gives jewelers and showroom customers total control over when the multi-pass vision model is invoked.
+
 ---
 
 ## Last Updated
 - Date: August 20, 2026
-- Status: Production Ready, All 21 Test Suites Passing (97/97 tests), TypeScript zero errors.
+- Status: Production Ready, All 21 Test Suites Passing (91/91 tests), TypeScript zero errors.
+
+

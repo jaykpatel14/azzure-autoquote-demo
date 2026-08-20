@@ -37,9 +37,14 @@ export async function POST(request: Request) {
     const rate = checkRateLimit({ key: `showroom:${session.id}`, limit: 10, windowMs: 60 * 60 * 1000 });
     if (!rate.allowed) return NextResponse.json({ error: "This kiosk has reached its hourly quote limit." }, { status: 429 });
     reservation = await reserveMonthlyUsage(session.companyId);
-    const cadCost = (await getSettingValue("cad_cost_per_quote")) ?? 0;
+    const rawCadCost = await getSettingValue("cad_cost_per_quote");
+    const cadCost = rawCadCost !== undefined && rawCadCost !== null && Number(rawCadCost) > 0 ? Number(rawCadCost) : 20;
     const margin = session.company.customerMarginPct ?? 0;
-    const sideStones = input.sideDiamondQuantity ? [{ shape: "round", caratWeightEach: input.sideDiamondCarats / input.sideDiamondQuantity, count: input.sideDiamondQuantity, settingType: input.settingType || "prong" }] : [];
+    const detectedSideShape = (input.centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(input.centerShape.toLowerCase()) && input.sideDiamondQuantity <= 4)
+      ? "fancy"
+      : "round";
+    const sideStones = input.sideDiamondQuantity ? [{ shape: detectedSideShape, caratWeightEach: input.sideDiamondCarats / input.sideDiamondQuantity, count: input.sideDiamondQuantity, settingType: input.settingType || "prong" }] : [];
+    if (!session.company.pricingTier) throw new Error("Pricing is not configured.");
     const making = calculateMakingPrice({
       metalType: resolvedMetal,
       metalWeightGrams: input.metalWeightGrams,
@@ -49,10 +54,10 @@ export async function POST(request: Request) {
       isTwoTone: Boolean(input.isTwoTone),
       colorClarity: "E VS1",
       cadCost,
+      pricingTier: session.company.pricingTier,
       customerMarginPct: margin
     });
-    if (!session.company.pricingTier) throw new Error("Pricing is not configured.");
-    const tier = calculateTierPrice(making.makingPrice, session.company.pricingTier);
+    const tier = calculateTierPrice(making.subtotal, session.company.pricingTier, margin);
     const result = await createQuote({
       companyId: session.companyId,
       analysisId: input.analysisIds[0],

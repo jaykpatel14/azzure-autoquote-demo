@@ -201,15 +201,17 @@ export function QuotePricingBreakdown({
             <strong>{money(breakdown.subtotal)}</strong>
           </div>
 
-          {/* Margin */}
+          {/* Tier formula applied first on Production Subtotal */}
           <div className="adminBreakdownSection">
-            <div className="adminBreakdownSectionLabel">📈 Jeweler Markup</div>
+            <div className="adminBreakdownSectionLabel">🧮 Tier Formula Applied</div>
             <div className="adminBreakdownRow">
               <span>
-                Customer margin — {breakdown.customerMarginPct}%
-                <span className="adminBreakdownNote">&nbsp;(jeweler-configured at quote time)</span>
+                {getPricingTierLabel(pricingTier) ?? "Tier 2 - Standard"}
+                <span className="adminBreakdownNote">&nbsp;→ Production Subtotal ÷ {tierDivisor} = Azzure Making Price</span>
               </span>
-              <strong className="adminBreakdownPositive">+{money(breakdown.customerMarginAmount)}</strong>
+              <code className="adminBreakdownFormula">
+                {money(breakdown.subtotal)} ÷ {tierDivisor} = {money(breakdown.makingPrice)}
+              </code>
             </div>
           </div>
 
@@ -223,17 +225,15 @@ export function QuotePricingBreakdown({
             <strong className="adminBreakdownMaking">{money(breakdown.makingPrice)}</strong>
           </div>
 
-          {/* Tier formula */}
+          {/* Jeweler Markup applied on top of Making Price */}
           <div className="adminBreakdownSection">
-            <div className="adminBreakdownSectionLabel">🧮 Tier Formula Applied</div>
+            <div className="adminBreakdownSectionLabel">📈 Jeweler Markup</div>
             <div className="adminBreakdownRow">
               <span>
-                {getPricingTierLabel(pricingTier) ?? "Tier 2 - Standard"}
-                <span className="adminBreakdownNote">&nbsp;→ Making ÷ {tierDivisor} = Customer Price</span>
+                Customer margin — {breakdown.customerMarginPct}%
+                <span className="adminBreakdownNote">&nbsp;(jeweler-configured on top of Making Price)</span>
               </span>
-              <code className="adminBreakdownFormula">
-                {money(breakdown.makingPrice)} ÷ {tierDivisor} = {money(sellingPrice)}
-              </code>
+              <strong className="adminBreakdownPositive">+{money(breakdown.customerMarginAmount)}</strong>
             </div>
           </div>
 
@@ -244,7 +244,7 @@ export function QuotePricingBreakdown({
               <strong>End Customer Price</strong>
               <span className="adminBreakdownNote">&nbsp;(jeweler charges customer)</span>
             </span>
-            <strong className="adminBreakdownFinal">{money(sellingPrice)}</strong>
+            <strong className="adminBreakdownFinal">{money(sellingPrice || breakdown.estimatedSellingPrice)}</strong>
           </div>
 
           {/* Profitability check */}

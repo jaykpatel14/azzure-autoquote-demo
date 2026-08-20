@@ -238,10 +238,11 @@ describe("quote route integration", () => {
       hasWeddingBand: false,
       isTwoTone: false,
       colorClarity: "E VS1",
-      cadCost: 0,
+      cadCost: 20,
+      pricingTier: "TIER_3",
       customerMarginPct: 0
     });
-    const expectedTierPrice = calculateTierPrice(expectedMakingPrice.makingPrice, "TIER_3");
+    const expectedTierPrice = calculateTierPrice(expectedMakingPrice.subtotal, "TIER_3", 0);
 
     expect(savedQuote.companyId).toBe(company.companyId);
     expect(Number(savedQuote.estimatedPrice)).toBe(expectedTierPrice.estimatedSellingPrice);

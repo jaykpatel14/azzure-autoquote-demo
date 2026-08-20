@@ -409,11 +409,15 @@ export default function QuoteCalculator({
     if (!aggregateQuote) return { costBreakdown: null, estimatedSellingPrice: 0 };
 
     const centerCarat = Math.max(aggregateQuote.centerDiamondCarats, 0.0001);
+    const detectedSideShape = (aggregateQuote.centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(aggregateQuote.centerShape.toLowerCase()) && aggregateQuote.sideDiamondQuantity <= 4)
+      ? "fancy"
+      : "round";
+
     const sideStones =
       aggregateQuote.sideDiamondQuantity > 0 && aggregateQuote.sideDiamondCarats > 0
         ? [
             {
-              shape: "round",
+              shape: detectedSideShape,
               caratWeightEach: aggregateQuote.sideDiamondCarats / aggregateQuote.sideDiamondQuantity,
               count: aggregateQuote.sideDiamondQuantity,
               settingType: aggregateQuote.settingType || "prong"
@@ -430,21 +434,18 @@ export default function QuoteCalculator({
           shape: aggregateQuote.centerShape || "round",
           caratWeight: centerCarat
         },
-
-
         sideStones,
         hasWeddingBand: aggregateQuote.hasWeddingBand,
         isTwoTone: aggregateQuote.isTwoTone,
         colorClarity: DEFAULT_COLOR_CLARITY,
-        cadCost,
+        cadCost: cadCost && cadCost > 0 ? cadCost : 20,
+        pricingTier,
         customerMarginPct
       });
 
-      const totalCost = breakdown.subtotal + breakdown.customerMarginAmount;
-      const tierResult = calculateTierPrice(totalCost, pricingTier);
       return {
         costBreakdown: breakdown,
-        estimatedSellingPrice: tierResult.estimatedSellingPrice
+        estimatedSellingPrice: breakdown.estimatedSellingPrice
       };
     } catch {
       return { costBreakdown: null, estimatedSellingPrice: 0 };
@@ -479,14 +480,13 @@ export default function QuoteCalculator({
 
     setFacets((current) => [...current, ...nextFacets]);
     setActiveFacetId((current) => current ?? nextFacets[0].id);
-    setStatus("Analysing photos with AI...");
-
-    // Auto-trigger analysis for all new photos
-    Promise.all(nextFacets.map((facet) => analyseFacet(facet))).then(() => {
-      setStatus("AI analysis complete. Adjust parameters below to refine the quote.");
+    setStatus("Photos uploaded. Click 'Analyze with AI' to start.");
+    showToast({
+      message: `${selectedFiles.length} photo(s) added. Click 'Analyze with AI' to run analysis.`,
+      variant: "info",
+      autoDismiss: true
     });
   }
-
 
   async function handleShowroomPhotoSelect(fileList: FileList | File[] | null) {
     if (!fileList || !fileList.length) return;
@@ -518,12 +518,12 @@ export default function QuoteCalculator({
 
     setFacets([newFacet]);
     setActiveFacetId(newFacet.id);
-    setStatus("Analyzing reference photo for live showroom quote...");
+    setStatus("Reference photo added. Click 'Analyze with AI' to start.");
     showToast({
-      message: "Analyzing photo for live showroom quote...",
-      variant: "info"
+      message: "Photo added. Click 'Analyze with AI' to run analysis.",
+      variant: "info",
+      autoDismiss: true
     });
-    await analyseFacet(newFacet);
   }
 
   function clearAllFacets() {
@@ -879,24 +879,58 @@ export default function QuoteCalculator({
               </div>
             </div>
 
-            {/* Photo thumbnail strip */}
+            {/* Photo thumbnail strip & Action Buttons */}
             {facets.length > 0 ? (
-              <div className="facetThumbRail" aria-label="Uploaded photos">
-                {facets.map((facet, index) => (
+              <div style={{ marginTop: 16 }}>
+                <div className="facetThumbRail" aria-label="Uploaded photos" style={{ marginBottom: 16 }}>
+                  {facets.map((facet, index) => (
+                    <button
+                      key={facet.id}
+                      type="button"
+                      className={activeFacet?.id === facet.id ? "facetThumb isActive" : "facetThumb"}
+                      onClick={() => setActiveFacetId(facet.id)}
+                    >
+                      {facet.previewUrl ? (
+                        <img src={facet.previewUrl} alt={`Photo ${index + 1}`} className="facetThumbImage" />
+                      ) : (
+                        <div className="facetThumbImage facetThumbImage--fallback"><span>{index + 1}</span></div>
+                      )}
+                      <span className="facetThumbBadge">#{index + 1}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Explicit Analyze Button */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
                   <button
-                    key={facet.id}
                     type="button"
-                    className={activeFacet?.id === facet.id ? "facetThumb isActive" : "facetThumb"}
-                    onClick={() => setActiveFacetId(facet.id)}
+                    className="button primary button--md"
+                    onClick={analyseAll}
+                    disabled={!canEdit || facets.some((f) => f.status === "processing")}
                   >
-                    {facet.previewUrl ? (
-                      <img src={facet.previewUrl} alt={`Photo ${index + 1}`} className="facetThumbImage" />
-                    ) : (
-                      <div className="facetThumbImage facetThumbImage--fallback"><span>{index + 1}</span></div>
-                    )}
-                    <span className="facetThumbBadge">#{index + 1}</span>
+                    <span
+                      className={`material-symbols-outlined${facets.some((f) => f.status === "processing") ? " ai-pulse" : ""}`}
+                      style={{ fontSize: 18 }}
+                    >
+                      auto_awesome
+                    </span>
+                    {facets.some((f) => f.status === "processing")
+                      ? "Analyzing with AI…"
+                      : facets.some((f) => f.status === "done")
+                      ? "Re-analyze with AI"
+                      : "Analyze with AI"}
                   </button>
-                ))}
+
+                  <button
+                    type="button"
+                    className="button secondary button--sm"
+                    onClick={clearAllFacets}
+                    disabled={facets.some((f) => f.status === "processing")}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
+                    Clear Photos
+                  </button>
+                </div>
               </div>
             ) : null}
 
@@ -947,6 +981,20 @@ export default function QuoteCalculator({
                         </div>
                       </div>
                     </div>
+
+                    {/* Pending state with individual Analyze button */}
+                    {facet.status === "pending" ? (
+                      <div style={{ marginTop: 12 }}>
+                        <button
+                          type="button"
+                          className="button primary button--sm"
+                          onClick={() => analyseFacet(facet)}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>auto_awesome</span>
+                          Analyze this photo
+                        </button>
+                      </div>
+                    ) : null}
 
                     {/* Processing indicator */}
                     {facet.status === "processing" ? (

@@ -79,7 +79,8 @@ export async function POST(request: Request) {
     const adjustedInput = applyQuoteMode(input);
 
     // 1. Fetch admin-configured CAD cost from platform settings
-    const cadCost = (await getSettingValue("cad_cost_per_quote")) ?? 0;
+    const rawCadCost = await getSettingValue("cad_cost_per_quote");
+    const cadCost = rawCadCost !== undefined && rawCadCost !== null && Number(rawCadCost) > 0 ? Number(rawCadCost) : 20;
 
     // 2. Fetch jeweler's margin percentage & live metal spot pricing
     const customerMarginPct = company.customerMarginPct ?? 0;
@@ -97,14 +98,18 @@ export async function POST(request: Request) {
       : undefined;
     const livePricing = await resolveMetalPricing(allowCustomPricing ? baseProfile : null);
 
-
     // 3. Prepare side stones list
     let sideStonesList = adjustedInput.sideStones;
     if (!sideStonesList || sideStonesList.length === 0) {
       if (adjustedInput.sideDiamondQuantity > 0 && adjustedInput.sideDiamondCarats > 0) {
+        const detectedShape =
+          (adjustedInput.centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(adjustedInput.centerShape.toLowerCase()) && adjustedInput.sideDiamondQuantity <= 4
+            ? "fancy"
+            : "round");
+
         sideStonesList = [
           {
-            shape: "round",
+            shape: detectedShape,
             caratWeightEach: adjustedInput.sideDiamondCarats / adjustedInput.sideDiamondQuantity,
             count: adjustedInput.sideDiamondQuantity,
             settingType: adjustedInput.settingType || "prong"
@@ -130,16 +135,15 @@ export async function POST(request: Request) {
       isTwoTone: Boolean(adjustedInput.isTwoTone),
       colorClarity: "E VS1",
       cadCost,
+      pricingTier: company.pricingTier,
       customerMarginPct
     });
 
-
-
-
-    // 5. Apply tier formula on top of making price
+    // 5. Apply tier formula on top of production subtotal
     const tierResult = calculateTierPrice(
-      makingPriceBreakdown.makingPrice,
-      company.pricingTier
+      makingPriceBreakdown.subtotal,
+      company.pricingTier,
+      customerMarginPct
     );
 
     // 6. Save quote

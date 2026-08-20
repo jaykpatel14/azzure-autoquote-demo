@@ -161,11 +161,15 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     if (!debouncedAnalysis || !pricing.pricingTier) return 0;
 
     const centerCarat = Math.max(debouncedAnalysis.centerDiamondCarats, 0.0001);
+    const detectedSideShape = (debouncedAnalysis.centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(debouncedAnalysis.centerShape.toLowerCase()) && debouncedAnalysis.sideDiamondQuantity <= 4)
+      ? "fancy"
+      : "round";
+
     const sideStones =
       debouncedAnalysis.sideDiamondQuantity > 0 && debouncedAnalysis.sideDiamondCarats > 0
         ? [
             {
-              shape: "round",
+              shape: detectedSideShape,
               caratWeightEach: debouncedAnalysis.sideDiamondCarats / debouncedAnalysis.sideDiamondQuantity,
               count: debouncedAnalysis.sideDiamondQuantity,
               settingType: debouncedAnalysis.settingType || "prong"
@@ -182,11 +186,11 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
         hasWeddingBand: Boolean(debouncedAnalysis.hasWeddingBand),
         isTwoTone: Boolean(debouncedAnalysis.isTwoTone),
         colorClarity: DEFAULT_COLOR_CLARITY,
-        cadCost: pricing.cadCost,
+        cadCost: pricing.cadCost && pricing.cadCost > 0 ? pricing.cadCost : 20,
+        pricingTier: pricing.pricingTier,
         customerMarginPct: pricing.customerMarginPct
       });
-      const totalCost = breakdown.subtotal + breakdown.customerMarginAmount;
-      return calculateTierPrice(totalCost, pricing.pricingTier).estimatedSellingPrice;
+      return breakdown.estimatedSellingPrice;
     } catch {
       return 0;
     }
@@ -227,9 +231,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setStarted(true);
   }
 
-  // Auto-analyze function triggered immediately when photos are selected
-  async function runAutoAnalysis(selectedFiles: File[]) {
-    if (!selectedFiles.length || analyzing) return;
+  // Explicit analysis function triggered when user taps Analyze button
+  async function runAnalysis(selectedFiles?: File[]) {
+    const filesToAnalyze = selectedFiles || files;
+    if (!filesToAnalyze.length || analyzing) return;
 
     setAnalyzing(true);
     setStageIndex(0);
@@ -243,7 +248,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
     try {
       const results: Analysis[] = [];
-      for (const file of selectedFiles) {
+      for (const file of filesToAnalyze) {
         const form = new FormData();
         form.set("token", token);
         form.set("image", file);
@@ -313,7 +318,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     if (!newFiles.length) return;
     setFiles(newFiles);
     setStarted(true);
-    runAutoAnalysis(newFiles);
+    setAnalysis(null);
+    setRenderingImageUrl(null);
+    setError("");
   }
 
   async function save() {
@@ -517,7 +524,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                           onChange={(event) => {
                             const selected = Array.from(event.target.files || []).slice(0, 3);
                             if (selected.length) {
-                              handleFileSelect(selected);
+                              setFiles(selected);
+                              setAnalysis(null);
+                              setRenderingImageUrl(null);
+                              setError("");
                             }
                           }}
                         />
@@ -528,13 +538,44 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                   </div>
 
                   {previews.length > 0 ? (
-                    <div className="facetThumbRail" aria-label="Uploaded photos" style={{ marginTop: 16 }}>
-                      {previews.map((src, index) => (
-                        <div key={src} className="facetThumb">
-                          <img src={src} alt={`Reference ${index + 1}`} className="facetThumbImage" />
-                          <span className="facetThumbBadge">#{index + 1}</span>
-                        </div>
-                      ))}
+                    <div style={{ marginTop: 16 }}>
+                      <div className="facetThumbRail" aria-label="Uploaded photos" style={{ marginBottom: 16 }}>
+                        {previews.map((src, index) => (
+                          <div key={src} className="facetThumb">
+                            <img src={src} alt={`Reference ${index + 1}`} className="facetThumbImage" />
+                            <span className="facetThumbBadge">#{index + 1}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Explicit Analyze Button for Showroom Kiosk */}
+                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <button
+                          className="button primary button--md"
+                          type="button"
+                          disabled={analyzing}
+                          onClick={() => runAnalysis(files)}
+                          style={{ flex: 1, padding: "12px 20px", fontSize: "0.95rem" }}
+                        >
+                          <span className={`material-symbols-outlined${analyzing ? " ai-pulse" : ""}`} style={{ fontSize: 18 }}>
+                            auto_awesome
+                          </span>
+                          {analyzing ? "Analyzing Design with AI…" : analysis ? "Re-analyze Design with AI" : "Analyze Design with AI"}
+                        </button>
+                        <button
+                          className="button secondary button--sm"
+                          type="button"
+                          disabled={analyzing}
+                          onClick={() => {
+                            setFiles([]);
+                            setAnalysis(null);
+                            setRenderingImageUrl(null);
+                          }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
+                          Clear
+                        </button>
+                      </div>
                     </div>
                   ) : null}
 

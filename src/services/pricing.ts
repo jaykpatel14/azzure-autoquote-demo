@@ -53,15 +53,16 @@ export function centerStoneCost(caratWeight: number, shape: string): number {
 }
 
 
-export function isSideStoneRound(shape: string): boolean {
+export function isSideStoneRound(shape?: string | null): boolean {
   if (!shape) return false;
-  return shape.toLowerCase().trim() === "round";
+  const normalized = shape.toLowerCase().trim();
+  return normalized === "round" || normalized === "rounds" || normalized === "brilliant";
 }
 
 export function sideStoneCost(
   caratWeightEach: number,
   count: number,
-  shape: string
+  shape?: string | null
 ): number {
   const pricePerCarat = isSideStoneRound(shape) ? 80 : 130;
   const totalCaratWeight = caratWeightEach * count;
@@ -73,10 +74,10 @@ export function centerStoneSettingCost(caratWeight: number): number {
 }
 
 export type SideStoneSettingInput = {
-  caratWeightEach: number;
+  caratWeightEach?: number;
   count: number;
-  shape: string;
-  settingType: string;
+  shape?: string | null;
+  settingType?: string | null;
 };
 
 export function isProngSetting(settingType: string): boolean {
@@ -86,8 +87,9 @@ export function isProngSetting(settingType: string): boolean {
 }
 
 export function sideStoneSettingCost(input: SideStoneSettingInput): number {
-  const { count, settingType } = input;
-  const ratePerStone = isProngSetting(settingType) ? 1.25 : 5.0;
+  const { count, shape } = input;
+  const isRound = isSideStoneRound(shape);
+  const ratePerStone = isRound ? 1.25 : 5.0;
   return count * ratePerStone;
 }
 
@@ -121,10 +123,10 @@ export type MakingPriceInput = {
 
   // Side stones (can be empty array if no side stones)
   sideStones: Array<{
-    shape: string;
+    shape?: string | null;
     caratWeightEach: number;
     count: number;
-    settingType: string;
+    settingType?: string | null;
   }>;
 
   // Piece configuration
@@ -134,8 +136,11 @@ export type MakingPriceInput = {
   // Fixed — never changes
   colorClarity?: "E VS1" | string;
 
-  // Admin-configured CAD flat fee (snapshotted from platform settings at quote creation)
+  // Admin-configured CAD flat fee (defaults to $20 flat fee)
   cadCost?: number;
+
+  // Pricing tier (defaults to TIER_2 if not provided)
+  pricingTier?: PricingTier;
 
   // Jeweler margin percentage (snapshotted from company settings at quote creation)
   customerMarginPct?: number;
@@ -153,12 +158,16 @@ export type MakingPriceBreakdown = {
   waxCost: number;
   polishingCost: number;
   cadCost: number;
-  // Jeweler margin
+  // Step 1: Production Subtotal (Azzure internal manufacturing raw cost)
+  subtotal: number;
+  // Step 2: Azzure Making Price (Tier formula applied on Production Subtotal)
+  tierDivisor: number;
+  makingPrice: number;
+  // Step 3: Jeweler Markup (Jeweler adds margin on top of Making Price)
   customerMarginPct: number;
   customerMarginAmount: number;
-  // Totals
-  subtotal: number;
-  makingPrice: number;
+  // End Customer Selling Price (What the end customer pays)
+  estimatedSellingPrice: number;
   pieces: 1 | 2;
   colorClarity: "E VS1";
 };
@@ -202,8 +211,10 @@ export function calculateMetalCost(
 export function calculateMakingPrice(
   input: MakingPriceInput
 ): MakingPriceBreakdown {
-  const cadCost = input.cadCost ?? 0;
+  const cadCost = input.cadCost !== undefined && input.cadCost !== null && !isNaN(input.cadCost) && input.cadCost > 0 ? input.cadCost : 20;
   const customerMarginPct = input.customerMarginPct ?? 0;
+  const pricingTier = input.pricingTier ?? "TIER_2";
+  const tierDivisor = TIER_DIVISORS[pricingTier] ?? 0.7;
 
   // Validate inputs
   if (input.centerStone.caratWeight <= 0) {
@@ -249,8 +260,8 @@ export function calculateMakingPrice(
   const _polishingCost = polishingCost(pieceConfig);
   const _cadCost = cadCost;
 
-  // Subtotal = all components (metal + stones + labor + cad) before customer margin
-  const subtotal =
+  // Step 1: Production Subtotal = all components (metal + stones + labor + cad) before tier formula and customer margin
+  const subtotal = Math.round((
     _metalCost +
     _centerStoneCost +
     _sideStoneCost +
@@ -258,27 +269,31 @@ export function calculateMakingPrice(
     _sideStoneSettingCost +
     _waxCost +
     _polishingCost +
-    _cadCost;
+    _cadCost
+  ) * 100) / 100;
 
-  // Customer margin applied to subtotal
-  const _customerMarginAmount = subtotal * (customerMarginPct / 100);
+  // Step 2: Apply Tier Formula on top of Production Subtotal -> Azzure Making Price
+  const makingPrice = Math.round((subtotal / tierDivisor) * 100) / 100;
 
-  // Making price = subtotal + customer margin
-  const makingPrice = Math.round((subtotal + _customerMarginAmount) * 100) / 100;
+  // Step 3: Customer / Jeweler adds Jeweler Markup on top of Tier Formula Price -> End Customer Price
+  const _customerMarginAmount = Math.round((makingPrice * (customerMarginPct / 100)) * 100) / 100;
+  const estimatedSellingPrice = Math.round((makingPrice + _customerMarginAmount) * 100) / 100;
 
   return {
     metalCost: Math.round(_metalCost * 100) / 100,
-    centerStoneCost: _centerStoneCost,
-    sideStoneCost: _sideStoneCost,
-    centerStoneSettingCost: _centerStoneSettingCost,
-    sideStoneSettingCost: _sideStoneSettingCost,
+    centerStoneCost: Math.round(_centerStoneCost * 100) / 100,
+    sideStoneCost: Math.round(_sideStoneCost * 100) / 100,
+    centerStoneSettingCost: Math.round(_centerStoneSettingCost * 100) / 100,
+    sideStoneSettingCost: Math.round(_sideStoneSettingCost * 100) / 100,
     waxCost: _waxCost,
     polishingCost: _polishingCost,
     cadCost: _cadCost,
-    customerMarginPct,
-    customerMarginAmount: Math.round(_customerMarginAmount * 100) / 100,
-    subtotal: Math.round(subtotal * 100) / 100,
+    subtotal,
+    tierDivisor,
     makingPrice,
+    customerMarginPct,
+    customerMarginAmount: _customerMarginAmount,
+    estimatedSellingPrice,
     pieces: pieceCount(pieceConfig),
     colorClarity: DEFAULT_COLOR_CLARITY
   };
@@ -286,11 +301,15 @@ export function calculateMakingPrice(
 
 
 export type TierPriceResult = {
+  subtotal: number;
   makingPrice: number;
   tier: PricingTier;
   divisor: number;
+  customerMarginPct: number;
+  customerMarginAmount: number;
   estimatedSellingPrice: number;
   formattedBreakdown: {
+    subtotal: string;
     makingPrice: string;
     estimatedSellingPrice: string;
     tierLabel: string;
@@ -308,20 +327,33 @@ function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-export function calculateTierPrice(makingPrice: number, tier: PricingTier): TierPriceResult {
-  if (makingPrice <= 0) {
-    throw new Error("Making price must be greater than zero.");
+export function calculateTierPrice(
+  subtotal: number,
+  tier: PricingTier = "TIER_2",
+  customerMarginPct = 0
+): TierPriceResult {
+  if (subtotal <= 0) {
+    throw new Error("Production subtotal must be greater than zero.");
   }
 
-  const divisor = TIER_DIVISORS[tier];
-  const estimatedSellingPrice = roundMoney(makingPrice / divisor);
+  const divisor = TIER_DIVISORS[tier] || 0.7;
+  // Step 1: Production Subtotal
+  // Step 2: Apply Tier Formula on top of Production Subtotal -> Azzure Making Price
+  const makingPrice = roundMoney(subtotal / divisor);
+  // Step 3: Customer / Jeweler adds Jeweler Markup on top of Tier Formula Price -> End Customer Price
+  const customerMarginAmount = roundMoney(makingPrice * (customerMarginPct / 100));
+  const estimatedSellingPrice = roundMoney(makingPrice + customerMarginAmount);
 
   return {
-    makingPrice: roundMoney(makingPrice),
+    subtotal: roundMoney(subtotal),
+    makingPrice,
     tier,
     divisor,
+    customerMarginPct,
+    customerMarginAmount,
     estimatedSellingPrice,
     formattedBreakdown: {
+      subtotal: formatCAD(subtotal),
       makingPrice: formatCAD(makingPrice),
       estimatedSellingPrice: formatCAD(estimatedSellingPrice),
       tierLabel: TIER_LABELS[tier]
@@ -332,3 +364,4 @@ export function calculateTierPrice(makingPrice: number, tier: PricingTier): Tier
 export function getPricingTierLabel(tier: PricingTier | null | undefined) {
   return tier ? TIER_LABELS[tier] : null;
 }
+
