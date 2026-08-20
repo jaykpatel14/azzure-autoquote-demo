@@ -225,6 +225,7 @@ azzure-autoquote-mvp/
 - ✅ **Admin Sidebar High-Contrast Redesign**: Upgraded `.workspaceSidebar--admin` in `app/globals.css` with obsidian dark backdrop (`#0f172a`), luminous sapphire active states, crisp white headers, and distinct slate icons.
 - ✅ **Showroom Save Quote Error Fix**: Fixed Zod schema in `app/api/showroom/quotes/route.ts` to support both `metalType` and `selectedMetal`, and updated `showroom-kiosk.tsx` payload.
 - ✅ **Live Metal Price & Weight Density Sync**: Added automatic density conversion (`convertMetalWeight`) in both `QuoteCalculator.tsx` and `showroom-kiosk.tsx` and enhanced `calculateMetalCost` so prices update dynamically whenever metal (10K, 14K, 18K, Platinum, Silver) is selected.
+- ✅ **Proxmox Deployment .env Comment Sanitization**: Resolved the Docker Compose `.env.proxmox` parser failure caused by escaped leading backslashes on comments (`\#`) by adding automatic comment sanitization to `.github/workflows/proxmox-test-deploy.yml`.
 - ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 21 test suites passing (97/97 tests), clean CI ready.
 
 

@@ -83,6 +83,10 @@ This document logs every key architectural, design, and calculation decision mad
   4. **Robust Metal String Parsing in Pricing Engine**: Enhanced `calculateMetalCost` in `src/services/pricing.ts` with case-insensitive normalization and keyword matching for 10K, 14K, 18K, Platinum, and Silver.
 - **Rationale**: Retail associates and showroom walk-in customers need immediate, tactile feedback when exploring metal options (e.g. comparing 14K Gold vs Platinum price differences). Eliminating schema field mismatches ensures saving quotes on showroom tablets never crashes with cryptic errors.
 
+### 26. Proxmox Deployment `.env.proxmox` Comment Sanitization
+- **Decision**: Added an automatic regex sanitization step (`sed -i 's/^[\]*#/#/' .env.proxmox`) in `.github/workflows/proxmox-test-deploy.yml` before Docker Compose execution, and documented the resolution for Proxmox hosts where line 1 starts with `\# Proxmox test environment`.
+- **Rationale**: Docker Compose's `.env` parser treats any line starting with an escaped character (like `\#` or `\\#`) as an environment variable key rather than a comment line. Because backslashes (`\`) are invalid characters in environment variable keys, Docker Compose immediately halts with `unexpected character "\" in variable name`. Auto-sanitizing `.env.proxmox` on the runner removes accidental backslashes before invoking Docker Compose, preventing deployment failures.
+
 ---
 
 ## Last Updated

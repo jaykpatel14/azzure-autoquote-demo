@@ -35,6 +35,12 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Sanitize .env.proxmox if present (strips unexpected leading backslashes on comments or variable lines)
+          if [ -f .env.proxmox ]; then
+            echo "🧹 Sanitizing .env.proxmox comments..."
+            sed -i 's/^[\]*#/#/' .env.proxmox
+          fi
+
           echo "🗄️ [1/5] Starting PostgreSQL database container..."
           docker compose -f docker-compose.proxmox.yml up -d db
 
