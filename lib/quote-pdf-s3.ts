@@ -1,5 +1,7 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import type { Readable } from "node:stream";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 type QuotePdfStorageInput = {
   key: string;
@@ -167,6 +169,42 @@ export async function storeAnalysisImageInS3({
 
 export async function storeQuoteRenderingInS3(input: QuotePdfStorageInput) {
   return storeAnalysisImageInS3(input);
+}
+
+export async function storeShowroomBackgroundInS3(input: QuotePdfStorageInput) {
+  const stored = await storeAnalysisImageInS3(input);
+  if (stored) return stored;
+
+  const localName = input.key.replace(/[^a-zA-Z0-9._-]+/g, "_");
+  const directory = path.join(process.cwd(), ".data", "showroom-backgrounds");
+  await mkdir(directory, { recursive: true });
+  await writeFile(path.join(directory, localName), input.buffer);
+  return { bucket: "local", key: `local:${localName}` };
+}
+
+export async function loadShowroomBackgroundFromS3(key: string) {
+  if (key.startsWith("local:")) {
+    const localName = key.slice(6).replace(/[^a-zA-Z0-9._-]+/g, "_");
+    try {
+      return await readFile(path.join(process.cwd(), ".data", "showroom-backgrounds", localName));
+    } catch {
+      return null;
+    }
+  }
+  return loadAnalysisImageFromS3(key);
+}
+
+export async function deleteShowroomBackgroundFromS3(key: string) {
+  if (key.startsWith("local:")) {
+    const localName = key.slice(6).replace(/[^a-zA-Z0-9._-]+/g, "_");
+    try {
+      await unlink(path.join(process.cwd(), ".data", "showroom-backgrounds", localName));
+      return { bucket: "local", key };
+    } catch {
+      return null;
+    }
+  }
+  return deleteQuotePdfFromS3(key);
 }
 
 export async function loadQuoteRenderingDataUrlFromS3(key: string) {

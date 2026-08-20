@@ -315,4 +315,15 @@ This document logs every key architectural, design, and calculation decision mad
 
 
 
+## Branding visibility fix (2026-08-20)
 
+- **Decision**: Treat the company name and store logo as complementary identity fields in the showroom header instead of mutually exclusive alternatives.
+- **Why**: A logo can contain an old wordmark. Hiding the database-backed company name whenever a logo exists made a successfully saved company-name change invisible.
+- **Decision**: Derive showroom CSS brand variables from the validated `primaryColor` passed by the server, with the existing gold as the fallback.
+- **Why**: The value was already saved and passed to the client but was not connected to the showroom styles. Central CSS variables keep all branded accents consistent and preserve a safe default.
+- **Decision**: Store showroom background color separately from the primary accent color and automatically switch essential showroom text/surfaces to a light-background treatment based on luminance.
+- **Why**: Logos need independent control over backdrop contrast; tying the backdrop to the CTA/accent color would reduce flexibility and can make the interface unreadable.
+- **Decision**: Store showroom image/video assets in the existing private S3 bucket and retain only their object key and MIME type on `Company`; deliver them through a showroom-token-validated endpoint.
+- **Why**: Videos are too large for database fields, public bucket URLs would weaken tenant isolation, and the existing S3 infrastructure already provides durable binary storage.
+- **Decision**: Add a local filesystem fallback specifically for showroom media, identified by a `local:` storage-key prefix, while preferring S3 whenever its upload succeeds.
+- **Why**: This unblocks local demonstrations without cloud credentials and preserves a clean migration path: future uploads automatically use S3 while existing temporary files remain readable until replaced.

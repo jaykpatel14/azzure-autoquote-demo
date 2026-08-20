@@ -21,6 +21,9 @@ export async function getSettingsProfileData(companyId: string, userId: string) 
         websiteUrl: true,
         aboutUs: true,
         primaryColor: true,
+        showroomBackgroundColor: true,
+        showroomBackgroundMediaKey: true,
+        showroomBackgroundMediaType: true,
         memberships: {
           orderBy: { id: "asc" },
           select: {
@@ -54,6 +57,9 @@ export async function getSettingsTeamData(companyId: string) {
       websiteUrl: true,
       aboutUs: true,
       primaryColor: true,
+      showroomBackgroundColor: true,
+      showroomBackgroundMediaKey: true,
+      showroomBackgroundMediaType: true,
       memberships: {
         orderBy: { id: "asc" },
         select: {

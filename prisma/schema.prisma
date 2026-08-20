@@ -74,6 +74,9 @@ model Company {
   websiteUrl      String?
   aboutUs         String?
   primaryColor    String?
+  showroomBackgroundColor String?
+  showroomBackgroundMediaKey String?
+  showroomBackgroundMediaType String?
   quoteSequence   Int              @default(0)
   accountStatus   AccountStatus    @default(PENDING_APPROVAL)
   pricingTier     PricingTier?

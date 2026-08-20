@@ -103,6 +103,9 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
         companyName: session.company.name,
         logoUrl: session.company.logoUrl,
         primaryColor: safeBrandColor(session.company.primaryColor),
+        backgroundColor: safeBrandColor(session.company.showroomBackgroundColor),
+        backgroundMediaUrl: session.company.showroomBackgroundMediaKey ? `/api/showroom/background?token=${encodeURIComponent(session.token)}` : null,
+        backgroundMediaType: session.company.showroomBackgroundMediaType,
         aboutUs: session.company.aboutUs
       }}
       pricing={{

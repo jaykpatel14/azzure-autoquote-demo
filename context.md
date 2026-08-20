@@ -296,3 +296,11 @@ azzure-autoquote-mvp/
 
 
 
+## Branding-to-showroom synchronization (2026-08-20)
+
+- Showroom branding is loaded from the active session's current `Company` record on every dynamic `/showroom` request.
+- The showroom header now renders the saved company name even when a store logo exists; previously the logo suppressed the name and made name changes appear stale.
+- The saved primary brand color now sets the showroom's brand, light-accent, and glow CSS variables, including the main CTA.
+- Customers can save a dedicated showroom background color from Branding Settings, preview their logo against it, and use either a light or dark showroom theme with automatic text contrast.
+- Customers can also upload a private S3-backed showroom background image or looping muted video (JPG/PNG/WEBP/MP4/WEBM, up to 50 MB), served only through the active showroom token and displayed beneath a readability overlay.
+- When S3 is unavailable during local development, showroom media automatically falls back to `.data/showroom-backgrounds/`; this directory is git-ignored and the same protected delivery endpoint is used.

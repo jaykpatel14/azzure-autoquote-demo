@@ -1,21 +1,30 @@
 "use client";
 
-import { useState, useRef, type DragEvent, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, useRef, type DragEvent, type ChangeEvent } from "react";
 
 type LogoDropzoneProps = {
   initialLogoUrl?: string | null;
   companyName: string;
   canUseLogo: boolean;
+  initialShowroomBackgroundColor?: string | null;
+  initialShowroomBackgroundMediaType?: string | null;
 };
 
 export default function LogoDropzone({
   initialLogoUrl,
   companyName,
-  canUseLogo
+  canUseLogo,
+  initialShowroomBackgroundColor,
+  initialShowroomBackgroundMediaType
 }: LogoDropzoneProps) {
   const [logoUrl, setLogoUrl] = useState<string>(initialLogoUrl ?? "");
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string>("");
+  const [showroomBackgroundColor, setShowroomBackgroundColor] = useState(initialShowroomBackgroundColor ?? "#08090b");
+  const [backgroundMedia, setBackgroundMedia] = useState<File | null>(null);
+  const [removeBackgroundMedia, setRemoveBackgroundMedia] = useState(false);
+  const backgroundPreviewUrl = useMemo(() => backgroundMedia ? URL.createObjectURL(backgroundMedia) : null, [backgroundMedia]);
+  useEffect(() => () => { if (backgroundPreviewUrl) URL.revokeObjectURL(backgroundPreviewUrl); }, [backgroundPreviewUrl]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   function handleFile(file: File) {
@@ -74,6 +83,40 @@ export default function LogoDropzone({
   return (
     <div className="logoUploadContainer">
       <input type="hidden" name="logoUrl" value={logoUrl} />
+      <input type="hidden" name="removeBackgroundMedia" value={removeBackgroundMedia ? "true" : "false"} />
+
+      <label className="field">
+        <span>Showroom background color</span>
+        <div className="buttonRow">
+          <input
+            type="color"
+            name="showroomBackgroundColor"
+            value={showroomBackgroundColor}
+            onChange={(event) => setShowroomBackgroundColor(event.target.value)}
+            style={{ width: 72, minHeight: 48, padding: 4 }}
+          />
+          <span className="muted small">Choose a background that keeps your logo clear and readable.</span>
+        </div>
+      </label>
+
+      <label className="field">
+        <span>Showroom background image or video</span>
+        <input
+          type="file"
+          name="backgroundMedia"
+          accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+          onChange={(event) => {
+            setBackgroundMedia(event.target.files?.[0] ?? null);
+            setRemoveBackgroundMedia(false);
+          }}
+        />
+        <span className="muted small">JPG, PNG, WEBP, MP4, or WEBM. Maximum 50 MB. Videos play silently on a loop.</span>
+        {(initialShowroomBackgroundMediaType && !removeBackgroundMedia) || backgroundMedia ? (
+          <button className="button secondary button--sm" type="button" onClick={() => { setBackgroundMedia(null); setRemoveBackgroundMedia(true); }}>
+            Remove Background Media
+          </button>
+        ) : null}
+      </label>
 
       <div className="field">
         <span className="fieldLabel">Store Logo</span>
@@ -146,7 +189,12 @@ export default function LogoDropzone({
       {/* Live Preview Card */}
       <div className="logoLivePreviewBox">
         <span className="eyebrow">Live Preview in Customer View</span>
-        <div className="logoLivePreviewCanvas">
+        <div className="logoLivePreviewCanvas" style={{ background: showroomBackgroundColor }}>
+          {backgroundPreviewUrl && backgroundMedia?.type.startsWith("video/") ? (
+            <video className="brandingBackgroundPreview" src={backgroundPreviewUrl} autoPlay muted loop playsInline />
+          ) : backgroundPreviewUrl ? (
+            <img className="brandingBackgroundPreview" src={backgroundPreviewUrl} alt="Showroom background preview" />
+          ) : null}
           {logoUrl ? (
             <img className="companyLogoPreview" src={logoUrl} alt={companyName} />
           ) : (

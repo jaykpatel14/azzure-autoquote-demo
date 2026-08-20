@@ -42,7 +42,7 @@ export default async function BrandingSettingsPage() {
             <p className="muted">Changes here affect future quote pages and customer links.</p>
           </div>
         </div>
-        <form className="stack" action="/api/settings/branding" method="post">
+        <form className="stack" action="/api/settings/branding" method="post" encType="multipart/form-data">
           <label className="field">
             <span>Company name</span>
             <input name="companyName" defaultValue={data.company.name} required />
@@ -73,6 +73,8 @@ export default async function BrandingSettingsPage() {
             initialLogoUrl={data.company.logoUrl}
             companyName={data.company.name}
             canUseLogo={canUseLogo}
+            initialShowroomBackgroundColor={data.company.showroomBackgroundColor}
+            initialShowroomBackgroundMediaType={data.company.showroomBackgroundMediaType}
           />
 
           <button className="button primary button--lg" type="submit" style={{ width: "fit-content", marginTop: "var(--space-3)" }}>

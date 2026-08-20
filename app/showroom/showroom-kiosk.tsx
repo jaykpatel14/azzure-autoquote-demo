@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import QRCode from "qrcode";
 import { QuoteCreationLayout, QuoteStepCard, QuoteBuilderPreview } from "@/components/QuoteCreationLayout";
 import {
@@ -12,7 +12,7 @@ import { convertMetalWeight, type MetalType } from "@/lib/pricing";
 import { validateEmail } from "@/lib/email-validation";
 import type { PricingTier } from "@prisma/client";
 
-type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; aboutUs: string | null };
+type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; backgroundColor: string | null; backgroundMediaUrl: string | null; backgroundMediaType: string | null; aboutUs: string | null };
 type Pricing = { cadCost: number; customerMarginPct: number; pricingTier: PricingTier | null };
 type Analysis = {
   analysisId: string;
@@ -126,6 +126,30 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 export default function ShowroomKiosk({ token, branding, pricing }: { token: string; branding: Branding; pricing: Pricing }) {
+  const brandStyle = useMemo(() => {
+    const brandColor = branding.primaryColor || "#c9a84c";
+    const backgroundColor = branding.backgroundColor || "#08090b";
+    const red = Number.parseInt(brandColor.slice(1, 3), 16);
+    const green = Number.parseInt(brandColor.slice(3, 5), 16);
+    const blue = Number.parseInt(brandColor.slice(5, 7), 16);
+    const lighten = (channel: number) => Math.round(channel + (255 - channel) * 0.28);
+
+    return {
+      "--color-brand": brandColor,
+      "--color-brand-light": `rgb(${lighten(red)}, ${lighten(green)}, ${lighten(blue)})`,
+      "--color-brand-glow": `rgba(${red}, ${green}, ${blue}, 0.3)`,
+      "--showroom-background": backgroundColor
+    } as CSSProperties;
+  }, [branding.backgroundColor, branding.primaryColor]);
+
+  const hasLightBackground = useMemo(() => {
+    const color = branding.backgroundColor || "#08090b";
+    const red = Number.parseInt(color.slice(1, 3), 16);
+    const green = Number.parseInt(color.slice(3, 5), 16);
+    const blue = Number.parseInt(color.slice(5, 7), 16);
+    return (red * 299 + green * 587 + blue * 114) / 1000 > 155;
+  }, [branding.backgroundColor]);
+
   const [started, setStarted] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [description, setDescription] = useState("");
@@ -320,7 +344,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setDescription(product.prompt);
     setRenderingImageUrl(product.image);
     setAnalysis({
-      analysisId: `product-${Date.now()}`,
+      analysisId: `product-${crypto.randomUUID()}`,
       jewelryType: "Ring",
       selectedMetal: product.metal,
       metalWeightGrams: product.metalWeight,
@@ -588,14 +612,21 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const activeImage = renderingImageUrl || (previews.length > 0 ? previews[0] : null);
 
   return (
-    <div className="showroom">
+    <div className={`showroom${hasLightBackground ? " showroom--light" : ""}`} style={brandStyle}>
+      {branding.backgroundMediaUrl ? (
+        branding.backgroundMediaType?.startsWith("video/") ? (
+          <video className="showroomBackgroundMedia" src={branding.backgroundMediaUrl} autoPlay muted loop playsInline aria-hidden="true" />
+        ) : (
+          <img className="showroomBackgroundMedia" src={branding.backgroundMediaUrl} alt="" aria-hidden="true" />
+        )
+      ) : null}
+      {branding.backgroundMediaUrl ? <div className="showroomBackgroundOverlay" aria-hidden="true" /> : null}
       {/* Brand Header */}
       <header className="showroomBrand">
-        {branding.logoUrl ? (
-          <img src={branding.logoUrl} alt={branding.companyName} />
-        ) : (
+        <div className="showroomBrandIdentity">
+          {branding.logoUrl ? <img src={branding.logoUrl} alt="" /> : null}
           <strong>{branding.companyName || "Azzure Custom Studio"}</strong>
-        )}
+        </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div className="showroomBadge">

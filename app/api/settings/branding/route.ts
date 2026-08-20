@@ -5,6 +5,7 @@ import { logAuditEvent } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { buildPublicUrl } from "@/lib/security";
 import { getCompanyPlanFeatures } from "@/src/stripe/plans";
+import { deleteShowroomBackgroundFromS3, storeShowroomBackgroundInS3 } from "@/lib/quote-pdf-s3";
 
 export const runtime = "nodejs";
 
@@ -13,23 +14,31 @@ const schema = z.object({
   aboutUs: z.string().trim().max(300).optional().or(z.literal("")),
   websiteUrl: z.string().trim().url().optional().or(z.literal("")),
   logoUrl: z.string().trim().optional().or(z.literal("")),
-  primaryColor: z.string().regex(/^#[0-9a-f]{6}$/i).optional().or(z.literal(""))
+  primaryColor: z.string().regex(/^#[0-9a-f]{6}$/i).optional().or(z.literal("")),
+  showroomBackgroundColor: z.string().regex(/^#[0-9a-f]{6}$/i).optional().or(z.literal(""))
 });
 
 async function parseInput(request: Request) {
   const contentType = request.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
-    return schema.parse(await request.json());
+    return { input: schema.parse(await request.json()), backgroundMedia: null, removeBackgroundMedia: false };
   }
 
   const formData = await request.formData();
-  return schema.parse({
+  const input = schema.parse({
     companyName: String(formData.get("companyName") || ""),
     aboutUs: String(formData.get("aboutUs") || ""),
     websiteUrl: String(formData.get("websiteUrl") || ""),
     logoUrl: String(formData.get("logoUrl") || ""),
-    primaryColor: String(formData.get("primaryColor") || "")
+    primaryColor: String(formData.get("primaryColor") || ""),
+    showroomBackgroundColor: String(formData.get("showroomBackgroundColor") || "")
   });
+  const candidate = formData.get("backgroundMedia");
+  return {
+    input,
+    backgroundMedia: candidate instanceof File && candidate.size > 0 ? candidate : null,
+    removeBackgroundMedia: formData.get("removeBackgroundMedia") === "true"
+  };
 }
 
 export async function POST(request: Request) {
@@ -39,7 +48,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "You do not have permission to manage branding." }, { status: 403 });
     }
 
-    const input = await parseInput(request);
+    const { input, backgroundMedia, removeBackgroundMedia } = await parseInput(request);
     const { features } = await getCompanyPlanFeatures(context.company.id);
     const canUseLogo = features.pdfBranding !== "azzure_watermark";
 
@@ -50,6 +59,24 @@ export async function POST(request: Request) {
       );
     }
 
+    const allowedMediaTypes = new Set(["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm"]);
+    if (backgroundMedia && (!allowedMediaTypes.has(backgroundMedia.type) || backgroundMedia.size > 50 * 1024 * 1024)) {
+      return NextResponse.json({ error: "Background media must be JPG, PNG, WEBP, MP4, or WEBM and no larger than 50 MB." }, { status: 400 });
+    }
+
+    let mediaKey = context.company.showroomBackgroundMediaKey;
+    let mediaType = context.company.showroomBackgroundMediaType;
+    if (backgroundMedia) {
+      const extension = backgroundMedia.name.split(".").pop()?.replace(/[^a-z0-9]/gi, "").toLowerCase() || "bin";
+      const key = `showroom/${context.company.id}/background-${crypto.randomUUID()}.${extension}`;
+      const stored = await storeShowroomBackgroundInS3({ key, buffer: Buffer.from(await backgroundMedia.arrayBuffer()), contentType: backgroundMedia.type });
+      mediaKey = stored.key;
+      mediaType = backgroundMedia.type;
+    } else if (removeBackgroundMedia) {
+      mediaKey = null;
+      mediaType = null;
+    }
+
     await prisma.company.update({
       where: { id: context.company.id },
       data: {
@@ -57,9 +84,16 @@ export async function POST(request: Request) {
         aboutUs: input.aboutUs || null,
         websiteUrl: input.websiteUrl || null,
         logoUrl: input.logoUrl || null,
-        primaryColor: input.primaryColor || null
+        primaryColor: input.primaryColor || null,
+        showroomBackgroundColor: input.showroomBackgroundColor || null,
+        showroomBackgroundMediaKey: mediaKey,
+        showroomBackgroundMediaType: mediaType
       }
     });
+
+    if ((backgroundMedia || removeBackgroundMedia) && context.company.showroomBackgroundMediaKey && context.company.showroomBackgroundMediaKey !== mediaKey) {
+      await deleteShowroomBackgroundFromS3(context.company.showroomBackgroundMediaKey).catch(() => null);
+    }
 
     await logAuditEvent({
       action: "COMPANY_UPDATED",
