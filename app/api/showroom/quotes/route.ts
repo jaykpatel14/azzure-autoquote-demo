@@ -10,6 +10,7 @@ import { createQuote } from "@/src/services/quotes";
 import { getSettingValue } from "@/lib/app-settings";
 import { generateQuoteRendering } from "@/lib/ai/quote-rendering";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
+import { validateEmail } from "@/lib/email-validation";
 
 const schema = z.object({
   token: z.string().min(20),
@@ -18,7 +19,15 @@ const schema = z.object({
   description: z.string().max(1000).optional(),
   customerNotes: z.string().max(1000).optional(),
   customerName: z.string().trim().min(1, "Customer name is required"),
-  customerEmail: z.string().trim().min(1, "Customer email is required").email("Please enter a valid email address"),
+  customerEmail: z.string().trim().min(1, "Customer email is required").superRefine((val, ctx) => {
+    const check = validateEmail(val);
+    if (!check.valid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: check.error || "Please enter a valid email address."
+      });
+    }
+  }),
   customerPhone: z.string().trim().min(7, "Customer phone number is required"),
   metalType: z.string().optional(),
   selectedMetal: z.string().optional(),

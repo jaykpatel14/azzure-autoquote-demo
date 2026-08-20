@@ -112,11 +112,12 @@ export function chooseMode(values: string[]) {
 export async function runModerationCheck(params: {
   provider: JewelryAnalysisProvider;
   imageDataUrl?: string | null;
+  imageDataUrls?: string[] | null;
   text?: string | null;
   attemptLimit?: number;
 }) {
   const execution = await withTransientRetries(
-    () => params.provider.moderateImage({ imageDataUrl: params.imageDataUrl, text: params.text }),
+    () => params.provider.moderateImage({ imageDataUrl: params.imageDataUrl, imageDataUrls: params.imageDataUrls, text: params.text }),
     params.attemptLimit ?? 2
   );
 
@@ -130,6 +131,7 @@ export async function runModerationCheck(params: {
 export async function runReviewAttempt(params: {
   provider: JewelryAnalysisProvider;
   imageDataUrl?: string | null;
+  imageDataUrls?: string[] | null;
   selectedMetal: MetalType;
   attemptNumber: number;
   attemptLimit?: number;
@@ -156,6 +158,7 @@ export async function runReviewAttempt(params: {
       () =>
         params.provider.analyzeImage({
           imageDataUrl: params.imageDataUrl,
+          imageDataUrls: params.imageDataUrls,
           selectedMetal: params.selectedMetal,
           attemptNumber: params.attemptNumber,
           customerDescription: params.customerDescription,
@@ -262,6 +265,7 @@ export function aggregateJewelryAnalysis(outputs: JewelryAnalysis[], selectedMet
 export async function runJewelryAnalysis(params: {
   provider: JewelryAnalysisProvider;
   imageDataUrl?: string | null;
+  imageDataUrls?: string[] | null;
   customerDescription?: string;
   selectedMetal: MetalType;
   reviewCount: number;
@@ -270,6 +274,7 @@ export async function runJewelryAnalysis(params: {
   const moderation = await runModerationCheck({
     provider: params.provider,
     imageDataUrl: params.imageDataUrl,
+    imageDataUrls: params.imageDataUrls,
     text: params.customerDescription,
     attemptLimit: params.attemptLimit
   });
@@ -285,6 +290,7 @@ export async function runJewelryAnalysis(params: {
     const execution = await runReviewAttempt({
       provider: params.provider,
       imageDataUrl: params.imageDataUrl,
+      imageDataUrls: params.imageDataUrls,
       customerDescription: params.customerDescription,
       selectedMetal: params.selectedMetal,
       attemptNumber,

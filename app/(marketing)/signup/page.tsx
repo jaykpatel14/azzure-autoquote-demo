@@ -5,11 +5,20 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
 import { isPlanCode, type PlanCode } from "@/lib/subscription-plans";
+import { validateEmail } from "@/lib/email-validation";
 
 const signupSchema = z.object({
   companyName: z.string().trim().min(2, "Please enter a business name."),
   name: z.string().trim().min(1, "Please enter your name."),
-  email: z.string().email("Please enter a valid email address."),
+  email: z.string().trim().superRefine((val, ctx) => {
+    const check = validateEmail(val);
+    if (!check.valid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: check.error || "Please enter a valid business email address."
+      });
+    }
+  }),
   password: z.string().min(8, "Password must be at least 8 characters."),
   planCode: z.enum(["starter", "professional", "enterprise", "ultra"])
 });

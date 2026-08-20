@@ -9,6 +9,7 @@ import {
   DEFAULT_COLOR_CLARITY
 } from "@/src/services/pricing";
 import { convertMetalWeight, type MetalType } from "@/lib/pricing";
+import { validateEmail } from "@/lib/email-validation";
 import type { PricingTier } from "@prisma/client";
 
 type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; aboutUs: string | null };
@@ -356,35 +357,19 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     }, 900);
 
     try {
+      const form = new FormData();
+      form.set("token", token);
+      if (hasDesc) form.set("description", description.trim());
       if (hasFiles) {
-        const results: Analysis[] = [];
-        for (const file of filesToAnalyze) {
-          const form = new FormData();
-          form.set("token", token);
-          form.set("image", file);
-          if (hasDesc) form.set("description", description.trim());
-          const response = await fetch("/api/showroom/analyze", { method: "POST", body: form });
-          const body = await response.json();
-          if (!response.ok) throw new Error(body.error || "Analysis failed.");
-          results.push(body);
-        }
-        setAnalysisIds(results.map((r) => r.analysisId));
-        setAnalysis(results[0]);
-        if (results[0].renderingImageUrl) {
-          setRenderingImageUrl(results[0].renderingImageUrl);
-        }
-      } else {
-        const form = new FormData();
-        form.set("token", token);
-        form.set("description", description.trim());
-        const response = await fetch("/api/showroom/analyze", { method: "POST", body: form });
-        const body = await response.json();
-        if (!response.ok) throw new Error(body.error || "Analysis failed.");
-        setAnalysisIds([body.analysisId]);
-        setAnalysis(body);
-        if (body.renderingImageUrl) {
-          setRenderingImageUrl(body.renderingImageUrl);
-        }
+        filesToAnalyze.forEach((file) => form.append("images", file));
+      }
+      const response = await fetch("/api/showroom/analyze", { method: "POST", body: form });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Analysis failed.");
+      setAnalysisIds([body.analysisId]);
+      setAnalysis(body);
+      if (body.renderingImageUrl) {
+        setRenderingImageUrl(body.renderingImageUrl);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Analysis failed.");
@@ -436,8 +421,11 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     }
     if (!customerEmail.trim()) {
       errors.email = "Please enter your email address.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
-      errors.email = "Please enter a valid email address.";
+    } else {
+      const emailCheck = validateEmail(customerEmail.trim());
+      if (!emailCheck.valid) {
+        errors.email = emailCheck.error || "Please enter a valid email address.";
+      }
     }
     if (!customerPhone.trim()) {
       errors.phone = "Please enter your phone number.";
@@ -447,7 +435,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
     if (Object.keys(errors).length > 0) {
       setContactErrors(errors);
-      setError("Please fill in your name, email, and phone number to continue.");
+      setError(errors.email || errors.phone || errors.name || "Please fill in valid contact information.");
       return false;
     }
     setContactErrors({});

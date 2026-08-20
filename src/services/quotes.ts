@@ -132,25 +132,97 @@ export async function createQuote(
     where: { companyId: input.companyId, periodStart: { lte: new Date() }, periodEnd: { gt: new Date() } },
     orderBy: { periodStart: "desc" }, select: { used: true, limit: true }
   });
-  const analysis =
-    input.analysisId === undefined
-      ? null
-      : await prisma.aiAnalysis.findFirst({
-          where: { id: input.analysisId, companyId: input.companyId }
-        });
+  let analysis = null;
+  let resolvedAnalysisId = input.analysisId;
 
-  if (input.analysisId && !analysis) {
-    return { error: NotFoundError("Selected estimate") };
+  if (resolvedAnalysisId && !resolvedAnalysisId.startsWith("product-") && !resolvedAnalysisId.startsWith("concept-")) {
+    const candidate = await prisma.aiAnalysis.findFirst({
+      where: { id: resolvedAnalysisId }
+    });
+
+    if (!candidate || candidate.companyId !== input.companyId) {
+      return { error: NotFoundError("Selected estimate") };
+    }
+
+    analysis = candidate;
+
+    // Check if this analysis is already attached to an existing Quote (since Quote.analysisId is @unique)
+    const existingQuote = await prisma.quote.findUnique({
+      where: { analysisId: analysis.id },
+      select: { id: true }
+    });
+
+    if (existingQuote) {
+      // Clone analysis to prevent unique constraint violation
+      const cloned = await prisma.aiAnalysis.create({
+        data: {
+          companyId: input.companyId,
+          provider: analysis.provider,
+          model: analysis.model,
+          modelVersion: analysis.modelVersion,
+          promptVersion: analysis.promptVersion,
+          selectedMetal: input.metalType || analysis.selectedMetal,
+          jewelryType: analysis.jewelryType || "Ring",
+          centerShape: input.centerShape || analysis.centerShape,
+          centerClarity: input.colorClarity || analysis.centerClarity || "E VS1",
+          settingType: input.settingType || analysis.settingType,
+          metalWeightGrams: input.metalWeightGrams,
+          centerDiamondCarats: input.centerDiamondCarats,
+          sideDiamondCarats: input.sideDiamondCarats,
+          sideDiamondQuantity: input.sideDiamondQuantity,
+          confidence: analysis.confidence,
+          notes: input.notes || analysis.notes,
+          imageDataUrl: analysis.imageDataUrl,
+          sourceImageStorageKey: analysis.sourceImageStorageKey,
+          sourceImageMimeType: analysis.sourceImageMimeType,
+          sourceImageSizeBytes: analysis.sourceImageSizeBytes,
+          renderingStatus: analysis.renderingStatus,
+          renderingStorageKey: analysis.renderingStorageKey,
+          renderingDataUrl: analysis.renderingDataUrl,
+          renderingMimeType: analysis.renderingMimeType,
+          renderingModel: analysis.renderingModel,
+          status: "COMPLETED",
+          completedAt: new Date()
+        }
+      });
+      analysis = cloned;
+      resolvedAnalysisId = cloned.id;
+    }
   }
+
+  // If no analysis exists (e.g. preset product or manual direct quote), create a completed AiAnalysis record
+  if (!analysis) {
+    analysis = await prisma.aiAnalysis.create({
+      data: {
+        companyId: input.companyId,
+        provider: "showroom-synthesizer",
+        model: "preset-v1",
+        modelVersion: "preset-v1",
+        promptVersion: "preset-v1",
+        selectedMetal: input.metalType,
+        jewelryType: "Ring",
+        centerShape: input.centerShape || "round",
+        centerClarity: input.colorClarity || "E VS1",
+        settingType: input.settingType || "prong",
+        metalWeightGrams: input.metalWeightGrams,
+        centerDiamondCarats: input.centerDiamondCarats,
+        sideDiamondCarats: input.sideDiamondCarats,
+        sideDiamondQuantity: input.sideDiamondQuantity,
+        confidence: "high",
+        notes: input.notes || "Showroom selection",
+        status: "COMPLETED",
+        completedAt: new Date()
+      }
+    });
+    resolvedAnalysisId = analysis.id;
+  }
+
   const referenceAnalyses = input.referenceAnalysisIds?.length
     ? await prisma.aiAnalysis.findMany({
-        where: { id: { in: input.referenceAnalysisIds }, companyId: input.companyId },
+        where: { id: { in: input.referenceAnalysisIds.filter((id) => !id.startsWith("product-")) }, companyId: input.companyId },
         select: { id: true }
       })
     : [];
-  if (input.referenceAnalysisIds?.length && referenceAnalyses.length !== new Set(input.referenceAnalysisIds).size) {
-    return { error: NotFoundError("One or more reference images") };
-  }
 
   const maxAttempts = 3;
 
@@ -181,7 +253,7 @@ export async function createQuote(
           data: {
             companyId: input.companyId,
             quoteNumber,
-            analysisId: analysis?.id,
+            analysisId: resolvedAnalysisId,
             referenceAnalysisIds: referenceAnalyses.length
               ? referenceAnalyses.map((reference) => reference.id)
               : undefined,

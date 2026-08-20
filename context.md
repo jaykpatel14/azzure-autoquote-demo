@@ -247,16 +247,19 @@ azzure-autoquote-mvp/
   - Added **"Share with Others (Scan QR)"** below the Save Quote button.
   - Generates high-resolution client-side QR codes pointing to the public quote view (`/q/[code]`) with 1-click PDF download and copyable links for walk-in showroom customers.
 - ✅ **Unified Text and Photo AI Analysis with Automatic 3D Rendering**:
-  - **Flexible Inputs**: System now accepts (a) Text description + Reference photo together, (b) Text description only, or (c) Reference photo only. If either is omitted, it is seamlessly skipped.
-  - **Automatic AI 3D Image Rendering**: Every analysis automatically generates a photorealistic 3D visual concept based on the piece specifications and description.
-  - **Jeweler & Showroom Dashboards**: Updated [`components/QuoteCalculator.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/components/QuoteCalculator.tsx) and [`app/showroom/showroom-kiosk.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/showroom/showroom-kiosk.tsx) so the Analyze button is always available and enabled whether photos, text, or both are supplied.
-- ✅ **Customer Name and Contact Details in PDF Proposals**:
-  - Enhanced [`lib/pdf/quote.ts`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/lib/pdf/quote.ts) and [`src/services/quote-pdf.ts`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/src/services/quote-pdf.ts) to display Customer Name, Email, Phone Number, and Customer Design Notes directly on the generated PDF quote proposal.
-- ✅ **Camera Capture & Real-Time Mobile Upload QR Bridge**:
-  - **Camera Capture Button (`photo_camera`)**: Added dedicated "Take Photo" button with `capture="environment"` in dropzones for Showroom Kiosk and Jeweler Workspace for instant photo shooting on tablet/webcam/phone.
-  - **Upload from Phone (Scan QR)**: Added dedicated QR button and modal. Customers scan the QR on the kiosk screen with their phone, upload reference photos via mobile page ([`app/showroom/mobile-upload/page.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/showroom/mobile-upload/page.tsx)), and photos automatically load into the showroom screen in real time via [`app/api/showroom/mobile-upload/route.ts`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/api/showroom/mobile-upload/route.ts).
-  - **Showroom Kiosk Device Privacy**: Removed local device file browsing ("Choose Photos") from the public Showroom Kiosk to protect the store's private photos and device filesystem.
-- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 21 test suites passing (91/91 tests), `npm run build` completed successfully.
+- ✅ **Starter Plan PDF (No Image Box & Full Azzure Branding)**:
+  - Omitted image placeholder boxes and extra reference pages on Starter plan PDFs (`hasPdfImages: false`).
+  - Rendered clean 1-page proposals featuring bold Azzure AutoQuote gold header branding and footer watermark (`"Powered by Azzure AutoQuote · AI Jewelry Quoting Engine · www.azzuresolutions.com"`).
+- ✅ **Starter Plan Markup Customization Gating**:
+  - Gated margin customization in `app/api/settings/pricing/route.ts` requiring `canUseCustomPricingProfile` (Professional, Enterprise, or Ultra).
+  - Disabled slider and input controls in `app/settings/pricing/page.tsx` and `components/pricing-margin-simulator.tsx` for Starter plan users with an upgrade badge.
+- ✅ **3D AI Concept Generation Restricted Strictly to Ultra Plan**:
+  - Set `canGenerateAIImages: false` on Starter, Professional, and Enterprise plans (`src/stripe/plans.ts`). Only `plan_ultra` has `canGenerateAIImages: true`.
+  - Enforced plan check in `lib/ai/quote-rendering.ts`, `app/api/concept/generate/route.ts`, and `app/api/analyze/route.ts`.
+- ✅ **Anti-Disposable & Anti-Dummy Email Filtering**:
+  - Created [`lib/email-validation.ts`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/lib/email-validation.ts) to filter out 100+ temporary email providers (mailinator, guerrillamail, 10minutemail, etc.), placeholder/dummy domains (`dsaf.com`, `example.com`, `test.com`, `dummy.com`, `fake.com`), and keyboard-mashing dummy emails.
+  - Enforced across B2B jeweler signups (`POST /api/auth/register`, `/signup`), showroom kiosk quote saving (`POST /api/showroom/quotes`, `app/showroom/showroom-kiosk.tsx`), and jeweler dashboard quote builder (`POST /api/quotes`, `components/QuoteCalculator.tsx`).
+- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 22 test suites passing (98/98 tests).
 
 
 

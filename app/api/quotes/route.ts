@@ -23,6 +23,7 @@ import { assertBillableSubscription, BillingAccessError } from "@/lib/billing";
 import { assertPlanFeature, getCompanyPlanFeatures, PlanError } from "@/src/stripe/plans";
 import { generateQuoteRendering } from "@/lib/ai/quote-rendering";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
+import { validateEmail } from "@/lib/email-validation";
 
 const quoteModes = ["normal", "without-center", "without-center-and-side"] as const;
 
@@ -37,7 +38,16 @@ const quoteSchema = z.object({
   analysisId: z.string().optional(),
   analysisIds: z.array(z.string()).max(12).optional(),
   customerName: z.union([z.string().trim().min(1).max(200), z.literal("")]).optional(),
-  customerEmail: z.union([z.string().trim().email(), z.string().trim().max(200), z.literal("")]).optional(),
+  customerEmail: z.string().trim().max(200).optional().superRefine((val, ctx) => {
+    if (!val) return;
+    const check = validateEmail(val, { allowEmpty: true });
+    if (!check.valid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: check.error || "Please enter a valid customer email address."
+      });
+    }
+  }),
   customerPhone: z.union([z.string().trim().max(50), z.literal("")]).optional(),
   quoteMode: z.enum(quoteModes).default("normal"),
   metalType: z.enum(METAL_TYPES),

@@ -1,6 +1,7 @@
 import OpenAI, { toFile } from "openai";
 import { prisma } from "@/lib/prisma";
 import { resolveRuntimeSetting } from "@/lib/app-settings";
+import { getCompanyPlanFeatures } from "@/src/stripe/plans";
 import {
   buildQuoteRenderingStorageKey,
   buildAnalysisRenderingStorageKey,
@@ -148,6 +149,11 @@ export async function generateQuoteRendering(params: { quoteId: string; companyI
 
   if (!quote) throw new Error("Quote not found for rendering.");
 
+  const { features } = await getCompanyPlanFeatures(params.companyId).catch(() => ({ features: null }));
+  if (!features?.canGenerateAIImages) {
+    return { status: "SKIPPED" as const, error: "3D AI Concept Rendering is only available on the Ultra plan." };
+  }
+
   await prisma.quote.update({
     where: { id: quote.id },
     data: { renderingStatus: "PROCESSING", renderingError: null }
@@ -213,6 +219,11 @@ export async function generateAnalysisRendering(params: { analysisId: string; co
   });
 
   if (!analysis) throw new Error("Analysis not found for rendering.");
+
+  const { features } = await getCompanyPlanFeatures(params.companyId).catch(() => ({ features: null }));
+  if (!features?.canGenerateAIImages) {
+    return { status: "SKIPPED" as const, imageUrl: null, storageKey: null };
+  }
 
   await prisma.aiAnalysis.update({
     where: { id: analysis.id },

@@ -28,11 +28,25 @@ async function parseInput(request: Request) {
   });
 }
 
+import { assertPlanFeature, PlanError } from "@/src/stripe/plans";
+
 export async function POST(request: Request) {
   try {
     const context = await requireCompanyContext();
     if (!canManageBilling(context.membership?.role ?? "CUSTOMER")) {
       throw new CompanyAccessError("You do not have permission to update pricing margin settings.");
+    }
+
+    try {
+      await assertPlanFeature(context.company.id, "canUseCustomPricingProfile");
+    } catch (e) {
+      if (e instanceof PlanError) {
+        return NextResponse.json(
+          { error: "Custom markup configuration is available on Professional, Enterprise, and Ultra plans." },
+          { status: 403 }
+        );
+      }
+      throw e;
     }
 
     const input = await parseInput(request);

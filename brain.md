@@ -165,11 +165,62 @@ This document logs every key architectural, design, and calculation decision mad
   2. **Take Photo**: Direct camera shutter (`capture="environment"`) to take a photo of physical jewelry on the spot without exposing the device filesystem or gallery.
 - **Rationale**: On shared showroom tablets, iPads, and kiosk touchscreens, opening the local file dialog could expose internal store folders, OS files, or photos taken by previous customers. Restricting uploads to QR and direct camera capture ensures complete privacy and zero data leakage.
 
+### 38. Starter Plan PDF & Markup Rules, Ultra-Only 3D AI Concept Gating, and Multi-Image Unified Analysis
+- **Decision**: Implemented 5 key business logic, plan matrix, and AI engine refinements:
+  1. **Starter Plan PDF (No Image Box)**:
+     - Updated `lib/pdf/quote.ts` and `src/services/quote-pdf.ts` so when `hasPdfImages === false` (Starter plan), the image placeholder boxes (`drawContainedImage`) and additional reference photo pages are completely omitted.
+     - The PDF is rendered cleanly on 1 page with all approved quote metrics, customer details, design notes, and estimate terms.
+  2. **Starter Plan PDF Azzure Branding**:
+     - Ensured Starter PDFs feature full Azzure AutoQuote branding:
+       - Header subtitle: `"POWERED BY AZZURE AUTOQUOTE"`
+       - Title: `"[Company Name] Quote"` or `"AI AutoQuote Estimate"`
+       - Header tag: `"Azzure AutoQuote · Quote #Q-..."`
+       - Footer watermark on every page: `"Powered by Azzure AutoQuote · AI Jewelry Quoting Engine · www.azzuresolutions.com"`
+  3. **Starter Plan Markup Customization Locked**:
+     - Updated `app/api/settings/pricing/route.ts` with `assertPlanFeature(companyId, "canUseCustomPricingProfile")`.
+     - In `app/settings/pricing/page.tsx` and `components/pricing-margin-simulator.tsx`, disabled the markup range slider and numeric input when on the Starter plan (`canEdit={canEdit && canUseCustomPricing}`), with an explanatory upgrade badge.
+  4. **3D AI Concept Generation Restricted Strictly to Ultra Plan**:
+     - Updated `PLAN_FEATURES` in `src/stripe/plans.ts` so `canGenerateAIImages: false` on Starter, Professional, and Enterprise plans. Only `plan_ultra` has `canGenerateAIImages: true`.
+     - Updated `lib/ai/quote-rendering.ts` (`generateQuoteRendering` and `generateAnalysisRendering`), `app/api/concept/generate/route.ts`, and `app/api/analyze/route.ts` to gate 3D AI generation exclusively to the Ultra plan.
+  5. **Multi-Image Unified AI Analysis & Single Render**:
+     - Updated `lib/ai/provider.ts`, `lib/ai/providers/openai.ts`, and `lib/ai/runner.ts` to accept `imageDataUrls: string[]`.
+     - When a customer or jeweler uploads multiple reference images (e.g. top view + side profile view), all images are bundled and sent together in a single OpenAI message content array (`input_image` for each angle).
+     - OpenAI evaluates all views simultaneously and produces ONE unified `JewelryAnalysis` JSON specification.
+     - Generates ONE single photorealistic 3D concept render for the combined piece.
+     - Updated `components/QuoteCalculator.tsx` (`analyseAll`) and `app/showroom/showroom-kiosk.tsx` (`runAnalysis`) to send all uploaded photos in a single API call.
+- **Rationale**: Enforces subscription tier boundaries (Starter vs Pro vs Enterprise vs Ultra), eliminates image clutter on Starter PDFs while strengthening Azzure brand equity, prevents unauthorized markup overriding, and ensures multi-angle jewelry photos are analyzed holistically as a single piece of jewelry rather than fragmented separate items.
+
+### 39. Resilient Quote Creation for Showroom Preset Products and Unique Constraint Handling
+- **Decision**: Enhanced `createQuote` in `src/services/quotes.ts` to seamlessly handle showroom preset product quotes and duplicate analysis linkages:
+  1. **Preset Products & Ephemeral IDs**: When a user selects a preset showroom design (e.g. `product-178725...`) or creates a quote without an active AI analysis record, `createQuote` now automatically synthesizes a completed `AiAnalysis` record for the quote. This eliminates the `NotFoundError("Selected estimate")` error.
+  2. **1-to-1 Unique Constraint Protection**: Since Prisma enforces `@unique` on `Quote.analysisId`, if a quote is created or re-saved from an existing `AiAnalysis` that is already bound to another quote, `createQuote` automatically clones the `AiAnalysis` record and associates the fresh clone with the new quote.
+  3. **Multi-Tenant Security**: Maintained strict company isolation — if an `analysisId` belongs to a different tenant, it is rejected with `404 Not Found`.
+- **Rationale**: Guarantees that saving quotes on the showroom kiosk or jeweler workspace always succeeds (even with preset products or repeated saves) while ensuring every quote in the database possesses a valid, dedicated `AiAnalysis` relation for PDF rendering, 3D image display, and CustomKing order dispatch.
+
+### 40. Homepage #pricing Section Synchronization with /pricing
+- **Decision**: Updated the marketing landing homepage (`app/page.tsx`) `#pricing` section to render all 4 subscription tiers (**Starter** @ $49/mo, **Professional** @ $99/mo, **Enterprise** @ $199/mo, and **Ultra** @ $399/mo) matching the dedicated [`/pricing`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/%28marketing%29/pricing/page.tsx) page:
+  1. **Consistent 4-Tier Grid**: Adopted the `.pricingCards` 4-column balanced grid on the homepage `#pricing` section with updated trial tags, pricing, badges (*"Most Popular"*, *"Flagship Studio"*), audience descriptions, and feature bullet points (including Ultra's 3D AI concept generation & Showroom kiosk mode).
+  2. **Direct Trial CTAs & Comparison Link**: Direct trial signups link to `/signup?plan=...` (and `mailto:...` for Enterprise), along with a prominent link inviting users to view the complete multi-category feature matrix and FAQ accordion on `/pricing`.
+- **Rationale**: Eliminates user confusion between the landing page teaser and the full pricing page, ensuring prospects receive accurate tier specifications, transparent pricing, and instant access to the flagship Ultra plan from anywhere on the site.
+
+### 41. Anti-Disposable & Anti-Dummy Email Filtering System
+- **Decision**: Implemented a comprehensive email filtering utility [`lib/email-validation.ts`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/lib/email-validation.ts) that validates emails across all user touchpoints:
+  1. **B2B Jeweler Signups & Registrations**: Gated `/signup` and `POST /api/auth/register` with `validateEmail`.
+  2. **End-Customer Showroom Kiosks**: Validates mandatory customer email on `POST /api/showroom/quotes` and in `app/showroom/showroom-kiosk.tsx` client form.
+  3. **Jeweler Dashboard Quotes**: Validates optional customer email on `POST /api/quotes` and in `components/QuoteCalculator.tsx` before quote creation.
+  4. **Multi-Layered Protection Rules**:
+     - Blocks over 100+ known disposable / throwaway email provider domains (e.g. `mailinator.com`, `guerrillamail.com`, `10minutemail.com`, `tempmail.com`, `yopmail.com`, `trashmail.com`, `burnermail.io`).
+     - Blocks dummy, placeholder, and test domains (e.g. `dsaf.com`, `example.com`, `test.com`, `dummy.com`, `fake.com`, `asdf.com`, `sample.com`).
+     - Detects and rejects keyboard-mashing dummy domains and local parts (e.g. `asdf...`, `dsaf...`, `aaaa...`, `1234...`, `qwerty...`).
+     - Enforces valid TLDs and structural RFC compliance (disallowing `.test`, `.local`, `.invalid`, consecutive dots, etc.).
+- **Rationale**: Prevents database pollution from spam, throwaway testing accounts, and junk customer leads while maintaining high data quality for CRM tracking, marketing follow-ups, and genuine customer quote dispatches.
+
 ---
 
 ## Last Updated
 - Date: August 20, 2026
-- Status: Production Ready, All 21 Test Suites Passing (91/91 tests), TypeScript zero errors, Production build successful.
+- Status: Production Ready, All 22 Test Suites Passing (98/98 tests), TypeScript zero errors, Production build successful.
+
 
 
 

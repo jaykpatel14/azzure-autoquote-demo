@@ -136,7 +136,7 @@ export default async function PricingSettingsPage() {
         <PricingMarginSimulator
           initialMarginPct={company.customerMarginPct ?? 0}
           goldSpotPerOz={goldSpot}
-          canEdit={canEdit}
+          canEdit={canEdit && canUseCustomPricing}
         />
       </div>
     </WorkspaceShell>

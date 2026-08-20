@@ -6,9 +6,18 @@ import { onboardCompanyOwner } from "@/lib/onboarding";
 import { createEmailVerificationToken } from "@/lib/auth-tokens";
 import { sendSignupApprovalAlert } from "@/lib/account-workflow";
 import { sendAuthMail } from "@/lib/mailer";
+import { validateEmail } from "@/lib/email-validation";
 
 const registerSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().superRefine((val, ctx) => {
+    const check = validateEmail(val);
+    if (!check.valid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: check.error || "Please enter a valid business email address."
+      });
+    }
+  }),
   password: z.string().min(8).max(200),
   name: z.string().trim().min(1).max(120).optional(),
   companyName: z.string().trim().min(2).max(120)

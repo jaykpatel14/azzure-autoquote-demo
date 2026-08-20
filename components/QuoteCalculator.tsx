@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { convertMetalWeight, type MetalType, type PricingProfileInput } from "@/lib/pricing";
 import { mergeConfidence, median } from "@/lib/statistics";
+import { validateEmail } from "@/lib/email-validation";
 import { useToast } from "@/components/toast-provider";
 import { QuoteCreationLayout, QuoteStepCard, QuoteBuilderPreview } from "@/components/QuoteCreationLayout";
 import {
@@ -809,21 +810,86 @@ export default function QuoteCalculator({
       return;
     }
 
-    setStatus("Starting analysis for all facets.");
+    const files = facetsRef.current.map((f) => f.file).filter((f): f is File => Boolean(f));
+    const description = customerNotes.trim();
+
+    setFacets((current) =>
+      current.map((f) => ({ ...f, status: "processing", stageIndex: 0, error: "" }))
+    );
+    setStatus("Analyzing all reference photos together with AI...");
     setSavedQuote(null);
     setRenderingImageUrl(null);
 
-    for (const facet of facetsRef.current) {
-      if (facet.status === "done" && facet.output) continue;
-      await analyseFacet(facet);
-    }
+    const pulser = window.setInterval(() => {
+      setFacets((current) =>
+        current.map((f) => ({ ...f, stageIndex: (f.stageIndex + 1) % ANALYSIS_STAGES.length }))
+      );
+    }, 800);
 
-    setStatus("Facet analysis complete. Review the quote and save when ready.");
-    setDraftIsFresh(false);
-    showToast({
-      message: "Facet analysis complete.",
-      variant: "success"
-    });
+    try {
+      const formData = new FormData();
+      formData.append("metalType", metalType);
+      if (description) formData.append("description", description);
+      files.forEach((file) => formData.append("images", file));
+
+      const response = await fetch("/api/analyze", { method: "POST", body: formData });
+      const responseText = await response.text();
+      const result = (responseText ? JSON.parse(responseText) : {}) as FacetOutput;
+      if (!response.ok) {
+        throw new Error((result as unknown as { error?: string }).error || "Analysis failed.");
+      }
+
+      const unifiedOutput = {
+        analysisId: result.analysisId,
+        jewelryType: result.jewelryType || "Jewelry",
+        centerShape: result.centerShape ?? "round",
+        centerClarity: DEFAULT_COLOR_CLARITY,
+        settingType: result.settingType ?? "prong",
+        metalWeightGrams: result.metalWeightGrams,
+        centerDiamondCarats: result.centerDiamondCarats,
+        sideDiamondCarats: result.sideDiamondCarats,
+        sideDiamondQuantity: result.sideDiamondQuantity,
+        hasWeddingBand: result.hasWeddingBand ?? false,
+        isTwoTone: result.isTwoTone ?? false,
+        confidence: result.confidence,
+        notes: result.notes,
+        assumptions: result.assumptions,
+        renderingImageUrl: result.renderingImageUrl ?? null
+      };
+
+      setFacets((current) =>
+        current.map((f) => ({
+          ...f,
+          status: "done",
+          output: unifiedOutput
+        }))
+      );
+
+      if (result.renderingImageUrl) {
+        setRenderingImageUrl(result.renderingImageUrl);
+      }
+
+      setStatus("Unified analysis and 3D visual concept generated.");
+      setDraftIsFresh(false);
+      showToast({
+        message: "Analysis complete. Combined all views into one unified estimate.",
+        variant: "success"
+      });
+    } catch (error) {
+      setFacets((current) =>
+        current.map((f) => ({
+          ...f,
+          status: "error",
+          error: error instanceof Error ? error.message : "Analysis failed."
+        }))
+      );
+      showToast({
+        message: error instanceof Error ? error.message : "Analysis failed.",
+        variant: "error"
+      });
+    } finally {
+      window.clearInterval(pulser);
+    }
   }
 
   async function refreshAnalysisFromDescription() {
@@ -851,6 +917,19 @@ export default function QuoteCalculator({
 
     if (!window.confirm("Save this approved quote to company history?")) {
       return;
+    }
+
+    if (customerEmail.trim()) {
+      const emailCheck = validateEmail(customerEmail.trim());
+      if (!emailCheck.valid) {
+        setStatus(emailCheck.error || "Please enter a valid customer email address.");
+        showToast({
+          message: emailCheck.error || "Please enter a valid customer email address.",
+          variant: "error",
+          autoDismiss: false
+        });
+        return;
+      }
     }
 
     setSaving(true);

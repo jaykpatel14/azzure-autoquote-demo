@@ -133,16 +133,16 @@ export async function createOpenAIJewelryAnalysisProvider(
     model,
     modelVersion,
     promptVersion,
-    async moderateImage({ imageDataUrl, text }: { imageDataUrl?: string | null; text?: string | null }): Promise<ModerationSnapshot> {
-      if (imageDataUrl) {
+    async moderateImage({ imageDataUrl, imageDataUrls, text }: { imageDataUrl?: string | null; imageDataUrls?: string[] | null; text?: string | null }): Promise<ModerationSnapshot> {
+      const images = (imageDataUrls?.length ? imageDataUrls : imageDataUrl ? [imageDataUrl] : []).filter(Boolean);
+
+      if (images.length > 0) {
         const response = await client.moderations.create({
           model: "omni-moderation-latest",
-          input: [
-            {
-              type: "image_url",
-              image_url: { url: imageDataUrl }
-            }
-          ]
+          input: images.map((url) => ({
+            type: "image_url" as const,
+            image_url: { url }
+          }))
         });
 
         return {
@@ -170,7 +170,7 @@ export async function createOpenAIJewelryAnalysisProvider(
         rawResponse: null
       };
     },
-    async analyzeImage({ imageDataUrl, selectedMetal, attemptNumber, customerDescription, learnedGuidance }): Promise<JewelryReviewSnapshot> {
+    async analyzeImage({ imageDataUrl, imageDataUrls, selectedMetal, attemptNumber, customerDescription, learnedGuidance }): Promise<JewelryReviewSnapshot> {
       const start = Date.now();
       const contentList: Array<
         | { type: "input_text"; text: string }
@@ -182,10 +182,11 @@ export async function createOpenAIJewelryAnalysisProvider(
         }
       ];
 
-      if (imageDataUrl) {
+      const images = (imageDataUrls?.length ? imageDataUrls : imageDataUrl ? [imageDataUrl] : []).filter(Boolean);
+      for (const imgUrl of images) {
         contentList.push({
           type: "input_image",
-          image_url: imageDataUrl,
+          image_url: imgUrl,
           detail: "high"
         });
       }

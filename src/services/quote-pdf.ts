@@ -90,7 +90,8 @@ export async function generateAndStoreQuotePdf(params: {
     centerShape: quote.analysis?.centerShape,
     centerClarity: quote.analysis?.centerClarity,
     settingType: quote.analysis?.settingType,
-    branding: features.pdfBranding
+    branding: features.pdfBranding,
+    hasPdfImages: features.hasPdfImages
   });
 
   const storageKey = buildQuotePdfStorageKey(params.companyId, quote.quoteNumber);

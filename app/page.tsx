@@ -80,7 +80,6 @@ function DashboardChart({ data }: { data: Array<{ date: Date; label: string; cou
   );
 }
 
-
 const FEATURE_STEPS = [
   {
     step: "01",
@@ -125,44 +124,74 @@ const MARKETING_STATS = [
 const PLAN_CARDS = [
   {
     name: "Starter",
-    price: "$49/mo",
-    description: "For solo jewelers and occasional quoting.",
+    price: "$49",
+    period: "/ month",
+    badge: null,
+    audience: "Solo jewelers & occasional quoting",
+    cta: "Start free trial",
+    ctaHref: "/signup?plan=starter",
+    featured: false,
     features: [
-      "100 quotes per month",
+      "100 quotes / month",
       "1-pass AI estimate",
-      "Fixed Azzure pricing profile",
-      "PDFs with Azzure branding",
-      "1 user seat",
+      "Fixed pricing profile",
+      "1-page PDF with Azzure watermark",
+      "1 seat",
       "Standard email support"
     ]
   },
   {
     name: "Professional",
-    price: "$99/mo",
-    description: "For growing shops that quote every day.",
+    price: "$99",
+    period: "/ month",
+    badge: "Most Popular",
+    audience: "Growing shops quoting every day",
+    cta: "Start free trial",
+    ctaHref: "/signup?plan=professional",
+    featured: true,
     features: [
-      "500 quotes per month",
+      "500 quotes / month",
       "Full 3-pass AI analysis",
-      "Editable pricing profile",
-      "Custom logo and branded PDFs",
-      "Full image and quote history",
-      "Up to 5 user seats",
-      "Priority email support"
+      "Editable pricing profile & margins",
+      "Custom branded PDFs",
+      "Full quote & image history",
+      "Up to 5 seats"
     ]
   },
   {
     name: "Enterprise",
-    price: "$199/mo",
-    description: "For high-volume and multi-location jewelers.",
+    price: "$199",
+    period: "/ month",
+    badge: null,
+    audience: "High-volume & multi-location jewelers",
+    cta: "Contact Sales",
+    ctaHref: "mailto:sales@azzureautoquote.com",
+    featured: false,
     features: [
-      "2,500 quotes per month",
-      "3-pass AI with manual override",
-      "Multi-location pricing controls",
+      "2,500 quotes / month",
+      "3-pass AI + manual override",
       "White-label PDF templates",
-      "Unlimited role-based users",
-      "Manufacturing orders from quotes",
-      "Branded customer quote links",
-      "Dedicated support and onboarding"
+      "Unlimited role-based seats",
+      "Manufacturing orders [Staging]",
+      "Branded customer quote links"
+    ]
+  },
+  {
+    name: "Ultra",
+    price: "$399",
+    period: "/ month",
+    badge: "Flagship Studio",
+    audience: "Showrooms, tablet WOW kiosks & luxury studios",
+    cta: "Start free trial",
+    ctaHref: "/signup?plan=ultra",
+    featured: false,
+    features: [
+      "10,000 quotes / month",
+      "Photorealistic 3D Concept Generation",
+      "In-Store Tablet / WOW Showroom Mode",
+      "Store Logo & Showroom Assets",
+      "Manufacturing order dispatch",
+      "24/7 Dedicated Concierge"
     ]
   }
 ] as const;
@@ -454,7 +483,6 @@ export default async function HomePage() {
   );
 }
 
-
 function QuoteOutlineIllustration() {
   return (
     <svg className="emptyStateIllustration" viewBox="0 0 240 120" role="img" aria-label="Jewelry outline illustration">
@@ -608,37 +636,71 @@ function MarketingPage() {
       {/* Pricing Section */}
       <section className="marketingSection" id="pricing" style={{ background: "var(--color-surface-container-low)" }}>
         <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-          <div className="sectionHeader" style={{ marginBottom: 48 }}>
+          <div className="sectionHeader" style={{ marginBottom: 40 }}>
             <div>
-              <p className="eyebrow">Plans</p>
-              <h2 className="heading">Choose the level of control your shop needs.</h2>
+              <p className="eyebrow" style={{ color: "var(--color-primary)" }}>Plans &amp; Pricing</p>
+              <h2 className="heading">Simple pricing that scales with your quoting volume</h2>
+              <p className="muted" style={{ marginTop: 8, fontSize: "1.05rem" }}>
+                Start with a 14-day free trial on any plan. Upgrade, downgrade, or cancel anytime.
+              </p>
             </div>
           </div>
-          <div className="planGrid">
-            {PLAN_CARDS.map((plan, index) => (
-              <article key={plan.name} className={`planCard${index === 2 ? " enterprise" : ""}`}>
-                {index === 0 ? <span className="trialBanner">Popular starter option</span> : null}
-                <div className="planName">{plan.name}</div>
-                <div className="planPrice">{plan.price}</div>
-                <p className="muted">{plan.description}</p>
-                <ul className="featureList">
-                  {plan.features.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
-                <Link
-                  className={`button ${index === 2 ? "primary" : "secondary"}`}
-                  href="/pricing"
-                  style={{ marginTop: "auto" }}
-                >
-                  Get started
-                </Link>
+
+          <div className="pricingCards">
+            {PLAN_CARDS.map((plan) => (
+              <article key={plan.name} className={plan.featured ? "pricingCard pricingCard--featured" : "pricingCard"}>
+                {plan.badge ? <span className="pricingBadge">{plan.badge}</span> : null}
+                <div>
+                  <div className="pricingCardTop">
+                    <p className="pricingTrial">14-Day Free Trial</p>
+                    <h3 className="pricingCardName">{plan.name}</h3>
+                    <div className="pricingCardPrice">
+                      {plan.price} <span>{plan.period}</span>
+                    </div>
+                    <p className="muted small">{plan.audience}</p>
+                  </div>
+
+                  <ul className="pricingFeatureList" aria-label={`${plan.name} features`}>
+                    {plan.features.map((feature: string) => (
+                      <li key={feature}>{feature}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  {plan.ctaHref.startsWith("mailto:") ? (
+                    <a
+                      className={plan.featured ? "button primary button--lg" : "button secondary button--lg"}
+                      style={{ width: "100%" }}
+                      href={plan.ctaHref}
+                    >
+                      {plan.cta}
+                    </a>
+                  ) : (
+                    <Link
+                      className={plan.featured ? "button primary button--lg" : "button secondary button--lg"}
+                      style={{ width: "100%" }}
+                      href={plan.ctaHref}
+                    >
+                      {plan.cta}
+                    </Link>
+                  )}
+                  <p className="pricingFootnote" style={{ marginTop: 12 }}>
+                    14-day free trial · Card required · Cancel anytime
+                  </p>
+                </div>
               </article>
             ))}
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: 48 }}>
+            <Link className="button secondary button--lg" href="/pricing" style={{ padding: "14px 28px", fontSize: "1rem" }}>
+              Compare Full Feature Table &amp; FAQs
+              <span className="material-symbols-outlined" style={{ fontSize: 18, marginLeft: 8 }} aria-hidden="true">arrow_forward</span>
+            </Link>
           </div>
         </div>
       </section>
     </main>
   );
 }
-

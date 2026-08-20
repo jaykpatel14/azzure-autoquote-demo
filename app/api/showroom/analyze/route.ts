@@ -22,7 +22,11 @@ export async function POST(request: Request) {
   try {
     const form = await request.formData();
     const token = String(form.get("token") || "");
-    const image = form.get("image");
+    const rawImages = [
+      ...form.getAll("images"),
+      ...form.getAll("image"),
+      ...form.getAll("files")
+    ].filter((item): item is File => item instanceof File && item.size > 0);
     const requestedMetal = String(form.get("metalType") || "14K");
     const metalType: MetalType = METAL_TYPES.includes(requestedMetal as MetalType)
       ? (requestedMetal as MetalType)
@@ -34,40 +38,44 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "This kiosk is not active." }, { status: 401 });
     }
 
-    const hasImage = image instanceof File && image.size > 0;
+    const hasImages = rawImages.length > 0;
     const hasDescription = description.length > 0;
 
-    if (!hasImage && !hasDescription) {
+    if (!hasImages && !hasDescription) {
       return NextResponse.json(
         { error: "Please upload a reference photo or describe your custom design to analyze." },
         { status: 400 }
       );
     }
 
-    let imageDataUrl: string | null = null;
-    let imageType: string | null = null;
-    let imageSizeBytes: number = 0;
-    let bytes: Buffer | null = null;
+    const imageDataUrls: string[] = [];
+    let primaryImageType: string | null = null;
+    let primaryImageSizeBytes: number = 0;
+    let primaryBytes: Buffer | null = null;
 
-    if (hasImage && image instanceof File) {
+    for (const image of rawImages.slice(0, 3)) {
       if (!TYPES.has(image.type) || image.size > MAX_FILE_SIZE) {
         return NextResponse.json(
-          { error: "Use a JPG, PNG, or WEBP image smaller than 10 MB." },
+          { error: `File "${image.name}" exceeds 10 MB or is not a JPG, PNG, or WEBP.` },
           { status: 400 }
         );
       }
 
-      bytes = Buffer.from(await image.arrayBuffer());
-      if (!hasAllowedImageSignature(bytes, image.type)) {
+      const fileBytes = Buffer.from(await image.arrayBuffer());
+      if (!hasAllowedImageSignature(fileBytes, image.type)) {
         return NextResponse.json(
-          { error: "The uploaded file is not a valid image." },
+          { error: `File "${image.name}" is not a valid image.` },
           { status: 400 }
         );
       }
 
-      imageType = image.type;
-      imageSizeBytes = image.size;
-      imageDataUrl = `data:${image.type};base64,${bytes.toString("base64")}`;
+      if (!primaryBytes) {
+        primaryBytes = fileBytes;
+        primaryImageType = image.type;
+        primaryImageSizeBytes = image.size;
+      }
+
+      imageDataUrls.push(`data:${image.type};base64,${fileBytes.toString("base64")}`);
     }
 
     const provider = await getJewelryAnalysisProvider();
@@ -79,29 +87,29 @@ export async function POST(request: Request) {
         modelVersion: provider.modelVersion,
         promptVersion: provider.promptVersion,
         selectedMetal: metalType,
-        sourceImageMimeType: imageType,
-        sourceImageSizeBytes: imageSizeBytes,
+        sourceImageMimeType: primaryImageType,
+        sourceImageSizeBytes: primaryImageSizeBytes,
         reviewCount: 3,
         status: "PROCESSING"
       }
     });
 
-    if (bytes && imageType) {
+    if (primaryBytes && primaryImageType) {
       const stored = await storeAnalysisImageInS3({
-        key: buildAnalysisImageStorageKey(session.companyId, record.id, imageType),
-        buffer: bytes,
-        contentType: imageType
+        key: buildAnalysisImageStorageKey(session.companyId, record.id, primaryImageType),
+        buffer: primaryBytes,
+        contentType: primaryImageType
       }).catch(() => null);
 
       await prisma.aiAnalysis.update({
         where: { id: record.id },
-        data: stored ? { sourceImageStorageKey: stored.key } : { imageDataUrl }
+        data: stored ? { sourceImageStorageKey: stored.key } : { imageDataUrl: imageDataUrls[0] }
       });
     }
 
     const moderation = await runModerationCheck({
       provider,
-      imageDataUrl,
+      imageDataUrls,
       text: description
     });
 
@@ -132,7 +140,7 @@ export async function POST(request: Request) {
     for (let attemptNumber = 1; attemptNumber <= 3; attemptNumber++) {
       const attempt = await runReviewAttempt({
         provider,
-        imageDataUrl,
+        imageDataUrls,
         selectedMetal: metalType,
         attemptNumber,
         customerDescription: description || undefined,

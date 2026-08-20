@@ -6,17 +6,18 @@ const source = (path: string) => readFileSync(path, "utf8");
 
 describe("subscription feature matrix", () => {
   test("Starter has the launch limits and no paid-only capabilities", () => {
-    expect(PLAN_FEATURES.plan_starter).toMatchObject({ quotesPerMonth: 100, aiPasses: 1, canViewQuoteHistory: false, canShareQuoteLink: false, canUseCustomPricingProfile: false, pdfBranding: "azzure_watermark", canPlaceManufacturingOrder: false, maxSeats: 1, overageEnabled: false, s3ImagePersistence: false, canGenerateAIImages: false, canUseShowroomMode: false, canCustomizeShowroomBranding: false });
+    expect(PLAN_FEATURES.plan_starter).toMatchObject({ quotesPerMonth: 100, aiPasses: 1, canViewQuoteHistory: false, canShareQuoteLink: false, canUseCustomPricingProfile: false, pdfBranding: "azzure_watermark", canPlaceManufacturingOrder: false, maxSeats: 1, overageEnabled: false, s3ImagePersistence: false, canGenerateAIImages: false, canUseShowroomMode: false, canCustomizeShowroomBranding: false, hasPdfImages: false });
   });
   test("Professional has three passes, persistence, custom pricing, five seats, and overage", () => {
-    expect(PLAN_FEATURES.plan_professional).toMatchObject({ quotesPerMonth: 500, aiPasses: 3, canViewQuoteHistory: true, canShareQuoteLink: false, canUseCustomPricingProfile: true, pdfBranding: "custom_logo", canPlaceManufacturingOrder: false, maxSeats: 5, overageEnabled: true, s3ImagePersistence: true, canGenerateAIImages: false, canUseShowroomMode: false, canCustomizeShowroomBranding: false });
+    expect(PLAN_FEATURES.plan_professional).toMatchObject({ quotesPerMonth: 500, aiPasses: 3, canViewQuoteHistory: true, canShareQuoteLink: false, canUseCustomPricingProfile: true, pdfBranding: "custom_logo", canPlaceManufacturingOrder: false, maxSeats: 5, overageEnabled: true, s3ImagePersistence: true, canGenerateAIImages: false, canUseShowroomMode: false, canCustomizeShowroomBranding: false, hasPdfImages: true });
   });
   test("Enterprise enables sharing, manufacturing, white label, and unlimited seats", () => {
     expect(PLAN_FEATURES.plan_enterprise.canShareQuoteLink).toBe(true);
+    expect(PLAN_FEATURES.plan_enterprise.canGenerateAIImages).toBe(false);
     expect(PLAN_FEATURES.plan_enterprise.canPlaceManufacturingOrder).toBe(true);
     expect(PLAN_FEATURES.plan_enterprise.pdfBranding).toBe("white_label");
     expect(PLAN_FEATURES.plan_enterprise.maxSeats).toBe(Number.POSITIVE_INFINITY);
-    expect(PLAN_FEATURES.plan_enterprise.canGenerateAIImages).toBe(true);
+    expect(PLAN_FEATURES.plan_enterprise.hasPdfImages).toBe(true);
   });
   test("Ultra unlocks image generation, showroom consultation mode, and showroom branding", () => {
     expect(PLAN_FEATURES.plan_ultra.canGenerateAIImages).toBe(true);
@@ -25,6 +26,7 @@ describe("subscription feature matrix", () => {
     expect(PLAN_FEATURES.plan_ultra.quotesPerMonth).toBe(10000);
     expect(PLAN_FEATURES.plan_ultra.canPlaceManufacturingOrder).toBe(true);
     expect(PLAN_FEATURES.plan_ultra.pdfBranding).toBe("white_label");
+    expect(PLAN_FEATURES.plan_ultra.hasPdfImages).toBe(true);
   });
   test("trial users always resolve to Professional features", () => {
     expect(resolvePlanId({ id: "plan_enterprise", code: "enterprise" }, "TRIALING")).toBe("plan_professional");

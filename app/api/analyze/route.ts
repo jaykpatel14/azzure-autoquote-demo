@@ -58,44 +58,52 @@ export async function POST(request: Request) {
     }
     assertBillableSubscription(companyContext.company.subscription);
     const form = await request.formData();
-    const image = form.get("image");
+    const rawImages = [
+      ...form.getAll("images"),
+      ...form.getAll("image"),
+      ...form.getAll("files")
+    ].filter((item): item is File => item instanceof File && item.size > 0);
     const selectedMetal = metalTypeSchema.parse(form.get("metalType") || "14K");
     const customerDescription = String(form.get("description") || "").trim().slice(0, 1000);
 
-    const hasImage = image instanceof File && image.size > 0;
+    const hasImages = rawImages.length > 0;
     const hasDescription = customerDescription.length > 0;
 
-    if (!hasImage && !hasDescription) {
+    if (!hasImages && !hasDescription) {
       return NextResponse.json(
         { error: "Please upload a reference photo or describe your custom design to analyze." },
         { status: 400 }
       );
     }
 
-    let imageDataUrl: string | null = null;
-    let imageType: string | null = null;
-    let imageSizeBytes: number = 0;
-    let bytes: Buffer | null = null;
+    const imageDataUrls: string[] = [];
+    let primaryImageType: string | null = null;
+    let primaryImageSizeBytes: number = 0;
+    let primaryBytes: Buffer | null = null;
 
-    if (hasImage && image instanceof File) {
+    for (const image of rawImages.slice(0, 3)) {
       if (!ALLOWED_TYPES.has(image.type) || image.size > MAX_FILE_SIZE) {
         return NextResponse.json(
-          { error: "Use a JPG, PNG, or WEBP image smaller than 10 MB." },
+          { error: `File "${image.name}" exceeds 10 MB or is not a JPG, PNG, or WEBP.` },
           { status: 400 }
         );
       }
 
-      bytes = Buffer.from(await image.arrayBuffer());
-      if (!hasAllowedImageSignature(bytes, image.type)) {
+      const fileBytes = Buffer.from(await image.arrayBuffer());
+      if (!hasAllowedImageSignature(fileBytes, image.type)) {
         return NextResponse.json(
-          { error: "The uploaded file does not match its declared image type." },
+          { error: `File "${image.name}" does not match its declared image type.` },
           { status: 400 }
         );
       }
 
-      imageType = image.type;
-      imageSizeBytes = image.size;
-      imageDataUrl = `data:${image.type};base64,${bytes.toString("base64")}`;
+      if (!primaryBytes) {
+        primaryBytes = fileBytes;
+        primaryImageType = image.type;
+        primaryImageSizeBytes = image.size;
+      }
+
+      imageDataUrls.push(`data:${image.type};base64,${fileBytes.toString("base64")}`);
     }
 
     reservation = await reserveMonthlyUsage(companyContext.company.id);
@@ -151,8 +159,8 @@ export async function POST(request: Request) {
         modelVersion: provider.modelVersion,
         promptVersion: provider.promptVersion,
         imageDataUrl: null,
-        sourceImageMimeType: imageType,
-        sourceImageSizeBytes: imageSizeBytes,
+        sourceImageMimeType: primaryImageType,
+        sourceImageSizeBytes: primaryImageSizeBytes,
         selectedMetal,
         reviewCount,
         status: "PROCESSING"
@@ -160,10 +168,10 @@ export async function POST(request: Request) {
     });
     analysisId = analysis.id;
 
-    if (bytes && imageType) {
-      const analysisImageStorageKey = buildAnalysisImageStorageKey(companyContext.company.id, analysis.id, imageType);
+    if (primaryBytes && primaryImageType) {
+      const analysisImageStorageKey = buildAnalysisImageStorageKey(companyContext.company.id, analysis.id, primaryImageType);
       const storedImage = features.s3ImagePersistence
-        ? await storeAnalysisImageInS3({ key: analysisImageStorageKey, buffer: bytes, contentType: imageType })
+        ? await storeAnalysisImageInS3({ key: analysisImageStorageKey, buffer: primaryBytes, contentType: primaryImageType })
         : null;
 
       await prisma.aiAnalysis.update({
@@ -173,13 +181,13 @@ export async function POST(request: Request) {
               sourceImageStorageKey: storedImage.key,
               imageDataUrl: null
             }
-          : { imageDataUrl: features.s3ImagePersistence ? imageDataUrl : null }
+          : { imageDataUrl: features.s3ImagePersistence ? imageDataUrls[0] : null }
       });
     }
 
     const moderation = await runModerationCheck({
       provider,
-      imageDataUrl,
+      imageDataUrls,
       text: customerDescription
     });
 
@@ -200,7 +208,7 @@ export async function POST(request: Request) {
     for (let attemptNumber = 1; attemptNumber <= reviewCount; attemptNumber += 1) {
       const attemptResult = await runReviewAttempt({
         provider,
-        imageDataUrl,
+        imageDataUrls,
         selectedMetal,
         attemptNumber,
         customerDescription: customerDescription || undefined,
