@@ -5,6 +5,8 @@ import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 
+import { AdminDeleteCompanyButton } from "@/components/admin-delete-company-button";
+
 export const dynamic = "force-dynamic";
 
 export default async function AdminCompaniesPage() {
@@ -66,6 +68,7 @@ export default async function AdminCompaniesPage() {
                 <th scope="col">Quotes</th>
                 <th scope="col">Members</th>
                 <th scope="col">Last quote</th>
+                <th scope="col" style={{ textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -98,6 +101,14 @@ export default async function AdminCompaniesPage() {
                     ) : (
                       <span className="muted small">No quotes yet</span>
                     )}
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    <div style={{ display: "inline-flex", gap: "8px", alignItems: "center" }}>
+                      <Link className="button secondary" style={{ padding: "6px 12px", fontSize: "12px" }} href={`/admin/companies/${company.id}`}>
+                        View
+                      </Link>
+                      <AdminDeleteCompanyButton companyId={company.id} companyName={company.name} />
+                    </div>
                   </td>
                 </tr>
               ))}

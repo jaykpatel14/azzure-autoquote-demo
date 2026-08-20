@@ -395,3 +395,129 @@ export async function updateAdminCompanyBilling(
 
   return { company: updatedCompany, subscription, plan: selectedPlan };
 }
+
+export async function deleteAdminCompany(
+  client: PrismaCompanyClient,
+  adminUserId: string,
+  companyId: string
+) {
+  const company = await client.company.findUnique({
+    where: { id: companyId },
+    select: { id: true, name: true, slug: true }
+  });
+
+  if (!company) {
+    throw new Error("Company not found.");
+  }
+
+  // Find all user IDs associated with this company
+  const memberships = await client.membership.findMany({
+    where: { companyId: company.id },
+    select: { userId: true }
+  });
+
+  const memberUserIds = memberships.map((m) => m.userId).filter(Boolean);
+
+  // Check which users have NO OTHER company memberships
+  const orphanUserIds: string[] = [];
+  for (const userId of memberUserIds) {
+    const otherMemberships = await client.membership.findMany({
+      where: {
+        userId,
+        companyId: { not: company.id }
+      },
+      select: { id: true }
+    });
+    if (otherMemberships.length === 0) {
+      orphanUserIds.push(userId);
+    }
+  }
+
+  // Delete company and all cascading relations
+  await client.company.delete({
+    where: { id: company.id }
+  });
+
+  // Delete orphan users
+  if (orphanUserIds.length > 0) {
+    await client.user.deleteMany({
+      where: { id: { in: orphanUserIds } }
+    });
+  }
+
+  return {
+    deleted: true,
+    companyId: company.id,
+    companyName: company.name,
+    companySlug: company.slug,
+    deletedUserCount: orphanUserIds.length
+  };
+}
+
+export async function deleteAdminCompanyMember(
+  client: PrismaCompanyClient,
+  adminUserId: string,
+  companyId: string,
+  userId: string,
+  deleteUserIfOrphan: boolean = true
+) {
+  const membership = await client.membership.findUnique({
+    where: {
+      companyId_userId: {
+        companyId,
+        userId
+      }
+    },
+    include: {
+      user: { select: { id: true, email: true, name: true } },
+      company: { select: { id: true, name: true } }
+    }
+  });
+
+  if (!membership) {
+    throw new Error("Member not found in this company.");
+  }
+
+  // Delete the membership
+  await client.membership.delete({
+    where: { id: membership.id }
+  });
+
+  let userDeleted = false;
+  if (deleteUserIfOrphan) {
+    const otherMemberships = await client.membership.findMany({
+      where: { userId },
+      select: { id: true }
+    });
+    if (otherMemberships.length === 0) {
+      await client.user.delete({
+        where: { id: userId }
+      });
+      userDeleted = true;
+    }
+  }
+
+  await client.auditLog.create({
+    data: {
+      action: "MEMBERSHIP_DELETED",
+      companyId,
+      actorUserId: adminUserId,
+      targetType: "Membership",
+      targetId: userId,
+      metadata: {
+        email: membership.user.email,
+        userName: membership.user.name,
+        userDeleted
+      }
+    }
+  });
+
+  return {
+    success: true,
+    companyId,
+    userId,
+    userEmail: membership.user.email,
+    userDeleted
+  };
+}
+

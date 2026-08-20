@@ -4,6 +4,8 @@ import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
+import { AdminDeleteCompanyButton } from "@/components/admin-delete-company-button";
+import { AdminDeleteMemberButton } from "@/components/admin-delete-member-button";
 
 type AdminCompanyPageProps = {
   params: Promise<{
@@ -28,7 +30,7 @@ export default async function AdminCompanyPage({ params }: AdminCompanyPageProps
       },
       pricingProfile: true,
       memberships: {
-        include: { user: { select: { email: true, name: true } } },
+        include: { user: { select: { id: true, email: true, name: true } } },
         orderBy: { id: "desc" }
       },
       quotes: {
@@ -57,9 +59,12 @@ export default async function AdminCompanyPage({ params }: AdminCompanyPageProps
       navItems={getInternalAdminNav("/admin/companies")}
       adminName={context.user.name || context.user.email}
       actions={
-        <Link className="button secondary" href="/admin/companies">
-          Back to companies
-        </Link>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <Link className="button secondary" href="/admin/companies">
+            Back to companies
+          </Link>
+          <AdminDeleteCompanyButton companyId={company.id} companyName={company.name} />
+        </div>
       }
     >
       <section className="statGrid">
@@ -162,10 +167,18 @@ export default async function AdminCompanyPage({ params }: AdminCompanyPageProps
           </div>
           <div className="stack">
             {company.memberships.map((membership) => (
-              <div className="detailCard" key={membership.id}>
-                <span>Customer</span>
-                <strong>{membership.user.name || membership.user.email}</strong>
-                <p className="muted small">{membership.user.email}</p>
+              <div className="detailCard" key={membership.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <span>Customer ({membership.role})</span>
+                  <strong>{membership.user.name || membership.user.email}</strong>
+                  <p className="muted small">{membership.user.email}</p>
+                </div>
+                <AdminDeleteMemberButton
+                  companyId={company.id}
+                  userId={membership.user.id}
+                  userEmail={membership.user.email}
+                  userName={membership.user.name}
+                />
               </div>
             ))}
           </div>

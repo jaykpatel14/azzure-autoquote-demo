@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireInternalAdminContext, InternalAdminAccessError } from "@/lib/internal-admin";
 import { getRequestBaseUrl } from "@/lib/security";
+import { deleteAdminCompany } from "@/lib/admin-companies";
 
 export const runtime = "nodejs";
 
@@ -36,7 +37,7 @@ type RouteContext = {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
-    await requireInternalAdminContext();
+    const admin = await requireInternalAdminContext();
     const parsed = paramsSchema.safeParse(await context.params);
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid company id." }, { status: 400 });
@@ -59,35 +60,10 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    // Cascade: delete memberships and orphaned users first to prevent login crashes
-    const memberships = await prisma.membership.findMany({
-      where: {companyId: company.id},
-      select: { userId: true }
-    });
-
-    const userIds = memberships
-      .map((m) => m.userId)
-      .filter((id): id is string => Boolean(id));
-
-    if (userIds.length > 0) {
-      await prisma.$transaction(async (tx) => {
-        await tx.membership.deleteMany({ where: {companyId: company.id} });
-        await tx.auditLog.deleteMany({ where: {companyId: company.id} });
-        await tx.user.deleteMany({ where: { id: { in: userIds } } });
-      });
-    }
-
-    await prisma.company.delete({
-      where: { id: company.id }
-    });
+    const result = await deleteAdminCompany(prisma, admin.user.id, company.id);
 
     if ((request.headers.get("content-type") || "").includes("application/json")) {
-      return NextResponse.json({
-        deleted: true,
-        companyId: company.id,
-        companyName: company.name,
-        companySlug: company.slug
-      });
+      return NextResponse.json(result);
     }
 
     const requestedRedirect = input.redirectTo?.trim();

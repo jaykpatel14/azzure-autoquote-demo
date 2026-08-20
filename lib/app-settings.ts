@@ -6,6 +6,8 @@ export const ADMIN_SETTING_KEYS = [
   "OPENAI_MODEL",
   "STRIPE_SECRET_KEY",
   "STRIPE_WEBHOOK_SECRET",
+  "RESEND_API_KEY",
+  "RESEND_FROM_EMAIL",
   "cad_cost_per_quote"
 ] as const;
 
@@ -14,7 +16,8 @@ export type AdminSettingKey = (typeof ADMIN_SETTING_KEYS)[number];
 const SECRET_SETTING_KEYS = new Set<AdminSettingKey>([
   "OPENAI_API_KEY",
   "STRIPE_SECRET_KEY",
-  "STRIPE_WEBHOOK_SECRET"
+  "STRIPE_WEBHOOK_SECRET",
+  "RESEND_API_KEY"
 ]);
 
 type StoredSetting = {
@@ -213,6 +216,10 @@ export function getSettingLabel(key: AdminSettingKey) {
       return "Stripe secret key";
     case "STRIPE_WEBHOOK_SECRET":
       return "Stripe webhook secret";
+    case "RESEND_API_KEY":
+      return "Resend API key";
+    case "RESEND_FROM_EMAIL":
+      return "Resend sender email";
     case "cad_cost_per_quote":
       return "CAD cost per quote ($)";
   }
@@ -228,6 +235,10 @@ export function getSettingHelpText(key: AdminSettingKey) {
       return "Used for Stripe checkout and portal sessions.";
     case "STRIPE_WEBHOOK_SECRET":
       return "Used to verify incoming Stripe webhooks.";
+    case "RESEND_API_KEY":
+      return "Used to send transactional and authentication emails via Resend.";
+    case "RESEND_FROM_EMAIL":
+      return "Sender address (e.g. quotes@everyfacets.com or onboarding@resend.dev).";
     case "cad_cost_per_quote":
       return "Configurable flat fee CAD cost snapshotted on every quote creation.";
   }

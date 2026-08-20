@@ -259,7 +259,13 @@ azzure-autoquote-mvp/
 - ✅ **Anti-Disposable & Anti-Dummy Email Filtering**:
   - Created [`lib/email-validation.ts`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/lib/email-validation.ts) to filter out 100+ temporary email providers (mailinator, guerrillamail, 10minutemail, etc.), placeholder/dummy domains (`dsaf.com`, `example.com`, `test.com`, `dummy.com`, `fake.com`), and keyboard-mashing dummy emails.
   - Enforced across B2B jeweler signups (`POST /api/auth/register`, `/signup`), showroom kiosk quote saving (`POST /api/showroom/quotes`, `app/showroom/showroom-kiosk.tsx`), and jeweler dashboard quote builder (`POST /api/quotes`, `components/QuoteCalculator.tsx`).
-- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 22 test suites passing (98/98 tests).
+- ✅ **Default Root URL (`/`) Renders Interactive Luxury Landing Page**:
+  - Integrated [`components/InteractiveLandingPage.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/components/InteractiveLandingPage.tsx) directly into [`app/page.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/page.tsx) so that any unauthenticated visitor landing on the root URL (`/` or `http://localhost:3000/`) immediately receives the interactive showcase with live quoting presets, 6-second timed craftsperson hero mockup animation, interactive showroom kiosk walkthrough, and monthly/annual pricing calculator.
+- ✅ **Resend Email Integration & Admin Customer Account Deletion**:
+  - `lib/mailer.ts`: Built general `sendEmail` and `sendAuthMail` powered by Resend (`^6.18.1`), configurable via `RESEND_API_KEY` and `RESEND_FROM_EMAIL` in `.env` or `/admin/platform/settings`.
+  - Added test email endpoint `POST /api/admin/test-email`.
+  - Customer Account Deletion: Created REST endpoint `DELETE /api/admin/companies/[companyId]`, `POST /api/admin/companies/[companyId]/delete`, and member deletion `DELETE /api/admin/companies/[companyId]/members/[userId]` with automatic orphan user cleanup and interactive UI confirmation modals on `/admin/companies` and `/admin/companies/[companyId]`.
+- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 23 test suites passing (102/102 tests).
 
 
 

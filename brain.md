@@ -215,11 +215,50 @@ This document logs every key architectural, design, and calculation decision mad
      - Enforces valid TLDs and structural RFC compliance (disallowing `.test`, `.local`, `.invalid`, consecutive dots, etc.).
 - **Rationale**: Prevents database pollution from spam, throwaway testing accounts, and junk customer leads while maintaining high data quality for CRM tracking, marketing follow-ups, and genuine customer quote dispatches.
 
+### 42. High-Fidelity Standalone Interactive Landing Page (`public/landing/index.html`)
+- **Decision**: Built a standalone interactive landing page for **Azzure AI Quote** at [`public/landing/index.html`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/public/landing/index.html) adhering strictly to the luxury obsidian/gold design system:
+  1. **Self-Contained Architecture**: Zero runtime dependencies (no external JS frameworks, zero build step). Embedded vanilla CSS animations, SVG stroke illustrations, and modular JavaScript utilities.
+  2. **Measured Craftsperson Hero Animation**: Implemented the 6-second step-by-step timed analysis sequence (photo uploaded -> metal resolution -> diamond estimate -> weight calculation -> spec tags -> ring SVG draw-on -> cubic ease-out price count up to $1,666 -> gold glint).
+  3. **Interactive Quoting Sandbox (Section 4)**: 4 dynamic presets (Oval Solitaire, Pavé Band, Halo Ring, Tennis Bracelet) with live recalculation formula, debounced input triggers, and animated count-up price transitions.
+  4. **Full-Screen Showroom Kiosk Simulation (Section 6)**: 5-slide interactive kiosk walkthrough (Welcome -> Upload simulation -> 3-pass analysis -> Review -> Quote saved with reference code `QT-4821` -> Jeweler lookup & manufacturing dispatch portal) with Escape key and focus trap support.
+  5. **Pricing & Stats Engine**: Interactive monthly vs annual (20% discount) switcher with animated number swaps, expandable feature drawers, and intersection-observed stats counters.
+  6. **Accessibility & Polish**: Honored `prefers-reduced-motion`, WCAG AA contrast compliance, keyboard focus rings, and fully responsive across 1440px desktop, 768px tablet, and 375px mobile viewports.
+- **Rationale**: Provides marketing teams and prospective jewelers with an instant, high-converting interactive showcase that vividly demonstrates the AI quoting workflow, showroom kiosk experience, and enterprise manufacturing capabilities.
+
+### 43. Default Root URL Route (`/`) Renders Interactive Luxury Landing Page
+- **Decision**: Configured the default root URL route (`/`) in [`app/page.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/page.tsx) to render the interactive luxury marketing experience [`components/InteractiveLandingPage.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/components/InteractiveLandingPage.tsx) for all visitors and prospective jewelers:
+  1. **Direct Root Delivery**: When anyone visits `http://localhost:3000/` or the production domain without an active session, they immediately see the full dark obsidian/gold landing page with all live interactive demos, preset testing, showroom kiosk simulator, and monthly/annual pricing calculator.
+  2. **Seamless Navigation**: All CTA buttons throughout the page link directly to Next.js routes (`/signup`, `/signin`, `/pricing`, `#demo`, `#showroom`), ensuring zero friction from discovery to account creation.
+  3. **Preserved Workspace Access**: Authenticated jeweler sessions continue to route directly to the active Workspace Dashboard (`/quotes`, statistics, trial banner).
+- **Rationale**: Elevates the first-impression experience for all incoming traffic, converting visitors with a stunning, interactive product demonstration right on the home page.
+
+### 44. Luminous Luxury Editorial Light Theme for Landing Page
+- **Decision**: Redesigned the interactive landing page ([`components/InteractiveLandingPage.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/components/InteractiveLandingPage.tsx) and [`public/landing/index.html`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/public/landing/index.html)) from the pitch-black obsidian palette to Azzure's signature **Luminous Luxury Editorial Light Theme**:
+  1. **Color Palette**: Pure white (`#FFFFFF`) card containers, luminous porcelain (`#F9F9FB`, `#F8FAFC`) background surfaces, Azzure Imperial Sapphire Blue (`#005AB7`, `#004590`) primary accents, and champagne atelier gold (`#C9A84C`) highlights.
+  2. **High-Contrast Editorial Typography**: Deep obsidian slate headings (`#0F172A`), refined charcoal body copy (`#334155`), and subtle slate muted text (`#64748B`).
+  3. **Radiant UI Elements**: Crisp border lines (`#E2E8F0`), soft ambient elevation shadows (`0 20px 48px rgba(15, 23, 42, 0.06)`), and high-contrast sapphire/gold ring stroke illustrations.
+  4. **Light-Mode Showroom Simulator**: Showroom kiosk walkthrough modal transitioned to clean white atelier tablet styling with high-contrast text and crisp call-to-actions.
+- **Rationale**: Replaces the overly dark crypto-style aesthetic with an airy, prestigious, bright luxury jewelry atelier experience that matches luxury retail standards (Cartier, Tiffany, De Beers) and integrates harmoniously with the rest of the Azzure design system.
+
+### 45. Resend Email Integration & Admin Customer Account Deletion Suite
+- **Decision**: Enhanced transactional email handling with Resend and implemented customer account deletion capabilities across the Admin Panel:
+  1. **Resend Email Engine (`lib/mailer.ts`)**:
+     - Configured `sendEmail({ to, subject, html, text, from, attachments, replyTo })` and `sendAuthMail` powered by Resend (`^6.18.1`).
+     - Added `RESEND_API_KEY` and `RESEND_FROM_EMAIL` to platform runtime settings (`lib/app-settings.ts`), allowing admins to inspect and configure email credentials directly from `/admin/platform/settings`.
+     - Built test email endpoint (`POST /api/admin/test-email`) for instant verification of live email deliverability.
+     - Gracefully logs mock emails to console in development and test environments when API keys are not supplied.
+  2. **Admin Customer Account Deletion**:
+     - **Tenant Company Deletion**: Created REST endpoint `DELETE /api/admin/companies/[companyId]` and `POST /api/admin/companies/[companyId]/delete` powered by `deleteAdminCompany` in `lib/admin-companies.ts`.
+     - **Cascading & Orphan Cleanup**: Safely cascades removal across all Quotes, Subscriptions, Pricing Profiles, Showroom Sessions, Analyses, and automatically removes user accounts that have no remaining company memberships.
+     - **Interactive UI Modals**: Added `AdminDeleteCompanyButton` with typing confirmation to both the Company Roster (`/admin/companies`) and Company Detail (`/admin/companies/[companyId]`) pages.
+     - **Individual Member Deletion**: Created `DELETE /api/admin/companies/[companyId]/members/[userId]` and interactive `AdminDeleteMemberButton` in the team members roster.
+- **Rationale**: Gives administrators full control over customer lifecycle management and tenant cleanup, while ensuring emails (registration, invites, notifications, checkout) are reliably delivered via Resend.
+
 ---
 
 ## Last Updated
 - Date: August 20, 2026
-- Status: Production Ready, All 22 Test Suites Passing (98/98 tests), TypeScript zero errors, Production build successful.
+- Status: Production Ready, All 23 Test Suites Passing (102/102 tests), TypeScript zero errors, Resend email & Admin Customer deletion suite live.
 
 
 
