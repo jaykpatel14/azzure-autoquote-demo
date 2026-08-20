@@ -48,24 +48,35 @@ function buildPrompt(
     : "14K";
 
   const prompt = [
-    "You are a jewelry production estimator.",
+    "You are an expert master jeweler and custom jewelry production estimator.",
     `This is independent review ${attemptNumber}.`,
     `The currently selected finished metal is ${metal}.`,
-    "Estimate the piece from the image and return a cautious preliminary assessment.",
-    "Never claim exact manufacturing precision.",
-    "Identify:",
+    "Estimate the piece from the image and return a realistic production assessment.",
+    "Benchmark guidelines for realistic finished casting weights (Standard US finger size 6.5-7 in 14K Gold):",
+    "- Dainty plain solitaire (1.5-1.8mm shank): 3.0g to 4.2g.",
+    "- Classic solitaire with hidden halo or cathedral prongs: 4.2g to 5.4g.",
+    "- Halo engagement ring or 3-Stone ring with side diamonds: 5.2g to 7.5g.",
+    "- Split-shank or wide bridal mounting: 6.5g to 9.5g.",
+    "- Two-piece bridal set (ring + matching wedding band): 7.0g to 11.5g total.",
+    "- Men's band or heavy signet: 7.0g to 14.0g.",
+    "(Note: Platinum density is ~1.65x higher than 14K Gold; 18K is ~1.15x higher).",
+    "Side Stone Benchmarks:",
+    "- 3-stone rings (trapezoids, baguettes, pears, trillons): typically 0.20ct to 0.50ct each.",
+    "- Hidden halos / micro-pave halos: 0.01ct to 0.02ct each (14-28 count).",
+    "- Pave bands: 0.015ct to 0.03ct each.",
+    "Identify accurately:",
     "- jewelry_type: e.g. Ring, Pendant, Earrings, Bracelet, etc.",
     "- selected_metal: the selected metal.",
-    "- isTwoTone: true if the piece combines white gold and yellow gold in the same item, false otherwise.",
+    "- isTwoTone: true if the piece combines white gold and yellow/rose gold in the same item, false otherwise.",
     "- hasWeddingBand: true if there appear to be two separate ring bands (an engagement ring and a wedding band), false otherwise.",
-    "- metal_weight_grams: estimated metal weight in grams.",
+    "- metal_weight_grams: estimated realistic metal weight in grams based on the piece architecture.",
     "- centerStone: the primary/largest stone. Provide its shape (e.g. oval, round, radiant, cushion, marquise, emerald, pear) and estimated carat weight.",
-    "- sideStones: all other stones. Group by shape and setting type. For each group, provide the shape (round, baguette, trillion, etc.), estimated carat weight of each individual stone, the count of stones in this group, and the setting type (prong, bezel, pavé, channel, bar, etc.).",
+    "- sideStones: all other stones. Group by shape and setting type. For each group, provide the shape (round, baguette, trapezoid, pear, etc.), estimated carat weight of each individual stone, the count of stones in this group, and the setting type (prong, bezel, pavé, channel, bar, etc.).",
     "- colorClarity: always return 'E VS1' — do not attempt to assess from the image.",
     "- confidence: low, medium, or high.",
     "- assumptions: list of key assumptions made during analysis.",
     customerDescription?.trim()
-      ? `Customer-provided design description: ${customerDescription.trim()}. Use it as supporting context, but flag any conflict with visible evidence as an assumption.`
+      ? `Customer-provided design description: ${customerDescription.trim()}. Use it as supporting context, but verify against visible visual evidence.`
       : "No customer description was supplied."
   ];
 

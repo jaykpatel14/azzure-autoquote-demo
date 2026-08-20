@@ -236,9 +236,20 @@ azzure-autoquote-mvp/
   - **3-Step Pricing Hierarchy**:
     1. **Production Subtotal** = Metal + Center Stone + Side Stone + Setting Labor + Wax ($15) + Polish ($20) + CAD ($20) *(Azzure raw manufacturing cost)*.
     2. **Azzure Making Price** = `Production Subtotal / Tier Divisor` (e.g. `Subtotal / 0.7` for Tier 2) *(Azzure wholesale invoice to jeweler)*.
-- ✅ **Explicit AI Analyze Button on Jeweler & Showroom Dashboards**:
-  - Replaced automatic image upload and blur-triggered AI analysis with an explicit **"Analyze with AI"** / **"Analyze Design with AI"** button on both the Jeweler's Workspace (`components/QuoteCalculator.tsx`) and the Showroom Kiosk (`app/showroom/showroom-kiosk.tsx`).
-  - Users can now comfortably upload reference photos, view thumbnails, draft custom description notes, remove unwanted photos, and trigger analysis only when they choose.
+- ✅ **Showroom Inspiration Product Catalog**:
+  - Upgraded the landing standby screen below "Design Your Custom Ring" with 4 luxury handcrafted customer design products featuring studio jewelry photography, detailed descriptions, and live base price tags.
+  - Tapping any catalog card instantly loads the piece specifications, photorealistic visual render, and interactive customizer into the showroom workspace.
+- ✅ **Showroom AI Analysis Center Modal Popup ("What Our AI Sees")**:
+  - Replaced the bottom inline card with a centered, glassmorphism modal dialog that appears during AI analysis, showing real-time animated scanning stages across metal alloy, diamond parameters, facet geometry, and spot pricing.
+- ✅ **Rich Ring Specification Header**:
+  - Added clean, informative jewelry specification headers directly beneath the live estimated price on both the Showroom Kiosk and Jeweler Workspace (e.g. *14K · 3.00ct Oval · 0.15ct Side Diamonds (16×) Custom Ring*).
+- ✅ **Mobile QR Code Share & PDF Modal**:
+  - Added **"Share with Others (Scan QR)"** below the Save Quote button.
+  - Generates high-resolution client-side QR codes pointing to the public quote view (`/q/[code]`) with 1-click PDF download and copyable links for walk-in showroom customers.
+- ✅ **High-Contrast Text Fix for Checkboxes**:
+  - Enforced crisp `#0f172a` black text for matching wedding band and two-tone gold options across all dark and light contexts.
+- ✅ **AI Prompt Benchmark Calibration**:
+  - Enhanced `lib/ai/providers/openai.ts` with standard casting benchmarks for ring styles (solitaire 3.0-4.2g, hidden halo/cathedral 4.2-5.4g, halo/3-stone 5.2-7.5g, platinum density multiplier 1.65x) to ensure precise physical metal and diamond estimation.
 - ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 21 test suites passing (91/91 tests), clean CI ready.
 
 

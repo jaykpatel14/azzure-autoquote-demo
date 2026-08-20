@@ -13,18 +13,24 @@ import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 
 const schema = z.object({
   token: z.string().min(20),
-  analysisIds: z.array(z.string()).min(1).max(3),
+  analysisIds: z.array(z.string()).optional(),
+  primaryAnalysisId: z.string().optional(),
+  description: z.string().max(1000).optional(),
   customerNotes: z.string().max(1000).optional(),
   metalType: z.string().optional(),
   selectedMetal: z.string().optional(),
-  metalWeightGrams: z.number().min(0),
-  centerDiamondCarats: z.number().min(0),
-  sideDiamondCarats: z.number().min(0),
-  sideDiamondQuantity: z.number().int().min(0),
+  metalWeightGrams: z.number().min(0).default(5),
+  centerDiamondCarats: z.number().min(0).optional(),
+  centerCarats: z.number().min(0).optional(),
+  sideDiamondCarats: z.number().min(0).optional(),
+  sideCarats: z.number().min(0).optional(),
+  sideDiamondQuantity: z.number().int().min(0).default(0),
   centerShape: z.string().optional(),
   settingType: z.string().optional(),
   hasWeddingBand: z.boolean().optional(),
-  isTwoTone: z.boolean().optional()
+  isTwoTone: z.boolean().optional(),
+  estimatedPrice: z.number().optional(),
+  renderingImageUrl: z.string().nullable().optional()
 });
 
 export async function POST(request: Request) {
@@ -32,6 +38,13 @@ export async function POST(request: Request) {
   try {
     const input = schema.parse(await request.json());
     const resolvedMetal = input.metalType || input.selectedMetal || "14K";
+    const resolvedCenterCarats = input.centerDiamondCarats ?? input.centerCarats ?? 0;
+    const resolvedSideCarats = input.sideDiamondCarats ?? input.sideCarats ?? 0;
+    const resolvedNotes = input.customerNotes || input.description || "";
+    const analysisIdList = (input.analysisIds && input.analysisIds.length > 0)
+      ? input.analysisIds
+      : input.primaryAnalysisId ? [input.primaryAnalysisId] : [];
+
     const session = await getActiveShowroom(input.token);
     if (!session) return NextResponse.json({ error: "This kiosk is not active." }, { status: 401 });
     const rate = checkRateLimit({ key: `showroom:${session.id}`, limit: 10, windowMs: 60 * 60 * 1000 });
@@ -43,12 +56,12 @@ export async function POST(request: Request) {
     const detectedSideShape = (input.centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(input.centerShape.toLowerCase()) && input.sideDiamondQuantity <= 4)
       ? "fancy"
       : "round";
-    const sideStones = input.sideDiamondQuantity ? [{ shape: detectedSideShape, caratWeightEach: input.sideDiamondCarats / input.sideDiamondQuantity, count: input.sideDiamondQuantity, settingType: input.settingType || "prong" }] : [];
+    const sideStones = input.sideDiamondQuantity ? [{ shape: detectedSideShape, caratWeightEach: resolvedSideCarats / input.sideDiamondQuantity, count: input.sideDiamondQuantity, settingType: input.settingType || "prong" }] : [];
     if (!session.company.pricingTier) throw new Error("Pricing is not configured.");
     const making = calculateMakingPrice({
       metalType: resolvedMetal,
       metalWeightGrams: input.metalWeightGrams,
-      centerStone: { shape: input.centerShape || "round", caratWeight: Math.max(input.centerDiamondCarats, 0.0001) },
+      centerStone: { shape: input.centerShape || "round", caratWeight: Math.max(resolvedCenterCarats, 0.0001) },
       sideStones,
       hasWeddingBand: Boolean(input.hasWeddingBand),
       isTwoTone: Boolean(input.isTwoTone),
@@ -60,17 +73,17 @@ export async function POST(request: Request) {
     const tier = calculateTierPrice(making.subtotal, session.company.pricingTier, margin);
     const result = await createQuote({
       companyId: session.companyId,
-      analysisId: input.analysisIds[0],
-      referenceAnalysisIds: input.analysisIds,
+      analysisId: analysisIdList[0] || undefined,
+      referenceAnalysisIds: analysisIdList,
       metalType: resolvedMetal,
       metalWeightGrams: input.metalWeightGrams,
-      centerDiamondCarats: input.centerDiamondCarats,
-      sideDiamondCarats: input.sideDiamondCarats,
+      centerDiamondCarats: resolvedCenterCarats,
+      sideDiamondCarats: resolvedSideCarats,
       sideDiamondQuantity: input.sideDiamondQuantity,
       centerShape: input.centerShape,
       centerClarity: "E VS1",
       settingType: input.settingType,
-      notes: input.customerNotes,
+      notes: resolvedNotes || undefined,
       estimatedPrice: tier.estimatedSellingPrice,
       makingPrice: making.makingPrice,
       makingPriceBreakdown: making as unknown as Prisma.InputJsonValue,
@@ -84,7 +97,7 @@ export async function POST(request: Request) {
     });
     if ("error" in result) throw new Error(result.error.userMessage);
     const displayCode = await nextShowroomCode(session.companyId);
-    await prisma.showroomQuote.create({ data: { companyId: session.companyId, quoteId: result.data.id, displayCode, customerNotes: input.customerNotes || null } });
+    await prisma.showroomQuote.create({ data: { companyId: session.companyId, quoteId: result.data.id, displayCode, customerNotes: resolvedNotes || null } });
     await consumeMonthlyUsage(reservation.usagePeriodId); reservation = undefined;
     const rendering = await generateQuoteRendering({ quoteId: result.data.id, companyId: session.companyId }).catch(() => ({ status: "FAILED" as const }));
     let renderingImageUrl: string | null = null;
@@ -98,7 +111,9 @@ export async function POST(request: Request) {
         : renderedQuote?.renderingDataUrl ?? null;
     }
     return NextResponse.json({
+      code: displayCode,
       displayCode,
+      estimatedPrice: tier.estimatedSellingPrice,
       estimatedSellingPrice: tier.estimatedSellingPrice,
       renderingStatus: rendering.status,
       renderingImageUrl

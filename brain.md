@@ -120,10 +120,26 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision**: Removed automatic analysis on photo selection/drop and description field `onBlur`. Added prominent, high-contrast **"Analyze with AI"** / **"Analyze Design with AI"** buttons to both the Jeweler's Workspace (`components/QuoteCalculator.tsx`) and the Showroom Tablet Kiosk (`app/showroom/showroom-kiosk.tsx`).
 - **Rationale**: Automatic analysis firing immediately upon file selection prevented users from typing custom design instructions first, verifying their selected image, or managing multiple image attachments before spending API analysis credits. Adding explicit Analyze triggers gives jewelers and showroom customers total control over when the multi-pass vision model is invoked.
 
+### 32. Showroom Experience Overhaul: Product Catalog, Analysis Modal, QR Sharing & Weight Calibration
+- **Decision**: Implemented five interconnected UX and domain model improvements:
+  1. **Showroom Product Catalog**: Replaced static cards on the standby screen with 4 curated luxury customer designs featuring studio jewelry imagery, descriptions, and dynamic base prices. Selecting a card preloads the full specification into the live customization workspace.
+  2. **Analysis Progress Modal ("What Our AI Sees")**: Refactored the inline analysis step into a center-screen glassmorphism dialog that steps through multi-phase visual diagnostic animations during API processing.
+  3. **AI Concept Render Hero Display**: Rendered the photorealistic 3D concept visualization / inspiration image prominently above the live estimate price card.
+  4. **Dynamic Ring Specification Header**: Added automated title formatting (e.g. *14K · 3.00ct Oval · 0.15ct Side Diamonds (16×) Custom Ring*) under the live estimate on both Showroom and Jeweler dashboards.
+  5. **Mobile QR Code Share & PDF Modal**: Added client-side QR generation using `qrcode` so walk-in customers can instantly scan the screen to open and download the PDF quote proposal on their smartphone.
+  6. **Physical Metal Weight & Diamond Heuristics**: Enriched the OpenAI analysis system prompts with realistic physical casting weight benchmarks by ring style and metal density to prevent under/over-estimation.
+- **Rationale**: Elevates the in-store consultation experience from a technical utility to a retail luxury experience, giving walk-in clients clear inspiration, transparent real-time estimation, and seamless mobile take-home sharing via QR codes.
+
+### 33. Showroom Quote Save Payload and Schema Harmonization
+- **Decision**: Harmonized the parameter names between `app/showroom/showroom-kiosk.tsx` and `app/api/showroom/quotes/route.ts` to support both `centerDiamondCarats`/`centerCarats` and `sideDiamondCarats`/`sideCarats`, and updated response keys to include both `code` and `displayCode`.
+- **Rationale**: Prevented Zod validation runtime errors (`invalid_type: expected number, received undefined`) during Showroom quote creation and QR code generation when customized design parameters are saved.
+
 ---
 
 ## Last Updated
 - Date: August 20, 2026
 - Status: Production Ready, All 21 Test Suites Passing (91/91 tests), TypeScript zero errors.
+
+
 
 

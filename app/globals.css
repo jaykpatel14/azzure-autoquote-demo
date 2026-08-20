@@ -3200,4 +3200,33 @@ input[type="checkbox"] {
   border-top: 1px solid var(--color-outline-variant);
 }
 
+/* ── Checkbox Group High-Contrast Styling ── */
+.facetCheckboxGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.facetCheckboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: #0f172a !important; /* Force dark black text */
+  cursor: pointer;
+}
+
+.facetCheckboxLabel input[type="checkbox"] {
+  accent-color: var(--color-primary, #0284c7);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.facetCheckboxLabel span {
+  color: #0f172a !important;
+}
+
 

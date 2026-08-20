@@ -1276,6 +1276,11 @@ export default function QuoteCalculator({
               <div className="quotePrice" style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}>
                 {formatCurrency(estimatedSellingPrice)}
               </div>
+              {aggregateQuote ? (
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-primary)", margin: "8px 0", background: "var(--color-surface-container)", padding: "6px 12px", borderRadius: "var(--radius-sm)", borderLeft: "3px solid var(--color-primary)" }}>
+                  {metalType} · {aggregateQuote.centerDiamondCarats.toFixed(2)}ct {aggregateQuote.centerShape || "Diamond"}{aggregateQuote.sideDiamondQuantity > 0 ? ` · ${aggregateQuote.sideDiamondCarats.toFixed(2)}ct Side Diamonds (${aggregateQuote.sideDiamondQuantity}×)` : ""}{aggregateQuote.hasWeddingBand ? " + Matching Band" : ""}{aggregateQuote.isTwoTone ? " (Two-Tone)" : ""} {aggregateQuote.jewelryType || "Ring"}
+                </div>
+              ) : null}
               <div className="quoteMeta" style={{ marginTop: 12 }}>
                 <div>
                   <span>Customer</span>

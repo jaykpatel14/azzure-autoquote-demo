@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import QRCode from "qrcode";
 import { QuoteCreationLayout, QuoteStepCard, QuoteBuilderPreview } from "@/components/QuoteCreationLayout";
 import {
   calculateMakingPrice as calculateProductionCost,
@@ -27,63 +28,90 @@ type Analysis = {
 };
 
 const KIOSK_ANALYSIS_STAGES = [
-  "Analysing metal & piece composition...",
-  "Estimating diamond specs & settings...",
-  "Calculating weight..."
+  "Scanning precious metal alloy & piece architecture…",
+  "Estimating center & side stone dimensions…",
+  "Analyzing facet geometry, settings & prongs…",
+  "Calculating live metal spot pricing & 3D render…"
 ] as const;
 
 const METAL_OPTIONS = ["10K", "14K", "18K", "Platinum", "Silver"];
 
-const SHOWROOM_PRESETS = [
+const SHOWROOM_PRODUCTS = [
   {
-    icon: "diamond",
-    title: "2.5ct Pear Halo Solitaire",
-    description: "14K White Gold with hidden pavé halo & micro-prong diamond shank.",
-    prompt: "2.5ct Pear cut diamond ring with hidden halo in 14K White Gold, micro-prong band",
+    id: "prod-1",
+    title: "3.0ct Oval Hidden Halo Solitaire",
+    description: "14K White Gold with hidden pavé halo & 1.8mm delicate shank.",
+    prompt: "3.0ct Oval solitaire engagement ring in 14K White Gold with hidden diamond halo and delicate plain band",
     metal: "14K",
-    metalWeight: 5.5,
-    centerCarat: 2.5,
-    sideCarat: 0.65,
-    sideQty: 28,
-    shape: "Pear"
-  },
-  {
-    icon: "auto_awesome",
-    title: "3.0ct Oval Hidden Halo",
-    description: "18K Yellow Gold with delicate 1.8mm plain band and cathedral prongs.",
-    prompt: "3.0ct Oval solitaire engagement ring in 18K Yellow Gold with hidden diamond halo",
-    metal: "18K",
-    metalWeight: 6.2,
+    metalWeight: 4.5,
     centerCarat: 3.0,
-    sideCarat: 0.25,
+    sideCarat: 0.15,
     sideQty: 16,
-    shape: "Oval"
+    shape: "Oval",
+    image: "/images/catalog/oval_solitaire.jpg",
+    basePrice: "$2,385"
   },
   {
-    icon: "view_in_ar",
-    title: "2.0ct Emerald Cut 3-Stone",
-    description: "Platinum with tapered trapezoid side diamonds & bezel accents.",
-    prompt: "2.0ct Emerald cut diamond with tapered baguette side stones in solid Platinum",
+    id: "prod-2",
+    title: "2.5ct Emerald Cut 3-Stone Ring",
+    description: "Platinum with tapered trapezoid side diamonds & cathedral prongs.",
+    prompt: "2.5ct Emerald cut diamond ring with tapered trapezoid side stones in solid Platinum",
     metal: "Platinum",
-    metalWeight: 8.5,
-    centerCarat: 2.0,
-    sideCarat: 0.8,
+    metalWeight: 7.2,
+    centerCarat: 2.5,
+    sideCarat: 0.6,
     sideQty: 2,
-    shape: "Emerald"
+    shape: "Emerald",
+    image: "/images/catalog/emerald_3stone.jpg",
+    basePrice: "$3,450"
   },
   {
-    icon: "stars",
-    title: "1.5ct Cushion Pavé Split",
-    description: "14K Rose Gold with double split pavé diamond band.",
-    prompt: "1.5ct Cushion cut solitaire with split diamond pavé shank in 14K Rose Gold",
+    id: "prod-3",
+    title: "2.0ct Pear Cut Micro-Pavé Halo",
+    description: "18K Yellow Gold with micro-prong diamond halo & French pavé band.",
+    prompt: "2.0ct Pear cut diamond ring in 18K Yellow Gold with micro-prong halo and French pavé band",
+    metal: "18K",
+    metalWeight: 5.2,
+    centerCarat: 2.0,
+    sideCarat: 0.35,
+    sideQty: 28,
+    shape: "Pear",
+    image: "/images/catalog/pear_halo.jpg",
+    basePrice: "$2,190"
+  },
+  {
+    id: "prod-4",
+    title: "2.0ct Cushion Cut Double Split Pavé",
+    description: "14K Rose Gold with double split diamond band & hidden under-halo.",
+    prompt: "2.0ct Cushion cut solitaire with double split diamond pavé shank in 14K Rose Gold",
     metal: "14K",
-    metalWeight: 6.8,
-    centerCarat: 1.5,
-    sideCarat: 1.1,
-    sideQty: 36,
-    shape: "Cushion"
+    metalWeight: 6.0,
+    centerCarat: 2.0,
+    sideCarat: 0.5,
+    sideQty: 40,
+    shape: "Cushion",
+    image: "/images/catalog/cushion_pave.jpg",
+    basePrice: "$2,280"
   }
 ];
+
+function getRingSpecTitle(analysis: Analysis | null): string {
+  if (!analysis) return "Custom Jewelry Design";
+  const metal = analysis.selectedMetal || "14K";
+  const centerCarat = Number(analysis.centerDiamondCarats || 0).toFixed(2);
+  const centerShape = analysis.centerShape ? `${analysis.centerShape}` : "Diamond";
+  const sideCarat = Number(analysis.sideDiamondCarats || 0);
+  const sideQty = analysis.sideDiamondQuantity || 0;
+  
+  const sideText = sideQty > 0 && sideCarat > 0
+    ? ` · ${sideCarat.toFixed(2)}ct Side Diamonds (${sideQty}×)`
+    : "";
+
+  const bandText = analysis.hasWeddingBand ? " + Matching Band" : "";
+  const twoToneText = analysis.isTwoTone ? " (Two-Tone)" : "";
+
+  return `${metal} · ${centerCarat}ct ${centerShape}${sideText}${bandText}${twoToneText} ${analysis.jewelryType || "Ring"}`;
+}
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -112,6 +140,13 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const [warning, setWarning] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // QR Code Share Modal States
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+  const [qrShareUrl, setQrShareUrl] = useState<string>("");
+  const [sharing, setSharing] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
   const debouncedAnalysis = useDebouncedValue(analysis, 300);
 
@@ -132,6 +167,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setError("");
     setWarning(false);
     setSaved(false);
+    setShowQrModal(false);
+    setQrCodeDataUrl(null);
+    setQrShareUrl("");
   }, []);
 
   useEffect(() => {
@@ -213,17 +251,18 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     });
   }
 
-  function selectPreset(preset: (typeof SHOWROOM_PRESETS)[number]) {
-    setDescription(preset.prompt);
+  function selectProduct(product: (typeof SHOWROOM_PRODUCTS)[number]) {
+    setDescription(product.prompt);
+    setRenderingImageUrl(product.image);
     setAnalysis({
-      analysisId: `preset-${Date.now()}`,
+      analysisId: `product-${Date.now()}`,
       jewelryType: "Ring",
-      selectedMetal: preset.metal,
-      metalWeightGrams: preset.metalWeight,
-      centerDiamondCarats: preset.centerCarat,
-      sideDiamondCarats: preset.sideCarat,
-      sideDiamondQuantity: preset.sideQty,
-      centerShape: preset.shape,
+      selectedMetal: product.metal,
+      metalWeightGrams: product.metalWeight,
+      centerDiamondCarats: product.centerCarat,
+      sideDiamondCarats: product.sideCarat,
+      sideDiamondQuantity: product.sideQty,
+      centerShape: product.shape,
       settingType: "prong",
       hasWeddingBand: false,
       isTwoTone: false
@@ -231,7 +270,6 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setStarted(true);
   }
 
-  // Explicit analysis function triggered when user taps Analyze button
   async function runAnalysis(selectedFiles?: File[]) {
     const filesToAnalyze = selectedFiles || files;
     if (!filesToAnalyze.length || analyzing) return;
@@ -244,7 +282,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
     const pulser = window.setInterval(() => {
       setStageIndex((current) => (current + 1) % KIOSK_ANALYSIS_STAGES.length);
-    }, 800);
+    }, 900);
 
     try {
       const results: Analysis[] = [];
@@ -268,59 +306,39 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     }
   }
 
-  // AI 3D Concept Generation from Description Prompt
   async function generateAiConcept() {
-    if (!description.trim()) {
-      setError("Please type a design description to generate an AI concept render.");
-      return;
-    }
+    if (!description.trim() || generatingConcept) return;
 
     setGeneratingConcept(true);
     setError("");
-
     try {
       const response = await fetch("/api/concept/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: description,
-          metalType: analysis?.selectedMetal || "14K"
+          prompt: description.trim(),
+          jewelryType: analysis?.jewelryType || "Ring",
+          selectedMetal: analysis?.selectedMetal || "14K",
+          aspectRatio: "1:1"
         })
       });
 
       const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "AI concept generation failed.");
+      if (!response.ok) {
+        throw new Error(body.error || "Failed to generate AI 3D concept.");
+      }
 
-      setRenderingImageUrl(body.imageDataUrl || null);
-      if (!analysis) {
-        setAnalysis({
-          analysisId: body.analysisId || `concept-${Date.now()}`,
-          jewelryType: body.jewelryType || "Ring",
-          selectedMetal: "14K",
-          metalWeightGrams: body.metalWeightGrams || 6.5,
-          centerDiamondCarats: body.centerDiamondCarats || 2.0,
-          sideDiamondCarats: body.sideDiamondCarats || 0.75,
-          sideDiamondQuantity: body.sideDiamondQuantity || 24,
-          centerShape: body.centerShape || "pear",
-          settingType: body.settingType || "prong",
-          hasWeddingBand: false,
-          isTwoTone: false
-        });
+      if (body.imageUrl) {
+        setRenderingImageUrl(body.imageUrl);
+      }
+      if (body.analysis && !analysis) {
+        setAnalysis(body.analysis);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to generate AI concept.");
     } finally {
       setGeneratingConcept(false);
     }
-  }
-
-  function handleFileSelect(newFiles: File[]) {
-    if (!newFiles.length) return;
-    setFiles(newFiles);
-    setStarted(true);
-    setAnalysis(null);
-    setRenderingImageUrl(null);
-    setError("");
   }
 
   async function save() {
@@ -336,57 +354,154 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     try {
       const response = await fetch("/api/showroom/quotes", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token,
-          analysisIds,
+          description,
           customerNotes: description,
-          ...analysis,
+          analysisIds,
+          primaryAnalysisId: analysis.analysisId,
           metalType: analysis.selectedMetal,
-          selectedMetal: analysis.selectedMetal
+          selectedMetal: analysis.selectedMetal,
+          metalWeightGrams: analysis.metalWeightGrams,
+          centerDiamondCarats: analysis.centerDiamondCarats,
+          centerCarats: analysis.centerDiamondCarats,
+          sideDiamondCarats: analysis.sideDiamondCarats,
+          sideCarats: analysis.sideDiamondCarats,
+          sideDiamondQuantity: analysis.sideDiamondQuantity,
+          centerShape: analysis.centerShape,
+          settingType: analysis.settingType,
+          hasWeddingBand: analysis.hasWeddingBand ?? false,
+          isTwoTone: analysis.isTwoTone ?? false,
+          estimatedPrice: estimatedSellingPrice,
+          renderingImageUrl: renderingImageUrl || null
         })
       });
+
       const body = await response.json();
-      setSavingProgress(100);
-      if (!response.ok) {
-        setError(body.error || "Failed to save quote.");
-        return;
-      }
-      setCode(body.displayCode);
-      setPrice(body.estimatedSellingPrice);
+      if (!response.ok) throw new Error(body.error || "Failed to save quote.");
+
+      const savedCode = body.code || body.displayCode || "";
+      const savedPrice = body.estimatedPrice ?? body.estimatedSellingPrice ?? 0;
+      setCode(savedCode);
+      setPrice(savedPrice);
       if (body.renderingImageUrl) {
         setRenderingImageUrl(body.renderingImageUrl);
       }
       setSaved(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save quote.");
     } finally {
       window.clearInterval(progressTimer);
       setSaving(false);
     }
   }
 
-  const activeImage = renderingImageUrl || previews[0];
+  async function handleShareQr() {
+    if (sharing) return;
+    setSharing(true);
+    setError("");
+    let currentCode = code;
+
+    try {
+      if (!saved || !currentCode) {
+        if (!analysis) {
+          throw new Error("Please upload a design and run analysis before sharing.");
+        }
+        setSaving(true);
+        setSavingProgress(0);
+        const progressTimer = window.setInterval(() => {
+          setSavingProgress((curr) => Math.min(90, curr + 8));
+        }, 300);
+
+        const response = await fetch("/api/showroom/quotes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token,
+            description,
+            customerNotes: description,
+            analysisIds,
+            primaryAnalysisId: analysis.analysisId,
+            metalType: analysis.selectedMetal,
+            selectedMetal: analysis.selectedMetal,
+            metalWeightGrams: analysis.metalWeightGrams,
+            centerDiamondCarats: analysis.centerDiamondCarats,
+            centerCarats: analysis.centerDiamondCarats,
+            sideDiamondCarats: analysis.sideDiamondCarats,
+            sideCarats: analysis.sideDiamondCarats,
+            sideDiamondQuantity: analysis.sideDiamondQuantity,
+            centerShape: analysis.centerShape,
+            settingType: analysis.settingType,
+            hasWeddingBand: analysis.hasWeddingBand ?? false,
+            isTwoTone: analysis.isTwoTone ?? false,
+            estimatedPrice: estimatedSellingPrice,
+            renderingImageUrl: renderingImageUrl || null
+          })
+        });
+
+        window.clearInterval(progressTimer);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Failed to save quote for sharing.");
+        currentCode = data.code || data.displayCode || "";
+        setCode(currentCode);
+        setPrice(data.estimatedPrice ?? data.estimatedSellingPrice ?? 0);
+        if (data.renderingImageUrl) setRenderingImageUrl(data.renderingImageUrl);
+        setSaved(true);
+        setSaving(false);
+      }
+
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const shareUrl = `${origin}/q/${currentCode}`;
+      setQrShareUrl(shareUrl);
+
+      const qrDataUrl = await QRCode.toDataURL(shareUrl, {
+        width: 320,
+        margin: 2,
+        color: {
+          dark: "#08090b",
+          light: "#ffffff"
+        }
+      });
+      setQrCodeDataUrl(qrDataUrl);
+      setShowQrModal(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to generate QR Code for sharing.");
+    } finally {
+      setSharing(false);
+      setSaving(false);
+    }
+  }
+
+  const activeImage = renderingImageUrl || (previews.length > 0 ? previews[0] : null);
 
   return (
-    <div className="showroom" style={{ "--color-brand": branding.primaryColor || "#0284c7" } as React.CSSProperties}>
+    <div className="showroom">
+      {/* Brand Header */}
       <header className="showroomBrand">
-        <div>
-          {branding.logoUrl ? (
-            <img src={branding.logoUrl} alt={branding.companyName} />
-          ) : (
-            <strong>{branding.companyName}</strong>
-          )}
+        {branding.logoUrl ? (
+          <img src={branding.logoUrl} alt={branding.companyName} />
+        ) : (
+          <strong>{branding.companyName || "Azzure Custom Studio"}</strong>
+        )}
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="showroomBadge">
+            <span className="showroomBadgeDot" />
+            Live Showroom Pricing
+          </div>
+          {started && !saved ? (
+            <button
+              className="button secondary button--sm"
+              type="button"
+              onClick={reset}
+              style={{ padding: "6px 14px" }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_back</span>
+              Start Over
+            </button>
+          ) : null}
         </div>
-        {saved ? (
-          <button className="showroomBack" type="button" onClick={reset}>
-            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>refresh</span>
-            New Quote
-          </button>
-        ) : started ? (
-          <button className="showroomBack" type="button" onClick={reset}>
-            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_back</span>
-            Start Over
-          </button>
-        ) : null}
       </header>
 
       {/* ── 1. SAVED SCREEN: Claim Code Display with AI Generated Rendering ── */}
@@ -414,54 +529,81 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                 {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(price)}
               </p>
             ) : null}
+            <div className="showroomRingSpecTitle" style={{ textAlign: "center", maxWidth: 460, margin: "0 auto 16px" }}>
+              {getRingSpecTitle(analysis)}
+            </div>
             <p className="muted" style={{ margin: "16px 0 0", fontSize: 16, lineHeight: 1.5, color: "#cbd5e1" }}>
               Show this code to your jeweler. They can see your design, adjust anything you want, and place the order.
             </p>
-            <button className="showroomButton" type="button" onClick={reset} style={{ marginTop: 28, width: "auto", padding: "0 40px" }}>
-              Done
-            </button>
+            
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 28 }}>
+              <button className="showroomButton" type="button" onClick={handleShareQr} style={{ width: "auto", padding: "0 28px" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>qr_code_2</span>
+                Scan QR / Share PDF
+              </button>
+              <button className="button secondary button--lg" type="button" onClick={reset} style={{ padding: "0 28px" }}>
+                Done
+              </button>
+            </div>
           </div>
         </section>
       ) : !started ? (
-        /* ── 2. WELCOME / STANDBY SCREEN: Trust Before Touch & 1-Tap Start ── */
+        /* ── 2. WELCOME / STANDBY SCREEN: Inspiration Product Catalog ── */
         <section className="showroomPanel">
           <p className="showroomEyebrow">Instant Custom Jewelry Pricing</p>
           <h1 className="showroomHeroTitle">
             Bring Your Dream Ring to Life in <em>30 Seconds</em>
           </h1>
           <p className="showroomSubtext">
-            Upload an inspiration photo or pick a style below to see a photorealistic 3D visualization and an instant live price estimate.
+            Upload an inspiration photo or pick a recent handcrafted design below to see a photorealistic 3D visualization and an instant live price estimate.
           </p>
 
           <button
             className="showroomButton"
             type="button"
             onClick={() => setStarted(true)}
-            style={{ marginBottom: 40 }}
+            style={{ marginBottom: 48 }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 24 }}>auto_awesome</span>
             Design Your Custom Ring
           </button>
 
-          <div className="showroomPresetGrid">
-            {SHOWROOM_PRESETS.map((preset) => (
-              <div
-                key={preset.title}
-                className="showroomPresetCard"
-                role="button"
-                tabIndex={0}
-                onClick={() => selectPreset(preset)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") selectPreset(preset);
-                }}
-              >
-                <div className="showroomPresetIcon">
-                  <span className="material-symbols-outlined">{preset.icon}</span>
-                </div>
-                <strong>{preset.title}</strong>
-                <p>{preset.description}</p>
+          {/* Curated Recent Customer Designs / Products Gallery */}
+          <div className="showroomCatalogSection">
+            <div className="showroomCatalogHeader">
+              <div>
+                <h2>Recent Customer Designs</h2>
+                <p className="muted small" style={{ color: "#9ca3af", margin: "4px 0 0" }}>Tap any design to inspect details or customize your own.</p>
               </div>
-            ))}
+            </div>
+
+            <div className="showroomCatalogGrid">
+              {SHOWROOM_PRODUCTS.map((prod) => (
+                <div
+                  key={prod.id}
+                  className="showroomProductCard"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => selectProduct(prod)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") selectProduct(prod);
+                  }}
+                >
+                  <div className="showroomProductImageWrap">
+                    <img src={prod.image} alt={prod.title} className="showroomProductImage" />
+                    <div className="showroomProductPriceBadge">{prod.basePrice}</div>
+                  </div>
+                  <div className="showroomProductContent">
+                    <strong>{prod.title}</strong>
+                    <p>{prod.description}</p>
+                    <div className="showroomProductCta">
+                      <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
+                      Customize this ring
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       ) : (
@@ -582,55 +724,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                   {error ? <p className="fieldError" style={{ color: "#ef4444", marginTop: 12 }}>{error}</p> : null}
                 </QuoteStepCard>
 
-                {analyzing || analysis ? (
-                  <QuoteStepCard
-                    number="02"
-                    title="What our AI sees"
-                    description="What the AI identified from your photo and description."
-                  >
-                    {analyzing ? (
-                      <div className="facetProgressList">
-                        {KIOSK_ANALYSIS_STAGES.map((stage, index) => (
-                          <div key={stage} className={index <= stageIndex ? "facetProgressRow isActive" : "facetProgressRow"}>
-                            <span className="facetProgressDot" aria-hidden="true" />
-                            <span>{stage}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : analysis ? (
-                      <div className="facetResolvedGrid">
-                        <label className="facetResolvedField">
-                          <span>Jewelry type</span>
-                          <input value={analysis.jewelryType} readOnly disabled className="facetReadOnlyInput" />
-                        </label>
-                        <label className="facetResolvedField">
-                          <span>Metal</span>
-                          <input value={analysis.selectedMetal} readOnly disabled className="facetReadOnlyInput" />
-                        </label>
-                        <label className="facetResolvedField">
-                          <span>Center shape</span>
-                          <input value={analysis.centerShape ?? ""} readOnly disabled className="facetReadOnlyInput" />
-                        </label>
-                        <label className="facetResolvedField">
-                          <span>Metal weight (g)</span>
-                          <input value={analysis.metalWeightGrams} readOnly disabled className="facetReadOnlyInput" />
-                        </label>
-                        <label className="facetResolvedField">
-                          <span>Center stone (ct)</span>
-                          <input value={analysis.centerDiamondCarats} readOnly disabled className="facetReadOnlyInput" />
-                        </label>
-                        <label className="facetResolvedField">
-                          <span>Side stones (ct)</span>
-                          <input value={analysis.sideDiamondCarats} readOnly disabled className="facetReadOnlyInput" />
-                        </label>
-                      </div>
-                    ) : null}
-                  </QuoteStepCard>
-                ) : null}
-
                 {analysis ? (
                   <QuoteStepCard
-                    number="03"
+                    number="02"
                     title="Adjust your ring"
                     description="Tweak any value — your price updates automatically."
                   >
@@ -712,7 +808,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
             preview={
               <QuoteBuilderPreview>
                 <div className="quotePreviewHeader">
-                  <span className="quoteStepNumber">04</span>
+                  <span className="quoteStepNumber">✦</span>
                   <div>
                     <p className="eyebrow">AI visualization &amp; quote</p>
                     <p className="muted small">Updates automatically as you adjust the design.</p>
@@ -729,15 +825,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                   ) : (
                     <div className="quotePreviewImagePlaceholder">
                       <span className="material-symbols-outlined" style={{ fontSize: 40, color: "var(--color-outline-variant)" }}>diamond</span>
-                      <p className="muted small" style={{ margin: "8px 0 0", textAlign: "center" }}>Upload a photo or generate an AI concept</p>
+                      <p className="muted small" style={{ margin: "8px 0 0", textAlign: "center" }}>Upload a photo or choose a design</p>
                     </div>
                   )}
-                  {analyzing ? (
-                    <div className="quotePreviewProcessingOverlay">
-                      <span className="material-symbols-outlined ai-pulse" style={{ fontSize: 32, color: "white" }}>psychology</span>
-                      <span style={{ color: "white", fontSize: "var(--text-sm)", fontWeight: 600, marginTop: 8 }}>AI Analysing…</span>
-                    </div>
-                  ) : null}
                   {generatingConcept ? (
                     <div className="quotePreviewProcessingOverlay">
                       <span className="material-symbols-outlined ai-pulse" style={{ fontSize: 32, color: "white" }}>auto_awesome</span>
@@ -762,12 +852,18 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(estimatedSellingPrice)
                       : "—"}
                   </div>
-                  <p className="muted small" style={{ marginTop: 4 }}>
-                    {analysis ? "Updates automatically as you adjust the design." : "Upload a photo to get started."}
-                  </p>
+                  {analysis ? (
+                    <div className="showroomRingSpecTitle">
+                      {getRingSpecTitle(analysis)}
+                    </div>
+                  ) : (
+                    <p className="muted small" style={{ marginTop: 4 }}>
+                      Upload a photo or pick a design to get started.
+                    </p>
+                  )}
                 </div>
 
-                <div className="quotePreviewActions">
+                <div className="quotePreviewActions" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <button
                     className="button primary"
                     style={{ width: "100%" }}
@@ -781,12 +877,108 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>save</span> Save Quote</>
                     )}
                   </button>
+
+                  <button
+                    className="button secondary"
+                    style={{ width: "100%", justifyContent: "center" }}
+                    type="button"
+                    disabled={!analysis || saving || sharing}
+                    onClick={handleShareQr}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>qr_code_2</span>
+                    Share with Others (Scan QR)
+                  </button>
                 </div>
               </QuoteBuilderPreview>
             }
           />
         </section>
       )}
+
+      {/* ── 4. CENTER ANALYSIS POPUP MODAL: What our AI sees ── */}
+      {analyzing ? (
+        <div className="showroomModalBackdrop">
+          <div className="showroomModalCard">
+            <div className="showroomModalIcon">
+              <span className="material-symbols-outlined ai-pulse" style={{ fontSize: 36 }}>auto_awesome</span>
+            </div>
+            <h3>What Our AI Sees</h3>
+            <p>Scanning reference design &amp; evaluating precious metal composition</p>
+
+            <div className="showroomModalProgressList">
+              {KIOSK_ANALYSIS_STAGES.map((stage, index) => (
+                <div
+                  key={stage}
+                  className={index <= stageIndex ? "showroomModalProgressRow isActive" : "showroomModalProgressRow"}
+                >
+                  <span className="showroomModalProgressDot" />
+                  <span>{stage}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── 5. QR CODE SHARE & PDF MODAL ── */}
+      {showQrModal ? (
+        <div className="showroomModalBackdrop" onClick={() => setShowQrModal(false)}>
+          <div className="showroomQrCard" onClick={(e) => e.stopPropagation()}>
+            <button className="showroomCloseBtn" type="button" onClick={() => setShowQrModal(false)}>
+              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
+            </button>
+
+            <div className="showroomModalIcon" style={{ width: 56, height: 56, marginBottom: 12 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 28 }}>qr_code_2</span>
+            </div>
+            <h3 style={{ fontSize: "1.375rem" }}>Scan to View on Your Phone</h3>
+            <p style={{ margin: "0 0 16px" }}>Point your camera at this QR code to download the PDF proposal and open the design on your device.</p>
+
+            {qrCodeDataUrl ? (
+              <div className="showroomQrWrap">
+                <img src={qrCodeDataUrl} alt="Scan Quote QR Code" />
+              </div>
+            ) : null}
+
+            {code ? (
+              <div className="badge" style={{ display: "inline-block", background: "rgba(201, 168, 76, 0.2)", color: "#e6cb78", fontWeight: 700, letterSpacing: "0.08em", padding: "6px 16px", marginBottom: 16 }}>
+                CLAIM CODE: {code}
+              </div>
+            ) : null}
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button
+                className="button primary button--sm"
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined" && qrShareUrl) {
+                    window.open(qrShareUrl, "_blank");
+                  }
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>open_in_new</span>
+                Open PDF Proposal
+              </button>
+              <button
+                className="button secondary button--sm"
+                type="button"
+                onClick={() => {
+                  if (navigator.clipboard && qrShareUrl) {
+                    navigator.clipboard.writeText(qrShareUrl);
+                    setCopiedLink(true);
+                    setTimeout(() => setCopiedLink(false), 2000);
+                  }
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                  {copiedLink ? "check" : "content_copy"}
+                </span>
+                {copiedLink ? "Copied!" : "Copy Link"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {warning ? <div className="showroomWarning">Still there? This screen will reset in 10 seconds.</div> : null}
       <footer style={{ marginTop: "auto", textAlign: "center", color: "var(--color-on-surface-variant)", fontSize: 12, padding: "24px 0" }}>
