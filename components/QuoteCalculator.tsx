@@ -129,6 +129,92 @@ const QUOTE_MODE_OPTIONS: Array<{
   }
 ];
 
+const MANUAL_PRESETS: Array<{
+  name: string;
+  jewelryType: string;
+  metalType: MetalType;
+  metalWeight: number;
+  centerShape: string;
+  centerCarats: number;
+  settingType: string;
+  sideCount: number;
+  sideCarats: number;
+  hasWeddingBand: boolean;
+}> = [
+  {
+    name: "1.0ct Solitaire Ring",
+    jewelryType: "Ring",
+    metalType: "14K",
+    metalWeight: 4.2,
+    centerShape: "round",
+    centerCarats: 1.0,
+    settingType: "prong",
+    sideCount: 0,
+    sideCarats: 0,
+    hasWeddingBand: false
+  },
+  {
+    name: "1.5ct Oval Halo Ring",
+    jewelryType: "Engagement Ring",
+    metalType: "18K",
+    metalWeight: 4.8,
+    centerShape: "oval",
+    centerCarats: 1.5,
+    settingType: "pave",
+    sideCount: 24,
+    sideCarats: 0.36,
+    hasWeddingBand: false
+  },
+  {
+    name: "Three-Stone Emerald Ring",
+    jewelryType: "Ring",
+    metalType: "Platinum",
+    metalWeight: 5.4,
+    centerShape: "emerald",
+    centerCarats: 1.25,
+    settingType: "prong",
+    sideCount: 2,
+    sideCarats: 0.4,
+    hasWeddingBand: false
+  },
+  {
+    name: "Pavé Diamond Band",
+    jewelryType: "Wedding Band",
+    metalType: "14K",
+    metalWeight: 3.6,
+    centerShape: "round",
+    centerCarats: 0,
+    settingType: "pave",
+    sideCount: 26,
+    sideCarats: 0.39,
+    hasWeddingBand: false
+  },
+  {
+    name: "Diamond Tennis Bracelet",
+    jewelryType: "Bracelet",
+    metalType: "18K",
+    metalWeight: 12.0,
+    centerShape: "round",
+    centerCarats: 0,
+    settingType: "prong",
+    sideCount: 48,
+    sideCarats: 4.0,
+    hasWeddingBand: false
+  },
+  {
+    name: "Classic Wedding Band",
+    jewelryType: "Wedding Band",
+    metalType: "14K",
+    metalWeight: 5.0,
+    centerShape: "round",
+    centerCarats: 0,
+    settingType: "flush",
+    sideCount: 0,
+    sideCarats: 0,
+    hasWeddingBand: false
+  }
+];
+
 function uid() {
   return globalThis.crypto?.randomUUID?.() ?? `facet-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -210,6 +296,25 @@ export default function QuoteCalculator({
   const [customerEmail, setCustomerEmail] = useState(initialQuote?.customerEmail ?? "");
   const [customerPhone, setCustomerPhone] = useState(initialQuote?.customerPhone ?? "");
   const [customerNotes, setCustomerNotes] = useState("");
+
+  // Creation Mode: AI Photo Analysis vs. Manual Spec Direct Quoting
+  type CreationMode = "ai" | "manual";
+  const [creationMode, setCreationMode] = useState<CreationMode>("ai");
+
+  // Manual direct quote specific states
+  const [manualJewelryType, setManualJewelryType] = useState<string>(initialQuote?.jewelryType ?? "Ring");
+  const [manualMetalWeight, setManualMetalWeight] = useState<number>(initialQuote?.metalWeightGrams ?? 4.5);
+  const [manualCenterShape, setManualCenterShape] = useState<string>(initialQuote?.centerShape ?? "round");
+  const [manualCenterCarats, setManualCenterCarats] = useState<number>(initialQuote?.centerDiamondCarats ?? 1.0);
+  const [manualCenterClarity, setManualCenterClarity] = useState<string>(DEFAULT_COLOR_CLARITY);
+  const [manualSideCount, setManualSideCount] = useState<number>(initialQuote?.sideDiamondQuantity ?? 0);
+  const [manualSideCarats, setManualSideCarats] = useState<number>(initialQuote?.sideDiamondCarats ?? 0);
+  const [manualSettingType, setManualSettingType] = useState<string>(initialQuote?.settingType ?? "prong");
+  const [manualHasWeddingBand, setManualHasWeddingBand] = useState<boolean>(false);
+  const [manualIsTwoTone, setManualIsTwoTone] = useState<boolean>(false);
+  const [manualImageFile, setManualImageFile] = useState<File | null>(null);
+  const [manualImagePreview, setManualImagePreview] = useState<string | null>(initialQuote?.imageDataUrl ?? null);
+
   const [facets, setFacets] = useState<FacetDraft[]>(() =>
     initialQuote
       ? [
@@ -428,6 +533,28 @@ export default function QuoteCalculator({
 
   const completedFacets = facets.filter((facet) => facet.status === "done" && facet.output);
   const aggregateQuote = useMemo<AggregateQuote | null>(() => {
+    if (creationMode === "manual") {
+      return {
+        jewelryType: manualJewelryType || "Jewelry",
+        centerShape: manualCenterShape || "round",
+        centerClarity: manualCenterClarity || DEFAULT_COLOR_CLARITY,
+        settingType: manualSettingType || "prong",
+        metalWeightGrams: Number(manualMetalWeight) || 0,
+        centerDiamondCarats:
+          quoteMode === "without-center" || quoteMode === "without-center-and-side"
+            ? 0
+            : Number(manualCenterCarats) || 0,
+        sideDiamondCarats: quoteMode === "without-center-and-side" ? 0 : Number(manualSideCarats) || 0,
+        sideDiamondQuantity: quoteMode === "without-center-and-side" ? 0 : Math.round(Number(manualSideCount)) || 0,
+        hasWeddingBand: manualHasWeddingBand,
+        isTwoTone: manualIsTwoTone,
+        confidence: "high",
+        assumptions: ["Manual spec entry with live market spot prices & jeweler margin settings."],
+        notes: customerNotes || "Manual spec quotation",
+        analysisId: undefined
+      };
+    }
+
     if (!completedFacets.length) return null;
 
     const outputs = completedFacets.map((facet) => facet.output!).map((output) => applyQuoteMode(output, quoteMode));
@@ -453,7 +580,22 @@ export default function QuoteCalculator({
           : "AI review values are approximate.",
       analysisId: completedFacets[0]?.output?.analysisId
     };
-  }, [completedFacets, quoteMode]);
+  }, [
+    creationMode,
+    manualJewelryType,
+    manualCenterShape,
+    manualCenterClarity,
+    manualSettingType,
+    manualMetalWeight,
+    manualCenterCarats,
+    manualSideCarats,
+    manualSideCount,
+    manualHasWeddingBand,
+    manualIsTwoTone,
+    customerNotes,
+    completedFacets,
+    quoteMode
+  ]);
 
   // Recalculate production cost & end customer price client-side in real-time
   const { costBreakdown, estimatedSellingPrice } = useMemo<{
@@ -906,9 +1048,10 @@ export default function QuoteCalculator({
 
   async function persistQuote(options?: { resetDraftAfterSave?: boolean }) {
     if (!aggregateQuote || !costBreakdown) {
-      setStatus("Analyse the photos before saving the quote.");
+      const msg = creationMode === "manual" ? "Please fill in valid piece specifications before saving." : "Analyse the photos before saving the quote.";
+      setStatus(msg);
       showToast({
-        message: "Analyse the photos before saving the quote.",
+        message: msg,
         variant: "warning",
         autoDismiss: false
       });
@@ -940,6 +1083,16 @@ export default function QuoteCalculator({
       setSavingProgress((current) => Math.min(90, current + 6));
     }, 1600);
 
+    let manualImageDataUrl: string | undefined = manualImagePreview || undefined;
+    if (manualImageFile) {
+      manualImageDataUrl = await new Promise<string | undefined>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(undefined);
+        reader.readAsDataURL(manualImageFile);
+      });
+    }
+
     try {
       const response = await fetch("/api/quotes", {
         method: "POST",
@@ -959,6 +1112,8 @@ export default function QuoteCalculator({
           centerShape: aggregateQuote.centerShape ?? "round",
           centerClarity: DEFAULT_COLOR_CLARITY,
           settingType: aggregateQuote.settingType ?? "prong",
+          jewelryType: aggregateQuote.jewelryType ?? "Ring",
+          imageDataUrl: manualImageDataUrl,
           customerNotes,
           notes: customerNotes,
           hasWeddingBand: aggregateQuote.hasWeddingBand,
@@ -1033,20 +1188,442 @@ export default function QuoteCalculator({
       <div className="quoteWorkspaceModeBar">
         <div>
           <span className="eyebrow">{showroomMode ? "Showroom consultation" : "Jeweler workspace"}</span>
-          <p className="muted small">Upload and describe once. Analysis, visualization, and pricing update automatically.</p>
+          <p className="muted small">
+            {creationMode === "manual"
+              ? "Direct manual spec entry with live market spot prices & jeweler margin."
+              : "Upload and describe once. Analysis, visualization, and pricing update automatically."}
+          </p>
         </div>
-        <button
-          type="button"
-          className="button secondary button--sm"
-          onClick={() => setShowroomMode((current) => !current)}
-        >
-          {showroomMode ? "Return to jeweler view" : "Open showroom view"}
-        </button>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          {!showroomMode && (
+            <div className="quoteCreationModeSwitcher">
+              <button
+                type="button"
+                className={`quoteCreationModeBtn ${creationMode === "ai" ? "isActive" : ""}`}
+                onClick={() => {
+                  setCreationMode("ai");
+                  setSavedQuote(null);
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>auto_awesome</span>
+                ✨ AI Photo Analysis
+              </button>
+              <button
+                type="button"
+                className={`quoteCreationModeBtn ${creationMode === "manual" ? "isActive" : ""}`}
+                onClick={() => {
+                  setCreationMode("manual");
+                  setSavedQuote(null);
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>tune</span>
+                ⚡ Manual Spec Entry
+              </button>
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="button secondary button--sm"
+            onClick={() => setShowroomMode((current) => !current)}
+          >
+            {showroomMode ? "Return to jeweler view" : "Open showroom view"}
+          </button>
+        </div>
       </div>
+
       {/* Two-column layout: left steps / right preview */}
       <QuoteCreationLayout
         steps={
-          <>
+          creationMode === "manual" ? (
+            <>
+              {/* ── Manual Step 1: Customer Details & Reference Image ── */}
+              <QuoteStepCard
+                number="01"
+                title="Customer & Design Reference"
+                description="Add optional customer details and attach a reference photo (bypasses AI analysis)."
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: 12,
+                    marginBottom: 18,
+                    padding: "12px 14px",
+                    background: "var(--color-surface-container-low, rgba(0,0,0,0.02))",
+                    borderRadius: "var(--radius-md, 10px)",
+                    border: "1px solid var(--color-outline-variant, #e2e8f0)"
+                  }}
+                >
+                  <div className="field" style={{ margin: 0 }}>
+                    <label htmlFor="manualCustomerName" style={{ fontSize: "0.8125rem", fontWeight: 600 }}>
+                      Customer Name <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span>
+                    </label>
+                    <input
+                      id="manualCustomerName"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="e.g. Eleanor Vance"
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="field" style={{ margin: 0 }}>
+                    <label htmlFor="manualCustomerEmail" style={{ fontSize: "0.8125rem", fontWeight: 600 }}>
+                      Customer Email <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span>
+                    </label>
+                    <input
+                      id="manualCustomerEmail"
+                      type="email"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      placeholder="e.g. eleanor@example.com"
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="field" style={{ margin: 0 }}>
+                    <label htmlFor="manualCustomerPhone" style={{ fontSize: "0.8125rem", fontWeight: 600 }}>
+                      Phone Number <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span>
+                    </label>
+                    <input
+                      id="manualCustomerPhone"
+                      type="tel"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      placeholder="e.g. (212) 555-0198"
+                      disabled={!canEdit}
+                    />
+                  </div>
+                </div>
+
+                <div className="field quoteDesignDescription">
+                  <div className="charCountHeader">
+                    <label htmlFor="manualCustomerNotes">Design Notes &amp; Instructions <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span></label>
+                    <span className="charCountBadge">{customerNotes.length} / 1000</span>
+                  </div>
+                  <textarea
+                    id="manualCustomerNotes"
+                    rows={2}
+                    maxLength={1000}
+                    value={customerNotes}
+                    onChange={(event) => setCustomerNotes(event.target.value)}
+                    placeholder="e.g. Ring size 6.5, high-polish shank, flush comfort fit..."
+                    disabled={!canEdit}
+                  />
+                </div>
+
+                {/* Reference Photo Attachment */}
+                <div style={{ marginTop: 14 }}>
+                  <label style={{ fontSize: "0.8125rem", fontWeight: 600, display: "block", marginBottom: 6 }}>
+                    Reference Photo / Sketch <span className="muted small" style={{ fontWeight: 400 }}>(Optional — included in PDF proposal)</span>
+                  </label>
+                  {manualImagePreview ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "10px 14px", background: "var(--color-surface-container-low, #f8fafc)", borderRadius: "var(--radius-md, 8px)", border: "1px solid var(--color-outline-variant, #e2e8f0)" }}>
+                      <img src={manualImagePreview} alt="Reference Preview" style={{ width: 54, height: 54, borderRadius: 6, objectFit: "cover" }} />
+                      <div style={{ flex: 1 }}>
+                        <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600 }}>{manualImageFile?.name || "Reference Photo"}</p>
+                        <span className="muted small">Direct preview (ready for PDF generation)</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="button secondary button--sm"
+                        onClick={() => {
+                          setManualImageFile(null);
+                          setManualImagePreview(null);
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      className="dropzone"
+                      style={{ padding: "16px 20px" }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (e.dataTransfer.files?.[0]) {
+                          const file = e.dataTransfer.files[0];
+                          setManualImageFile(file);
+                          setManualImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    >
+                      <div className="dropzoneContent" style={{ gap: 4 }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 24, color: "var(--color-primary)" }}>add_photo_alternate</span>
+                        <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>Attach reference photo (Optional)</span>
+                        <span className="muted small">JPG, PNG, or WEBP · direct preview without AI processing</span>
+                      </div>
+                      <label className="button secondary button--sm" style={{ marginTop: 8 }}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={!canEdit}
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              const file = e.target.files[0];
+                              setManualImageFile(file);
+                              setManualImagePreview(URL.createObjectURL(file));
+                            }
+                          }}
+                        />
+                        Choose Image
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </QuoteStepCard>
+
+              {/* ── Manual Step 2: Piece Specifications (Live Pricing) ── */}
+              <QuoteStepCard
+                number="02"
+                title="Piece Specifications & Live Pricing"
+                description="Direct specification entry. Live spot metal rates and stone pricing update the estimate in real-time."
+              >
+                {/* Quick Presets */}
+                <div>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-primary)", display: "block", marginBottom: 8 }}>
+                    Quick Presets
+                  </span>
+                  <div className="presetChipsBar">
+                    {MANUAL_PRESETS.map((preset) => (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        className="presetChip"
+                        onClick={() => {
+                          setManualJewelryType(preset.jewelryType);
+                          setMetalType(preset.metalType);
+                          setManualMetalWeight(preset.metalWeight);
+                          setManualCenterShape(preset.centerShape);
+                          setManualCenterCarats(preset.centerCarats);
+                          setManualSettingType(preset.settingType);
+                          setManualSideCount(preset.sideCount);
+                          setManualSideCarats(preset.sideCarats);
+                          setManualHasWeddingBand(preset.hasWeddingBand);
+                          setSavedQuote(null);
+                          showToast({ message: `Loaded ${preset.name} specs!`, variant: "info", autoDismiss: true });
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>bolt</span>
+                        {preset.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gap: 16 }}>
+                  {/* Metal & Jewelry Type Row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+                    <div className="field">
+                      <label htmlFor="manualJewelryType">Jewelry Type</label>
+                      <select
+                        id="manualJewelryType"
+                        value={manualJewelryType}
+                        disabled={!canEdit}
+                        onChange={(e) => setManualJewelryType(e.target.value)}
+                      >
+                        {["Ring", "Engagement Ring", "Wedding Band", "Pendant", "Earrings", "Bracelet", "Necklace"].map((type) => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="field">
+                      <label htmlFor="manualMetalType">Metal Alloy</label>
+                      <select
+                        id="manualMetalType"
+                        value={metalType}
+                        disabled={!canEdit}
+                        onChange={(e) => setMetalType(e.target.value as MetalType)}
+                      >
+                        {["10K", "14K", "18K", "Platinum", "Silver"].map((m) => (
+                          <option key={m} value={m}>{m} Gold / Metal</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="field">
+                      <label htmlFor="manualMetalWeight">
+                        Metal Weight (grams)
+                      </label>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <input
+                          id="manualMetalWeight"
+                          type="number"
+                          min={0.5}
+                          max={50}
+                          step={0.1}
+                          value={manualMetalWeight}
+                          disabled={!canEdit}
+                          onChange={(e) => setManualMetalWeight(Number(e.target.value) || 0)}
+                          style={{ width: 90 }}
+                        />
+                        <input
+                          type="range"
+                          min={1}
+                          max={20}
+                          step={0.1}
+                          value={manualMetalWeight}
+                          disabled={!canEdit}
+                          onChange={(e) => setManualMetalWeight(Number(e.target.value) || 0)}
+                          style={{ flex: 1 }}
+                        />
+                        <span style={{ fontSize: "0.875rem", fontWeight: 600, minWidth: 36 }}>{manualMetalWeight}g</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Center Stone Section */}
+                  <div style={{ padding: "14px 16px", background: "var(--color-surface-container-low, #f8fafc)", borderRadius: "var(--radius-md, 8px)", border: "1px solid var(--color-outline-variant, #e2e8f0)" }}>
+                    <span style={{ fontSize: "0.8125rem", fontWeight: 700, color: "#0F172A", display: "block", marginBottom: 12 }}>
+                      💎 Center Diamond
+                    </span>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+                      <div className="field" style={{ margin: 0 }}>
+                        <label htmlFor="manualCenterShape">Center Shape</label>
+                        <select
+                          id="manualCenterShape"
+                          value={manualCenterShape}
+                          disabled={!canEdit}
+                          onChange={(e) => setManualCenterShape(e.target.value)}
+                        >
+                          {["round", "oval", "cushion", "emerald", "pear", "princess", "radiant", "marquise", "asscher", "heart"].map((s) => (
+                            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="field" style={{ margin: 0 }}>
+                        <label htmlFor="manualCenterCarats">Carat Weight (ct)</label>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          <input
+                            id="manualCenterCarats"
+                            type="number"
+                            min={0}
+                            max={15}
+                            step={0.05}
+                            value={manualCenterCarats}
+                            disabled={!canEdit}
+                            onChange={(e) => setManualCenterCarats(Number(e.target.value) || 0)}
+                          />
+                          <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>ct</span>
+                        </div>
+                      </div>
+
+                      <div className="field" style={{ margin: 0 }}>
+                        <label htmlFor="manualCenterClarity">Color &amp; Clarity</label>
+                        <select
+                          id="manualCenterClarity"
+                          value={manualCenterClarity}
+                          disabled={!canEdit}
+                          onChange={(e) => setManualCenterClarity(e.target.value)}
+                        >
+                          {["D VVS1", "E VS1", "F VS2", "G SI1", "H SI2"].map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="field" style={{ margin: 0 }}>
+                        <label htmlFor="manualSettingType">Center Setting</label>
+                        <select
+                          id="manualSettingType"
+                          value={manualSettingType}
+                          disabled={!canEdit}
+                          onChange={(e) => setManualSettingType(e.target.value)}
+                        >
+                          {["prong", "bezel", "halo", "pave", "channel", "flush", "tension"].map((st) => (
+                            <option key={st} value={st}>{st.charAt(0).toUpperCase() + st.slice(1)}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Side Stones & Accents Section */}
+                  <div style={{ padding: "14px 16px", background: "var(--color-surface-container-low, #f8fafc)", borderRadius: "var(--radius-md, 8px)", border: "1px solid var(--color-outline-variant, #e2e8f0)" }}>
+                    <span style={{ fontSize: "0.8125rem", fontWeight: 700, color: "#0F172A", display: "block", marginBottom: 12 }}>
+                      ✨ Side Stones &amp; Accents
+                    </span>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+                      <div className="field" style={{ margin: 0 }}>
+                        <label htmlFor="manualSideCount">Side Stones Count</label>
+                        <input
+                          id="manualSideCount"
+                          type="number"
+                          min={0}
+                          max={150}
+                          step={1}
+                          value={manualSideCount}
+                          disabled={!canEdit}
+                          onChange={(e) => {
+                            const count = Number(e.target.value) || 0;
+                            setManualSideCount(count);
+                            if (count === 0) setManualSideCarats(0);
+                          }}
+                        />
+                      </div>
+
+                      <div className="field" style={{ margin: 0 }}>
+                        <label htmlFor="manualSideCarats">Total Side Weight (ct)</label>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          <input
+                            id="manualSideCarats"
+                            type="number"
+                            min={0}
+                            max={20}
+                            step={0.01}
+                            value={manualSideCarats}
+                            disabled={!canEdit}
+                            onChange={(e) => setManualSideCarats(Number(e.target.value) || 0)}
+                          />
+                          <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>ct</span>
+                        </div>
+                      </div>
+
+                      <div className="field" style={{ margin: 0 }}>
+                        <label htmlFor="quoteModeManual">Quote Mode</label>
+                        <select
+                          id="quoteModeManual"
+                          value={quoteMode}
+                          disabled={!canEdit}
+                          onChange={(e) => setQuoteMode(e.target.value as QuoteMode)}
+                        >
+                          {QUOTE_MODE_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Additional Options */}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 20, marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--color-outline-variant, #e2e8f0)" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "0.875rem" }}>
+                        <input
+                          type="checkbox"
+                          checked={manualHasWeddingBand}
+                          disabled={!canEdit}
+                          onChange={(e) => setManualHasWeddingBand(e.target.checked)}
+                        />
+                        <span>Include Matching Wedding Band (2 pieces)</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "0.875rem" }}>
+                        <input
+                          type="checkbox"
+                          checked={manualIsTwoTone}
+                          disabled={!canEdit}
+                          onChange={(e) => setManualIsTwoTone(e.target.checked)}
+                        />
+                        <span>Two-Tone Metal Casting</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </QuoteStepCard>
+            </>
+          ) : (
+            <>
           {/* ── Step 1: Customer Info, Upload Reference Photos & Description ── */}
           <QuoteStepCard
             number="01"
@@ -1507,30 +2084,35 @@ export default function QuoteCalculator({
               </div>
             </QuoteStepCard>
           ) : null}
-          </>
+            </>
+          )
         }
         preview={
           <QuoteBuilderPreview>
             <div className="quotePreviewHeader">
-              <span className="quoteStepNumber">04</span>
+              <span className="quoteStepNumber">{creationMode === "manual" ? "03" : "04"}</span>
               <div>
-                <p className="eyebrow">AI visualization &amp; quote</p>
-                <p className="muted small">Updates automatically as the design changes.</p>
+                <p className="eyebrow">{creationMode === "manual" ? "Live estimate & quote" : "AI visualization & quote"}</p>
+                <p className="muted small">Updates automatically as specifications change.</p>
               </div>
             </div>
 
-            {/* AI Generated Image */}
+            {/* Visual Preview Frame */}
             <div className="quotePreviewImageFrame">
-              {displayRenderingImageUrl || activeFacet?.previewUrl ? (
+              {displayRenderingImageUrl || manualImagePreview || activeFacet?.previewUrl ? (
                 <img
-                  src={displayRenderingImageUrl ?? activeFacet?.previewUrl ?? ""}
-                  alt="AI generated jewelry visualization"
+                  src={displayRenderingImageUrl ?? manualImagePreview ?? activeFacet?.previewUrl ?? ""}
+                  alt="Jewelry quote reference preview"
                   className="quotePreviewImage"
                 />
               ) : (
                 <div className="quotePreviewImagePlaceholder">
-                  <span className="material-symbols-outlined" style={{ fontSize: 40, color: "var(--color-outline-variant)" }}>diamond</span>
-                  <p className="muted small" style={{ margin: "8px 0 0", textAlign: "center" }}>Upload photos or describe a design to see the AI visualization here</p>
+                  <span className="material-symbols-outlined" style={{ fontSize: 40, color: "var(--color-primary)" }}>diamond</span>
+                  <p className="muted small" style={{ margin: "8px 0 0", textAlign: "center" }}>
+                    {creationMode === "manual"
+                      ? "Direct spec pricing is active. Attach a reference photo or save directly."
+                      : "Upload photos or describe a design to see the AI visualization here"}
+                  </p>
                 </div>
               )}
               {activeFacet?.status === "processing" ? (
@@ -1542,7 +2124,7 @@ export default function QuoteCalculator({
               {saving ? (
                 <div className="quotePreviewProcessingOverlay">
                   <span className="material-symbols-outlined ai-pulse" style={{ fontSize: 32, color: "white" }}>diamond</span>
-                  <span style={{ color: "white", fontSize: "var(--text-sm)", fontWeight: 600, marginTop: 8 }}>Creating your ring…</span>
+                  <span style={{ color: "white", fontSize: "var(--text-sm)", fontWeight: 600, marginTop: 8 }}>Creating your quote…</span>
                   <div style={{ width: "70%", height: 6, borderRadius: 999, background: "rgb(255 255 255 / 25%)", overflow: "hidden", marginTop: 10 }}>
                     <div style={{ height: "100%", width: `${savingProgress}%`, background: "white", transition: "width 400ms linear" }} />
                   </div>
@@ -1558,7 +2140,7 @@ export default function QuoteCalculator({
               </div>
               {aggregateQuote ? (
                 <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-primary)", margin: "8px 0", background: "var(--color-surface-container)", padding: "6px 12px", borderRadius: "var(--radius-sm)", borderLeft: "3px solid var(--color-primary)" }}>
-                  {metalType} · {aggregateQuote.centerDiamondCarats.toFixed(2)}ct {aggregateQuote.centerShape || "Diamond"}{aggregateQuote.sideDiamondQuantity > 0 ? ` · ${aggregateQuote.sideDiamondCarats.toFixed(2)}ct Side Diamonds (${aggregateQuote.sideDiamondQuantity}×)` : ""}{aggregateQuote.hasWeddingBand ? " + Matching Band" : ""}{aggregateQuote.isTwoTone ? " (Two-Tone)" : ""} {aggregateQuote.jewelryType || "Ring"}
+                  {metalType} · {aggregateQuote.centerDiamondCarats > 0 ? `${aggregateQuote.centerDiamondCarats.toFixed(2)}ct ${aggregateQuote.centerShape || "Diamond"}` : "No Center Stone"}{aggregateQuote.sideDiamondQuantity > 0 ? ` · ${aggregateQuote.sideDiamondCarats.toFixed(2)}ct Side (${aggregateQuote.sideDiamondQuantity}×)` : ""}{aggregateQuote.hasWeddingBand ? " + Band" : ""}{aggregateQuote.isTwoTone ? " (Two-Tone)" : ""} {aggregateQuote.jewelryType || "Ring"}
                 </div>
               ) : null}
               <div className="quoteMeta" style={{ marginTop: 12 }}>
@@ -1572,15 +2154,15 @@ export default function QuoteCalculator({
                 </div>
                 <div>
                   <span>Mode</span>
-                  <strong>{QUOTE_MODE_OPTIONS.find((o) => o.value === quoteMode)?.label ?? quoteMode}</strong>
+                  <strong>{creationMode === "manual" ? "Manual Direct" : (QUOTE_MODE_OPTIONS.find((o) => o.value === quoteMode)?.label ?? quoteMode)}</strong>
                 </div>
                 <div>
-                  <span>Photos</span>
-                  <strong>{completedFacets.length} analysed</strong>
+                  <span>Input</span>
+                  <strong>{creationMode === "manual" ? `${manualMetalWeight}g Specs` : `${completedFacets.length} analysed`}</strong>
                 </div>
               </div>
               <p className="disclaimer" style={{ marginTop: 12 }}>
-                Final pricing is an approved estimate. Production review may adjust after CAD and stone verification.
+                Final pricing is an approved estimate based on live spot metal rates and configured markup divisor.
               </p>
             </div>
 
@@ -1590,7 +2172,7 @@ export default function QuoteCalculator({
                 className="button primary"
                 style={{ width: "100%" }}
                 type="button"
-                disabled={!canEdit || saving || !aggregateQuote || draftIsFresh}
+                disabled={!canEdit || saving || !aggregateQuote || (creationMode === "ai" && draftIsFresh)}
                 onClick={() => persistQuote({ resetDraftAfterSave: false })}
               >
                 {saving ? (

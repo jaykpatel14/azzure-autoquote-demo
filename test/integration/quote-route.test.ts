@@ -327,4 +327,50 @@ describe("quote route integration", () => {
 
     expect(result.quoteNumber).toBe("AQ-000010");
   });
+
+  test("creates a manual direct quote bypassing AI analysis", async () => {
+    const company = await createCompanyFixture();
+    authMock.mockResolvedValueOnce(mockSession(company));
+
+    const payload = {
+      metalType: "18K",
+      metalWeightGrams: 4.8,
+      centerDiamondCarats: 1.5,
+      sideDiamondCarats: 0.36,
+      sideDiamondQuantity: 24,
+      centerShape: "oval",
+      jewelryType: "Engagement Ring",
+      customerName: "Eleanor Vance",
+      customerEmail: "eleanor@vanceatelier.com"
+    } as const;
+
+    const response = await createQuote(
+      new Request("http://localhost/api/quotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+    );
+
+    expect(response.status).toBe(200);
+    const result = (await response.json()) as {
+      id: string;
+      quoteNumber: string;
+      estimatedPrice: number;
+    };
+
+    expect(result.quoteNumber).toBeTruthy();
+    const savedQuote = await prisma.quote.findUniqueOrThrow({
+      where: { id: result.id },
+      include: { analysis: true }
+    });
+
+    expect(savedQuote.companyId).toBe(company.companyId);
+    expect(savedQuote.customerName).toBe("Eleanor Vance");
+    expect(savedQuote.customerEmail).toBe("eleanor@vanceatelier.com");
+    expect(Number(savedQuote.metalWeightGrams)).toBe(4.8);
+    expect(Number(savedQuote.centerDiamondCarats)).toBe(1.5);
+    expect(savedQuote.analysis?.provider).toBe("manual-quote-direct");
+    expect(savedQuote.analysis?.jewelryType).toBe("Engagement Ring");
+  });
 });

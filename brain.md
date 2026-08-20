@@ -254,11 +254,25 @@ This document logs every key architectural, design, and calculation decision mad
      - **Individual Member Deletion**: Created `DELETE /api/admin/companies/[companyId]/members/[userId]` and interactive `AdminDeleteMemberButton` in the team members roster.
 - **Rationale**: Gives administrators full control over customer lifecycle management and tenant cleanup, while ensuring emails (registration, invites, notifications, checkout) are reliably delivered via Resend.
 
+### 46. Manual Spec Quoting Mode with Live Pricing Toggle on Jeweler Dashboard
+- **Decision**: Added direct manual quote creation capability that bypasses AI photo analysis while calculating accurate real-time market pricing:
+  1. **Segmented Mode Switcher on Jeweler Workspace (`components/QuoteCalculator.tsx`)**:
+     - Added a top mode toggle switch (`✨ AI Photo Analysis` vs. `⚡ Manual Spec Entry`) on the jeweler quote builder (`/quotes/new`).
+     - **Showroom Isolation**: The toggle is strictly hidden in Showroom Mode (`app/showroom/showroom-kiosk.tsx`), ensuring customer-facing tablet kiosks remain photo- and inspiration-driven.
+  2. **Direct Manual Spec Configuration**:
+     - **Quick Presets**: Added one-click presets for popular designs (*1.0ct Solitaire Ring*, *1.5ct Oval Halo Ring*, *Three-Stone Emerald Ring*, *Pavé Diamond Band*, *Diamond Tennis Bracelet*, *Classic Wedding Band*).
+     - **Specs Form**: Direct inputs for Jewelry Type (Ring, Engagement Ring, Wedding Band, Pendant, Earrings, Bracelet, Necklace), Metal Alloy (10K, 14K, 18K, Platinum, Silver) with live spot gold per gram indicator, Gram Weight, Center Stone Shape/Carats/Clarity/Setting, Side Stones count/carats/setting, Matching Band option, and Two-Tone Casting option.
+     - **Optional Reference Attachment**: Jewelers can drag-and-drop a photo/sketch to attach to the quote PDF without triggering AI analysis.
+  3. **Real-time Live Market Pricing & Backend Persistence**:
+     - Computes production cost, metal casting from spot gold, diamond stone rates, CAD cost, and jeweler margin multiplier in real-time as inputs change.
+     - Enhanced `POST /api/quotes` and `createQuote` in `src/services/quotes.ts` to accept manual specs, synthesize a completed `AiAnalysis` snapshot record with `provider: "manual-quote-direct"`, allocate sequential quote numbers, and generate PDF proposals.
+- **Rationale**: Empowers jewelers to rapidly quote walk-in custom requests with known specs in under 5 seconds using live metal spot prices, without requiring an AI analysis run.
+
 ---
 
 ## Last Updated
 - Date: August 20, 2026
-- Status: Production Ready, All 23 Test Suites Passing (102/102 tests), TypeScript zero errors, Resend email & Admin Customer deletion suite live.
+- Status: Production Ready, All 24 Test Suites Passing (106/106 tests), TypeScript zero errors, Manual quoting mode live.
 
 
 

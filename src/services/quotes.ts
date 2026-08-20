@@ -37,6 +37,8 @@ type CreateQuoteInput = {
   centerShape?: string | null;
   centerClarity?: string | null;
   settingType?: string | null;
+  jewelryType?: string | null;
+  imageDataUrl?: string | null;
   notes?: string | null;
 };
 
@@ -195,12 +197,12 @@ export async function createQuote(
     analysis = await prisma.aiAnalysis.create({
       data: {
         companyId: input.companyId,
-        provider: "showroom-synthesizer",
-        model: "preset-v1",
-        modelVersion: "preset-v1",
-        promptVersion: "preset-v1",
+        provider: "manual-quote-direct",
+        model: "manual-v1",
+        modelVersion: "manual-v1",
+        promptVersion: "manual-v1",
         selectedMetal: input.metalType,
-        jewelryType: "Ring",
+        jewelryType: input.jewelryType || "Ring",
         centerShape: input.centerShape || "round",
         centerClarity: input.colorClarity || "E VS1",
         settingType: input.settingType || "prong",
@@ -209,7 +211,8 @@ export async function createQuote(
         sideDiamondCarats: input.sideDiamondCarats,
         sideDiamondQuantity: input.sideDiamondQuantity,
         confidence: "high",
-        notes: input.notes || "Showroom selection",
+        notes: input.notes || "Manual jeweler direct quote",
+        imageDataUrl: input.imageDataUrl || null,
         status: "COMPLETED",
         completedAt: new Date()
       }

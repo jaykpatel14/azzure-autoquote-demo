@@ -261,11 +261,12 @@ azzure-autoquote-mvp/
   - Enforced across B2B jeweler signups (`POST /api/auth/register`, `/signup`), showroom kiosk quote saving (`POST /api/showroom/quotes`, `app/showroom/showroom-kiosk.tsx`), and jeweler dashboard quote builder (`POST /api/quotes`, `components/QuoteCalculator.tsx`).
 - ✅ **Default Root URL (`/`) Renders Interactive Luxury Landing Page**:
   - Integrated [`components/InteractiveLandingPage.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/components/InteractiveLandingPage.tsx) directly into [`app/page.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/page.tsx) so that any unauthenticated visitor landing on the root URL (`/` or `http://localhost:3000/`) immediately receives the interactive showcase with live quoting presets, 6-second timed craftsperson hero mockup animation, interactive showroom kiosk walkthrough, and monthly/annual pricing calculator.
-- ✅ **Resend Email Integration & Admin Customer Account Deletion**:
-  - `lib/mailer.ts`: Built general `sendEmail` and `sendAuthMail` powered by Resend (`^6.18.1`), configurable via `RESEND_API_KEY` and `RESEND_FROM_EMAIL` in `.env` or `/admin/platform/settings`.
-  - Added test email endpoint `POST /api/admin/test-email`.
-  - Customer Account Deletion: Created REST endpoint `DELETE /api/admin/companies/[companyId]`, `POST /api/admin/companies/[companyId]/delete`, and member deletion `DELETE /api/admin/companies/[companyId]/members/[userId]` with automatic orphan user cleanup and interactive UI confirmation modals on `/admin/companies` and `/admin/companies/[companyId]`.
-- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 23 test suites passing (102/102 tests).
+- ✅ **Manual Spec Quoting Mode with Live Pricing Toggle on Jeweler Dashboard**:
+  - Added a top mode segmented pill switcher (`✨ AI Photo Analysis` vs. `⚡ Manual Spec Entry`) on the jeweler quote builder ([`components/QuoteCalculator.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/components/QuoteCalculator.tsx)).
+  - Strictly hidden in Showroom Mode ([`app/showroom/showroom-kiosk.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/showroom/showroom-kiosk.tsx)) so customer kiosks remain photo-driven.
+  - Built direct manual spec entry form with quick presets (*Solitaire*, *Oval Halo*, *Three-Stone*, *Pavé Band*, *Tennis Bracelet*, *Classic Band*), alloy selector with spot rate display, gram weight slider, center diamond shape/carats/clarity, side stones count/carats, matching band, two-tone casting, and optional reference photo attachment.
+  - Connected to live market spot pricing engine and `POST /api/quotes` persistence with completed `AiAnalysis` snapshot synthesis.
+- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 24 test suites passing (106/106 tests).
 
 
 
