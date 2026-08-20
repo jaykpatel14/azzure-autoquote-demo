@@ -41,14 +41,23 @@ jobs:
           echo "⏳ Waiting for PostgreSQL to be ready..."
           DB_READY=0
           for attempt in $(seq 1 30); do
-            if docker compose -f docker-compose.proxmox.yml exec -T db pg_isready -U autoquote -d autoquote >/dev/null 2>&1 || \
-               docker compose -f docker-compose.proxmox.yml exec -T db pg_isready -U postgres >/dev/null 2>&1 || \
-               docker compose -f docker-compose.proxmox.yml exec -T db pg_isready >/dev/null 2>&1; then
+            # Check 1: Direct Docker container health status
+            DB_HEALTH=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}healthy{{end}}' azzure-autoquote-db-1 2>/dev/null || docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}healthy{{end}}' azzure-autoquote_db_1 2>/dev/null || true)
+            if [ "$DB_HEALTH" = "healthy" ]; then
+              echo "✅ PostgreSQL is healthy (Docker healthcheck confirmed on attempt $attempt)!"
+              DB_READY=1
+              break
+            fi
+
+            # Check 2: Direct docker exec pg_isready
+            if docker exec azzure-autoquote-db-1 pg_isready -U autoquote -d autoquote >/dev/null 2>&1 || \
+               docker exec azzure-autoquote-db-1 pg_isready >/dev/null 2>&1 || \
+               docker compose -f docker-compose.proxmox.yml exec -T db pg_isready -U autoquote -d autoquote >/dev/null 2>&1; then
               echo "✅ PostgreSQL is ready and accepting queries on attempt $attempt!"
               DB_READY=1
               break
             fi
-            echo "   ...waiting for postgres (attempt $attempt/30)..."
+            echo "   ...waiting for postgres (attempt $attempt/30, status: ${DB_HEALTH:-starting})..."
             sleep 2
           done
 

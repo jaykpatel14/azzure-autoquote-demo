@@ -1968,8 +1968,93 @@ input[type="checkbox"] {
    ============================================================ */
 
 .workspaceSidebar--admin {
-  background: var(--color-inverse-surface);
-  border-right-color: rgba(255, 255, 255, 0.08);
+  background: #0f172a !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f8fafc !important;
+}
+
+.workspaceSidebar--admin .brand,
+.workspaceSidebar--admin .brandTitleText {
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.workspaceSidebar--admin .brandSubtitleText,
+.workspaceSidebar--admin .muted,
+.workspaceSidebar--admin .small {
+  color: #94a3b8 !important;
+}
+
+.workspaceSidebar--admin .workspaceNav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.workspaceSidebar--admin .workspaceNavItem {
+  color: #94a3b8 !important;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.workspaceSidebar--admin .workspaceNavItem:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+.workspaceSidebar--admin .workspaceNavItem .material-symbols-outlined {
+  color: #64748b !important;
+  transition: color 0.15s ease;
+}
+
+.workspaceSidebar--admin .workspaceNavItem:hover .material-symbols-outlined {
+  color: #cbd5e1 !important;
+}
+
+.workspaceSidebar--admin .workspaceNavItem.isActive {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+}
+
+.workspaceSidebar--admin .workspaceNavItem.isActive .material-symbols-outlined {
+  color: #ffffff !important;
+}
+
+.workspaceSidebar--admin .sidebarPanel,
+.workspaceSidebar--admin .sidebarFooter {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--radius-md);
+  padding: 14px;
+  color: #cbd5e1 !important;
+}
+
+.workspaceSidebar--admin .sidebarFooter span,
+.workspaceSidebar--admin .sidebarPanel span,
+.workspaceSidebar--admin .sidebarFooter p,
+.workspaceSidebar--admin .sidebarPanel p {
+  color: #cbd5e1 !important;
+}
+
+.workspaceSidebar--admin .signOutBtn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #cbd5e1 !important;
+  transition: all 0.15s ease;
+}
+
+.workspaceSidebar--admin .signOutBtn:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #ef4444 !important;
+  color: #fca5a5 !important;
 }
 
 .workspaceMain--admin {

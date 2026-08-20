@@ -7,6 +7,7 @@ import {
   calculateTierPrice,
   DEFAULT_COLOR_CLARITY
 } from "@/src/services/pricing";
+import { convertMetalWeight, type MetalType } from "@/lib/pricing";
 import type { PricingTier } from "@prisma/client";
 
 type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; aboutUs: string | null };
@@ -139,7 +140,20 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   }, [debouncedAnalysis, pricing]);
 
   function updateAnalysisField<K extends keyof Analysis>(field: K, value: Analysis[K]) {
-    setAnalysis((current) => (current ? { ...current, [field]: value } : current));
+    setAnalysis((current) => {
+      if (!current) return current;
+      if (field === "selectedMetal") {
+        const fromMetal = (current.selectedMetal as MetalType) || "14K";
+        const toMetal = (value as MetalType) || "14K";
+        const newWeight = Number(convertMetalWeight(current.metalWeightGrams, fromMetal, toMetal).toFixed(2));
+        return {
+          ...current,
+          selectedMetal: value as string,
+          metalWeightGrams: newWeight
+        };
+      }
+      return { ...current, [field]: value };
+    });
   }
 
   // Auto-analyze function triggered immediately when photos are selected
@@ -244,7 +258,14 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       const response = await fetch("/api/showroom/quotes", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token, analysisIds, customerNotes: description, ...analysis })
+        body: JSON.stringify({
+          token,
+          analysisIds,
+          customerNotes: description,
+          ...analysis,
+          metalType: analysis.selectedMetal,
+          selectedMetal: analysis.selectedMetal
+        })
       });
       const body = await response.json();
       setSavingProgress(100);

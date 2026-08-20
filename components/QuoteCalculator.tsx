@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { type MetalType, type PricingProfileInput } from "@/lib/pricing";
+import { convertMetalWeight, type MetalType, type PricingProfileInput } from "@/lib/pricing";
 import { mergeConfidence, median } from "@/lib/statistics";
 import { useToast } from "@/components/toast-provider";
 import { QuoteCreationLayout, QuoteStepCard, QuoteBuilderPreview } from "@/components/QuoteCreationLayout";
@@ -1049,7 +1049,23 @@ export default function QuoteCalculator({
                     id="metalType"
                     value={metalType}
                     disabled={!canEdit}
-                    onChange={(e) => setMetalType(e.target.value as MetalType)}
+                    onChange={(e) => {
+                      const newMetal = e.target.value as MetalType;
+                      const oldMetal = metalType;
+                      setMetalType(newMetal);
+                      setFacets((current) =>
+                        current.map((facet) => {
+                          if (!facet.output) return facet;
+                          return {
+                            ...facet,
+                            output: {
+                              ...facet.output,
+                              metalWeightGrams: Number(convertMetalWeight(facet.output.metalWeightGrams, oldMetal, newMetal).toFixed(2))
+                            }
+                          };
+                        })
+                      );
+                    }}
                   >
                     {["10K", "14K", "18K", "Platinum", "Silver"].map((metal) => (
                       <option key={metal} value={metal}>{metal}</option>

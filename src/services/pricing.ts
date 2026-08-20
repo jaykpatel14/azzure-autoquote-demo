@@ -171,10 +171,29 @@ export function calculateMetalCost(
 ): number {
   if (weightGrams <= 0) return 0;
   const ozToGram = 31.1034768;
-  const purityMap: Record<string, number> = { "10K": 0.417, "14K": 0.585, "18K": 0.75, Platinum: 0.95, Silver: 0.925 };
-  const purity = purityMap[metalType] ?? 0.585;
-  // Loss multiplier: 1 + (wastagePct / 100). Default 25% wastage = 1.25 multiplier (e.g. 7.0g finished ring requires ~8.75g to 9.0g raw gold)
-  const lossFactor = metalType === "Platinum" ? 1.35 : metalType === "Silver" ? 3.5 : (1 + (wastagePct / 100));
+  const normalized = (metalType || "14K").toUpperCase().trim();
+  
+  let purity = 0.585; // 14K default
+  let lossFactor = 1 + (wastagePct / 100); // 1.25 default
+
+  if (normalized.includes("PLATINUM") || normalized.includes("PLAT")) {
+    purity = 0.95;
+    lossFactor = 1.35;
+  } else if (normalized.includes("SILVER") || normalized.includes("925")) {
+    purity = 0.925;
+    lossFactor = 3.5;
+  } else if (normalized.includes("18K") || normalized.includes("18")) {
+    purity = 0.75;
+    lossFactor = 1 + (wastagePct / 100);
+  } else if (normalized.includes("10K") || normalized.includes("10")) {
+    purity = 0.417;
+    lossFactor = 1 + (wastagePct / 100);
+  } else {
+    // 14K or fallback
+    purity = 0.585;
+    lossFactor = 1 + (wastagePct / 100);
+  }
+
   const ratePerGram = (spotPrice / ozToGram) * purity * lossFactor;
   return weightGrams * ratePerGram;
 }

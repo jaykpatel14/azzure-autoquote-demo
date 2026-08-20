@@ -222,7 +222,10 @@ azzure-autoquote-mvp/
 - ✅ **Luxury Onboarding Flow**: Completely redesigned `/onboarding` page and styling in `app/globals.css` with 3 guided steps, obsidian-gold glassmorphism cards, and real-time trial metric status banner.
 - ✅ **Trial Duration & Days Remaining Fix**: Fixed `getTrialDaysRemaining` in `lib/billing.ts` and `lib/admin-companies.ts` to compute remaining trial days dynamically from `trialEndsAt`, `currentPeriodEnd`, or `currentPeriodStart + 14 days`, fixing the "0 days left" display.
 - ✅ **Prisma Client Sync & DLL Lock Fix**: Resolved the runtime `Unknown argument 'renderingStatus'` error by stopping the locking Next.js dev server on Windows and regenerating the Prisma client (`npx prisma generate`).
-- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 21 test suites passing (97/97 tests), database fully in sync.
+- ✅ **Admin Sidebar High-Contrast Redesign**: Upgraded `.workspaceSidebar--admin` in `app/globals.css` with obsidian dark backdrop (`#0f172a`), luminous sapphire active states, crisp white headers, and distinct slate icons.
+- ✅ **Showroom Save Quote Error Fix**: Fixed Zod schema in `app/api/showroom/quotes/route.ts` to support both `metalType` and `selectedMetal`, and updated `showroom-kiosk.tsx` payload.
+- ✅ **Live Metal Price & Weight Density Sync**: Added automatic density conversion (`convertMetalWeight`) in both `QuoteCalculator.tsx` and `showroom-kiosk.tsx` and enhanced `calculateMetalCost` so prices update dynamically whenever metal (10K, 14K, 18K, Platinum, Silver) is selected.
+- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 21 test suites passing (97/97 tests), clean CI ready.
 
 
 

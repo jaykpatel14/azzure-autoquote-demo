@@ -58,7 +58,9 @@ export function convertMetalWeight(
   toMetal: MetalType
 ): number {
   if (weightGrams <= 0 || fromMetal === toMetal) return Math.max(0, weightGrams);
-  return weightGrams * (METAL_DENSITY[toMetal] / METAL_DENSITY[fromMetal]);
+  const fromDensity = METAL_DENSITY[fromMetal] ?? 13.1;
+  const toDensity = METAL_DENSITY[toMetal] ?? 13.1;
+  return weightGrams * (toDensity / fromDensity);
 }
 
 function resolvePricingProfile(profile: PricingProfileInput = {}) {

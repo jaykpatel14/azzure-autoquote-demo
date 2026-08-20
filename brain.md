@@ -75,6 +75,14 @@ This document logs every key architectural, design, and calculation decision mad
   4. Added application log dumping to Step 5 if `/api/health` fails to respond within 20 attempts.
 - **Rationale**: An unbounded loop suppressing stdout/stderr (`>/dev/null 2>&1`) hides the actual reason for connection failure (such as container crash loop, existing volume role mismatch, or socket permission issues) and causes the runner to hang until timeout cancellation. Bounded retries with diagnostic log outputs guarantee fast failure feedback and immediate visibility into runner issues.
 
+### 25. Admin Sidebar Luxury Dark Contrast, Showroom Save Schema Harmonization & Live Metal Density Pricing Sync
+- **Decision**: 
+  1. **Admin Sidebar Styling & Contrast**: Completely overhauled `.workspaceSidebar--admin` in `app/globals.css` with a high-contrast obsidian palette (`#0f172a`), luminous sapphire highlights (`#0284c7`), crisp white typography (`#ffffff`), and distinct slate navigation icons (`#64748b` -> `#cbd5e1` on hover). Replaced illegible dark-on-dark labels and low-contrast footer panels with translucent glass backgrounds.
+  2. **Showroom Save Quote Error Resolution**: Fixed the Zod validation error `invalid_type on metalType: expected string, received undefined` in `/api/showroom/quotes` by accepting both `metalType` and `selectedMetal` in the request schema (`app/api/showroom/quotes/route.ts`), and ensured `app/showroom/showroom-kiosk.tsx` sends both fields in the save payload.
+  3. **Live Metal Pricing & Density Sync**: Integrated `convertMetalWeight` across both `QuoteCalculator.tsx` and `app/showroom/showroom-kiosk.tsx`. When switching metals (10K, 14K, 18K, Platinum, Silver), metal gram weight automatically adjusts by physical alloy density ratio (e.g. 5.0g 14K $\rightarrow$ 5.95g 18K $\rightarrow$ 8.19g Platinum) and triggers instant real-time live price recalculations with the correct purity and wastage multipliers.
+  4. **Robust Metal String Parsing in Pricing Engine**: Enhanced `calculateMetalCost` in `src/services/pricing.ts` with case-insensitive normalization and keyword matching for 10K, 14K, 18K, Platinum, and Silver.
+- **Rationale**: Retail associates and showroom walk-in customers need immediate, tactile feedback when exploring metal options (e.g. comparing 14K Gold vs Platinum price differences). Eliminating schema field mismatches ensures saving quotes on showroom tablets never crashes with cryptic errors.
+
 ---
 
 ## Last Updated
