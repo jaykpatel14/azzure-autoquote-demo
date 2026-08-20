@@ -5,6 +5,9 @@ export type QuotePdfInput = {
   quoteNumber: string;
   createdAt: Date;
   customerName?: string | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  customerNotes?: string | null;
   customerImageDataUrl?: string | null;
   referenceImageDataUrls?: string[];
   renderingDataUrl?: string | null;
@@ -93,227 +96,6 @@ function drawMetric(
   });
 }
 
-async function generateLegacyQuotePdfBuffer(input: QuotePdfInput) {
-  return await new Promise<Buffer>((resolve, reject) => {
-    const doc = new PDFDocument({
-      size: "A4",
-      margin: 48,
-      bufferPages: true,
-      compress: false
-    });
-
-    const chunks: Buffer[] = [];
-    doc.on("data", (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
-    doc.on("end", () => resolve(Buffer.concat(chunks)));
-    doc.on("error", reject);
-
-    const branding = input.branding ?? "azzure_watermark";
-    doc.info.Title = `${input.quoteNumber}${branding === "white_label" ? "" : " - AI AutoQuote"}`;
-    doc.info.Author = input.companyName;
-    doc.info.Subject = "Customer quote";
-
-    doc.rect(0, 0, doc.page.width, 110).fill("#10172a");
-    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(10).text(input.companyName, 48, 60);
-    doc.fontSize(26).text("Customer Quote", 48, 74);
-    if (branding === "azzure_watermark") {
-      doc.save().fillColor("#c5a03a").opacity(0.12).font("Helvetica-Bold").fontSize(54)
-        .rotate(-32, { origin: [doc.page.width / 2, doc.page.height / 2] })
-        .text("AI AUTOQUOTE", 80, doc.page.height / 2, { width: doc.page.width - 160, align: "center" }).restore();
-    }
-    doc
-      .font("Helvetica")
-      .fontSize(10)
-      .text(`Quote ${input.quoteNumber}`, 48, 48, { align: "right", width: doc.page.width - 96 });
-
-    doc.fillColor("#111827");
-    doc.font("Helvetica-Bold").fontSize(18).text("Approved final price", 48, 140);
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(30)
-      .fillColor("#111827")
-      .text(formatCurrency(input.estimatedPrice), 48, 166);
-    doc
-      .font("Helvetica")
-      .fontSize(11)
-      .fillColor("#6b7280")
-      .text("Approved estimate for customer review and approval.", 48, 208);
-
-    const cardTop = 246;
-    const cardHeight = 190;
-    const cardWidth = doc.page.width - 96;
-    doc.roundedRect(48, cardTop, cardWidth, cardHeight, 14).fill("#f8fafc");
-    doc.roundedRect(48, cardTop, cardWidth, cardHeight, 14).lineWidth(1).stroke("#d1d5db");
-
-    const contentLeft = 64;
-    const contentTop = cardTop + 18;
-    const imageDataUrl = input.customerImageDataUrl?.trim() || null;
-    const customerName = input.customerName?.trim() || input.companyName?.trim() || "Customer";
-    const photoWidth = 168;
-    const photoHeight = 140;
-    const photoX = doc.page.width - 48 - photoWidth;
-    const photoY = cardTop + 18;
-    const detailsRightEdge = photoX - 18;
-    const detailsWidth = detailsRightEdge - contentLeft;
-
-    drawSectionTitle(doc, "Customer", contentLeft, contentTop);
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(19)
-      .fillColor("#111827")
-      .text(customerName, contentLeft, contentTop + 16, {
-        width: detailsWidth,
-        lineGap: 2,
-        ellipsis: true,
-        height: 24
-      });
-    doc
-      .font("Helvetica")
-      .fontSize(9.5)
-      .fillColor("#6b7280")
-      .text(`Quote ${input.quoteNumber}`, contentLeft, contentTop + 40, {
-        width: detailsWidth
-      });
-
-    const summaryRowTop = contentTop + 68;
-    const metricGap = 10;
-    const metricWidth = Math.floor((detailsWidth - metricGap) / 2);
-    drawMetric(doc, "Metal", input.metalType, contentLeft, summaryRowTop, metricWidth);
-    drawMetric(doc, "Prepared on", formatDate(input.createdAt), contentLeft + metricWidth + metricGap, summaryRowTop, metricWidth);
-    drawMetric(
-      doc,
-      "Jewelry type",
-      input.jewelryType || "Not specified",
-      contentLeft,
-      summaryRowTop + 58,
-      metricWidth
-    );
-    drawMetric(
-      doc,
-      "Review status",
-      "Ready for approval",
-      contentLeft + metricWidth + metricGap,
-      summaryRowTop + 58,
-      metricWidth
-    );
-
-    doc.roundedRect(photoX, photoY, photoWidth, photoHeight, 12).fill("#ffffff");
-    doc.roundedRect(photoX, photoY, photoWidth, photoHeight, 12).lineWidth(1).stroke("#d1d5db");
-    if (imageDataUrl) {
-      doc.image(imageDataUrl, photoX + 10, photoY + 10, {
-        fit: [photoWidth - 20, photoHeight - 32],
-        align: "center",
-        valign: "center"
-      });
-    } else {
-      doc
-        .font("Helvetica")
-        .fontSize(9)
-        .fillColor("#6b7280")
-        .text("Analysis photo unavailable", photoX + 12, photoY + 56, {
-          width: photoWidth - 32,
-          align: "center"
-        });
-    }
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(9)
-      .fillColor("#6b7280")
-      .text("Analysis photo", photoX, photoY + photoHeight + 6, {
-        width: photoWidth,
-        align: "center"
-      });
-
-    const detailsTop = cardTop + cardHeight + 24;
-    let y = detailsTop;
-    doc.font("Helvetica-Bold").fontSize(16).fillColor("#111827").text("Quote details", 48, y);
-    y += 34;
-
-    const details = [
-      { label: "Metal weight", value: `${input.metalWeightGrams.toFixed(2)} g` },
-      { label: "Center diamond", value: `${input.centerDiamondCarats.toFixed(2)} ct` },
-      { label: "Side diamonds", value: `${input.sideDiamondCarats.toFixed(2)} ct total` },
-      { label: "Side stone quantity", value: `${input.sideDiamondQuantity}` },
-      { label: "Center shape", value: input.centerShape || "Not specified" },
-      { label: "Center clarity", value: input.centerClarity || "Not specified" },
-      { label: "Setting type", value: input.settingType || "Not specified" },
-      {
-        label: "Final selling price",
-        value:
-          input.estimatedSellingPrice != null
-            ? formatCurrency(input.estimatedSellingPrice)
-            : formatCurrency(input.estimatedPrice)
-      }
-    ];
-
-    for (const detail of details) {
-      doc
-        .roundedRect(48, y - 4, doc.page.width - 96, 34, 8)
-        .fill("#ffffff");
-      doc
-        .roundedRect(48, y - 4, doc.page.width - 96, 34, 8)
-        .lineWidth(1)
-        .stroke("#e5e7eb");
-      doc.font("Helvetica-Bold").fontSize(9).fillColor("#6b7280").text(detail.label.toUpperCase(), 64, y);
-      doc.font("Helvetica").fontSize(12).fillColor("#111827").text(detail.value, 64, y + 12);
-      y += 40;
-    }
-
-    const noteTop = y + 6;
-    doc.roundedRect(48, noteTop, doc.page.width - 96, 74, 12).fill("#eff6ff");
-    doc.roundedRect(48, noteTop, doc.page.width - 96, 74, 12).lineWidth(1).stroke("#bfdbfe");
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(11)
-      .fillColor("#1f2937")
-      .text("Important note", 64, noteTop + 13);
-    doc
-      .font("Helvetica")
-      .fontSize(10)
-      .fillColor("#374151")
-      .text(
-        "Final pricing is an approved estimate, not a manufacturing invoice. Production review may change the quote after CAD, stone verification, or metal confirmation.",
-        64,
-        noteTop + 29,
-        { width: doc.page.width - 128 }
-      );
-
-    doc
-      .font("Helvetica")
-      .fontSize(9)
-      .fillColor("#6b7280")
-      .text(
-        branding === "white_label"
-          ? `Prepared by ${input.companyName}.`
-          : branding === "custom_logo"
-            ? `Prepared for ${input.companyName}. Powered by AI AutoQuote.`
-            : "Prepared by AI AutoQuote. This PDF is generated from saved quote data and is customer-safe.",
-        48,
-        noteTop + 84,
-        { align: "center", width: doc.page.width - 96 }
-      );
-
-    if (input.renderingDataUrl?.trim()) {
-      doc.addPage();
-      doc.rect(0, 0, doc.page.width, doc.page.height).fill("#f5f3ef");
-      doc.font("Helvetica-Bold").fontSize(20).fillColor("#111827").text("Design visualization", 48, 42);
-      doc.font("Helvetica").fontSize(9).fillColor("#6b7280").text(`Quote ${input.quoteNumber}`, 48, 68);
-      doc.image(input.renderingDataUrl, 48, 96, {
-        fit: [doc.page.width - 96, doc.page.height - 190],
-        align: "center",
-        valign: "center"
-      });
-      doc.font("Helvetica").fontSize(8.5).fillColor("#6b7280").text(
-        "AI-generated design visualization. Appearance is illustrative and may differ from the finished product.",
-        48,
-        doc.page.height - 66,
-        { width: doc.page.width - 96, align: "center" }
-      );
-    }
-
-    doc.end();
-  });
-}
-
 function drawContainedImage(
   doc: PDFKit.PDFDocument,
   dataUrl: string | null | undefined,
@@ -382,10 +164,20 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
 
     doc.font("Helvetica-Bold").fontSize(11).fillColor("#6b7280").text("APPROVED ESTIMATE", 48, 126, { characterSpacing: 1.2 });
     doc.font("Helvetica-Bold").fontSize(34).fillColor("#111827").text(formatCurrency(sellingPrice), 48, 145);
-    doc.font("Helvetica").fontSize(10).fillColor("#6b7280").text(
-      `Prepared for ${input.customerName?.trim() || "Customer"} on ${formatDate(input.createdAt)}`,
+
+    const customerDetails = [
+      input.customerName?.trim() ? `Customer: ${input.customerName.trim()}` : null,
+      input.customerEmail?.trim() ? `Email: ${input.customerEmail.trim()}` : null,
+      input.customerPhone?.trim() ? `Phone: ${input.customerPhone.trim()}` : null
+    ].filter(Boolean).join("   ·   ");
+
+    doc.font("Helvetica").fontSize(10).fillColor("#475569").text(
+      customerDetails
+        ? `${customerDetails}\nPrepared on ${formatDate(input.createdAt)}`
+        : `Prepared for Customer on ${formatDate(input.createdAt)}`,
       48,
-      188
+      184,
+      { lineGap: 3 }
     );
 
     const metricY = 220;
@@ -412,6 +204,7 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
     drawPdfHeader(doc, input, "Design Specifications");
     doc.font("Helvetica-Bold").fontSize(16).fillColor("#111827").text("Confirmed quote details", 48, 126);
     const details = [
+      ["Customer Name", input.customerName?.trim() || "Not specified"],
       ["Metal", input.metalType],
       ["Metal weight", `${input.metalWeightGrams.toFixed(2)} g`],
       ["Center diamond", `${input.centerDiamondCarats.toFixed(2)} ct`],
@@ -427,20 +220,32 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
       const column = index % 2;
       const row = Math.floor(index / 2);
       const width = (contentWidth - 12) / 2;
-      drawMetric(doc, label, value, 48 + column * (width + 12), detailY + row * 58, width);
+      drawMetric(doc, label, value, 48 + column * (width + 12), detailY + row * 54, width);
     }
-    detailY += 4 * 58 + 28;
-    doc.roundedRect(48, detailY, contentWidth, 84, 10).fill("#eff6ff");
-    doc.roundedRect(48, detailY, contentWidth, 84, 10).lineWidth(1).stroke("#bfdbfe");
-    doc.font("Helvetica-Bold").fontSize(11).fillColor("#1f2937").text("Estimate terms", 64, detailY + 14);
-    doc.font("Helvetica").fontSize(10).fillColor("#374151").text(
+    detailY += Math.ceil(details.length / 2) * 54 + 14;
+
+    if (input.customerNotes?.trim()) {
+      doc.roundedRect(48, detailY, contentWidth, 54, 8).fill("#f8fafc");
+      doc.roundedRect(48, detailY, contentWidth, 54, 8).lineWidth(1).stroke("#cbd5e1");
+      doc.font("Helvetica-Bold").fontSize(9).fillColor("#475569").text("CUSTOMER DESIGN NOTES", 60, detailY + 10);
+      doc.font("Helvetica").fontSize(9.5).fillColor("#0f172a").text(input.customerNotes.trim(), 60, detailY + 24, {
+        width: contentWidth - 24,
+        lineGap: 2
+      });
+      detailY += 66;
+    }
+
+    doc.roundedRect(48, detailY, contentWidth, 68, 10).fill("#eff6ff");
+    doc.roundedRect(48, detailY, contentWidth, 68, 10).lineWidth(1).stroke("#bfdbfe");
+    doc.font("Helvetica-Bold").fontSize(10).fillColor("#1f2937").text("Estimate terms", 64, detailY + 12);
+    doc.font("Helvetica").fontSize(9).fillColor("#374151").text(
       "This document is an approved estimate, not a manufacturing invoice. Pricing or specifications may change after CAD review, stone verification, sizing confirmation, or final metal assessment.",
       64,
-      detailY + 34,
-      { width: contentWidth - 32, lineGap: 3 }
+      detailY + 28,
+      { width: contentWidth - 32, lineGap: 2 }
     );
-    doc.font("Helvetica-Bold").fontSize(15).fillColor("#111827").text("Final estimate", 48, detailY + 116);
-    doc.font("Helvetica-Bold").fontSize(26).fillColor("#111827").text(formatCurrency(sellingPrice), 48, detailY + 138);
+    doc.font("Helvetica-Bold").fontSize(14).fillColor("#111827").text("Final estimate", 48, detailY + 92);
+    doc.font("Helvetica-Bold").fontSize(24).fillColor("#111827").text(formatCurrency(sellingPrice), 48, detailY + 112);
 
     const additionalReferences = references.slice(1);
     for (let pageStart = 0; pageStart < additionalReferences.length; pageStart += 4) {

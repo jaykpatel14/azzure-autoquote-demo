@@ -134,11 +134,46 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision**: Harmonized the parameter names between `app/showroom/showroom-kiosk.tsx` and `app/api/showroom/quotes/route.ts` to support both `centerDiamondCarats`/`centerCarats` and `sideDiamondCarats`/`sideCarats`, and updated response keys to include both `code` and `displayCode`.
 - **Rationale**: Prevented Zod validation runtime errors (`invalid_type: expected number, received undefined`) during Showroom quote creation and QR code generation when customized design parameters are saved.
 
+### 34. Customer Name, Email, and Phone Contact Capture (Optional for Jewelers, Mandatory for Showroom)
+- **Decision**: Added `customerEmail` and `customerPhone` fields across Prisma `Quote` model, backend services, API endpoints, and both front-end dashboards:
+  1. **Jeweler Dashboard (`components/QuoteCalculator.tsx`)**: Placed a responsive 3-column contact info panel at the top of Step 1 (`Customer Name (Optional)`, `Customer Email (Optional)`, `Phone Number (Optional)`).
+  2. **Showroom Kiosk (`app/showroom/showroom-kiosk.tsx`)**: Placed mandatory contact fields with asterisk indicators (`*`) and input validation at the top of Step 1 (`Your Full Name *`, `Email Address *`, `Phone Number *`). Both `save()` and `handleShareQr()` enforce valid inputs with inline error highlights before submitting.
+  3. **Backend & Prisma**: Updated `model Quote` in `prisma/schema.prisma` (`customerEmail String?`, `customerPhone String?`), synchronized via `npx prisma db push`, and updated `src/services/quotes.ts`, `app/api/quotes/route.ts`, and `app/api/showroom/quotes/route.ts`.
+- **Rationale**: Gives jewelers flexibility when drafting internal estimates while strictly capturing customer lead and contact data from walk-in showroom visitors so quotes can be attributed, followed up, and matched against CustomKing manufacturing orders.
+
+### 35. Unified Text and Photo AI Analysis with Photorealistic Concept Rendering & Customer Details in PDF
+- **Decision**: Made AI analysis input flexible and unified across the entire system:
+  1. **Dual / Single Input Support**: System accepts (a) Text + Photo together, (b) Text description only, or (c) Photo only. If either is omitted, it is seamlessly skipped without throwing missing-field errors.
+  2. **Automated AI 3D Rendering**: Regardless of whether analyzed from text, photo, or both, the system automatically triggers photorealistic 3D image concept generation and returns the image URL with the analysis breakdown.
+  3. **Customer Details in PDF Proposal**: Enhanced `lib/pdf/quote.ts` and `src/services/quote-pdf.ts` to include Customer Name, Email, Phone, and customer design notes directly in the generated customer-facing PDF document.
+- **Rationale**: Empowers both jewelers and showroom customers to explore custom designs even when reference photos aren't available (e.g. text-only concepts) while ensuring every approved quote produces complete specifications, a luxury 3D render, and a personalized PDF proposal.
+
+### 36. Direct Camera Photo Capture and Real-Time Mobile Upload QR Bridge
+- **Decision**: Added two seamless image ingestion paths for Showroom Kiosk and Jeweler Workspace:
+  1. **Direct Camera Capture Button (`photo_camera`)**: Added a dedicated "Take Photo" button with `capture="environment"` in the dropzone for both the Showroom Kiosk ([`app/showroom/showroom-kiosk.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/showroom/showroom-kiosk.tsx)) and Jeweler Workspace ([`components/QuoteCalculator.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/components/QuoteCalculator.tsx)), enabling direct camera snapping on iPads, tablets, mobiles, and webcam laptops.
+  2. **Mobile Photo Upload QR Bridge**:
+     - Added a **"Upload from Phone (QR)"** button that opens a high-resolution QR modal.
+     - When scanned by a customer with their smartphone, it opens `/showroom/mobile-upload?sessionId=...`.
+     - Built `lib/mobile-upload-store.ts` and `app/api/showroom/mobile-upload/route.ts` with validation and ephemeral storage.
+     - Built mobile client page [`app/showroom/mobile-upload/page.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/showroom/mobile-upload/page.tsx) where customers snap/pick photos and tap "Send to Kiosk Screen".
+     - The kiosk/workspace polls the session, automatically receives the uploaded photos, closes the modal, and renders the photos into the quote workspace without requiring manual cable or email transfers.
+- **Rationale**: Walk-in showroom customers frequently carry reference photos and jewelry inspirations on their personal smartphones. Enabling instant phone-to-screen QR upload removes friction, delights customers, and accelerates in-store quote generation.
+
+### 37. Showroom Kiosk Device Privacy: Disallow Local File Explorer Uploads
+- **Decision**: Completely removed the local file-system picker ("Choose Photos") from the public Showroom Kiosk ([`app/showroom/showroom-kiosk.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/showroom/showroom-kiosk.tsx)). The kiosk only provides:
+  1. **Upload from Phone (Scan QR)**: Allows walk-in customers to securely upload images from their own personal smartphones.
+  2. **Take Photo**: Direct camera shutter (`capture="environment"`) to take a photo of physical jewelry on the spot without exposing the device filesystem or gallery.
+- **Rationale**: On shared showroom tablets, iPads, and kiosk touchscreens, opening the local file dialog could expose internal store folders, OS files, or photos taken by previous customers. Restricting uploads to QR and direct camera capture ensures complete privacy and zero data leakage.
+
 ---
 
 ## Last Updated
 - Date: August 20, 2026
-- Status: Production Ready, All 21 Test Suites Passing (91/91 tests), TypeScript zero errors.
+- Status: Production Ready, All 21 Test Suites Passing (91/91 tests), TypeScript zero errors, Production build successful.
+
+
+
+
 
 
 

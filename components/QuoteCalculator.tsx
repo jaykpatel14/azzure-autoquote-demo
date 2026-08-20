@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import QRCode from "qrcode";
 import { convertMetalWeight, type MetalType, type PricingProfileInput } from "@/lib/pricing";
 import { mergeConfidence, median } from "@/lib/statistics";
 import { useToast } from "@/components/toast-provider";
@@ -76,6 +77,8 @@ type QuoteCalculatorProps = {
     quoteId: string;
     quoteNumber: string;
     customerName: string | null;
+    customerEmail?: string | null;
+    customerPhone?: string | null;
     metalType: MetalType;
     metalWeightGrams: number;
     centerDiamondCarats: number;
@@ -203,6 +206,8 @@ export default function QuoteCalculator({
   const [metalType, setMetalType] = useState<MetalType>(initialQuote?.metalType ?? "14K");
   const [quoteMode, setQuoteMode] = useState<QuoteMode>("normal");
   const [customerName, setCustomerName] = useState(initialQuote?.customerName ?? "");
+  const [customerEmail, setCustomerEmail] = useState(initialQuote?.customerEmail ?? "");
+  const [customerPhone, setCustomerPhone] = useState(initialQuote?.customerPhone ?? "");
   const [customerNotes, setCustomerNotes] = useState("");
   const [facets, setFacets] = useState<FacetDraft[]>(() =>
     initialQuote
@@ -253,11 +258,59 @@ export default function QuoteCalculator({
   const [generatingConcept, setGeneratingConcept] = useState(false);
   const [showroomMode, setShowroomMode] = useState(false);
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
+
+  // Mobile Photo Upload QR Bridge States
+  const [showMobileUploadModal, setShowMobileUploadModal] = useState(false);
+  const [mobileUploadSessionId, setMobileUploadSessionId] = useState<string>("");
+  const [mobileUploadQrDataUrl, setMobileUploadQrDataUrl] = useState<string | null>(null);
+
   const { showToast } = useToast();
 
   const facetsRef = useRef<FacetDraft[]>([]);
   const showroomFileInputRef = useRef<HTMLInputElement | null>(null);
   const lastAnalysedDescriptionRef = useRef("");
+
+  async function openMobileUploadQr() {
+    const sessionId = `jeweler_up_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    setMobileUploadSessionId(sessionId);
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const uploadLink = `${origin}/showroom/mobile-upload?sessionId=${sessionId}`;
+    try {
+      const qr = await QRCode.toDataURL(uploadLink, { width: 320, margin: 2 });
+      setMobileUploadQrDataUrl(qr);
+      setShowMobileUploadModal(true);
+    } catch {
+      showToast({ message: "Failed to generate QR code.", variant: "error" });
+    }
+  }
+
+  // Poll for mobile phone uploads when QR modal is open
+  useEffect(() => {
+    if (!showMobileUploadModal || !mobileUploadSessionId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/showroom/mobile-upload?sessionId=${mobileUploadSessionId}`);
+        const data = await res.json();
+        if (data.files && data.files.length > 0) {
+          const convertedFiles: File[] = await Promise.all(
+            data.files.map(async (f: { name: string; type: string; dataUrl: string }, idx: number) => {
+              const fetchRes = await fetch(f.dataUrl);
+              const blob = await fetchRes.blob();
+              return new File([blob], f.name || `phone_photo_${idx + 1}.jpg`, { type: f.type || "image/jpeg" });
+            })
+          );
+          handleFiles(convertedFiles);
+          setShowMobileUploadModal(false);
+          showToast({ message: `Received ${convertedFiles.length} photo(s) from phone!`, variant: "success" });
+        }
+      } catch {
+        // ignore polling errors
+      }
+    }, 1800);
+
+    return () => clearInterval(interval);
+  }, [showMobileUploadModal, mobileUploadSessionId]);
 
   function toggleNotes(id: string) {
     setExpandedNotes((previous) => {
@@ -656,13 +709,103 @@ export default function QuoteCalculator({
   }
 
   async function analyseAll() {
-    if (!facets.length) {
-      setStatus("Add at least one jewelry photo first.");
-      showToast({
-        message: "Add at least one jewelry photo first.",
-        variant: "warning",
-        autoDismiss: false
-      });
+    if (!canEdit) return;
+
+    if (!facetsRef.current.length) {
+      const description = customerNotes.trim();
+      if (!description) {
+        setStatus("Please add a reference photo or describe your custom design.");
+        showToast({
+          message: "Please add a reference photo or describe your custom design to analyze.",
+          variant: "warning",
+          autoDismiss: false
+        });
+        return;
+      }
+
+      const textFacetId = uid();
+      const textFacet: FacetDraft = {
+        id: textFacetId,
+        file: undefined,
+        previewUrl: null,
+        isObjectUrl: false,
+        title: "Design Concept",
+        description,
+        showDescription: false,
+        status: "processing",
+        stageIndex: 0,
+        output: null,
+        error: ""
+      };
+      setFacets([textFacet]);
+      setActiveFacetId(textFacetId);
+      setStatus("Analyzing design description with AI...");
+      setSavedQuote(null);
+      setRenderingImageUrl(null);
+
+      const pulser = window.setInterval(() => {
+        setFacets((current) =>
+          current.map((f) =>
+            f.id === textFacetId ? { ...f, stageIndex: (f.stageIndex + 1) % ANALYSIS_STAGES.length } : f
+          )
+        );
+      }, 800);
+
+      try {
+        const formData = new FormData();
+        formData.append("metalType", metalType);
+        formData.append("description", description);
+        const response = await fetch("/api/analyze", { method: "POST", body: formData });
+        const responseText = await response.text();
+        const result = (responseText ? JSON.parse(responseText) : {}) as FacetOutput;
+        if (!response.ok) {
+          throw new Error((result as unknown as { error?: string }).error || "Analysis failed.");
+        }
+
+        setFacets([
+          {
+            ...textFacet,
+            status: "done",
+            previewUrl: result.renderingImageUrl || null,
+            output: {
+              analysisId: result.analysisId,
+              jewelryType: result.jewelryType || "Jewelry",
+              centerShape: result.centerShape ?? "round",
+              centerClarity: DEFAULT_COLOR_CLARITY,
+              settingType: result.settingType ?? "prong",
+              metalWeightGrams: result.metalWeightGrams,
+              centerDiamondCarats: result.centerDiamondCarats,
+              sideDiamondCarats: result.sideDiamondCarats,
+              sideDiamondQuantity: result.sideDiamondQuantity,
+              hasWeddingBand: result.hasWeddingBand ?? false,
+              isTwoTone: result.isTwoTone ?? false,
+              confidence: result.confidence,
+              notes: result.notes,
+              assumptions: result.assumptions,
+              renderingImageUrl: result.renderingImageUrl ?? null
+            }
+          }
+        ]);
+        if (result.renderingImageUrl) {
+          setRenderingImageUrl(result.renderingImageUrl);
+        }
+        setStatus("Analysis and 3D visual concept generated.");
+        setDraftIsFresh(false);
+      } catch (error) {
+        setFacets([
+          {
+            ...textFacet,
+            status: "error",
+            error: error instanceof Error ? error.message : "Analysis failed."
+          }
+        ]);
+        showToast({
+          message: error instanceof Error ? error.message : "Analysis failed.",
+          variant: "error"
+        });
+      } finally {
+        window.clearInterval(pulser);
+      }
       return;
     }
 
@@ -726,6 +869,8 @@ export default function QuoteCalculator({
           analysisId: aggregateQuote.analysisId,
           analysisIds: completedFacets.map((facet) => facet.output?.analysisId).filter(Boolean),
           customerName,
+          customerEmail,
+          customerPhone,
           quoteMode,
           metalType,
           metalWeightGrams: aggregateQuote.metalWeightGrams,
@@ -823,12 +968,65 @@ export default function QuoteCalculator({
       <QuoteCreationLayout
         steps={
           <>
-          {/* ── Step 1: Upload Reference Photos + Description ── */}
+          {/* ── Step 1: Customer Info, Upload Reference Photos & Description ── */}
           <QuoteStepCard
             number="01"
-            title="Reference Photos & Description"
-            description="Upload inspiration photos and describe what your customer wants."
+            title="Customer & Design Details"
+            description="Add customer contact details (optional) and reference design photos."
           >
+            {/* Customer Contact Details (Optional on Jeweler Dashboard) */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: 12,
+                marginBottom: 18,
+                padding: "12px 14px",
+                background: "var(--color-surface-container-low, rgba(0,0,0,0.02))",
+                borderRadius: "var(--radius-md, 10px)",
+                border: "1px solid var(--color-outline-variant, #e2e8f0)"
+              }}
+            >
+              <div className="field" style={{ margin: 0 }}>
+                <label htmlFor="customerName" style={{ fontSize: "0.8125rem", fontWeight: 600 }}>
+                  Customer Name <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span>
+                </label>
+                <input
+                  id="customerName"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="e.g. Eleanor Vance"
+                  disabled={!canEdit}
+                />
+              </div>
+              <div className="field" style={{ margin: 0 }}>
+                <label htmlFor="customerEmail" style={{ fontSize: "0.8125rem", fontWeight: 600 }}>
+                  Customer Email <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span>
+                </label>
+                <input
+                  id="customerEmail"
+                  type="email"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  placeholder="e.g. eleanor@example.com"
+                  disabled={!canEdit}
+                />
+              </div>
+              <div className="field" style={{ margin: 0 }}>
+                <label htmlFor="customerPhone" style={{ fontSize: "0.8125rem", fontWeight: 600 }}>
+                  Phone Number <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span>
+                </label>
+                <input
+                  id="customerPhone"
+                  type="tel"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="e.g. (212) 555-0198"
+                  disabled={!canEdit}
+                />
+              </div>
+            </div>
+
             <div className="field quoteDesignDescription">
               <div className="charCountHeader">
                 <label htmlFor="customerNotes">Describe the requested design <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span></label>
@@ -865,23 +1063,38 @@ export default function QuoteCalculator({
                 <strong>Add customer reference photos</strong>
                 <span className="muted small">JPG, PNG, or WEBP · up to 10 MB each</span>
               </div>
-              <div className="dropzoneActions">
+              <div className="dropzoneActions" style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
                 <label className="button primary button--sm">
                   <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} />
-                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>photo_camera</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>photo_camera</span>
                   Take photo
                 </label>
                 <label className="button secondary button--sm">
                   <input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} />
-                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>folder_open</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>folder_open</span>
                   Choose files
                 </label>
+                <button
+                  type="button"
+                  className="button secondary button--sm"
+                  onClick={openMobileUploadQr}
+                  disabled={!canEdit}
+                  style={{
+                    background: "rgba(201, 168, 76, 0.12)",
+                    borderColor: "rgba(201, 168, 76, 0.35)",
+                    color: "var(--color-primary, #b8933b)",
+                    fontWeight: 600
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>qr_code_scanner</span>
+                  Upload from Phone (QR)
+                </button>
               </div>
             </div>
 
             {/* Photo thumbnail strip & Action Buttons */}
-            {facets.length > 0 ? (
-              <div style={{ marginTop: 16 }}>
+            <div style={{ marginTop: 16 }}>
+              {facets.length > 0 ? (
                 <div className="facetThumbRail" aria-label="Uploaded photos" style={{ marginBottom: 16 }}>
                   {facets.map((facet, index) => (
                     <button
@@ -899,28 +1112,30 @@ export default function QuoteCalculator({
                     </button>
                   ))}
                 </div>
+              ) : null}
 
-                {/* Explicit Analyze Button */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-                  <button
-                    type="button"
-                    className="button primary button--md"
-                    onClick={analyseAll}
-                    disabled={!canEdit || facets.some((f) => f.status === "processing")}
+              {/* Explicit Analyze Button */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+                <button
+                  type="button"
+                  className="button primary button--md"
+                  onClick={analyseAll}
+                  disabled={!canEdit || facets.some((f) => f.status === "processing") || (!facets.length && !customerNotes.trim())}
+                >
+                  <span
+                    className={`material-symbols-outlined${facets.some((f) => f.status === "processing") ? " ai-pulse" : ""}`}
+                    style={{ fontSize: 18 }}
                   >
-                    <span
-                      className={`material-symbols-outlined${facets.some((f) => f.status === "processing") ? " ai-pulse" : ""}`}
-                      style={{ fontSize: 18 }}
-                    >
-                      auto_awesome
-                    </span>
-                    {facets.some((f) => f.status === "processing")
-                      ? "Analyzing with AI…"
-                      : facets.some((f) => f.status === "done")
-                      ? "Re-analyze with AI"
-                      : "Analyze with AI"}
-                  </button>
+                    auto_awesome
+                  </span>
+                  {facets.some((f) => f.status === "processing")
+                    ? "Analyzing with AI…"
+                    : facets.some((f) => f.status === "done")
+                    ? "Re-analyze with AI"
+                    : "Analyze with AI"}
+                </button>
 
+                {facets.length > 0 ? (
                   <button
                     type="button"
                     className="button secondary button--sm"
@@ -930,21 +1145,7 @@ export default function QuoteCalculator({
                     <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
                     Clear Photos
                   </button>
-                </div>
-              </div>
-            ) : null}
-
-            {/* Customer info fields */}
-            <div className="fields" style={{ marginTop: 16 }}>
-              <div className="field">
-                <label htmlFor="customerName">Customer name <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span></label>
-                <input
-                  id="customerName"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="e.g. Eleanor Vance"
-                  disabled={!canEdit}
-                />
+                ) : null}
               </div>
             </div>
           </QuoteStepCard>
@@ -1354,6 +1555,36 @@ export default function QuoteCalculator({
           </QuoteBuilderPreview>
         }
       />
+
+      {/* Mobile Photo Upload QR Modal */}
+      {showMobileUploadModal ? (
+        <div className="showroomModalBackdrop" onClick={() => setShowMobileUploadModal(false)}>
+          <div className="showroomQrCard" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
+            <button className="showroomCloseBtn" type="button" onClick={() => setShowMobileUploadModal(false)}>
+              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
+            </button>
+
+            <div className="showroomModalIcon" style={{ width: 56, height: 56, marginBottom: 12 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 28 }}>smartphone</span>
+            </div>
+            <h3 style={{ fontSize: "1.375rem", margin: "0 0 8px" }}>Upload Photos from Your Phone</h3>
+            <p style={{ margin: "0 0 16px", fontSize: "0.875rem", color: "#cbd5e1" }}>
+              Scan this QR code with your phone camera to snap live photos or select reference images from your gallery to send directly into this quote.
+            </p>
+
+            {mobileUploadQrDataUrl ? (
+              <div className="showroomQrWrap" style={{ padding: 14 }}>
+                <img src={mobileUploadQrDataUrl} alt="Scan Mobile Upload QR Code" />
+              </div>
+            ) : null}
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 18, color: "#e6cb78" }}>
+              <span className="material-symbols-outlined ai-pulse" style={{ fontSize: 20 }}>sync</span>
+              <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>Waiting for photos from phone…</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

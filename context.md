@@ -246,11 +246,17 @@ azzure-autoquote-mvp/
 - ✅ **Mobile QR Code Share & PDF Modal**:
   - Added **"Share with Others (Scan QR)"** below the Save Quote button.
   - Generates high-resolution client-side QR codes pointing to the public quote view (`/q/[code]`) with 1-click PDF download and copyable links for walk-in showroom customers.
-- ✅ **High-Contrast Text Fix for Checkboxes**:
-  - Enforced crisp `#0f172a` black text for matching wedding band and two-tone gold options across all dark and light contexts.
-- ✅ **AI Prompt Benchmark Calibration**:
-  - Enhanced `lib/ai/providers/openai.ts` with standard casting benchmarks for ring styles (solitaire 3.0-4.2g, hidden halo/cathedral 4.2-5.4g, halo/3-stone 5.2-7.5g, platinum density multiplier 1.65x) to ensure precise physical metal and diamond estimation.
-- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 21 test suites passing (91/91 tests), clean CI ready.
+- ✅ **Unified Text and Photo AI Analysis with Automatic 3D Rendering**:
+  - **Flexible Inputs**: System now accepts (a) Text description + Reference photo together, (b) Text description only, or (c) Reference photo only. If either is omitted, it is seamlessly skipped.
+  - **Automatic AI 3D Image Rendering**: Every analysis automatically generates a photorealistic 3D visual concept based on the piece specifications and description.
+  - **Jeweler & Showroom Dashboards**: Updated [`components/QuoteCalculator.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/components/QuoteCalculator.tsx) and [`app/showroom/showroom-kiosk.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/showroom/showroom-kiosk.tsx) so the Analyze button is always available and enabled whether photos, text, or both are supplied.
+- ✅ **Customer Name and Contact Details in PDF Proposals**:
+  - Enhanced [`lib/pdf/quote.ts`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/lib/pdf/quote.ts) and [`src/services/quote-pdf.ts`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/src/services/quote-pdf.ts) to display Customer Name, Email, Phone Number, and Customer Design Notes directly on the generated PDF quote proposal.
+- ✅ **Camera Capture & Real-Time Mobile Upload QR Bridge**:
+  - **Camera Capture Button (`photo_camera`)**: Added dedicated "Take Photo" button with `capture="environment"` in dropzones for Showroom Kiosk and Jeweler Workspace for instant photo shooting on tablet/webcam/phone.
+  - **Upload from Phone (Scan QR)**: Added dedicated QR button and modal. Customers scan the QR on the kiosk screen with their phone, upload reference photos via mobile page ([`app/showroom/mobile-upload/page.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/showroom/mobile-upload/page.tsx)), and photos automatically load into the showroom screen in real time via [`app/api/showroom/mobile-upload/route.ts`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/api/showroom/mobile-upload/route.ts).
+  - **Showroom Kiosk Device Privacy**: Removed local device file browsing ("Choose Photos") from the public Showroom Kiosk to protect the store's private photos and device filesystem.
+- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 21 test suites passing (91/91 tests), `npm run build` completed successfully.
 
 
 

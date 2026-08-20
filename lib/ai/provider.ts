@@ -33,9 +33,9 @@ export interface JewelryAnalysisProvider {
   readonly model: string;
   readonly modelVersion: string;
   readonly promptVersion: string;
-  moderateImage(input: { imageDataUrl: string }): Promise<ModerationSnapshot>;
+  moderateImage(input: { imageDataUrl?: string | null; text?: string | null }): Promise<ModerationSnapshot>;
   analyzeImage(input: {
-    imageDataUrl: string;
+    imageDataUrl?: string | null;
     selectedMetal: string;
     attemptNumber: number;
     customerDescription?: string;

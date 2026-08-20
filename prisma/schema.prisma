@@ -291,6 +291,8 @@ model Quote {
   order                 Order?
   quoteNumber           String
   customerName          String?
+  customerEmail         String?
+  customerPhone         String?
   metalType             String
   metalWeightGrams      Decimal
   centerDiamondCarats   Decimal

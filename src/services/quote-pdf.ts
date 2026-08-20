@@ -69,6 +69,9 @@ export async function generateAndStoreQuotePdf(params: {
     quoteNumber: quote.quoteNumber,
     createdAt: quote.createdAt,
     customerName: quote.customerName?.trim() || quote.company.name || params.customerNameFallback || "Customer",
+    customerEmail: quote.customerEmail?.trim() || null,
+    customerPhone: quote.customerPhone?.trim() || null,
+    customerNotes: quote.analysis?.notes || null,
     customerImageDataUrl: sourceImageDataUrl,
     referenceImageDataUrls: referenceImageDataUrls.length
       ? referenceImageDataUrls

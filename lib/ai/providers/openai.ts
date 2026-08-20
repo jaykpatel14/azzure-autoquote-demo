@@ -51,7 +51,7 @@ function buildPrompt(
     "You are an expert master jeweler and custom jewelry production estimator.",
     `This is independent review ${attemptNumber}.`,
     `The currently selected finished metal is ${metal}.`,
-    "Estimate the piece from the image and return a realistic production assessment.",
+    "Estimate the piece from the design description and/or reference image and return a realistic production assessment.",
     "Benchmark guidelines for realistic finished casting weights (Standard US finger size 6.5-7 in 14K Gold):",
     "- Dainty plain solitaire (1.5-1.8mm shank): 3.0g to 4.2g.",
     "- Classic solitaire with hidden halo or cathedral prongs: 4.2g to 5.4g.",
@@ -76,7 +76,7 @@ function buildPrompt(
     "- confidence: low, medium, or high.",
     "- assumptions: list of key assumptions made during analysis.",
     customerDescription?.trim()
-      ? `Customer-provided design description: ${customerDescription.trim()}. Use it as supporting context, but verify against visible visual evidence.`
+      ? `Customer-provided design description: ${customerDescription.trim()}. Match specifications mentioned in the description.`
       : "No customer description was supplied."
   ];
 
@@ -133,25 +133,63 @@ export async function createOpenAIJewelryAnalysisProvider(
     model,
     modelVersion,
     promptVersion,
-    async moderateImage({ imageDataUrl }): Promise<ModerationSnapshot> {
-      const response = await client.moderations.create({
-        model: "omni-moderation-latest",
-        input: [
-          {
-            type: "image_url",
-            image_url: { url: imageDataUrl }
-          }
-        ]
-      });
+    async moderateImage({ imageDataUrl, text }: { imageDataUrl?: string | null; text?: string | null }): Promise<ModerationSnapshot> {
+      if (imageDataUrl) {
+        const response = await client.moderations.create({
+          model: "omni-moderation-latest",
+          input: [
+            {
+              type: "image_url",
+              image_url: { url: imageDataUrl }
+            }
+          ]
+        });
+
+        return {
+          model: response.model,
+          flagged: response.results.some((result) => result.flagged),
+          rawResponse: response
+        };
+      }
+
+      if (text?.trim()) {
+        const response = await client.moderations.create({
+          input: text
+        });
+
+        return {
+          model: response.model,
+          flagged: response.results.some((result) => result.flagged),
+          rawResponse: response
+        };
+      }
 
       return {
-        model: response.model,
-        flagged: response.results.some((result) => result.flagged),
-        rawResponse: response
+        model: "omni-moderation-latest",
+        flagged: false,
+        rawResponse: null
       };
     },
     async analyzeImage({ imageDataUrl, selectedMetal, attemptNumber, customerDescription, learnedGuidance }): Promise<JewelryReviewSnapshot> {
       const start = Date.now();
+      const contentList: Array<
+        | { type: "input_text"; text: string }
+        | { type: "input_image"; image_url: string; detail: "high" }
+      > = [
+        {
+          type: "input_text",
+          text: buildPrompt(selectedMetal, attemptNumber, customerDescription, learnedGuidance)
+        }
+      ];
+
+      if (imageDataUrl) {
+        contentList.push({
+          type: "input_image",
+          image_url: imageDataUrl,
+          detail: "high"
+        });
+      }
+
       const response = await client.responses.parse({
         model,
         store: false,
@@ -163,17 +201,7 @@ export async function createOpenAIJewelryAnalysisProvider(
           },
           {
             role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: buildPrompt(selectedMetal, attemptNumber, customerDescription, learnedGuidance)
-              },
-              {
-                type: "input_image",
-                image_url: imageDataUrl,
-                detail: "high"
-              }
-            ]
+            content: contentList
           }
         ],
         text: {

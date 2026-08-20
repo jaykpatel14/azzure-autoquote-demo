@@ -62,27 +62,44 @@ export async function POST(request: Request) {
     const selectedMetal = metalTypeSchema.parse(form.get("metalType") || "14K");
     const customerDescription = String(form.get("description") || "").trim().slice(0, 1000);
 
-    if (!(image instanceof File)) {
-      return NextResponse.json({ error: "Image is required." }, { status: 400 });
-    }
-    if (!ALLOWED_TYPES.has(image.type) || image.size > MAX_FILE_SIZE) {
+    const hasImage = image instanceof File && image.size > 0;
+    const hasDescription = customerDescription.length > 0;
+
+    if (!hasImage && !hasDescription) {
       return NextResponse.json(
-        { error: "Use a JPG, PNG, or WEBP image smaller than 10 MB." },
+        { error: "Please upload a reference photo or describe your custom design to analyze." },
         { status: 400 }
       );
     }
 
-    const bytes = Buffer.from(await image.arrayBuffer());
-    if (!hasAllowedImageSignature(bytes, image.type)) {
-      return NextResponse.json(
-        { error: "The uploaded file does not match its declared image type." },
-        { status: 400 }
-      );
+    let imageDataUrl: string | null = null;
+    let imageType: string | null = null;
+    let imageSizeBytes: number = 0;
+    let bytes: Buffer | null = null;
+
+    if (hasImage && image instanceof File) {
+      if (!ALLOWED_TYPES.has(image.type) || image.size > MAX_FILE_SIZE) {
+        return NextResponse.json(
+          { error: "Use a JPG, PNG, or WEBP image smaller than 10 MB." },
+          { status: 400 }
+        );
+      }
+
+      bytes = Buffer.from(await image.arrayBuffer());
+      if (!hasAllowedImageSignature(bytes, image.type)) {
+        return NextResponse.json(
+          { error: "The uploaded file does not match its declared image type." },
+          { status: 400 }
+        );
+      }
+
+      imageType = image.type;
+      imageSizeBytes = image.size;
+      imageDataUrl = `data:${image.type};base64,${bytes.toString("base64")}`;
     }
 
     reservation = await reserveMonthlyUsage(companyContext.company.id);
 
-    const imageDataUrl = `data:${image.type};base64,${bytes.toString("base64")}`;
     const provider = await getJewelryAnalysisProvider();
     const configuredReviewCount = Number(process.env.AI_REVIEW_COUNT || 3);
     const configuredLimit = Number.isFinite(configuredReviewCount)
@@ -134,8 +151,8 @@ export async function POST(request: Request) {
         modelVersion: provider.modelVersion,
         promptVersion: provider.promptVersion,
         imageDataUrl: null,
-        sourceImageMimeType: image.type,
-        sourceImageSizeBytes: image.size,
+        sourceImageMimeType: imageType,
+        sourceImageSizeBytes: imageSizeBytes,
         selectedMetal,
         reviewCount,
         status: "PROCESSING"
@@ -143,24 +160,27 @@ export async function POST(request: Request) {
     });
     analysisId = analysis.id;
 
-    const analysisImageStorageKey = buildAnalysisImageStorageKey(companyContext.company.id, analysis.id, image.type);
-    const storedImage = features.s3ImagePersistence
-      ? await storeAnalysisImageInS3({ key: analysisImageStorageKey, buffer: bytes, contentType: image.type })
-      : null;
+    if (bytes && imageType) {
+      const analysisImageStorageKey = buildAnalysisImageStorageKey(companyContext.company.id, analysis.id, imageType);
+      const storedImage = features.s3ImagePersistence
+        ? await storeAnalysisImageInS3({ key: analysisImageStorageKey, buffer: bytes, contentType: imageType })
+        : null;
 
-    await prisma.aiAnalysis.update({
-      where: { id: analysis.id },
-      data: storedImage
-        ? {
-            sourceImageStorageKey: storedImage.key,
-            imageDataUrl: null
-          }
-        : { imageDataUrl: features.s3ImagePersistence ? imageDataUrl : null }
-    });
+      await prisma.aiAnalysis.update({
+        where: { id: analysis.id },
+        data: storedImage
+          ? {
+              sourceImageStorageKey: storedImage.key,
+              imageDataUrl: null
+            }
+          : { imageDataUrl: features.s3ImagePersistence ? imageDataUrl : null }
+      });
+    }
 
     const moderation = await runModerationCheck({
       provider,
-      imageDataUrl
+      imageDataUrl,
+      text: customerDescription
     });
 
     await prisma.aiAnalysis.update({

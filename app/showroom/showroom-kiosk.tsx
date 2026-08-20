@@ -25,6 +25,8 @@ type Analysis = {
   settingType?: string;
   hasWeddingBand?: boolean;
   isTwoTone?: boolean;
+  renderingImageUrl?: string | null;
+  renderingStatus?: string;
 };
 
 const KIOSK_ANALYSIS_STAGES = [
@@ -140,12 +142,23 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const [warning, setWarning] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // Customer Contact Details (Mandatory on Showroom)
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [contactErrors, setContactErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
+
   // QR Code Share Modal States
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
   const [qrShareUrl, setQrShareUrl] = useState<string>("");
   const [sharing, setSharing] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Mobile Photo Upload QR Bridge States
+  const [showMobileUploadModal, setShowMobileUploadModal] = useState(false);
+  const [mobileUploadSessionId, setMobileUploadSessionId] = useState<string>("");
+  const [mobileUploadQrDataUrl, setMobileUploadQrDataUrl] = useState<string | null>(null);
 
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
   const debouncedAnalysis = useDebouncedValue(analysis, 300);
@@ -154,6 +167,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setStarted(false);
     setFiles([]);
     setDescription("");
+    setCustomerName("");
+    setCustomerEmail("");
+    setCustomerPhone("");
+    setContactErrors({});
     setAnalyzing(false);
     setStageIndex(0);
     setAnalysis(null);
@@ -170,6 +187,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setShowQrModal(false);
     setQrCodeDataUrl(null);
     setQrShareUrl("");
+    setShowMobileUploadModal(false);
+    setMobileUploadSessionId("");
+    setMobileUploadQrDataUrl(null);
   }, []);
 
   useEffect(() => {
@@ -194,6 +214,50 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   }, [reset]);
 
   useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
+
+  async function openMobileUploadQr() {
+    const sessionId = `up_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    setMobileUploadSessionId(sessionId);
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const uploadLink = `${origin}/showroom/mobile-upload?sessionId=${sessionId}&token=${encodeURIComponent(token)}`;
+    try {
+      const qr = await QRCode.toDataURL(uploadLink, { width: 320, margin: 2 });
+      setMobileUploadQrDataUrl(qr);
+      setShowMobileUploadModal(true);
+    } catch {
+      setError("Failed to generate mobile upload QR code.");
+    }
+  }
+
+  // Poll for mobile phone uploads when QR modal is open
+  useEffect(() => {
+    if (!showMobileUploadModal || !mobileUploadSessionId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/showroom/mobile-upload?sessionId=${mobileUploadSessionId}`);
+        const data = await res.json();
+        if (data.files && data.files.length > 0) {
+          const convertedFiles: File[] = await Promise.all(
+            data.files.map(async (f: { name: string; type: string; dataUrl: string }, idx: number) => {
+              const fetchRes = await fetch(f.dataUrl);
+              const blob = await fetchRes.blob();
+              return new File([blob], f.name || `phone_photo_${idx + 1}.jpg`, { type: f.type || "image/jpeg" });
+            })
+          );
+          setFiles((prev) => [...prev, ...convertedFiles].slice(0, 3));
+          setAnalysis(null);
+          setRenderingImageUrl(null);
+          setError("");
+          setShowMobileUploadModal(false);
+        }
+      } catch {
+        // ignore background poll errors
+      }
+    }, 1800);
+
+    return () => clearInterval(interval);
+  }, [showMobileUploadModal, mobileUploadSessionId]);
 
   const estimatedSellingPrice = useMemo(() => {
     if (!debouncedAnalysis || !pricing.pricingTier) return 0;
@@ -272,7 +336,14 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
   async function runAnalysis(selectedFiles?: File[]) {
     const filesToAnalyze = selectedFiles || files;
-    if (!filesToAnalyze.length || analyzing) return;
+    const hasFiles = filesToAnalyze.length > 0;
+    const hasDesc = description.trim().length > 0;
+    if ((!hasFiles && !hasDesc) || analyzing) {
+      if (!hasFiles && !hasDesc) {
+        setError("Please upload a reference photo or describe your custom design.");
+      }
+      return;
+    }
 
     setAnalyzing(true);
     setStageIndex(0);
@@ -285,19 +356,36 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     }, 900);
 
     try {
-      const results: Analysis[] = [];
-      for (const file of filesToAnalyze) {
+      if (hasFiles) {
+        const results: Analysis[] = [];
+        for (const file of filesToAnalyze) {
+          const form = new FormData();
+          form.set("token", token);
+          form.set("image", file);
+          if (hasDesc) form.set("description", description.trim());
+          const response = await fetch("/api/showroom/analyze", { method: "POST", body: form });
+          const body = await response.json();
+          if (!response.ok) throw new Error(body.error || "Analysis failed.");
+          results.push(body);
+        }
+        setAnalysisIds(results.map((r) => r.analysisId));
+        setAnalysis(results[0]);
+        if (results[0].renderingImageUrl) {
+          setRenderingImageUrl(results[0].renderingImageUrl);
+        }
+      } else {
         const form = new FormData();
         form.set("token", token);
-        form.set("image", file);
-        form.set("description", description);
+        form.set("description", description.trim());
         const response = await fetch("/api/showroom/analyze", { method: "POST", body: form });
         const body = await response.json();
         if (!response.ok) throw new Error(body.error || "Analysis failed.");
-        results.push(body);
+        setAnalysisIds([body.analysisId]);
+        setAnalysis(body);
+        if (body.renderingImageUrl) {
+          setRenderingImageUrl(body.renderingImageUrl);
+        }
       }
-      setAnalysisIds(results.map((r) => r.analysisId));
-      setAnalysis(results[0]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Analysis failed.");
     } finally {
@@ -341,8 +429,34 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     }
   }
 
+  function validateContactInfo(): boolean {
+    const errors: { name?: string; email?: string; phone?: string } = {};
+    if (!customerName.trim()) {
+      errors.name = "Please enter your full name.";
+    }
+    if (!customerEmail.trim()) {
+      errors.email = "Please enter your email address.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
+      errors.email = "Please enter a valid email address.";
+    }
+    if (!customerPhone.trim()) {
+      errors.phone = "Please enter your phone number.";
+    } else if (customerPhone.trim().replace(/\D/g, "").length < 7) {
+      errors.phone = "Please enter a valid phone number (at least 7 digits).";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setContactErrors(errors);
+      setError("Please fill in your name, email, and phone number to continue.");
+      return false;
+    }
+    setContactErrors({});
+    return true;
+  }
+
   async function save() {
     if (!analysis) return;
+    if (!validateContactInfo()) return;
     setError("");
     setSaving(true);
     setSavingProgress(0);
@@ -359,6 +473,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
           token,
           description,
           customerNotes: description,
+          customerName: customerName.trim(),
+          customerEmail: customerEmail.trim(),
+          customerPhone: customerPhone.trim(),
           analysisIds,
           primaryAnalysisId: analysis.analysisId,
           metalType: analysis.selectedMetal,
@@ -408,6 +525,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
         if (!analysis) {
           throw new Error("Please upload a design and run analysis before sharing.");
         }
+        if (!validateContactInfo()) {
+          setSharing(false);
+          return;
+        }
         setSaving(true);
         setSavingProgress(0);
         const progressTimer = window.setInterval(() => {
@@ -421,6 +542,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
             token,
             description,
             customerNotes: description,
+            customerName: customerName.trim(),
+            customerEmail: customerEmail.trim(),
+            customerPhone: customerPhone.trim(),
             analysisIds,
             primaryAnalysisId: analysis.analysisId,
             metalType: analysis.selectedMetal,
@@ -614,9 +738,91 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
               <>
                 <QuoteStepCard
                   number="01"
-                  title="Show us what you love"
-                  description="Upload a reference photo or describe your custom design for an instant AI concept."
+                  title="Your Details & Design Inspiration"
+                  description="Please provide your contact details (mandatory) and reference photo or design description."
                 >
+                  {/* Mandatory Customer Contact Section for Showroom */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                      gap: 12,
+                      marginBottom: 18,
+                      padding: "14px 16px",
+                      background: "rgba(248, 250, 252, 0.95)",
+                      borderRadius: 12,
+                      border: Object.keys(contactErrors).length > 0 ? "1px solid #fca5a5" : "1px solid #e2e8f0"
+                    }}
+                  >
+                    <div className="field" style={{ margin: 0 }}>
+                      <label htmlFor="showroomCustomerName" style={{ fontSize: "0.8125rem", fontWeight: 700, color: "#0f172a" }}>
+                        Your Full Name <span style={{ color: "#ef4444" }}>*</span>
+                      </label>
+                      <input
+                        id="showroomCustomerName"
+                        value={customerName}
+                        onChange={(e) => {
+                          setCustomerName(e.target.value);
+                          if (contactErrors.name) setContactErrors((prev) => ({ ...prev, name: undefined }));
+                        }}
+                        placeholder="e.g. Eleanor Vance"
+                        style={{
+                          borderColor: contactErrors.name ? "#ef4444" : undefined,
+                          color: "#0f172a"
+                        }}
+                      />
+                      {contactErrors.name ? (
+                        <p style={{ color: "#ef4444", fontSize: "0.75rem", margin: "4px 0 0" }}>{contactErrors.name}</p>
+                      ) : null}
+                    </div>
+
+                    <div className="field" style={{ margin: 0 }}>
+                      <label htmlFor="showroomCustomerEmail" style={{ fontSize: "0.8125rem", fontWeight: 700, color: "#0f172a" }}>
+                        Email Address <span style={{ color: "#ef4444" }}>*</span>
+                      </label>
+                      <input
+                        id="showroomCustomerEmail"
+                        type="email"
+                        value={customerEmail}
+                        onChange={(e) => {
+                          setCustomerEmail(e.target.value);
+                          if (contactErrors.email) setContactErrors((prev) => ({ ...prev, email: undefined }));
+                        }}
+                        placeholder="e.g. eleanor@example.com"
+                        style={{
+                          borderColor: contactErrors.email ? "#ef4444" : undefined,
+                          color: "#0f172a"
+                        }}
+                      />
+                      {contactErrors.email ? (
+                        <p style={{ color: "#ef4444", fontSize: "0.75rem", margin: "4px 0 0" }}>{contactErrors.email}</p>
+                      ) : null}
+                    </div>
+
+                    <div className="field" style={{ margin: 0 }}>
+                      <label htmlFor="showroomCustomerPhone" style={{ fontSize: "0.8125rem", fontWeight: 700, color: "#0f172a" }}>
+                        Phone Number <span style={{ color: "#ef4444" }}>*</span>
+                      </label>
+                      <input
+                        id="showroomCustomerPhone"
+                        type="tel"
+                        value={customerPhone}
+                        onChange={(e) => {
+                          setCustomerPhone(e.target.value);
+                          if (contactErrors.phone) setContactErrors((prev) => ({ ...prev, phone: undefined }));
+                        }}
+                        placeholder="e.g. (212) 555-0198"
+                        style={{
+                          borderColor: contactErrors.phone ? "#ef4444" : undefined,
+                          color: "#0f172a"
+                        }}
+                      />
+                      {contactErrors.phone ? (
+                        <p style={{ color: "#ef4444", fontSize: "0.75rem", margin: "4px 0 0" }}>{contactErrors.phone}</p>
+                      ) : null}
+                    </div>
+                  </div>
+
                   <div className="field quoteDesignDescription">
                     <div className="charCountHeader">
                       <label htmlFor="showroomDescription">
@@ -652,35 +858,49 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                   <div className="dropzone dropzone--multi">
                     <div className="dropzoneContent">
                       <div className="dropzoneIcon">
-                        <span className="material-symbols-outlined" style={{ fontSize: 28, color: "var(--color-primary)" }}>cloud_upload</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: 28, color: "var(--color-primary)" }}>smartphone</span>
                       </div>
-                      <strong>Tap to upload photos</strong>
-                      <span className="muted small">JPG, PNG, or WEBP · up to 3 photos</span>
+                      <strong>Add Reference Photos</strong>
+                      <span className="muted small">Scan the QR code to upload securely from your phone, or snap a live photo</span>
                     </div>
-                    <div className="dropzoneActions">
-                      <label className="button primary button--sm">
+                    <div className="dropzoneActions" style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
+                      <button
+                        type="button"
+                        className="button primary button--sm"
+                        onClick={openMobileUploadQr}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>qr_code_scanner</span>
+                        Upload from Phone (Scan QR)
+                      </button>
+
+                      <label className="button secondary button--sm">
                         <input
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
-                          multiple
+                          capture="environment"
                           onChange={(event) => {
-                            const selected = Array.from(event.target.files || []).slice(0, 3);
+                            const selected = Array.from(event.target.files || []);
                             if (selected.length) {
-                              setFiles(selected);
+                              setFiles((prev) => [...prev, ...selected].slice(0, 3));
                               setAnalysis(null);
                               setRenderingImageUrl(null);
                               setError("");
                             }
                           }}
                         />
-                        <span className="material-symbols-outlined" style={{ fontSize: 15 }}>folder_open</span>
-                        Choose photos
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>photo_camera</span>
+                        Take Photo
                       </label>
                     </div>
                   </div>
 
-                  {previews.length > 0 ? (
-                    <div style={{ marginTop: 16 }}>
+                  <div style={{ marginTop: 16 }}>
+                    {previews.length > 0 ? (
                       <div className="facetThumbRail" aria-label="Uploaded photos" style={{ marginBottom: 16 }}>
                         {previews.map((src, index) => (
                           <div key={src} className="facetThumb">
@@ -689,21 +909,23 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                           </div>
                         ))}
                       </div>
+                    ) : null}
 
-                      {/* Explicit Analyze Button for Showroom Kiosk */}
-                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                        <button
-                          className="button primary button--md"
-                          type="button"
-                          disabled={analyzing}
-                          onClick={() => runAnalysis(files)}
-                          style={{ flex: 1, padding: "12px 20px", fontSize: "0.95rem" }}
-                        >
-                          <span className={`material-symbols-outlined${analyzing ? " ai-pulse" : ""}`} style={{ fontSize: 18 }}>
-                            auto_awesome
-                          </span>
-                          {analyzing ? "Analyzing Design with AI…" : analysis ? "Re-analyze Design with AI" : "Analyze Design with AI"}
-                        </button>
+                    {/* Explicit Analyze Button for Showroom Kiosk */}
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <button
+                        className="button primary button--md"
+                        type="button"
+                        disabled={analyzing || (!files.length && !description.trim())}
+                        onClick={() => runAnalysis(files)}
+                        style={{ flex: 1, padding: "12px 20px", fontSize: "0.95rem" }}
+                      >
+                        <span className={`material-symbols-outlined${analyzing ? " ai-pulse" : ""}`} style={{ fontSize: 18 }}>
+                          auto_awesome
+                        </span>
+                        {analyzing ? "Analyzing Design with AI…" : analysis ? "Re-analyze Design with AI" : "Analyze Design with AI"}
+                      </button>
+                      {files.length > 0 ? (
                         <button
                           className="button secondary button--sm"
                           type="button"
@@ -717,9 +939,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                           <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
                           Clear
                         </button>
-                      </div>
+                      ) : null}
                     </div>
-                  ) : null}
+                  </div>
 
                   {error ? <p className="fieldError" style={{ color: "#ef4444", marginTop: 12 }}>{error}</p> : null}
                 </QuoteStepCard>
@@ -975,6 +1197,36 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                 </span>
                 {copiedLink ? "Copied!" : "Copy Link"}
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── 6. MOBILE PHOTO UPLOAD QR MODAL ── */}
+      {showMobileUploadModal ? (
+        <div className="showroomModalBackdrop" onClick={() => setShowMobileUploadModal(false)}>
+          <div className="showroomQrCard" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
+            <button className="showroomCloseBtn" type="button" onClick={() => setShowMobileUploadModal(false)}>
+              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
+            </button>
+
+            <div className="showroomModalIcon" style={{ width: 56, height: 56, marginBottom: 12 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 28 }}>smartphone</span>
+            </div>
+            <h3 style={{ fontSize: "1.375rem", margin: "0 0 8px" }}>Upload Photos from Your Phone</h3>
+            <p style={{ margin: "0 0 16px", fontSize: "0.875rem", color: "#cbd5e1" }}>
+              Scan this QR code with your smartphone camera. You can snap live photos or select reference images from your gallery to send directly to this screen.
+            </p>
+
+            {mobileUploadQrDataUrl ? (
+              <div className="showroomQrWrap" style={{ padding: 14 }}>
+                <img src={mobileUploadQrDataUrl} alt="Scan Mobile Upload QR Code" />
+              </div>
+            ) : null}
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 18, color: "#e6cb78" }}>
+              <span className="material-symbols-outlined ai-pulse" style={{ fontSize: 20 }}>sync</span>
+              <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>Waiting for photos from phone…</span>
             </div>
           </div>
         </div>

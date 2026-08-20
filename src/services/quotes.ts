@@ -17,6 +17,8 @@ type CreateQuoteInput = {
   analysisId?: string;
   referenceAnalysisIds?: string[];
   customerName?: string | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
   metalType: string;
   metalWeightGrams: number;
   centerDiamondCarats: number;
@@ -184,6 +186,8 @@ export async function createQuote(
               ? referenceAnalyses.map((reference) => reference.id)
               : undefined,
             customerName: input.customerName || null,
+            customerEmail: input.customerEmail || null,
+            customerPhone: input.customerPhone || null,
             metalType: input.metalType,
             metalWeightGrams: input.metalWeightGrams,
             centerDiamondCarats: input.centerDiamondCarats,

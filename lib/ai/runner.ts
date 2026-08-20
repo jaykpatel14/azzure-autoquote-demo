@@ -111,11 +111,12 @@ export function chooseMode(values: string[]) {
 
 export async function runModerationCheck(params: {
   provider: JewelryAnalysisProvider;
-  imageDataUrl: string;
+  imageDataUrl?: string | null;
+  text?: string | null;
   attemptLimit?: number;
 }) {
   const execution = await withTransientRetries(
-    () => params.provider.moderateImage({ imageDataUrl: params.imageDataUrl }),
+    () => params.provider.moderateImage({ imageDataUrl: params.imageDataUrl, text: params.text }),
     params.attemptLimit ?? 2
   );
 
@@ -128,7 +129,7 @@ export async function runModerationCheck(params: {
 
 export async function runReviewAttempt(params: {
   provider: JewelryAnalysisProvider;
-  imageDataUrl: string;
+  imageDataUrl?: string | null;
   selectedMetal: MetalType;
   attemptNumber: number;
   attemptLimit?: number;
@@ -260,7 +261,8 @@ export function aggregateJewelryAnalysis(outputs: JewelryAnalysis[], selectedMet
 
 export async function runJewelryAnalysis(params: {
   provider: JewelryAnalysisProvider;
-  imageDataUrl: string;
+  imageDataUrl?: string | null;
+  customerDescription?: string;
   selectedMetal: MetalType;
   reviewCount: number;
   attemptLimit?: number;
@@ -268,11 +270,12 @@ export async function runJewelryAnalysis(params: {
   const moderation = await runModerationCheck({
     provider: params.provider,
     imageDataUrl: params.imageDataUrl,
+    text: params.customerDescription,
     attemptLimit: params.attemptLimit
   });
 
   if (moderation.flagged) {
-    throw new ModerationRejectedError("The uploaded image was blocked by moderation.");
+    throw new ModerationRejectedError("The uploaded content was blocked by moderation.");
   }
 
   const attempts: AnalysisAttemptResult[] = [];
@@ -282,6 +285,7 @@ export async function runJewelryAnalysis(params: {
     const execution = await runReviewAttempt({
       provider: params.provider,
       imageDataUrl: params.imageDataUrl,
+      customerDescription: params.customerDescription,
       selectedMetal: params.selectedMetal,
       attemptNumber,
       attemptLimit: params.attemptLimit
