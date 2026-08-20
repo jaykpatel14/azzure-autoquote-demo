@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import QuoteRowActions from "@/components/quote-row-actions";
 import WorkspaceShell from "@/components/workspace-shell";
+import ManufacturingOrderModal from "@/components/manufacturing-order-modal";
 import { StatusBadge } from "@/src/components/ui/StatusBadge";
 import { PlanGate } from "@/src/components/ui/PlanGate";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
@@ -206,26 +207,36 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
             <div className="quoteOrderFormWrap">
               <PlanGate feature="canPlaceManufacturingOrder" fallbackHref="/settings/billing?upgrade=1">
                 <PlanGate requireCkVerification fallbackHref="/settings/billing?upgrade=1">
-                  <form className="stack" action="/api/orders" method="post">
-                    <input type="hidden" name="quoteId" value={quote.id} />
-                    <div className="sectionHeader">
+                  <div className="stack" style={{ background: "#f8fafc", padding: 20, borderRadius: 16, border: "1px solid #e2e8f0" }}>
+                    <div className="sectionHeader" style={{ marginBottom: 12 }}>
                       <div>
-                        <h3>Enterprise Manufacturing Order</h3>
-                        <p className="muted small">Submit this approved jewelry specification directly to Azzure / Custom King production.</p>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>CustomKing Manufacturing Order</h3>
+                        <p className="muted small" style={{ margin: "4px 0 0" }}>Review AI-detected specifications and customize production details before dispatching to CustomKing NYC.</p>
                       </div>
                     </div>
-                    <label className="field">
-                      <span>Item name</span>
-                      <input name="itemName" defaultValue={`${quote.quoteNumber} manufacturing order`} />
-                    </label>
-                    <label className="field">
-                      <span>Production notes</span>
-                      <textarea name="notes" rows={3} placeholder="Optional instructions for the casting & setting team..." />
-                    </label>
-                    <button className="button primary fitContent" type="submit">
-                      🚀 Place Manufacturing Order
-                    </button>
-                  </form>
+                    <div>
+                      <ManufacturingOrderModal
+                        quote={{
+                          id: quote.id,
+                          quoteNumber: quote.quoteNumber,
+                          customerName: quote.customerName,
+                          metalType: quote.metalType,
+                          metalWeightGrams: Number(quote.metalWeightGrams || 6),
+                          centerDiamondCarats: Number(quote.centerDiamondCarats || 1.5),
+                          sideDiamondCarats: Number(quote.sideDiamondCarats || 0),
+                          sideDiamondQuantity: Number(quote.sideDiamondQuantity || 0),
+                          centerShape: quote.analysis?.centerShape || null,
+                          settingType: quote.analysis?.settingType || null,
+                          hasWeddingBand: Boolean((quote.analysis?.assumptions as Record<string, any> | null)?.hasWeddingBand),
+                          isTwoTone: Boolean((quote.analysis?.assumptions as Record<string, any> | null)?.isTwoTone),
+                          estimatedSellingPrice: quote.estimatedSellingPrice ? Number(quote.estimatedSellingPrice) : null,
+                          estimatedPrice: quote.estimatedPrice ? Number(quote.estimatedPrice) : null,
+                          renderingImageUrl: renderingDataUrl || sourceImageDataUrl || null,
+                          notes: quote.analysis?.notes || null
+                        }}
+                      />
+                    </div>
+                  </div>
                 </PlanGate>
               </PlanGate>
             </div>

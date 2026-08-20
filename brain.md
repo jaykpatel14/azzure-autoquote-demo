@@ -87,6 +87,23 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision**: Added an automatic regex sanitization step (`sed -i 's/^[\]*#/#/' .env.proxmox`) in `.github/workflows/proxmox-test-deploy.yml` before Docker Compose execution, and documented the resolution for Proxmox hosts where line 1 starts with `\# Proxmox test environment`.
 - **Rationale**: Docker Compose's `.env` parser treats any line starting with an escaped character (like `\#` or `\\#`) as an environment variable key rather than a comment line. Because backslashes (`\`) are invalid characters in environment variable keys, Docker Compose immediately halts with `unexpected character "\" in variable name`. Auto-sanitizing `.env.proxmox` on the runner removes accidental backslashes before invoking Docker Compose, preventing deployment failures.
 
+### 27. Showroom Kiosk 10-Point Customer Experience & Friction-Free Workflow
+- **Decision**: 
+  1. **Welcome / Standby Screen**: Added a dedicated standby state in `app/showroom/showroom-kiosk.tsx` featuring the Jeweler's Logo, obsidian/gold dark luxury aesthetic, quick 3-second value proposition (*"Bring Your Dream Ring to Life in 30 Seconds"*), 1-tap *"Design Your Custom Ring"* CTA, and 4 quick inspiration presets (*2.5ct Pear Halo Solitaire, 3.0ct Oval Hidden Halo, 2.0ct Emerald Cut 3-Stone, 1.5ct Cushion Pavé Split*).
+  2. **Zero Friction & Visual Plus Note Communication**: Ensured no account or email is requested on the kiosk, pairing photo upload with custom design notes.
+  3. **Progressive AI Inspection & Photorealistic 3D Render**: Maintained 3-stage animated analysis diagnostics and prominent 3D studio visualization render preview with luxury badge.
+  4. **Live Honest Pricing**: Kept price updates instant via alloy density conversion (`convertMetalWeight`), formatted as a clean single number without asterisks, "starting from", or wholesale business formula jargon.
+  5. **Clear Next Steps & Privacy Reset**: Saved screen displays a prominent claim code (`QT-0042`), exact guidance (*"Show this code to your jeweler. They can see your design, adjust anything you want, and place the order."*), and a clean "Done" reset button paired with an 80s/90s inactivity timer.
+- **Rationale**: Retail jewelry shoppers in showroom kiosks need immediate trust, zero friction, emotional photorealistic visual confirmation of their ring, honest transparent pricing, and a simple 6-character code to hand to the jeweler without ever needing to log in or leave personal contact data at a public terminal.
+
+### 28. CustomKing API Endpoint Resolution & Integration Path Normalization
+- **Decision**: Updated `lib/customking-api.ts` so that when `CUSTOMKING_API_URL` is set to `https://cknyc-api.azzuresolutions.com/api/v1`, the dispatcher resolves to the exact CustomKing integration endpoint: `https://cknyc-api.azzuresolutions.com/api/v1/integration/orders` instead of the 404 endpoint `/api/v1/orders`.
+- **Rationale**: CustomKing NYC's Express API namespaces partner and ERP integration routes under `/api/v1/integration/orders`. Automatically normalizing the endpoint ensures orders dispatch cleanly regardless of whether `/api/v1` or `/api/v1/integration/orders` is passed in `.env`.
+
+### 29. CustomKing Manufacturing Order Studio & AI-to-Production Bridging
+- **Decision**: Architected an interactive Manufacturing Order Studio on `/quotes/[quoteId]` that automatically pre-populates all AI visual extraction parameters (metal, gram weight, center stone carats, shape, side stones, quantity, setting type, and 3D render) while allowing jewelers to add granular CustomKing production specifications (ring size, polish finish, diamond origin/color/clarity, stone provider, matching wedding band, engraving text and font, target delivery date, and workshop notes) before 1-click dispatching to CustomKing NYC.
+- **Rationale**: While AI provides rapid visual estimates from photos, actual manufacturing requires precise workshop specifications (e.g. exact finger size 6.5, high polish finish, custom inside-band engraving, or whether diamonds are supplied by CustomKing vs from store stock). Bridging AI estimates with an interactive configuration studio ensures 100% compliance with CustomKing's production schema without manual re-entry.
+
 ---
 
 ## Last Updated

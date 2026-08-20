@@ -34,6 +34,57 @@ const KIOSK_ANALYSIS_STAGES = [
 
 const METAL_OPTIONS = ["10K", "14K", "18K", "Platinum", "Silver"];
 
+const SHOWROOM_PRESETS = [
+  {
+    icon: "diamond",
+    title: "2.5ct Pear Halo Solitaire",
+    description: "14K White Gold with hidden pavé halo & micro-prong diamond shank.",
+    prompt: "2.5ct Pear cut diamond ring with hidden halo in 14K White Gold, micro-prong band",
+    metal: "14K",
+    metalWeight: 5.5,
+    centerCarat: 2.5,
+    sideCarat: 0.65,
+    sideQty: 28,
+    shape: "Pear"
+  },
+  {
+    icon: "auto_awesome",
+    title: "3.0ct Oval Hidden Halo",
+    description: "18K Yellow Gold with delicate 1.8mm plain band and cathedral prongs.",
+    prompt: "3.0ct Oval solitaire engagement ring in 18K Yellow Gold with hidden diamond halo",
+    metal: "18K",
+    metalWeight: 6.2,
+    centerCarat: 3.0,
+    sideCarat: 0.25,
+    sideQty: 16,
+    shape: "Oval"
+  },
+  {
+    icon: "view_in_ar",
+    title: "2.0ct Emerald Cut 3-Stone",
+    description: "Platinum with tapered trapezoid side diamonds & bezel accents.",
+    prompt: "2.0ct Emerald cut diamond with tapered baguette side stones in solid Platinum",
+    metal: "Platinum",
+    metalWeight: 8.5,
+    centerCarat: 2.0,
+    sideCarat: 0.8,
+    sideQty: 2,
+    shape: "Emerald"
+  },
+  {
+    icon: "stars",
+    title: "1.5ct Cushion Pavé Split",
+    description: "14K Rose Gold with double split pavé diamond band.",
+    prompt: "1.5ct Cushion cut solitaire with split diamond pavé shank in 14K Rose Gold",
+    metal: "14K",
+    metalWeight: 6.8,
+    centerCarat: 1.5,
+    sideCarat: 1.1,
+    sideQty: 36,
+    shape: "Cushion"
+  }
+];
+
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -44,6 +95,7 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 export default function ShowroomKiosk({ token, branding, pricing }: { token: string; branding: Branding; pricing: Pricing }) {
+  const [started, setStarted] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [description, setDescription] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -64,6 +116,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const debouncedAnalysis = useDebouncedValue(analysis, 300);
 
   const reset = useCallback(() => {
+    setStarted(false);
     setFiles([]);
     setDescription("");
     setAnalyzing(false);
@@ -156,6 +209,24 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     });
   }
 
+  function selectPreset(preset: (typeof SHOWROOM_PRESETS)[number]) {
+    setDescription(preset.prompt);
+    setAnalysis({
+      analysisId: `preset-${Date.now()}`,
+      jewelryType: "Ring",
+      selectedMetal: preset.metal,
+      metalWeightGrams: preset.metalWeight,
+      centerDiamondCarats: preset.centerCarat,
+      sideDiamondCarats: preset.sideCarat,
+      sideDiamondQuantity: preset.sideQty,
+      centerShape: preset.shape,
+      settingType: "prong",
+      hasWeddingBand: false,
+      isTwoTone: false
+    });
+    setStarted(true);
+  }
+
   // Auto-analyze function triggered immediately when photos are selected
   async function runAutoAnalysis(selectedFiles: File[]) {
     if (!selectedFiles.length || analyzing) return;
@@ -241,6 +312,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   function handleFileSelect(newFiles: File[]) {
     if (!newFiles.length) return;
     setFiles(newFiles);
+    setStarted(true);
     runAutoAnalysis(newFiles);
   }
 
@@ -302,10 +374,15 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>refresh</span>
             New Quote
           </button>
+        ) : started ? (
+          <button className="showroomBack" type="button" onClick={reset}>
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_back</span>
+            Start Over
+          </button>
         ) : null}
       </header>
 
-      {/* ── SAVED SCREEN: Claim Code Display with AI Generated Rendering ── */}
+      {/* ── 1. SAVED SCREEN: Claim Code Display with AI Generated Rendering ── */}
       {saved ? (
         <section className="showroomPanel">
           <div className="showroomSuccessCard">
@@ -324,20 +401,64 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
               <span className="material-symbols-outlined" style={{ fontSize: 48, color: "var(--color-brand)" }}>verified</span>
             )}
             <h1 style={{ fontFamily: "var(--font-display, Georgia, serif)", fontSize: "2.25rem", margin: "16px 0 8px" }}>Quote Saved</h1>
-            <p className="muted small" style={{ margin: 0 }}>Show this claim code to your jewelry associate to review your estimate:</p>
             <div className="showroomCode">{code}</div>
             {price !== null ? (
               <p className="showroomPrice">
-                Estimated Price: {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(price)}
+                {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(price)}
               </p>
             ) : null}
-            <button className="showroomButton" type="button" onClick={reset} style={{ marginTop: 24 }}>
-              Create Another Quote
+            <p className="muted" style={{ margin: "16px 0 0", fontSize: 16, lineHeight: 1.5, color: "#cbd5e1" }}>
+              Show this code to your jeweler. They can see your design, adjust anything you want, and place the order.
+            </p>
+            <button className="showroomButton" type="button" onClick={reset} style={{ marginTop: 28, width: "auto", padding: "0 40px" }}>
+              Done
             </button>
           </div>
         </section>
+      ) : !started ? (
+        /* ── 2. WELCOME / STANDBY SCREEN: Trust Before Touch & 1-Tap Start ── */
+        <section className="showroomPanel">
+          <p className="showroomEyebrow">Instant Custom Jewelry Pricing</p>
+          <h1 className="showroomHeroTitle">
+            Bring Your Dream Ring to Life in <em>30 Seconds</em>
+          </h1>
+          <p className="showroomSubtext">
+            Upload an inspiration photo or pick a style below to see a photorealistic 3D visualization and an instant live price estimate.
+          </p>
+
+          <button
+            className="showroomButton"
+            type="button"
+            onClick={() => setStarted(true)}
+            style={{ marginBottom: 40 }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 24 }}>auto_awesome</span>
+            Design Your Custom Ring
+          </button>
+
+          <div className="showroomPresetGrid">
+            {SHOWROOM_PRESETS.map((preset) => (
+              <div
+                key={preset.title}
+                className="showroomPresetCard"
+                role="button"
+                tabIndex={0}
+                onClick={() => selectPreset(preset)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") selectPreset(preset);
+                }}
+              >
+                <div className="showroomPresetIcon">
+                  <span className="material-symbols-outlined">{preset.icon}</span>
+                </div>
+                <strong>{preset.title}</strong>
+                <p>{preset.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       ) : (
-        /* ── WORKSPACE SCREEN: 3-Step Layout + Photorealistic AI Render ── */
+        /* ── 3. WORKSPACE SCREEN: 3-Step Layout + Photorealistic AI Render ── */
         <section className="showroomStage">
           <QuoteCreationLayout
             steps={

@@ -87,6 +87,8 @@ export async function POST(request: Request, context: RouteContext) {
           if (fullOrder && fullOrder.quote) {
             const ckResult = await dispatchCustomKingOrder({
               companyId: order.companyId,
+              companyName: order.company.name || null,
+              customerName: fullOrder.quote.customerName || null,
               orderId: order.id,
               orderNumber: order.orderNumber,
               itemName: fullOrder.itemName,

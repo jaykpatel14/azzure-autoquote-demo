@@ -2,7 +2,7 @@ import type { Company, Order, OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ConflictError, NotFoundError, type AppError, type AppResult } from "@/src/lib/errors";
 import { assertPlanFeature } from "@/src/stripe/plans";
-import { dispatchCustomKingOrder } from "@/lib/customking-api";
+import { dispatchCustomKingOrder, type CustomKingSpecs } from "@/lib/customking-api";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 import { generateAndStoreQuotePdf } from "@/src/services/quote-pdf";
 
@@ -144,6 +144,7 @@ export async function submitOrder(params: {
   itemName?: string | null;
   notes?: string | null;
   createdBy?: string | null;
+  customKingSpecs?: CustomKingSpecs | null;
 }): Promise<AppResult<OrderPayload>> {
   await assertPlanFeature(params.companyId, "canPlaceManufacturingOrder");
   const quote = await prisma.quote.findFirst({
@@ -175,6 +176,8 @@ export async function submitOrder(params: {
   const company = await prisma.company.findUnique({
     where: { id: params.companyId },
     select: {
+      name: true,
+      slug: true,
       accountStatus: true,
       ckCustomerVerified: true,
       ckCustomerVerifiedAt: true
@@ -240,6 +243,10 @@ export async function submitOrder(params: {
 
     const ckResult = await dispatchCustomKingOrder({
       companyId: params.companyId,
+      companyName: company.name || null,
+      companySlug: company.slug || null,
+      customerName: quote.customerName || null,
+      customerEmail: params.customKingSpecs?.customerEmail || null,
       orderId: order.id,
       orderNumber: order.orderNumber,
       itemName: order.itemName,
@@ -249,7 +256,8 @@ export async function submitOrder(params: {
       centerDiamondCarats: Number(quote.centerDiamondCarats),
       sideDiamondCarats: Number(quote.sideDiamondCarats),
       customerNotes: order.notes,
-      renderingImageUrl
+      renderingImageUrl,
+      specs: params.customKingSpecs
     });
 
     const dispatched = await assignCkOrderId({
