@@ -265,8 +265,16 @@ azzure-autoquote-mvp/
   - Added a top mode segmented pill switcher (`✨ AI Photo Analysis` vs. `⚡ Manual Spec Entry`) on the jeweler quote builder ([`components/QuoteCalculator.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/components/QuoteCalculator.tsx)).
   - Strictly hidden in Showroom Mode ([`app/showroom/showroom-kiosk.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/showroom/showroom-kiosk.tsx)) so customer kiosks remain photo-driven.
   - Built direct manual spec entry form with quick presets (*Solitaire*, *Oval Halo*, *Three-Stone*, *Pavé Band*, *Tennis Bracelet*, *Classic Band*), alloy selector with spot rate display, gram weight slider, center diamond shape/carats/clarity, side stones count/carats, matching band, two-tone casting, and optional reference photo attachment.
-  - Connected to live market spot pricing engine and `POST /api/quotes` persistence with completed `AiAnalysis` snapshot synthesis.
-- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 24 test suites passing (106/106 tests).
+- ✅ **August 2026 3-Tier Subscription Architecture Fully Implemented**:
+  - Replaced legacy tier models with the official 3-tier structure in [`src/stripe/plans.ts`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/src/stripe/plans.ts):
+    - **Starter ($99/mo · 300 quotes)**: Full 3-pass AI, logo + brand name PDF branding, complete quote history, up to 3 seats.
+    - **Professional ($199/mo · 1,200 quotes)**: Unlimited role-based seats, shareable public quote links (`/q/[token]`), custom pricing profile markups, and auto-push orders to Custom King (Coming Soon).
+    - **Enterprise ($299/mo · 2,500 quotes)**: **Photorealistic 3D Concept Generation**, **In-Store Tablet (Kiosk Mode)** touchscreen, and **Full Auto-Push to Custom King manufacturing**.
+  - Updated [`app/(marketing)/pricing/page.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/%28marketing%29/pricing/page.tsx), [`components/InteractiveLandingPage.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/components/InteractiveLandingPage.tsx), [`public/landing/index.html`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/public/landing/index.html), and [`app/page.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/page.tsx) with the 3-column pricing grid ($99 Starter, $199 Professional, $299 Enterprise) and grouped feature comparison table.
+- ✅ **Dynamic Hover Micro-Interactions on Pricing Cards & Comparison Table**:
+  - Implemented interactive row & column highlighting in [`app/(marketing)/pricing/page.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/%28marketing%29/pricing/page.tsx): hovering over any plan column header or cell highlights the vertical column with `.col-hover`, and hovering over any feature row tints the row and highlights the label.
+  - Implemented smooth card elevation physics (`translateY(-8px)` to `-10px` with cubic-bezier easing), multi-layer shadow glows, and badge scale transitions in [`app/globals.css`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/globals.css), [`components/InteractiveLandingPage.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/components/InteractiveLandingPage.tsx), and [`public/landing/index.html`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/public/landing/index.html).
+- ✅ **Verification**: `npx tsc --noEmit` (0 errors), all 24 test suites passing (105/105 tests).
 
 
 

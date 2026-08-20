@@ -74,17 +74,17 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "radial-gradient(ellipse at top, #1e1b2e 0%, #0a0a0f 100%)", color: "#f3f4f6", padding: 24 }}>
         <div style={{ maxWidth: 540, background: "rgba(255, 255, 255, 0.04)", backdropFilter: "blur(20px)", border: "1px solid rgba(201, 168, 76, 0.3)", borderRadius: 20, padding: 40, textAlign: "center", boxShadow: "0 20px 50px rgba(0,0,0,0.6)" }}>
           <span style={{ display: "inline-block", background: "linear-gradient(135deg, #c9a84c, #e2c974)", color: "#111", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 12px", borderRadius: 999, marginBottom: 16 }}>
-            Ultra Plan Feature
+            Enterprise Plan Feature
           </span>
           <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 14, color: "#fff", letterSpacing: "-0.02em" }}>
-            Unlock Luxury Showroom Mode
+            Unlock In-Store Tablet Kiosk Mode
           </h1>
           <p style={{ color: "#9ca3af", fontSize: 15, lineHeight: 1.6, marginBottom: 28 }}>
-            Turn this tablet into an interactive, customer-facing WOW kiosk with your bespoke color scheme, automated photo analysis, and instant estimate generation.
+            Turn this tablet into an interactive, customer-facing showroom kiosk with your bespoke branding, photo upload, and instant estimate generation.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/settings/billing?upgrade=ultra" style={{ background: "linear-gradient(135deg, #c9a84c, #dfc674)", color: "#000", fontWeight: 600, padding: "12px 24px", borderRadius: 10, textDecoration: "none" }}>
-              Upgrade to Ultra Plan
+            <Link href="/settings/billing?upgrade=enterprise" style={{ background: "linear-gradient(135deg, #c9a84c, #dfc674)", color: "#000", fontWeight: 600, padding: "12px 24px", borderRadius: 10, textDecoration: "none" }}>
+              Upgrade to Enterprise
             </Link>
             <Link href="/quotes/new" style={{ background: "rgba(255,255,255,0.08)", color: "#fff", fontWeight: 500, padding: "12px 24px", borderRadius: 10, textDecoration: "none", border: "1px solid rgba(255,255,255,0.15)" }}>
               Back to Dashboard

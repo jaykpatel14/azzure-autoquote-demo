@@ -5,32 +5,56 @@ import { PLAN_FEATURES, resolvePlanId } from "@/src/stripe/plans";
 const source = (path: string) => readFileSync(path, "utf8");
 
 describe("subscription feature matrix", () => {
-  test("Starter has the launch limits and no paid-only capabilities", () => {
-    expect(PLAN_FEATURES.plan_starter).toMatchObject({ quotesPerMonth: 100, aiPasses: 1, canViewQuoteHistory: false, canShareQuoteLink: false, canUseCustomPricingProfile: false, pdfBranding: "azzure_watermark", canPlaceManufacturingOrder: false, maxSeats: 1, overageEnabled: false, s3ImagePersistence: false, canGenerateAIImages: false, canUseShowroomMode: false, canCustomizeShowroomBranding: false, hasPdfImages: false });
+  test("Starter has 300 quotes, 3-pass AI, quote history, 3 seats, and branded PDFs", () => {
+    expect(PLAN_FEATURES.plan_starter).toMatchObject({
+      quotesPerMonth: 300,
+      aiPasses: 3,
+      canViewQuoteHistory: true,
+      canShareQuoteLink: false,
+      canUseCustomPricingProfile: false,
+      pdfBranding: "custom_logo",
+      canPlaceManufacturingOrder: false,
+      maxSeats: 3,
+      overageEnabled: false,
+      s3ImagePersistence: true,
+      canGenerateAIImages: false,
+      canUseShowroomMode: false,
+      canCustomizeShowroomBranding: false,
+      hasPdfImages: true
+    });
   });
-  test("Professional has three passes, persistence, custom pricing, five seats, and overage", () => {
-    expect(PLAN_FEATURES.plan_professional).toMatchObject({ quotesPerMonth: 500, aiPasses: 3, canViewQuoteHistory: true, canShareQuoteLink: false, canUseCustomPricingProfile: true, pdfBranding: "custom_logo", canPlaceManufacturingOrder: false, maxSeats: 5, overageEnabled: true, s3ImagePersistence: true, canGenerateAIImages: false, canUseShowroomMode: false, canCustomizeShowroomBranding: false, hasPdfImages: true });
+  test("Professional has 1,200 quotes, shareable links, custom pricing, and unlimited seats", () => {
+    expect(PLAN_FEATURES.plan_professional).toMatchObject({
+      quotesPerMonth: 1200,
+      aiPasses: 3,
+      canViewQuoteHistory: true,
+      canShareQuoteLink: true,
+      canUseCustomPricingProfile: true,
+      pdfBranding: "custom_logo",
+      canPlaceManufacturingOrder: false,
+      maxSeats: Number.POSITIVE_INFINITY,
+      overageEnabled: true,
+      s3ImagePersistence: true,
+      canGenerateAIImages: false,
+      canUseShowroomMode: false,
+      canCustomizeShowroomBranding: false,
+      hasPdfImages: true
+    });
   });
-  test("Enterprise enables sharing, manufacturing, white label, and unlimited seats", () => {
+  test("Enterprise enables 2,500 quotes, 3D concept renders, showroom tablet mode, and CK auto-push", () => {
+    expect(PLAN_FEATURES.plan_enterprise.quotesPerMonth).toBe(2500);
     expect(PLAN_FEATURES.plan_enterprise.canShareQuoteLink).toBe(true);
-    expect(PLAN_FEATURES.plan_enterprise.canGenerateAIImages).toBe(false);
+    expect(PLAN_FEATURES.plan_enterprise.canGenerateAIImages).toBe(true);
+    expect(PLAN_FEATURES.plan_enterprise.canUseShowroomMode).toBe(true);
+    expect(PLAN_FEATURES.plan_enterprise.canCustomizeShowroomBranding).toBe(true);
     expect(PLAN_FEATURES.plan_enterprise.canPlaceManufacturingOrder).toBe(true);
-    expect(PLAN_FEATURES.plan_enterprise.pdfBranding).toBe("white_label");
+    expect(PLAN_FEATURES.plan_enterprise.pdfBranding).toBe("custom_logo");
     expect(PLAN_FEATURES.plan_enterprise.maxSeats).toBe(Number.POSITIVE_INFINITY);
     expect(PLAN_FEATURES.plan_enterprise.hasPdfImages).toBe(true);
   });
-  test("Ultra unlocks image generation, showroom consultation mode, and showroom branding", () => {
-    expect(PLAN_FEATURES.plan_ultra.canGenerateAIImages).toBe(true);
-    expect(PLAN_FEATURES.plan_ultra.canUseShowroomMode).toBe(true);
-    expect(PLAN_FEATURES.plan_ultra.canCustomizeShowroomBranding).toBe(true);
-    expect(PLAN_FEATURES.plan_ultra.quotesPerMonth).toBe(10000);
-    expect(PLAN_FEATURES.plan_ultra.canPlaceManufacturingOrder).toBe(true);
-    expect(PLAN_FEATURES.plan_ultra.pdfBranding).toBe("white_label");
-    expect(PLAN_FEATURES.plan_ultra.hasPdfImages).toBe(true);
-  });
   test("trial users always resolve to Professional features", () => {
     expect(resolvePlanId({ id: "plan_enterprise", code: "enterprise" }, "TRIALING")).toBe("plan_professional");
-    expect(PLAN_FEATURES[resolvePlanId({ id: "plan_enterprise", code: "enterprise" }, "TRIALING")].canShareQuoteLink).toBe(false);
+    expect(PLAN_FEATURES[resolvePlanId({ id: "plan_enterprise", code: "enterprise" }, "TRIALING")].canShareQuoteLink).toBe(true);
     expect(PLAN_FEATURES[resolvePlanId({ id: "plan_enterprise", code: "enterprise" }, "TRIALING")].canPlaceManufacturingOrder).toBe(false);
   });
   test("unknown persisted plan IDs fail closed", () => {

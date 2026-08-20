@@ -86,7 +86,7 @@ export default async function PricingSettingsPage() {
             <div>
               <strong style={{ color: "#dfc674", display: "block", marginBottom: 4 }}>Standard Live Spot Engine (Starter Plan)</strong>
               <p className="muted small" style={{ margin: 0 }}>
-                Custom pricing profiles, granular formula controls, and white-label margin configurations are unlocked on Professional, Enterprise, and Ultra plans.
+                Custom pricing profiles, granular formula controls, and custom margin configurations are unlocked on Professional and Enterprise plans.
               </p>
             </div>
             <Link href="/settings/billing?upgrade=professional" className="button primary" style={{ whiteSpace: "nowrap" }}>

@@ -1,15 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import type { PlanCode } from "@/lib/subscription-plans";
 
 const PLAN_META = {
   starter: {
     name: "Starter",
-    price: 49,
-    audience: "Solo jewelers & occasional quoting",
-    highlights: ["100 quotes / month", "1-pass AI estimate", "Fixed pricing profile", "1 seat", "Standard email support"],
+    price: 99,
+    audience: "Independent jewelers & small studios",
+    highlights: [
+      "300 quotes / month",
+      "Full 3-pass AI + manual override",
+      "Branded PDFs (Logo + brand name)",
+      "Complete quote history",
+      "Up to 3 user seats"
+    ],
     badge: null,
     cta: "Start free trial",
     ctaHref: "/signup?plan=starter",
@@ -17,9 +23,16 @@ const PLAN_META = {
   },
   professional: {
     name: "Professional",
-    price: 99,
-    audience: "Growing shops quoting every day",
-    highlights: ["500 quotes / month", "Full 3-pass AI", "Editable pricing profile", "Custom branded PDFs", "Full quote history", "Up to 5 seats"],
+    price: 199,
+    audience: "Growing stores sharing quotes digitally",
+    highlights: [
+      "1,200 quotes / month",
+      "Everything in Starter",
+      "Unlimited seats + role-based access",
+      "Shareable branded quote links",
+      "Custom domain for links (Coming Soon)",
+      "Auto-push orders to Custom King (Coming Soon)"
+    ],
     badge: "Most Popular",
     cta: "Start free trial",
     ctaHref: "/signup?plan=professional",
@@ -27,33 +40,23 @@ const PLAN_META = {
   },
   enterprise: {
     name: "Enterprise",
-    price: 199,
-    audience: "High-volume & multi-location jewelers",
-    highlights: ["2,500 quotes / month", "3-pass AI + manual override", "White-label templates", "Unlimited role-based seats", "Manufacturing orders", "Branded customer links"],
-    badge: null,
-    cta: "Contact us",
-    ctaHref: "mailto:sales@azzureautoquote.com",
-    featured: false
-  },
-  ultra: {
-    name: "Ultra",
-    price: 399,
-    audience: "Showrooms, tablet WOW kiosks & luxury studios",
+    price: 299,
+    audience: "Showrooms & multi-location jewelers",
     highlights: [
-      "10,000 quotes / month",
-      "Photorealistic 3D Concept Generation",
-      "In-Store Tablet / WOW Showroom Mode",
-      "Custom Store Logo & Showroom Branding",
-      "Manufacturing order dispatch",
-      "White-label customer links & PDFs"
+      "2,500 quotes / month",
+      "Everything in Professional",
+      "Photorealistic 3D concept render",
+      "In-store tablet mode (kiosk touchscreen)",
+      "Full auto-push to Custom King",
+      "Photo → 3D print file (Coming Soon)"
     ],
-    badge: "Flagship Studio",
+    badge: "Full Experience",
     cta: "Start free trial",
-    ctaHref: "/signup?plan=ultra",
+    ctaHref: "/signup?plan=enterprise",
     featured: false
   }
 } as const satisfies Record<
-  PlanCode,
+  "starter" | "professional" | "enterprise",
   {
     name: string;
     price: number;
@@ -71,7 +74,6 @@ type FeatureRow = {
   starter: string | boolean;
   professional: string | boolean;
   enterprise: string | boolean;
-  ultra: string | boolean;
 };
 
 type FeatureCategory = {
@@ -83,42 +85,35 @@ const FEATURE_CATEGORIES: FeatureCategory[] = [
   {
     category: "Core Quoting Engine",
     items: [
-      { feature: "Quotes per month", starter: "100", professional: "500", enterprise: "2,500", ultra: "10,000" },
-      { feature: "AI image analysis", starter: "1-pass", professional: "Full 3-pass", enterprise: "Full 3-pass + override", ultra: "3-Pass + 3D Concept AI" },
-      { feature: "Real-time metal pricing", starter: true, professional: true, enterprise: true, ultra: true },
-      { feature: "PDF quote generation", starter: true, professional: true, enterprise: true, ultra: true }
+      { feature: "Quotes per month", starter: "300", professional: "1,200", enterprise: "2,500" },
+      { feature: "AI image analysis", starter: "Full 3-pass + override", professional: "Full 3-pass + override", enterprise: "Full 3-pass + override" },
+      { feature: "Real-time spot metal pricing", starter: true, professional: true, enterprise: true },
+      { feature: "Branded PDF proposals", starter: "Logo + brand name", professional: "Logo + brand name", enterprise: "Logo + brand name" },
+      { feature: "Complete quote history", starter: true, professional: true, enterprise: true }
     ]
   },
   {
-    category: "Customization & Branding",
+    category: "Team & Digital Sharing",
     items: [
-      { feature: "Custom pricing & margins", starter: false, professional: true, enterprise: true, ultra: true },
-      { feature: "Branded PDF output", starter: false, professional: true, enterprise: true, ultra: true },
-      { feature: "Quote image history", starter: false, professional: true, enterprise: true, ultra: true }
+      { feature: "User seats", starter: "Up to 3", professional: "Unlimited (Role-based)", enterprise: "Unlimited (Role-based)" },
+      { feature: "Shareable public quote links", starter: false, professional: true, enterprise: true },
+      { feature: "Custom domain for links", starter: false, professional: "Coming Soon", enterprise: "Coming Soon" },
+      { feature: "White-label custom domain", starter: false, professional: "Coming Soon", enterprise: "Coming Soon" }
     ]
   },
   {
-    category: "Storage & Team Seats",
+    category: "3D Visuals & Showroom Tablet",
     items: [
-      { feature: "Image / quote storage", starter: "Not persisted", professional: "S3 + full history", enterprise: "S3 + retention controls", ultra: "S3 + full retention" },
-      { feature: "User seats", starter: "1", professional: "5", enterprise: "Unlimited", ultra: "Unlimited" },
-      { feature: "Overage quotes", starter: false, professional: "$0.25/quote", enterprise: "Custom rate", ultra: "Custom rate" }
+      { feature: "Photorealistic 3D Concept Render", starter: false, professional: false, enterprise: true },
+      { feature: "In-Store Tablet Mode (Kiosk touchscreen)", starter: false, professional: false, enterprise: true },
+      { feature: "Photo → 3D print file (3DM, STL, wax)", starter: false, professional: false, enterprise: "Coming Soon" }
     ]
   },
   {
-    category: "Manufacturing & Enterprise Features",
+    category: "Custom King Manufacturing Integration",
     items: [
-      { feature: "Manufacturing orders [Staging]", starter: false, professional: false, enterprise: true, ultra: true },
-      { feature: "Shareable customer quote links", starter: false, professional: false, enterprise: true, ultra: true }
-    ]
-  },
-  {
-    category: "Ultra Studio & Showroom Kiosk",
-    items: [
-      { feature: "Photorealistic 3D Concept Generation", starter: false, professional: false, enterprise: false, ultra: true },
-      { feature: "In-Store Tablet / WOW Showroom Mode", starter: false, professional: false, enterprise: false, ultra: true },
-      { feature: "Store Logo & Showroom Branding", starter: false, professional: false, enterprise: false, ultra: true },
-      { feature: "Support SLA", starter: "Email", professional: "Priority email", enterprise: "Dedicated", ultra: "24/7 Dedicated Concierge" }
+      { feature: "Auto-push orders to Custom King", starter: "Manual handoff", professional: "Coming Soon", enterprise: true },
+      { feature: "14-Day Free Trial", starter: "14 days (Pro features)", professional: "14 days", enterprise: "14 days" }
     ]
   }
 ];
@@ -126,27 +121,27 @@ const FEATURE_CATEGORIES: FeatureCategory[] = [
 const FAQ_ITEMS = [
   {
     question: "Do I need a credit card to start the trial?",
-    answer: "Yes. The card is collected at signup, but you will not be charged until day 15."
+    answer: "Yes. Every new account starts with a 14-day free trial on the Professional plan (capped at 25 quotes). Your card will not be charged until day 15."
   },
   {
     question: "What happens when my trial ends?",
-    answer: "Your account converts to your selected billing plan. You can downgrade or cancel before day 14."
+    answer: "Your account automatically converts to the Professional plan ($199/mo) unless you switch plans or cancel before day 14."
   },
   {
-    question: "Can I change plans later?",
-    answer: "Yes. You can switch plans any time from billing settings, and changes take effect immediately."
+    question: "Can I cancel or switch plans anytime?",
+    answer: "Yes. Self-service plan changes and cancellations are available anytime via the Stripe Customer Portal or your billing settings."
   },
   {
     question: "What counts as a quote?",
-    answer: "Each photo analysis or text concept synthesis plus price generation counts as one quote."
+    answer: "Each completed photo analysis or manual spec quotation with approved live pricing counts as one quote against your monthly allowance."
   },
   {
-    question: "Is my customer's data kept private?",
-    answer: "Yes. Data is isolated per business and never shared across companies."
+    question: "How does the pricing tier approval work?",
+    answer: "During account onboarding, Azzure assigns a pricing tier (Tier 1 Premium, Tier 2 Standard, Tier 3 Basic) to configure making price markups. The jeweler sees only the approved customer selling price."
   },
   {
-    question: "How do manufacturing orders work?",
-    answer: "Enterprise and Ultra customers can submit a finalized quote directly to manufacturing."
+    question: "How does Custom King manufacturing integration work?",
+    answer: "Manufacturing orders are available to verified Custom King customers. On Enterprise, finalized quotes are submitted directly to Custom King manufacturing automatically."
   }
 ] as const;
 
@@ -169,25 +164,39 @@ function FeatureCell({ value }: { value: string | boolean }) {
 
 export default function PricingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [hoveredCol, setHoveredCol] = useState<"starter" | "professional" | "enterprise" | null>(null);
 
   return (
     <main className="pricingShell">
       <section className="pricingHero">
         <p className="eyebrow" style={{ color: "var(--color-primary)" }}>Plans &amp; Pricing</p>
-        <h1 className="pricingTitle">Simple pricing that scales with your quoting volume</h1>
+        <h1 className="pricingTitle">Simple pricing that scales with your custom quoting</h1>
         <p className="pricingLead">
-          Start with the plan that matches your shop today, compare features side by side, and move into
-          checkout only when you are ready to collect a card.
+          Start your 14-day free trial on Professional. Compare features side by side and upgrade anytime.
         </p>
       </section>
 
-      {/* ── 4-Column Balanced Pricing Grid ── */}
+      {/* ── 3-Column Balanced Pricing Grid ── */}
       <section className="pricingCards">
-        {(Object.keys(PLAN_META) as PlanCode[]).map((code) => {
+        {(Object.keys(PLAN_META) as (keyof typeof PLAN_META)[]).map((code) => {
           const plan = PLAN_META[code];
+          const isFeatured = plan.featured;
+          const isEnterprise = code === "enterprise";
+          const cardClass = isFeatured
+            ? "pricingCard pricingCard--featured"
+            : isEnterprise
+            ? "pricingCard pricingCard--enterprise"
+            : "pricingCard";
+          const badgeClass = isEnterprise ? "pricingBadge pricingBadge--gold" : "pricingBadge";
+
           return (
-            <article key={code} className={plan.featured ? "pricingCard pricingCard--featured" : "pricingCard"}>
-              {plan.badge ? <span className="pricingBadge">{plan.badge}</span> : null}
+            <article
+              key={code}
+              className={cardClass}
+              onMouseEnter={() => setHoveredCol(code)}
+              onMouseLeave={() => setHoveredCol(null)}
+            >
+              {plan.badge ? <span className={badgeClass}>{plan.badge}</span> : null}
               <div>
                 <div className="pricingCardTop">
                   <p className="pricingTrial">14-Day Free Trial</p>
@@ -204,19 +213,17 @@ export default function PricingPage() {
               </div>
 
               <div>
-                {plan.ctaHref.startsWith("mailto:") ? (
-                  <a className={plan.featured ? "button primary button--lg" : "button secondary button--lg"} style={{ width: "100%" }} href={plan.ctaHref}>
-                    {plan.cta}
-                  </a>
-                ) : (
-                  <Link
-                    className={plan.featured ? "button primary button--lg" : "button secondary button--lg"}
-                    style={{ width: "100%" }}
-                    href={plan.ctaHref}
-                  >
-                    {plan.cta}
-                  </Link>
-                )}
+                <Link
+                  className={isFeatured || isEnterprise ? "button primary button--lg" : "button secondary button--lg"}
+                  style={{
+                    width: "100%",
+                    background: isEnterprise ? "#C9A84C" : undefined,
+                    borderColor: isEnterprise ? "#C9A84C" : undefined
+                  }}
+                  href={plan.ctaHref}
+                >
+                  {plan.cta}
+                </Link>
                 <p className="pricingFootnote" style={{ marginTop: 12 }}>14-day free trial · Card required · Cancel anytime</p>
               </div>
             </article>
@@ -230,6 +237,7 @@ export default function PricingPage() {
           <div>
             <p className="eyebrow" style={{ color: "var(--color-primary)" }}>Feature Comparison</p>
             <h2>Compare every plan in one view</h2>
+            <p className="muted small">Hover over any row or column to highlight details.</p>
           </div>
         </div>
 
@@ -237,41 +245,70 @@ export default function PricingPage() {
           <table className="featureTable">
             <thead>
               <tr>
-                <th style={{ width: "32%" }}>Feature</th>
-                <th style={{ width: "17%" }}>Starter</th>
-                <th style={{ width: "17%" }}>Professional</th>
-                <th style={{ width: "17%" }}>Enterprise</th>
-                <th style={{ width: "17%" }}>Ultra</th>
+                <th style={{ width: "37%" }}>Feature</th>
+                <th
+                  style={{ width: "21%", cursor: "pointer" }}
+                  className={hoveredCol === "starter" ? "col-hover" : ""}
+                  onMouseEnter={() => setHoveredCol("starter")}
+                  onMouseLeave={() => setHoveredCol(null)}
+                >
+                  Starter — $99/mo
+                </th>
+                <th
+                  style={{ width: "21%", cursor: "pointer" }}
+                  className={hoveredCol === "professional" ? "col-hover" : ""}
+                  onMouseEnter={() => setHoveredCol("professional")}
+                  onMouseLeave={() => setHoveredCol(null)}
+                >
+                  Professional — $199/mo
+                </th>
+                <th
+                  style={{ width: "21%", cursor: "pointer" }}
+                  className={hoveredCol === "enterprise" ? "col-hover" : ""}
+                  onMouseEnter={() => setHoveredCol("enterprise")}
+                  onMouseLeave={() => setHoveredCol(null)}
+                >
+                  Enterprise — $299/mo
+                </th>
               </tr>
             </thead>
             <tbody>
               {FEATURE_CATEGORIES.map((cat) => (
-                <>
-                  <tr key={cat.category}>
-                    <td colSpan={5} className="featureCategoryHeader">
+                <Fragment key={cat.category}>
+                  <tr>
+                    <td colSpan={4} className="featureCategoryHeader">
                       {cat.category}
                     </td>
                   </tr>
                   {cat.items.map((row) => (
-                    <tr key={row.feature}>
+                    <tr key={row.feature} className="featureRow">
                       <th scope="row" style={{ fontWeight: 500 }}>
                         {row.feature}
                       </th>
-                      <td>
+                      <td
+                        className={hoveredCol === "starter" ? "col-hover" : ""}
+                        onMouseEnter={() => setHoveredCol("starter")}
+                        onMouseLeave={() => setHoveredCol(null)}
+                      >
                         <FeatureCell value={row.starter} />
                       </td>
-                      <td>
+                      <td
+                        className={hoveredCol === "professional" ? "col-hover" : ""}
+                        onMouseEnter={() => setHoveredCol("professional")}
+                        onMouseLeave={() => setHoveredCol(null)}
+                      >
                         <FeatureCell value={row.professional} />
                       </td>
-                      <td>
+                      <td
+                        className={hoveredCol === "enterprise" ? "col-hover" : ""}
+                        onMouseEnter={() => setHoveredCol("enterprise")}
+                        onMouseLeave={() => setHoveredCol(null)}
+                      >
                         <FeatureCell value={row.enterprise} />
-                      </td>
-                      <td>
-                        <FeatureCell value={row.ultra} />
                       </td>
                     </tr>
                   ))}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

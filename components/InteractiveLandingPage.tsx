@@ -198,6 +198,7 @@ export function InteractiveLandingPage() {
   // Pricing State
   const [isAnnual, setIsAnnual] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
+  const [hoveredPlanCard, setHoveredPlanCard] = useState<string | null>(null);
 
   // --------------------------------------------------------------------------
   // Scroll & Hero Sequence
@@ -537,20 +538,20 @@ export function InteractiveLandingPage() {
       <section style={{ borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0", background: "#FFFFFF", padding: "56px 24px", margin: "0 auto 60px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 36, textAlign: "center" }}>
           <div>
-            <div style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 52, fontWeight: 700, color: "#005AB7", lineHeight: 1, marginBottom: 8 }}>10,000+</div>
-            <div style={{ fontSize: 14, color: "#64748B", fontWeight: 500 }}>Quotes per month on Ultra</div>
+            <div style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 52, fontWeight: 700, color: "#005AB7", lineHeight: 1, marginBottom: 8 }}>2,500</div>
+            <div style={{ fontSize: 14, color: "#64748B", fontWeight: 500 }}>Quotes per month on Enterprise</div>
           </div>
           <div>
-            <div style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 52, fontWeight: 700, color: "#005AB7", lineHeight: 1, marginBottom: 8 }}>&lt; 60 sec</div>
+            <div style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 52, fontWeight: 700, color: "#005AB7", lineHeight: 1, marginBottom: 8 }}>&lt; 15 sec</div>
             <div style={{ fontSize: 14, color: "#64748B", fontWeight: 500 }}>To generate an approved quote</div>
           </div>
           <div>
-            <div style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 52, fontWeight: 700, color: "#005AB7", lineHeight: 1, marginBottom: 8 }}>4 plans</div>
-            <div style={{ fontSize: 14, color: "#64748B", fontWeight: 500 }}>Starting at $49 / month</div>
+            <div style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 52, fontWeight: 700, color: "#005AB7", lineHeight: 1, marginBottom: 8 }}>3 plans</div>
+            <div style={{ fontSize: 14, color: "#64748B", fontWeight: 500 }}>Starting at $99 / month</div>
           </div>
           <div>
             <div style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 52, fontWeight: 700, color: "#005AB7", lineHeight: 1, marginBottom: 8 }}>14 days</div>
-            <div style={{ fontSize: 14, color: "#64748B", fontWeight: 500 }}>Risk-free trial on all tiers</div>
+            <div style={{ fontSize: 14, color: "#64748B", fontWeight: 500 }}>Risk-free trial on Professional</div>
           </div>
         </div>
       </section>
@@ -833,38 +834,54 @@ export function InteractiveLandingPage() {
           </div>
         </div>
 
-        {/* 4 Cards Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
+        {/* 3 Cards Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
           
           {/* Starter */}
-          <article style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 16, padding: 32, display: "flex", flexDirection: "column", justifyContent: "space-between", boxShadow: "0 4px 16px rgba(0, 0, 0, 0.03)" }}>
+          <article
+            onMouseEnter={() => setHoveredPlanCard("starter")}
+            onMouseLeave={() => setHoveredPlanCard(null)}
+            style={{
+              background: "#FFFFFF",
+              border: hoveredPlanCard === "starter" ? "1px solid #005AB7" : "1px solid #E2E8F0",
+              borderRadius: 16,
+              padding: 32,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              boxShadow: hoveredPlanCard === "starter" ? "0 20px 40px -10px rgba(0, 90, 183, 0.16)" : "0 4px 16px rgba(0, 0, 0, 0.03)",
+              transform: hoveredPlanCard === "starter" ? "translateY(-8px)" : "translateY(0)",
+              transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)"
+            }}
+          >
             <div>
               <div style={{ marginBottom: 20 }}>
                 <h3 style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 24, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Starter</h3>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 12 }}>
                   <span style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 48, fontWeight: 700, color: "#005AB7", lineHeight: 1 }}>
-                    ${isAnnual ? 39 : 49}
+                    ${isAnnual ? 79 : 99}
                   </span>
                   <span style={{ fontSize: 14, color: "#64748B" }}>/ month</span>
                 </div>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#005AB7", background: "#EFF6FF", padding: "4px 8px", borderRadius: 4 }}>14-day free trial</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#005AB7", background: "#EFF6FF", padding: "4px 8px", borderRadius: 4 }}>Independent Studios</span>
               </div>
 
               <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12, fontSize: 14, borderTop: "1px solid #F1F5F9", paddingTop: 20, color: "#334155" }}>
-                <li>✓ 100 quotes / month</li>
-                <li>✓ 1-pass AI estimate</li>
-                <li>✓ Fixed pricing profile</li>
-                <li>✓ 1-page PDF proposal</li>
-                <li>✓ 1 jeweler seat</li>
-                <li style={{ color: "#94A3B8" }}>– Branded PDFs</li>
-                <li style={{ color: "#94A3B8" }}>– Showroom mode</li>
+                <li>✓ <strong>300 quotes / month</strong></li>
+                <li>✓ Full 3-pass AI + manual override</li>
+                <li>✓ Branded PDFs (Logo + brand name)</li>
+                <li>✓ Complete quote history</li>
+                <li>✓ Up to 3 user seats</li>
+                <li>✓ Live precious metal spot rates</li>
+                <li style={{ color: "#94A3B8" }}>– Shareable public links</li>
+                <li style={{ color: "#94A3B8" }}>– Showroom tablet mode</li>
               </ul>
 
               {expandedCards["starter"] && (
                 <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12, fontSize: 14, marginTop: 12, borderTop: "none", paddingTop: 0, color: "#334155" }}>
                   <li>✓ Standard email support</li>
-                  <li>✓ Basic metal conversion</li>
-                  <li>✓ Live gold pricing feed</li>
+                  <li>✓ Live gold, platinum &amp; silver feeds</li>
+                  <li>✓ Alloy weight density conversions</li>
                 </ul>
               )}
               <a onClick={() => toggleFeatureExpand("starter")} style={{ fontSize: 12, fontWeight: 600, color: "#005AB7", cursor: "pointer", display: "inline-block", margin: "14px 0 24px" }}>
@@ -878,34 +895,49 @@ export function InteractiveLandingPage() {
           </article>
 
           {/* Professional */}
-          <article style={{ background: "#FFFFFF", border: "2px solid #005AB7", borderRadius: 16, padding: 32, display: "flex", flexDirection: "column", justifyContent: "space-between", boxShadow: "0 10px 30px rgba(0, 90, 183, 0.1)" }}>
+          <article
+            onMouseEnter={() => setHoveredPlanCard("pro")}
+            onMouseLeave={() => setHoveredPlanCard(null)}
+            style={{
+              background: "#FFFFFF",
+              border: "2px solid #005AB7",
+              borderRadius: 16,
+              padding: 32,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              boxShadow: hoveredPlanCard === "pro" ? "0 28px 52px -12px rgba(0, 90, 183, 0.3)" : "0 10px 30px rgba(0, 90, 183, 0.12)",
+              transform: hoveredPlanCard === "pro" ? "translateY(-10px)" : "translateY(0)",
+              transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)"
+            }}
+          >
             <div>
               <div style={{ marginBottom: 20 }}>
                 <h3 style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 24, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Professional</h3>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 12 }}>
                   <span style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 48, fontWeight: 700, color: "#005AB7", lineHeight: 1 }}>
-                    ${isAnnual ? 79 : 99}
+                    ${isAnnual ? 159 : 199}
                   </span>
                   <span style={{ fontSize: 14, color: "#64748B" }}>/ month</span>
                 </div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#FFFFFF", background: "#005AB7", padding: "4px 8px", borderRadius: 4 }}>Most Popular</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#FFFFFF", background: "#005AB7", padding: "4px 8px", borderRadius: 4 }}>Most Popular · 14-Day Trial</span>
               </div>
 
               <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12, fontSize: 14, borderTop: "1px solid #F1F5F9", paddingTop: 20, color: "#334155" }}>
-                <li>✓ 500 quotes / month</li>
-                <li>✓ Full 3-pass AI analysis</li>
-                <li>✓ Editable margin profile</li>
-                <li>✓ Custom branded PDFs</li>
-                <li>✓ Up to 5 team seats</li>
-                <li>✓ Full quote history</li>
-                <li style={{ color: "#94A3B8" }}>– Showroom mode</li>
+                <li>✓ <strong>1,200 quotes / month</strong></li>
+                <li>✓ Everything in Starter</li>
+                <li>✓ Unlimited seats + role-based access</li>
+                <li>✓ Shareable branded quote links</li>
+                <li>✓ Custom pricing profile &amp; markups</li>
+                <li>✓ Auto-push to Custom King (Coming Soon)</li>
+                <li style={{ color: "#94A3B8" }}>– Showroom tablet mode</li>
               </ul>
 
               {expandedCards["pro"] && (
                 <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12, fontSize: 14, marginTop: 12, borderTop: "none", paddingTop: 0, color: "#334155" }}>
                   <li>✓ Priority support response</li>
                   <li>✓ Multi-photo merge analysis</li>
-                  <li>✓ Margin markup simulator</li>
+                  <li>✓ Custom domain for links (Coming Soon)</li>
                 </ul>
               )}
               <a onClick={() => toggleFeatureExpand("pro")} style={{ fontSize: 12, fontWeight: 600, color: "#005AB7", cursor: "pointer", display: "inline-block", margin: "14px 0 24px" }}>
@@ -919,86 +951,60 @@ export function InteractiveLandingPage() {
           </article>
 
           {/* Enterprise */}
-          <article style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 16, padding: 32, display: "flex", flexDirection: "column", justifyContent: "space-between", boxShadow: "0 4px 16px rgba(0, 0, 0, 0.03)" }}>
+          <article
+            onMouseEnter={() => setHoveredPlanCard("enterprise")}
+            onMouseLeave={() => setHoveredPlanCard(null)}
+            style={{
+              background: "#FFFFFF",
+              border: "2px solid #C9A84C",
+              borderRadius: 16,
+              padding: 32,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              boxShadow: hoveredPlanCard === "enterprise" ? "0 28px 52px -12px rgba(201, 168, 76, 0.35)" : "0 10px 30px rgba(201, 168, 76, 0.15)",
+              position: "relative",
+              transform: hoveredPlanCard === "enterprise" ? "translateY(-10px)" : "translateY(0)",
+              transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)"
+            }}
+          >
+            <span style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "#C9A84C", color: "#FFFFFF", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", padding: "5px 14px", borderRadius: 9999, whiteSpace: "nowrap" }}>
+              ★ 3D Renders &amp; Showroom Tablet
+            </span>
             <div>
               <div style={{ marginBottom: 20 }}>
                 <h3 style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 24, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Enterprise</h3>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 12 }}>
-                  <span style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 48, fontWeight: 700, color: "#005AB7", lineHeight: 1 }}>
-                    ${isAnnual ? 159 : 199}
+                  <span style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 48, fontWeight: 700, color: "#C9A84C", lineHeight: 1 }}>
+                    ${isAnnual ? 239 : 299}
                   </span>
                   <span style={{ fontSize: 14, color: "#64748B" }}>/ month</span>
                 </div>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#005AB7", background: "#EFF6FF", padding: "4px 8px", borderRadius: 4 }}>High Volume</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#C9A84C", background: "#FEF9EE", padding: "4px 8px", borderRadius: 4 }}>Full Experience</span>
               </div>
 
               <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12, fontSize: 14, borderTop: "1px solid #F1F5F9", paddingTop: 20, color: "#334155" }}>
-                <li>✓ 2,500 quotes / month</li>
-                <li>✓ 3-pass AI + manual override</li>
-                <li>✓ White-label PDF templates</li>
-                <li>✓ Unlimited user seats</li>
-                <li>✓ Manufacturing orders</li>
-                <li>✓ Shareable quote links</li>
-                <li style={{ color: "#94A3B8" }}>– Showroom mode</li>
+                <li>✓ <strong>2,500 quotes / month</strong></li>
+                <li>✓ Everything in Professional</li>
+                <li><strong style={{ color: "#C9A84C" }}>✓ Photorealistic 3D Concept Renders</strong></li>
+                <li><strong style={{ color: "#C9A84C" }}>✓ In-Store Tablet (Kiosk Mode) Touchscreen</strong></li>
+                <li><strong style={{ color: "#C9A84C" }}>✓ Full Auto-Push to Custom King</strong></li>
+                <li>✓ Photo → 3D print file (Coming Soon)</li>
               </ul>
 
               {expandedCards["ent"] && (
                 <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12, fontSize: 14, marginTop: 12, borderTop: "none", paddingTop: 0, color: "#334155" }}>
-                  <li>✓ CustomKing API dispatch</li>
                   <li>✓ Dedicated account manager</li>
-                  <li>✓ Role-based access control</li>
+                  <li>✓ Store logo &amp; custom showroom branding</li>
+                  <li>✓ Priority manufacturing queue</li>
                 </ul>
               )}
-              <a onClick={() => toggleFeatureExpand("ent")} style={{ fontSize: 12, fontWeight: 600, color: "#005AB7", cursor: "pointer", display: "inline-block", margin: "14px 0 24px" }}>
+              <a onClick={() => toggleFeatureExpand("ent")} style={{ fontSize: 12, fontWeight: 600, color: "#C9A84C", cursor: "pointer", display: "inline-block", margin: "14px 0 24px" }}>
                 {expandedCards["ent"] ? "Hide additional features ↑" : "Show all features ↓"}
               </a>
             </div>
 
-            <a href="mailto:sales@everyfacets.com" className="button secondary" style={{ width: "100%", textAlign: "center" }}>
-              Contact Sales
-            </a>
-          </article>
-
-          {/* Ultra */}
-          <article style={{ background: "#FFFFFF", border: "2px solid #C9A84C", borderRadius: 16, padding: 32, display: "flex", flexDirection: "column", justifyContent: "space-between", boxShadow: "0 10px 30px rgba(201, 168, 76, 0.15)", position: "relative" }}>
-            <span style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "#C9A84C", color: "#FFFFFF", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", padding: "5px 14px", borderRadius: 9999, whiteSpace: "nowrap" }}>
-              ★ Includes Showroom Mode
-            </span>
-            <div>
-              <div style={{ marginBottom: 20 }}>
-                <h3 style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 24, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Ultra</h3>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 12 }}>
-                  <span style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 48, fontWeight: 700, color: "#C9A84C", lineHeight: 1 }}>
-                    ${isAnnual ? 319 : 399}
-                  </span>
-                  <span style={{ fontSize: 14, color: "#64748B" }}>/ month</span>
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#C9A84C", background: "#FEF9EE", padding: "4px 8px", borderRadius: 4 }}>Flagship Studio</span>
-              </div>
-
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12, fontSize: 14, borderTop: "1px solid #F1F5F9", paddingTop: 20, color: "#334155" }}>
-                <li>✓ 10,000 quotes / month</li>
-                <li>✓ Full 3-pass AI analysis</li>
-                <li>✓ White-label PDFs</li>
-                <li>✓ Shareable quote links</li>
-                <li>✓ Manufacturing orders</li>
-                <li><strong style={{ color: "#C9A84C" }}>✓ Showroom Mode Kiosk</strong></li>
-                <li><strong style={{ color: "#C9A84C" }}>✓ 3D AI Concept Renders</strong></li>
-              </ul>
-
-              {expandedCards["ultra"] && (
-                <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12, fontSize: 14, marginTop: 12, borderTop: "none", paddingTop: 0, color: "#334155" }}>
-                  <li>✓ Tablet &amp; in-store WOW kiosk</li>
-                  <li>✓ 24/7 dedicated concierge</li>
-                  <li>✓ Custom showroom branding</li>
-                </ul>
-              )}
-              <a onClick={() => toggleFeatureExpand("ultra")} style={{ fontSize: 12, fontWeight: 600, color: "#C9A84C", cursor: "pointer", display: "inline-block", margin: "14px 0 24px" }}>
-                {expandedCards["ultra"] ? "Hide additional features ↑" : "Show all features ↓"}
-              </a>
-            </div>
-
-            <Link href="/signup?plan=ultra" className="button primary" style={{ width: "100%", textAlign: "center", background: "#C9A84C", borderColor: "#C9A84C" }}>
+            <Link href="/signup?plan=enterprise" className="button primary" style={{ width: "100%", textAlign: "center", background: "#C9A84C", borderColor: "#C9A84C" }}>
               Start free trial
             </Link>
           </article>

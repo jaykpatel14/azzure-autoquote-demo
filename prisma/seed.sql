@@ -8,9 +8,9 @@ INSERT INTO "Plan" (
   "stripeProductId",
   "stripePriceId"
 ) VALUES
-  ('plan_starter', 'starter', 'Starter', 4900, 100, false, NULL, NULL),
-  ('plan_professional', 'professional', 'Professional', 9900, 500, false, NULL, NULL),
-  ('plan_enterprise', 'enterprise', 'Enterprise', 19900, 2500, true, NULL, NULL)
+  ('plan_starter', 'starter', 'Starter', 9900, 300, false, NULL, NULL),
+  ('plan_professional', 'professional', 'Professional', 19900, 1200, false, NULL, NULL),
+  ('plan_enterprise', 'enterprise', 'Enterprise', 29900, 2500, true, NULL, NULL)
 ON CONFLICT ("id") DO UPDATE SET
   "name" = EXCLUDED."name",
   "monthlyPriceCents" = EXCLUDED."monthlyPriceCents",

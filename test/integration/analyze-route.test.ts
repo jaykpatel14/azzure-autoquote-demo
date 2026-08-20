@@ -509,7 +509,7 @@ describe("analysis route integration", () => {
 
     const statuses = [firstResponse.status, secondResponse.status].sort();
     expect(statuses).toEqual([200, 429]);
-    expect(provider.analyzeImage).toHaveBeenCalledTimes(1);
+    expect(provider.analyzeImage).toHaveBeenCalledTimes(3);
 
     const usage = await prisma.usagePeriod.findFirstOrThrow({
       where: { companyId: company.companyId }

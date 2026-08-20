@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     } catch (e) {
       if (e instanceof PlanError) {
         return NextResponse.json(
-          { error: "Custom markup configuration is available on Professional, Enterprise, and Ultra plans." },
+          { error: "Custom markup configuration is available on Professional and Enterprise plans." },
           { status: 403 }
         );
       }

@@ -238,7 +238,7 @@ export async function POST(request: Request) {
     }
     if (error instanceof PlanError) {
       return NextResponse.json(
-        { error: "AI Concept Photo Generation is available exclusively on Enterprise and Ultra plans. Please upgrade to unlock." },
+        { error: "Photorealistic 3D Concept Generation is available on the Enterprise plan. Please upgrade to unlock." },
         { status: 403 }
       );
     }

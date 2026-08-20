@@ -4,13 +4,13 @@ import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getFeaturesForPlan, resolvePlanId, type PlanFeature } from "@/src/stripe/plans";
 
 const GATE_COPY: Partial<Record<PlanFeature, { eyebrow: string; title: string; description: string; cta: string }>> = {
-  canShareQuoteLink: { eyebrow: "Enterprise sharing", title: "Present quotes with a private customer link", description: "Enterprise creates a secure, branded page your customer can review from any device.", cta: "Upgrade to Enterprise" },
-  canPlaceManufacturingOrder: { eyebrow: "Enterprise manufacturing", title: "Send approved quotes to manufacturing", description: "Enterprise connects finalized quotes to Azzure's manufacturing workflow.", cta: "Upgrade to Enterprise" },
-  canViewQuoteHistory: { eyebrow: "Professional quote history", title: "Keep every quote and image together", description: "Professional securely stores quote images and gives your team access to complete history.", cta: "Upgrade to Professional" },
-  canUseCustomPricingProfile: { eyebrow: "Professional pricing", title: "Use pricing tailored to your business", description: "Professional lets your company use a custom pricing profile across every quote.", cta: "Upgrade to Professional" },
-  canGenerateAIImages: { eyebrow: "Ultra AI rendering", title: "Photorealistic 3D Concept Generation", description: "Ultra generates studio-grade 3D visual jewelry renders and extracts specs from customer descriptions.", cta: "Upgrade to Ultra" },
-  canUseShowroomMode: { eyebrow: "Ultra showroom consultation", title: "In-Store WOW Showroom Kiosk", description: "Ultra unlocks a full-screen, touch-optimized consultation experience for walk-in customers.", cta: "Upgrade to Ultra" },
-  canCustomizeShowroomBranding: { eyebrow: "Ultra showroom branding", title: "Store logo & custom showroom branding", description: "Ultra lets you add your custom logo and branding assets across all tablet consultations and client pages.", cta: "Upgrade to Ultra" }
+  canShareQuoteLink: { eyebrow: "Professional sharing", title: "Present quotes with a private customer link", description: "Professional creates a secure, branded page your customer can review from any device.", cta: "Upgrade to Professional" },
+  canPlaceManufacturingOrder: { eyebrow: "Enterprise manufacturing", title: "Auto-push approved quotes to Custom King", description: "Enterprise connects finalized quotes directly to Custom King manufacturing without manual entry.", cta: "Upgrade to Enterprise" },
+  canViewQuoteHistory: { eyebrow: "Quote history", title: "Keep every quote and image together", description: "All plans include complete quote history and image storage.", cta: "Upgrade Plan" },
+  canUseCustomPricingProfile: { eyebrow: "Professional pricing", title: "Use custom markups tailored to your business", description: "Professional lets your company configure custom pricing profiles across every quote.", cta: "Upgrade to Professional" },
+  canGenerateAIImages: { eyebrow: "Enterprise 3D rendering", title: "Photorealistic 3D Concept Generation", description: "Enterprise generates studio-grade 3D visual jewelry renders from confirmed specifications.", cta: "Upgrade to Enterprise" },
+  canUseShowroomMode: { eyebrow: "Enterprise in-store tablet", title: "In-Store Tablet Kiosk Mode", description: "Enterprise unlocks a branded customer-facing kiosk touchscreen for walk-in consultations.", cta: "Upgrade to Enterprise" },
+  canCustomizeShowroomBranding: { eyebrow: "Enterprise tablet branding", title: "Store logo & custom showroom branding", description: "Enterprise lets you add your custom logo and branding assets across all tablet consultations.", cta: "Upgrade to Enterprise" }
 };
 
 export async function PlanGate({

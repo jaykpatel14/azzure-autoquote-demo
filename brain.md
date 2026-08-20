@@ -268,11 +268,45 @@ This document logs every key architectural, design, and calculation decision mad
      - Enhanced `POST /api/quotes` and `createQuote` in `src/services/quotes.ts` to accept manual specs, synthesize a completed `AiAnalysis` snapshot record with `provider: "manual-quote-direct"`, allocate sequential quote numbers, and generate PDF proposals.
 - **Rationale**: Empowers jewelers to rapidly quote walk-in custom requests with known specs in under 5 seconds using live metal spot prices, without requiring an AI analysis run.
 
+### 47. Internal Sales Demo Presentation & Product Playbook Artifact
+- **Decision**: Created the dedicated sales demo presentation and product playbook artifact (`sales_demo_presentation.md`):
+  1. **Executive Product Overview**: Product positioning, value proposition, and customer profile targeting independent jewelry store owners and retail chains.
+  2. **Core Capabilities**: Multi-image computer vision analysis, real-time precious metals spot pricing engine, instant 3D AI concept renders, showroom consultation mode with wholesale margin concealment, manual spec quoting, and 1-click manufacturing orders.
+  3. **Plan Tier Breakdown**: Starter ($99/mo), Professional ($199/mo), and Enterprise ($299/mo) matrices.
+  4. **Live 5-Minute Sales Script & Objection Handling**: Turn-by-turn demo flow for sales reps with practical responses to common retail jeweler objections.
+- **Rationale**: Equips the internal sales team with unified product messaging, live demo flows, and technical value drivers to maximize trial-to-paid conversion rates.
+
+### 48. Alignment with Updated August 2026 3-Tier Subscription Architecture
+- **Decision**: Updated platform plans, feature gates, quotas, and pricing pages to the official Azzure August 2026 3-Tier Subscription model:
+  1. **Three Defined Subscription Tiers**:
+     - **Starter — $99/mo (300 quotes/mo)**: Full 3-pass AI analysis with manual override, logo + brand name PDF branding, complete quote history, up to 3 seats.
+     - **Professional — $199/mo (1,200 quotes/mo)**: Everything in Starter, unlimited role-based seats, shareable branded public quote links (`/q/[token]`), custom pricing profile markups, and auto-push orders to Custom King (Coming Soon).
+     - **Enterprise — $299/mo (2,500 quotes/mo)**: Everything in Professional, **Photorealistic 3D Concept Generation**, **In-Store Tablet (Kiosk Mode)** touchscreen, and **Full Auto-Push to Custom King manufacturing**.
+  2. **14-Day Free Trial Flow**:
+     - 14 days from registration on Professional tier features, capped at 25 quotes during trial, auto-converting to Professional unless changed or cancelled.
+  3. **Codebase Updates**:
+     - Updated `PLAN_FEATURES` and `BASE_PLAN_DEFINITIONS` in `src/stripe/plans.ts`.
+     - Updated feature gates in `src/components/ui/PlanGate.tsx` and `app/showroom/page.tsx`.
+     - Rebuilt `app/(marketing)/pricing/page.tsx`, `components/InteractiveLandingPage.tsx`, `public/landing/index.html`, and `app/page.tsx` with the clean 3-tier matrix and comparison tables.
+     - Updated `prisma/seed.sql` and synchronized all test suites in `test/feature-gates.test.ts` and `test/integration/analyze-route.test.ts`.
+- **Rationale**: Aligns the codebase with executive pricing decisions, eliminating obsolete tiers while bundling premium showroom and 3D rendering capabilities into the competitive $299 Enterprise tier.
+
+### 49. Dynamic Hover Micro-Interactions on Pricing Cards & Comparison Table
+- **Decision**: Implemented rich, fluid hover effects across the pricing cards and feature comparison table:
+  1. **Feature Comparison Table Hovering**:
+     - **Horizontal Row Hover**: Hovering over any feature row tints the background with `rgba(0, 90, 183, 0.045)`, highlights feature labels in brand blue, and increases font contrast.
+     - **Vertical Column Hover**: Hovering over any plan column header or cell dynamically highlights the entire vertical column across all category rows with active `.col-hover` class state.
+  2. **Pricing Cards Hover Physics**:
+     - Cards smoothly lift (`translateY(-8px)` to `-10px`) with cubic-bezier easing (`cubic-bezier(0.16, 1, 0.3, 1)`).
+     - Elevated multi-layer drop shadows (`0 28px 52px -12px rgba(0, 90, 183, 0.3)` for Pro, `rgba(201, 168, 76, 0.35)` for Enterprise gold).
+     - Badge scale transitions (`scale(1.05)`) on card focus.
+- **Rationale**: Elevates perceived software quality, clarifies plan comparisons, and creates delightful micro-interactions for prospective retail jewelers.
+
 ---
 
 ## Last Updated
 - Date: August 20, 2026
-- Status: Production Ready, All 24 Test Suites Passing (106/106 tests), TypeScript zero errors, Manual quoting mode live.
+- Status: Production Ready, All 24 Test Suites Passing (105/105 tests), TypeScript zero errors, Pricing table row & column hover effects active.
 
 
 

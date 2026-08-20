@@ -125,74 +125,56 @@ const MARKETING_STATS = [
 const PLAN_CARDS = [
   {
     name: "Starter",
-    price: "$49",
+    price: "$99",
     period: "/ month",
     badge: null,
-    audience: "Solo jewelers & occasional quoting",
+    audience: "Solo jewelers & boutique studios",
     cta: "Start free trial",
     ctaHref: "/signup?plan=starter",
     featured: false,
     features: [
-      "100 quotes / month",
-      "1-pass AI estimate",
-      "Fixed pricing profile",
-      "1-page PDF with Azzure watermark",
-      "1 seat",
-      "Standard email support"
+      "300 quotes / month",
+      "Full 3-pass AI + manual override",
+      "Branded PDFs (Logo + brand name)",
+      "Complete quote history",
+      "Up to 3 seats",
+      "Live precious metal spot pricing"
     ]
   },
   {
     name: "Professional",
-    price: "$99",
+    price: "$199",
     period: "/ month",
-    badge: "Most Popular",
+    badge: "Most Popular · 14-Day Trial",
     audience: "Growing shops quoting every day",
     cta: "Start free trial",
     ctaHref: "/signup?plan=professional",
     featured: true,
     features: [
-      "500 quotes / month",
-      "Full 3-pass AI analysis",
-      "Editable pricing profile & margins",
-      "Custom branded PDFs",
-      "Full quote & image history",
-      "Up to 5 seats"
+      "1,200 quotes / month",
+      "Everything in Starter",
+      "Unlimited seats + role-based access",
+      "Shareable branded quote links",
+      "Custom pricing profile & markups",
+      "Auto-push to Custom King (Coming Soon)"
     ]
   },
   {
     name: "Enterprise",
-    price: "$199",
+    price: "$299",
     period: "/ month",
-    badge: null,
-    audience: "High-volume & multi-location jewelers",
-    cta: "Contact Sales",
-    ctaHref: "mailto:sales@azzureautoquote.com",
+    badge: "Flagship Studio",
+    audience: "Showrooms, tablet kiosks & high-volume retailers",
+    cta: "Start free trial",
+    ctaHref: "/signup?plan=enterprise",
     featured: false,
     features: [
       "2,500 quotes / month",
-      "3-pass AI + manual override",
-      "White-label PDF templates",
-      "Unlimited role-based seats",
-      "Manufacturing orders [Staging]",
-      "Branded customer quote links"
-    ]
-  },
-  {
-    name: "Ultra",
-    price: "$399",
-    period: "/ month",
-    badge: "Flagship Studio",
-    audience: "Showrooms, tablet WOW kiosks & luxury studios",
-    cta: "Start free trial",
-    ctaHref: "/signup?plan=ultra",
-    featured: false,
-    features: [
-      "10,000 quotes / month",
-      "Photorealistic 3D Concept Generation",
-      "In-Store Tablet / WOW Showroom Mode",
-      "Store Logo & Showroom Assets",
-      "Manufacturing order dispatch",
-      "24/7 Dedicated Concierge"
+      "Everything in Professional",
+      "Photorealistic 3D Concept Renders",
+      "In-Store Tablet (Kiosk Mode)",
+      "Full Auto-Push to Custom King",
+      "Store logo & custom showroom branding"
     ]
   }
 ] as const;
