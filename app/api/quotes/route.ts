@@ -1,10 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { type Prisma } from "@prisma/client";
-import { ZodError, z } from "zod";
+import { ZodError } from "zod";
 import { prisma } from "@/lib/prisma";
-import {
-  METAL_TYPES
-} from "@/lib/pricing";
 import {
   requireCompanyContext,
   AuthRequiredError,
@@ -18,54 +15,12 @@ import { calculateMakingPrice, calculateTierPrice } from "@/src/services/pricing
 import { getSettingValue } from "@/lib/app-settings";
 import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricing";
 import { assertBillableSubscription, BillingAccessError } from "@/lib/billing";
+import { quoteSchema, applyQuoteMode, deriveDefaultSideStones } from "@/lib/quote-input-schema";
 
 
 import { assertPlanFeature, getCompanyPlanFeatures, PlanError } from "@/src/stripe/plans";
 import { generateQuoteRendering } from "@/lib/ai/quote-rendering";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
-import { validateEmail } from "@/lib/email-validation";
-
-const quoteModes = ["normal", "without-center", "without-center-and-side"] as const;
-
-const sideStoneItemSchema = z.object({
-  shape: z.string().trim().default("round"),
-  caratWeightEach: z.coerce.number().min(0),
-  count: z.coerce.number().int().min(0),
-  settingType: z.string().trim().default("prong")
-});
-
-const quoteSchema = z.object({
-  analysisId: z.string().optional(),
-  analysisIds: z.array(z.string()).max(12).optional(),
-  customerName: z.union([z.string().trim().min(1).max(200), z.literal("")]).optional(),
-  customerEmail: z.string().trim().max(200).optional().superRefine((val, ctx) => {
-    if (!val) return;
-    const check = validateEmail(val, { allowEmpty: true });
-    if (!check.valid) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: check.error || "Please enter a valid customer email address."
-      });
-    }
-  }),
-  customerPhone: z.union([z.string().trim().max(50), z.literal("")]).optional(),
-  quoteMode: z.enum(quoteModes).default("normal"),
-  metalType: z.enum(METAL_TYPES),
-  metalWeightGrams: z.coerce.number().min(0),
-  centerDiamondCarats: z.coerce.number().min(0),
-  sideDiamondCarats: z.coerce.number().min(0),
-  sideDiamondQuantity: z.coerce.number().int().min(0),
-  centerShape: z.union([z.string().trim().max(120), z.literal("")]).optional(),
-  centerClarity: z.union([z.string().trim().max(120), z.literal("")]).optional(),
-  settingType: z.union([z.string().trim().max(120), z.literal("")]).optional(),
-  jewelryType: z.union([z.string().trim().max(120), z.literal("")]).optional(),
-  imageDataUrl: z.string().optional(),
-  customerNotes: z.string().max(1000).optional(),
-  notes: z.string().max(1000).optional(),
-  hasWeddingBand: z.boolean().optional().default(false),
-  isTwoTone: z.boolean().optional().default(false),
-  sideStones: z.array(sideStoneItemSchema).optional()
-});
 
 export async function POST(request: Request) {
   try {
@@ -113,26 +68,7 @@ export async function POST(request: Request) {
     const livePricing = await resolveMetalPricing(allowCustomPricing ? baseProfile : null);
 
     // 3. Prepare side stones list
-    let sideStonesList = adjustedInput.sideStones;
-    if (!sideStonesList || sideStonesList.length === 0) {
-      if (adjustedInput.sideDiamondQuantity > 0 && adjustedInput.sideDiamondCarats > 0) {
-        const detectedShape =
-          (adjustedInput.centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(adjustedInput.centerShape.toLowerCase()) && adjustedInput.sideDiamondQuantity <= 4
-            ? "fancy"
-            : "round");
-
-        sideStonesList = [
-          {
-            shape: detectedShape,
-            caratWeightEach: adjustedInput.sideDiamondCarats / adjustedInput.sideDiamondQuantity,
-            count: adjustedInput.sideDiamondQuantity,
-            settingType: adjustedInput.settingType || "prong"
-          }
-        ];
-      } else {
-        sideStonesList = [];
-      }
-    }
+    const sideStonesList = deriveDefaultSideStones(adjustedInput);
 
     // 4. Calculate making price breakdown
     const centerCarat = Math.max(adjustedInput.centerDiamondCarats, 0.0001);
@@ -280,25 +216,4 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-}
-
-function applyQuoteMode(input: z.infer<typeof quoteSchema>) {
-  if (input.quoteMode === "without-center-and-side") {
-    return {
-      ...input,
-      centerDiamondCarats: 0,
-      sideDiamondCarats: 0,
-      sideDiamondQuantity: 0,
-      sideStones: []
-    };
-  }
-
-  if (input.quoteMode === "without-center") {
-    return {
-      ...input,
-      centerDiamondCarats: 0
-    };
-  }
-
-  return input;
 }

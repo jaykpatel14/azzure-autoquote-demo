@@ -99,6 +99,7 @@ type QuoteCalculatorProps = {
   companyLogoUrl?: string | null;
   canShareQuoteLink?: boolean;
   canPlaceManufacturingOrder?: boolean;
+  canDownloadPdf?: boolean;
 };
 
 const ANALYSIS_STAGES = [
@@ -287,7 +288,8 @@ export default function QuoteCalculator({
   companyName,
   companyLogoUrl,
   canShareQuoteLink = false,
-  canPlaceManufacturingOrder = false
+  canPlaceManufacturingOrder = false,
+  canDownloadPdf = false
 }: QuoteCalculatorProps) {
 
   const [metalType, setMetalType] = useState<MetalType>(initialQuote?.metalType ?? "14K");
@@ -358,6 +360,7 @@ export default function QuoteCalculator({
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
   const [savingProgress, setSavingProgress] = useState(0);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [savedQuote, setSavedQuote] = useState<{ id: string; quoteNumber: string } | null>(null);
   const [renderingImageUrl, setRenderingImageUrl] = useState<string | null>(null);
   const [draftIsFresh, setDraftIsFresh] = useState(!initialQuote);
@@ -1131,9 +1134,10 @@ export default function QuoteCalculator({
       };
       setSavingProgress(100);
       if (!response.ok) {
-        setStatus(result.error || "Unable to save quote.");
+        const message = result.error || "Unable to save quote.";
+        setStatus(`${message} You can still print or download a PDF of this quote below.`);
         showToast({
-          message: result.error || "Unable to save quote.",
+          message: `${message} Use "Print / Download PDF" below to keep a copy.`,
           variant: "error",
           autoDismiss: false
         });
@@ -1160,9 +1164,73 @@ export default function QuoteCalculator({
           setDraftIsFresh(true);
         }
       }
+    } catch {
+      setSavingProgress(100);
+      setStatus("Unable to reach the server to save this quote. You can still print or download a PDF of this quote below.");
+      showToast({
+        message: 'Could not reach the server to save this quote. Use "Print / Download PDF" below to keep a copy.',
+        variant: "error",
+        autoDismiss: false
+      });
     } finally {
       window.clearInterval(progressTimer);
       setSaving(false);
+    }
+  }
+
+  async function downloadDraftPdf() {
+    if (savedQuote) {
+      window.open(`/api/quotes/${savedQuote.id}/pdf`, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    if (!aggregateQuote || !costBreakdown) return;
+
+    setDownloadingPdf(true);
+    try {
+      const response = await fetch("/api/quotes/pdf-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          analysisId: aggregateQuote.analysisId,
+          customerName,
+          customerEmail,
+          customerPhone,
+          quoteMode,
+          metalType,
+          metalWeightGrams: aggregateQuote.metalWeightGrams,
+          centerDiamondCarats: aggregateQuote.centerDiamondCarats,
+          sideDiamondCarats: aggregateQuote.sideDiamondCarats,
+          sideDiamondQuantity: aggregateQuote.sideDiamondQuantity,
+          centerShape: aggregateQuote.centerShape ?? "round",
+          centerClarity: DEFAULT_COLOR_CLARITY,
+          settingType: aggregateQuote.settingType ?? "prong",
+          jewelryType: aggregateQuote.jewelryType ?? "Ring",
+          imageDataUrl: manualImagePreview || undefined,
+          customerNotes,
+          notes: customerNotes,
+          hasWeddingBand: aggregateQuote.hasWeddingBand,
+          isTwoTone: aggregateQuote.isTwoTone
+        })
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({}));
+        throw new Error(errorPayload.error || "Unable to generate PDF.");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (error) {
+      showToast({
+        message: error instanceof Error ? error.message : "Unable to generate PDF.",
+        variant: "error",
+        autoDismiss: false
+      });
+    } finally {
+      setDownloadingPdf(false);
     }
   }
 
@@ -2181,17 +2249,25 @@ export default function QuoteCalculator({
                   <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>save</span> Save Quote</>
                 )}
               </button>
-              {savedQuote ? (
-                <a
+              {canDownloadPdf && aggregateQuote && costBreakdown ? (
+                <button
                   className="button secondary"
                   style={{ width: "100%" }}
-                  href={`/api/quotes/${savedQuote.id}/pdf`}
-                  target="_blank"
-                  rel="noreferrer"
+                  type="button"
+                  disabled={downloadingPdf}
+                  onClick={downloadDraftPdf}
+                  title={
+                    savedQuote
+                      ? "Download the saved quote's PDF"
+                      : "Print or download a PDF of this quote — works even if Save Quote fails"
+                  }
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>download</span>
-                  Download PDF
-                </a>
+                  {downloadingPdf ? (
+                    <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>hourglass_top</span> Preparing…</>
+                  ) : (
+                    <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>print</span> {savedQuote ? "Download PDF" : "Print / Download PDF"}</>
+                  )}
+                </button>
               ) : null}
               {savedQuote && canShareQuoteLink ? (
                 <a className="button secondary" style={{ width: "100%" }} href={`/quotes/${savedQuote.id}`}>

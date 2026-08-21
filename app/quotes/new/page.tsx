@@ -102,6 +102,7 @@ export default async function NewQuotePage({ searchParams }: NewQuotePageProps) 
         pricingNote={livePricing.message}
         canShareQuoteLink={Boolean(planFeatures?.canShareQuoteLink)}
         canPlaceManufacturingOrder={Boolean(planFeatures?.canPlaceManufacturingOrder)}
+        canDownloadPdf={Boolean(planFeatures?.canDownloadPDF)}
         initialQuote={
           sourceQuote
             ? {

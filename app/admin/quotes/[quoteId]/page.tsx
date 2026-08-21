@@ -85,6 +85,14 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
           <Link className="button secondary button--sm" href={`/admin/tenants/${quote.companyId}`}>
             View Tenant
           </Link>
+          <a
+            className="button secondary button--sm"
+            href={`/api/admin/quotes/${quote.id}/pdf`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Print / Download PDF
+          </a>
         </>
       }
     >

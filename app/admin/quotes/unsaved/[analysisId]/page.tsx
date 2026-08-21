@@ -4,8 +4,7 @@ import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
-import { calculateMakingPrice } from "@/src/services/pricing";
-import { getSettingValue } from "@/lib/app-settings";
+import { computeAnalysisPricingBreakdown } from "@/lib/admin-analysis-pricing";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 import { num } from "@/components/admin/quote-pricing-breakdown";
 import { PricingAuditor } from "@/components/admin/pricing-auditor";
@@ -39,58 +38,8 @@ export default async function AdminUnsavedAnalysisPage({
     redirect(`/admin/quotes/${analysis.quote.id}`);
   }
 
-  const goldSpot = Number(analysis.company.pricingProfile?.goldSpotPerOz ?? 4500);
-  const hasSpec =
-    analysis.status === "COMPLETED" &&
-    analysis.metalWeightGrams != null &&
-    analysis.centerDiamondCarats != null &&
-    Number(analysis.centerDiamondCarats) > 0 &&
-    Boolean(analysis.company.pricingTier);
-
-  let breakdown = null;
-  let cadCost = 20;
-  let customerMarginPct = 0;
-  let detectedSideShape = "round";
-
-  if (hasSpec) {
-    const rawCadCost = await getSettingValue("cad_cost_per_quote");
-    cadCost = rawCadCost !== undefined && rawCadCost !== null && Number(rawCadCost) > 0 ? Number(rawCadCost) : 20;
-    customerMarginPct = analysis.company.customerMarginPct ?? 0;
-    const centerCarat = Math.max(Number(analysis.centerDiamondCarats), 0.0001);
-    const sideDiamondQuantity = analysis.sideDiamondQuantity ?? 0;
-    const sideDiamondCarats = Number(analysis.sideDiamondCarats ?? 0);
-
-    detectedSideShape = (analysis.output as any)?.sideStones?.[0]?.shape ||
-      (analysis.centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(analysis.centerShape.toLowerCase()) && sideDiamondQuantity <= 4
-        ? "fancy"
-        : "round");
-
-    const sideStones =
-      sideDiamondQuantity > 0 && sideDiamondCarats > 0
-        ? [
-            {
-              shape: detectedSideShape,
-              caratWeightEach: sideDiamondCarats / sideDiamondQuantity,
-              count: sideDiamondQuantity,
-              settingType: analysis.settingType || "prong"
-            }
-          ]
-        : [];
-
-    breakdown = calculateMakingPrice({
-      metalType: analysis.selectedMetal,
-      metalWeightGrams: Number(analysis.metalWeightGrams ?? 0),
-      goldSpotPerOz: goldSpot,
-      centerStone: { shape: analysis.centerShape || "round", caratWeight: centerCarat },
-      sideStones,
-      hasWeddingBand: false,
-      isTwoTone: false,
-      colorClarity: "E VS1",
-      cadCost,
-      pricingTier: analysis.company.pricingTier!,
-      customerMarginPct
-    });
-  }
+  const { breakdown, goldSpot, cadCost, customerMarginPct, detectedSideShape } =
+    await computeAnalysisPricingBreakdown(analysis);
 
   const sourceImageUrl = analysis.sourceImageStorageKey
     ? await loadQuoteRenderingDataUrlFromS3(analysis.sourceImageStorageKey)
@@ -110,6 +59,16 @@ export default async function AdminUnsavedAnalysisPage({
           <Link className="button secondary button--sm" href={`/admin/tenants/${analysis.companyId}`}>
             View Tenant
           </Link>
+          {breakdown ? (
+            <a
+              className="button secondary button--sm"
+              href={`/api/admin/quotes/unsaved/${analysis.id}/pdf`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Print / Download PDF
+            </a>
+          ) : null}
         </>
       }
     >
