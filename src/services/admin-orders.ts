@@ -30,10 +30,30 @@ export async function getAdminOrders(status?: OrderStatus | "all") {
       },
       quote: {
         select: {
+          id: true,
           quoteNumber: true,
+          metalType: true,
+          metalWeightGrams: true,
+          centerDiamondCarats: true,
+          sideDiamondCarats: true,
+          sideDiamondQuantity: true,
           makingPrice: true,
           estimatedSellingPrice: true,
-          estimatedPrice: true
+          estimatedPrice: true,
+          renderingStorageKey: true,
+          renderingDataUrl: true,
+          analysis: {
+            select: {
+              id: true,
+              jewelryType: true,
+              centerShape: true,
+              settingType: true,
+              sourceImageStorageKey: true,
+              imageDataUrl: true,
+              renderingStorageKey: true,
+              renderingDataUrl: true
+            }
+          }
         }
       }
     }
@@ -74,7 +94,35 @@ export async function getAdminOrder(orderId: string) {
       company: {
         select: { id: true, name: true, slug: true }
       },
-      quote: { select: { quoteNumber: true, estimatedPrice: true } },
+      quote: {
+        select: {
+          id: true,
+          quoteNumber: true,
+          metalType: true,
+          metalWeightGrams: true,
+          centerDiamondCarats: true,
+          sideDiamondCarats: true,
+          sideDiamondQuantity: true,
+          colorClarity: true,
+          makingPrice: true,
+          estimatedSellingPrice: true,
+          estimatedPrice: true,
+          renderingStorageKey: true,
+          renderingDataUrl: true,
+          analysis: {
+            select: {
+              id: true,
+              jewelryType: true,
+              centerShape: true,
+              settingType: true,
+              sourceImageStorageKey: true,
+              imageDataUrl: true,
+              renderingStorageKey: true,
+              renderingDataUrl: true
+            }
+          }
+        }
+      },
       timeline: {
         select: { id: true, status: true, note: true, createdAt: true },
         orderBy: { createdAt: "asc" }

@@ -13,7 +13,7 @@ type OrderPageProps = {
 };
 
 function formatDate(date: Date | null | undefined) {
-  return date ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(date) : "Not set";
+  return date ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(date)) : "Not set";
 }
 
 export const dynamic = "force-dynamic";
@@ -30,6 +30,9 @@ export default async function AdminOrderPage({ params }: OrderPageProps) {
     notFound();
   }
 
+  const quote = order.quote;
+  const analysis = quote?.analysis;
+
   return (
     <InternalAdminShell
       title={order.orderNumber}
@@ -37,14 +40,19 @@ export default async function AdminOrderPage({ params }: OrderPageProps) {
       navItems={getInternalAdminNav("/admin/orders")}
       adminName={context.user.name || context.user.email}
       actions={
-        <>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <Link className="button secondary" href="/admin/orders">
             Back to queue
           </Link>
           <Link className="button secondary" href={`/admin/tenants/${order.companyId}`}>
             Open tenant
           </Link>
-        </>
+          {quote ? (
+            <Link className="button secondary" href={`/admin/quotes/${quote.id}`}>
+              Audit quote
+            </Link>
+          ) : null}
+        </div>
       }
     >
       <section className="statGrid">
@@ -66,41 +74,142 @@ export default async function AdminOrderPage({ params }: OrderPageProps) {
         </article>
       </section>
 
+      {/* Visual Design & Jewelry Specs Card */}
+      <section className="card" style={{ marginBottom: "1.5rem" }}>
+        <div className="sectionHeader">
+          <div>
+            <h2>Jewelry Design & Visual Specifications</h2>
+            <p className="muted">AI presentation rendering and manufacturing parameters for this custom piece.</p>
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(280px, 360px) 1fr", gap: "24px", alignItems: "start" }}>
+          {/* Hero Thumbnail / Picture */}
+          <div
+            style={{
+              borderRadius: "12px",
+              overflow: "hidden",
+              background: "#08090C",
+              border: "1px solid #E2E8F0",
+              boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "260px",
+              position: "relative"
+            }}
+          >
+            <img
+              src={`/api/admin/orders/${order.id}/image`}
+              alt={order.itemName || "Jewelry design render"}
+              style={{ width: "100%", height: "auto", maxHeight: "380px", objectFit: "contain", display: "block" }}
+              onError={(e) => {
+                (e.currentTarget as HTMLElement).style.display = "none";
+                if (e.currentTarget.parentElement) {
+                  e.currentTarget.parentElement.innerHTML = '<div style="padding: 40px; text-align: center; color: #94A3B8;"><span style="font-size: 48px; display: block; margin-bottom: 8px;">💎</span>No design render available</div>';
+                }
+              }}
+            />
+          </div>
+
+          {/* Extracted Specifications Grid */}
+          <div className="stack">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" }}>
+              <div className="detailCard">
+                <span>Item Name</span>
+                <strong>{order.itemName}</strong>
+                <p className="muted small">{analysis?.jewelryType || "Custom Jewelry"}</p>
+              </div>
+
+              <div className="detailCard">
+                <span>Metal Alloy & Weight</span>
+                <strong>{quote?.metalType || "14K Gold"}</strong>
+                <p className="muted small">{Number(quote?.metalWeightGrams ?? 0).toFixed(2)} grams</p>
+              </div>
+
+              <div className="detailCard">
+                <span>Center Stone</span>
+                <strong>
+                  {Number(quote?.centerDiamondCarats ?? 0).toFixed(2)} ct {analysis?.centerShape || "Round"}
+                </strong>
+                <p className="muted small">{quote?.colorClarity || "E VS1"} ({analysis?.settingType || "Prong"} setting)</p>
+              </div>
+
+              <div className="detailCard">
+                <span>Side Accent Stones</span>
+                <strong>
+                  {quote?.sideDiamondQuantity ?? 0} Diamonds ({Number(quote?.sideDiamondCarats ?? 0).toFixed(2)} ctw)
+                </strong>
+                <p className="muted small">{quote?.sideDiamondQuantity ? "Accent diamonds" : "None"}</p>
+              </div>
+
+              <div className="detailCard">
+                <span>Azzure Making Price</span>
+                <strong style={{ color: "#0F766E" }}>
+                  {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(quote?.makingPrice ?? 0))}
+                </strong>
+                <p className="muted small">Wholesale manufacturing</p>
+              </div>
+
+              <div className="detailCard">
+                <span>Customer Retail Price</span>
+                <strong style={{ color: "#2563EB" }}>
+                  {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(quote?.estimatedSellingPrice ?? quote?.estimatedPrice ?? 0))}
+                </strong>
+                <p className="muted small">End client price</p>
+              </div>
+            </div>
+
+            {order.notes ? (
+              <div className="detailCard" style={{ background: "#F8FAFC" }}>
+                <span>Order Notes / Instructions</span>
+                <p style={{ margin: "4px 0 0", fontSize: "14px", color: "#334155", lineHeight: 1.5 }}>
+                  {order.notes}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
       <section className="grid twoUp">
         <article className="card">
           <div className="sectionHeader">
             <div>
-              <h2>Order detail</h2>
-              <p className="muted">Production tracking and support notes.</p>
+              <h2>Tenant & Production Info</h2>
+              <p className="muted">Manufacturing integration and CustomKing dispatch tracking.</p>
             </div>
           </div>
           <div className="stack">
             <div className="detailCard">
-              <span>Tenant</span>
+              <span>Tenant Company</span>
               <strong>{order.company.name}</strong>
-              <p className="muted small">{order.company.slug}</p>
+              <p className="muted small">Slug: {order.company.slug}</p>
             </div>
             <div className="detailCard">
-              <span>Item</span>
-              <strong>{order.itemName}</strong>
+              <span>Custom King Tracking</span>
+              <strong>{order.ckOrderId || "Not dispatched yet"}</strong>
+              {order.ckOrderUrl ? (
+                <p className="muted small">
+                  <a href={order.ckOrderUrl} target="_blank" rel="noreferrer" className="textLink">
+                    Open CustomKing Workshop Portal ↗
+                  </a>
+                </p>
+              ) : (
+                <p className="muted small">No direct URL provided</p>
+              )}
             </div>
             <div className="detailCard">
-              <span>Custom King</span>
-              <strong>{order.ckOrderId || "Not placed"}</strong>
-              <p className="muted small">{order.ckOrderUrl || "No tracking link"}</p>
-            </div>
-            <div className="detailCard">
-              <span>Quote</span>
-              <strong>{order.quote.quoteNumber}</strong>
-              <p className="muted small">
-                {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-                  Number(order.quote.estimatedPrice)
+              <span>Quote Reference</span>
+              <strong>
+                {quote ? (
+                  <Link href={`/admin/quotes/${quote.id}`} className="textLink">
+                    {quote.quoteNumber}
+                  </Link>
+                ) : (
+                  "No quote linked"
                 )}
-              </p>
-            </div>
-            <div className="detailCard">
-              <span>Notes</span>
-              <strong>{order.notes || "No notes"}</strong>
+              </strong>
+              <p className="muted small">Base quote record</p>
             </div>
           </div>
         </article>
@@ -134,23 +243,15 @@ export default async function AdminOrderPage({ params }: OrderPageProps) {
             </label>
             <label className="field">
               <span>Notes</span>
-              <textarea name="notes" rows={6} defaultValue={order.notes ?? ""} placeholder="Add internal support notes or cancellation reason" />
+              <textarea name="notes" rows={4} defaultValue={order.notes ?? ""} placeholder="Add internal support notes or cancellation reason" />
             </label>
             <div className="heroActions">
               <button className="button primary" type="submit">
-                Save order
+                Save order changes
               </button>
             </div>
           </form>
-          <div className="detailCard" style={{ marginTop: "1rem" }}>
-            <span>Timeline</span>
-            <strong>{formatDate(order.submittedAt)}</strong>
-            <p className="muted small">Submitted</p>
-            <p className="muted small">Reviewed: {formatDate(order.reviewedAt)}</p>
-            <p className="muted small">Production: {formatDate(order.productionAt)}</p>
-            <p className="muted small">Completed: {formatDate(order.completedAt)}</p>
-            <p className="muted small">Canceled: {formatDate(order.canceledAt ?? order.cancelledAt)}</p>
-          </div>
+
           <div className="detailCard" style={{ marginTop: "1rem" }}>
             <span>Workflow events</span>
             <div className="stack">

@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/admin/tenants/pending", label: "Approvals", icon: "how_to_reg", priority: "primary" },
   { href: "/admin/quotes", label: "Quote Audit", icon: "receipt_long", priority: "primary" },
   { href: "/admin/orders", label: "Orders [Staging]", icon: "shopping_bag", priority: "primary" },
+  { href: "/admin/team", label: "Admin Team", icon: "badge", priority: "primary" },
   { href: "/admin/tenants/subscriptions", label: "Subscriptions", icon: "credit_card", priority: "secondary" },
   { href: "/admin/analytics", label: "Analytics", icon: "analytics", priority: "secondary" },
   { href: "/admin/platform/api-keys", label: "API keys", icon: "key", priority: "secondary" },

@@ -95,10 +95,12 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams?:
           <table className="dataTable">
             <thead>
               <tr>
+                <th scope="col" style={{ width: "64px" }}>Design</th>
                 <th scope="col">Order</th>
                 <th scope="col">Company</th>
                 <th scope="col">Status</th>
                 <th scope="col">Quote</th>
+                <th scope="col">Specs</th>
                 <th scope="col">Making price</th>
                 <th scope="col">Customer price</th>
                 <th scope="col">Updated</th>
@@ -108,6 +110,37 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams?:
             <tbody>
               {orders.map((order) => (
                 <tr key={order.id}>
+                  <td>
+                    <Link href={`/admin/orders/${order.id}`}>
+                      <div
+                        style={{
+                          width: "52px",
+                          height: "52px",
+                          borderRadius: "8px",
+                          overflow: "hidden",
+                          background: "#F8FAFC",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          border: "1px solid #E2E8F0",
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                          position: "relative"
+                        }}
+                      >
+                        <img
+                          src={`/api/admin/orders/${order.id}/image`}
+                          alt={order.itemName || "Jewelry design"}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = "none";
+                            if (e.currentTarget.parentElement) {
+                              e.currentTarget.parentElement.innerHTML = '<span style="font-size: 20px;">💍</span>';
+                            }
+                          }}
+                        />
+                      </div>
+                    </Link>
+                  </td>
                   <td>
                     <strong>
                       <Link href={`/admin/orders/${order.id}`}>{order.orderNumber}</Link>
@@ -122,13 +155,26 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams?:
                   <td>
                     <span className="badge">{order.status}</span>
                   </td>
-                  <td>{order.quote.quoteNumber}</td>
-                  <td>{new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(Number(order.quote.makingPrice ?? 0))}</td>
-                  <td>{new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(Number(order.quote.estimatedSellingPrice ?? order.quote.estimatedPrice))}</td>
+                  <td>
+                    <Link className="textLink" href={`/admin/quotes/${order.quote?.id || ""}`}>
+                      {order.quote?.quoteNumber || "—"}
+                    </Link>
+                  </td>
+                  <td>
+                    <p className="muted small" style={{ margin: 0, fontWeight: 600, color: "#1E293B" }}>
+                      {order.quote?.metalType || "14K"}
+                    </p>
+                    <p className="muted small" style={{ margin: 0 }}>
+                      {order.quote?.analysis?.centerShape ? `${order.quote.analysis.centerShape} ` : ""}
+                      {order.quote?.analysis?.jewelryType || "Jewelry"}
+                    </p>
+                  </td>
+                  <td>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(order.quote?.makingPrice ?? 0))}</td>
+                  <td>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(order.quote?.estimatedSellingPrice ?? order.quote?.estimatedPrice ?? 0))}</td>
                   <td>{formatDate(order.updatedAt)}</td>
                   <td>
-                    <Link className="textLink" href={`/admin/orders/${order.id}`}>
-                      {order.status === "SUBMITTED" && !order.ckOrderId ? "Assign CK Order ID" : "Review order"}
+                    <Link className="button secondary button--sm" href={`/admin/orders/${order.id}`} style={{ padding: "4px 8px", fontSize: "12px" }}>
+                      {order.status === "SUBMITTED" && !order.ckOrderId ? "Assign CK" : "Review"}
                     </Link>
                   </td>
                 </tr>

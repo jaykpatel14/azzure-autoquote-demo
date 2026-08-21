@@ -368,3 +368,9 @@ This document logs every key architectural, design, and calculation decision mad
 - **Why**: This avoids duplicate upload workflows while keeping visual composition changes immediate and reversible.
 - **Decision**: Resolve the post-schema-change development error by regenerating Prisma only after stopping every repository Next.js process and rebuilding Turbopack from a clean generated cache.
 - **Why**: The migrated database and source schema already contained the fields; the validation error listed the older client model, proving that the running server had retained stale generated metadata rather than encountering a database-column error.
+
+## Tenant detail null-safety and company deletion options (2026-08-20)
+
+- **Decision**: Add comprehensive optional chaining and fallback defaults to `/admin/tenants/[companyId]` and `/admin/tenants` for subscriptions, plans, pricing profiles, and statistics, while placing the `AdminDeleteCompanyButton` in the top header action row as well as the bottom Danger Zone.
+- **Why**: If a company's subscription is missing an active plan or has legacy/unassigned records, dereferencing `subscription.plan.name` or `subscription.plan.code` caused Next.js server crashes (500 error) on Proxmox/Docker. Placing the modal-backed delete button prominently in the top header and bottom danger zone allows administrators to immediately locate and safely delete any tenant account with exact-name confirmation.
+

@@ -493,3 +493,13 @@ azzure-autoquote-mvp/
 - Settings are stored on `Company`, validated server-side, and applied to the public showroom through CSS variables. Uploaded media remains managed from Branding Settings.
 - The former automatic white overlay for light background colors has been removed because it washed out photographic backgrounds and did not account for the actual image content.
 - After adding the fields, the Windows development server retained a pre-generation Prisma model in Turbopack and raised `Unknown field showroomOverlayColor`. The repository's dev processes were fully stopped, the generated `.next` cache was moved to `.next.stale-showroom`, Prisma Client was regenerated, and the dev server was restarted successfully on port 3000.
+
+## Admin Tenant Detail Error Resolution & Delete Company Visibility (2026-08-20)
+
+- **Tenant Detail 500 Error Fix**: Resolved server crash on `/admin/tenants/[companyId]` by adding strict optional chaining (`subscription?.plan?.name`, `subscription?.plan?.code`) and defensive fallbacks across stats, pricing profiles, and recent activity so missing or unassigned plan/profile records never break the page.
+- **Delete Company Multi-Location Access**:
+  1. **Top Header Actions**: Added `AdminDeleteCompanyButton` directly to the top action row of `/admin/tenants/[companyId]` alongside "Edit billing" and "Open company context".
+  2. **Bottom Danger Zone**: Enhanced the bottom danger zone with explicit permanent deletion details and modal confirmation.
+  3. **Companies Roster (`/admin/companies`)**: Each row has a dedicated 1-click **Delete company** modal button in the Actions column.
+- **Verification**: `npm test` passed 24 test suites (107/107 tests) and `npx tsc --noEmit` returned 0 errors.
+

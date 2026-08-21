@@ -13,7 +13,7 @@ type TenantPageProps = {
 };
 
 function formatDate(date: Date | null | undefined) {
-  return date ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(date) : "Never";
+  return date ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(date)) : "Never";
 }
 
 export const dynamic = "force-dynamic";
@@ -25,13 +25,29 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
   }
 
   const { companyId } = await params;
-  const data = await getAdminTenant(companyId);
-  if (!data) {
+  let data = null;
+  try {
+    data = await getAdminTenant(companyId);
+  } catch (err) {
+    console.error("[admin/tenants/[companyId]] Failed to load tenant:", err);
+  }
+
+  if (!data || !data.company) {
     notFound();
   }
 
   const { company } = data;
   const subscription = data.subscription;
+  const stats = data.stats || { quotes: 0, orders: 0, members: 0, analyses: 0, activity: 0 };
+  const recentQuotes = data.recentQuotes || [];
+  const recentOrders = data.recentOrders || [];
+  const recentActivity = data.recentActivity || [];
+  const pricingProfile = data.pricingProfile || {
+    goldSpotPerOz: 4500,
+    cadCharge: 20,
+    centerSettingPerCarat: 20,
+    finalMultiplier: 2
+  };
 
   return (
     <InternalAdminShell
@@ -40,7 +56,7 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
       navItems={getInternalAdminNav("/admin/tenants")}
       adminName={context.user.name || context.user.email}
       actions={
-        <>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
           <Link className="button secondary" href={`/admin/billing/${company.id}`}>
             Edit billing
           </Link>
@@ -49,7 +65,12 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
               Open company context
             </button>
           </form>
-        </>
+          <AdminDeleteCompanyButton
+            companyId={company.id}
+            companyName={company.name}
+            redirectTo="/admin/tenants"
+          />
+        </div>
       }
     >
       <section className="statGrid">
@@ -60,22 +81,22 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
         </article>
         <article className="statCard statCard--admin">
           <span className="eyebrow">Subscription</span>
-          <strong>{subscription?.status.toLowerCase() ?? "inactive"}</strong>
-          <p className="muted small">{subscription?.plan.name ?? "No plan assigned"}</p>
+          <strong>{subscription?.status?.toLowerCase() ?? "inactive"}</strong>
+          <p className="muted small">{subscription?.plan?.name ?? "No plan assigned"}</p>
         </article>
         <article className="statCard statCard--admin">
           <span className="eyebrow">Quotes</span>
-          <strong>{data.stats.quotes}</strong>
+          <strong>{stats.quotes}</strong>
           <p className="muted small">Quote history available for review.</p>
         </article>
         <article className="statCard statCard--admin">
           <span className="eyebrow">Orders</span>
-          <strong>{data.stats.orders}</strong>
+          <strong>{stats.orders}</strong>
           <p className="muted small">Manufacturing orders linked to this tenant.</p>
         </article>
         <article className="statCard statCard--admin">
           <span className="eyebrow">Members</span>
-          <strong>{data.stats.members}</strong>
+          <strong>{stats.members}</strong>
           <p className="muted small">Users assigned to the company.</p>
         </article>
       </section>
@@ -127,8 +148,8 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
           <div className="stack">
             <div className="detailCard">
               <span>Plan</span>
-              <strong>{subscription?.plan.code ?? "No plan"}</strong>
-              <p className="muted small">{subscription?.plan.monthlyLimit ?? 0} requests/month</p>
+              <strong>{subscription?.plan?.code ?? "No plan"}</strong>
+              <p className="muted small">{subscription?.plan?.monthlyLimit ?? 0} requests/month</p>
             </div>
             <div className="detailCard">
               <span>Current period</span>
@@ -211,7 +232,7 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
             </div>
           </div>
           <div className="stack">
-            {data.company.memberships.map((membership) => (
+            {(company.memberships || []).map((membership) => (
               <div className="detailCard" key={membership.id}>
                 <span>{membership.role}</span>
                 <strong>{membership.user.name || membership.user.email}</strong>
@@ -231,19 +252,19 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
           <div className="pricingGrid">
             <div className="detailCard">
               <span>Gold / oz</span>
-              <strong>{Number(data.pricingProfile.goldSpotPerOz).toFixed(2)}</strong>
+              <strong>{Number(pricingProfile.goldSpotPerOz ?? 4500).toFixed(2)}</strong>
             </div>
             <div className="detailCard">
               <span>CAD charge</span>
-              <strong>{Number(data.pricingProfile.cadCharge).toFixed(2)}</strong>
+              <strong>{Number(pricingProfile.cadCharge ?? 20).toFixed(2)}</strong>
             </div>
             <div className="detailCard">
               <span>Center / ct</span>
-              <strong>{Number(data.pricingProfile.centerSettingPerCarat).toFixed(2)}</strong>
+              <strong>{Number(pricingProfile.centerSettingPerCarat ?? 20).toFixed(2)}</strong>
             </div>
             <div className="detailCard">
               <span>Final multiplier</span>
-              <strong>{Number(data.pricingProfile.finalMultiplier).toFixed(2)}</strong>
+              <strong>{Number(pricingProfile.finalMultiplier ?? 2).toFixed(2)}</strong>
             </div>
           </div>
         </article>
@@ -258,12 +279,12 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
             </div>
           </div>
           <div className="stack">
-            {data.recentQuotes.length === 0 ? (
+            {recentQuotes.length === 0 ? (
               <div className="emptyState">
                 <strong>No quotes yet</strong>
               </div>
             ) : (
-              data.recentQuotes.map((quote) => (
+              recentQuotes.map((quote) => (
                 <div className="detailCard" key={quote.id}>
                   <span><Link href={`/admin/quotes/${quote.id}`}>{quote.quoteNumber}</Link></span>
                   <strong>Customer: {formatAdminMoney(quote.estimatedSellingPrice ?? quote.estimatedPrice)}</strong>
@@ -286,12 +307,12 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
             </div>
           </div>
           <div className="stack">
-            {data.recentOrders.length === 0 ? (
+            {recentOrders.length === 0 ? (
               <div className="emptyState">
                 <strong>No orders yet</strong>
               </div>
             ) : (
-              data.recentOrders.map((order) => (
+              recentOrders.map((order) => (
                 <div className="detailCard" key={order.id}>
                   <span>{order.orderNumber}</span>
                   <strong>{order.status}</strong>
@@ -311,7 +332,7 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
           </div>
         </div>
         <div className="adminFeed">
-          {data.recentActivity.map((entry) => (
+          {recentActivity.map((entry) => (
             <div className="adminFeedItem" key={entry.id}>
               <div className="adminTone adminTone--info" aria-hidden="true" />
               <div style={{ flex: 1 }}>
@@ -329,7 +350,7 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
       <section className="card dangerZone">
         <div className="sectionHeader">
           <div>
-            <span className="eyebrow">Danger zone</span>
+            <span className="eyebrow" style={{ color: "#ef4444", fontWeight: 700 }}>Danger zone</span>
             <h2>Delete company permanently</h2>
             <p className="muted">
               Removes this company from the application and deletes its subscriptions, memberships, quotes, analyses, orders, showroom sessions, audit records, and orphaned user accounts from the database.

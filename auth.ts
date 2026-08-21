@@ -57,6 +57,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               passwordHash: true,
               emailVerifiedAt: true,
               sessionVersion: true,
+              isInternalAdmin: true,
+              adminRole: true,
               memberships: {
                 select: {
                   companyId: true,
@@ -123,6 +125,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.name,
           sessionVersion: user.sessionVersion,
+          isInternalAdmin: user.isInternalAdmin,
+          adminRole: user.adminRole,
           companyId: user.memberships[0]?.companyId ?? "",
           companyName: user.memberships[0]?.company.name ?? "",
           planId: user.memberships[0]?.company.subscription?.planId ?? "plan_starter",
@@ -140,7 +144,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.email = user.email;
         token.name = user.name;
         token.sessionVersion = "sessionVersion" in user ? user.sessionVersion ?? 0 : 0;
-        token.role = isInternalAdminEmail(user.email) ? "AZZURE_ADMIN" : "CUSTOMER";
+        token.role = (isInternalAdminEmail(user.email) || ("isInternalAdmin" in user && Boolean(user.isInternalAdmin))) ? "AZZURE_ADMIN" : "CUSTOMER";
         token.companyId = "companyId" in user && typeof user.companyId === "string" ? user.companyId : "";
         token.companyName = "companyName" in user && typeof user.companyName === "string" ? user.companyName : "";
         token.planId =

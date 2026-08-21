@@ -34,9 +34,6 @@ export async function getInternalAdminContext() {
   const session = await auth();
   const email = session?.user?.email?.trim().toLowerCase();
   if (!email) return null;
-  if (!isInternalAdminEmail(email)) {
-    return null;
-  }
 
   let user;
   try {
@@ -46,6 +43,8 @@ export async function getInternalAdminContext() {
         id: true,
         email: true,
         name: true,
+        isInternalAdmin: true,
+        adminRole: true,
         sessionVersion: true
       }
     });
@@ -59,6 +58,11 @@ export async function getInternalAdminContext() {
   }
 
   if (!user || user.sessionVersion !== session?.user?.sessionVersion) {
+    return null;
+  }
+
+  const isHardcodedAdmin = isInternalAdminEmail(email);
+  if (!isHardcodedAdmin && !user.isInternalAdmin) {
     return null;
   }
 
