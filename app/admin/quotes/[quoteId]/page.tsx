@@ -6,7 +6,8 @@ import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 import { getPricingTierLabel, type MakingPriceBreakdown, calculateMetalCost } from "@/src/services/pricing";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
-import { QuotePricingKpis, QuotePricingBreakdown, money, num } from "@/components/admin/quote-pricing-breakdown";
+import { QuotePricingKpis, money, num } from "@/components/admin/quote-pricing-breakdown";
+import { PricingAuditor } from "@/components/admin/pricing-auditor";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,12 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
     goldSpot,
     25
   );
+
+  const sideDiamondQuantity = quote.sideDiamondQuantity ?? 0;
+  const detectedSideShape = (quote.analysis?.output as any)?.sideStones?.[0]?.shape ||
+    (quote.analysis?.centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(quote.analysis.centerShape.toLowerCase()) && sideDiamondQuantity <= 4
+      ? "fancy"
+      : "round");
 
   const renderingDataUrl = quote.renderingStorageKey
     ? await loadQuoteRenderingDataUrlFromS3(quote.renderingStorageKey)
@@ -134,22 +141,23 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
         {/* ── COLUMN 1: Full Pricing Breakdown ── */}
         <section>
           {breakdown ? (
-            <QuotePricingBreakdown
-              breakdown={breakdown}
-              computedMetalCost={computedMetalCost}
-              goldSpot={goldSpot}
-              metalType={quote.metalType}
-              metalWeightGrams={quote.metalWeightGrams}
-              centerDiamondCarats={quote.centerDiamondCarats}
-              centerShape={quote.analysis?.centerShape}
-              sideDiamondQuantity={quote.sideDiamondQuantity}
-              sideDiamondCarats={quote.sideDiamondCarats}
-              settingType={quote.analysis?.settingType}
-              colorClarity={quote.colorClarity}
-              pricingTier={quote.pricingTierSnapshot}
-              tierDivisor={tierDivisor}
-              makingPrice={makingPrice}
-              sellingPrice={sellingPrice}
+            <PricingAuditor
+              initial={{
+                metalType: quote.metalType ?? "14K",
+                metalWeightGrams: Number(quote.metalWeightGrams ?? 0),
+                centerDiamondCarats: Number(quote.centerDiamondCarats ?? 0),
+                centerShape: quote.analysis?.centerShape || "round",
+                sideDiamondQuantity: quote.sideDiamondQuantity ?? 0,
+                sideDiamondCarats: Number(quote.sideDiamondCarats ?? 0),
+                sideStoneShape: detectedSideShape,
+                settingType: quote.analysis?.settingType || "prong",
+                hasWeddingBand: breakdown.pieces === 2,
+                isTwoTone: false,
+                goldSpotPerOz: goldSpot,
+                cadCost: breakdown.cadCost,
+                pricingTier: quote.pricingTierSnapshot ?? "TIER_2",
+                customerMarginPct: breakdown.customerMarginPct
+              }}
             />
           ) : (
             <div className="card adminBreakdownCard">

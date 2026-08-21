@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { type Prisma } from "@prisma/client";
 import { ZodError, z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -199,7 +199,7 @@ export async function POST(request: Request) {
     }
 
     let renderingImageUrl: string | null = null;
-    let renderingStatus: "COMPLETED" | "FAILED" | "SKIPPED" = "SKIPPED";
+    let renderingStatus: "COMPLETED" | "SKIPPED" | "PROCESSING" = "SKIPPED";
 
     if (features.canGenerateAIImages) {
       // The analysis step already generates a rendering automatically. Reuse it
@@ -235,21 +235,17 @@ export async function POST(request: Request) {
           ? await loadQuoteRenderingDataUrlFromS3(existingRendering.renderingStorageKey)
           : existingRendering.renderingDataUrl ?? null;
       } else {
-        const rendering = await generateQuoteRendering({
-          quoteId: quoteResult.data.id,
-          companyId: company.id
+        // No rendering to reuse — generating one fresh takes 30-75s (OpenAI image
+        // round trip). Don't block the save response on it; that made saves look
+        // hung and risked exceeding any upstream request timeout. Generate it in
+        // the background instead; the quote's renderingStatus flips to COMPLETED
+        // once it's ready and is picked up next time the quote is viewed.
+        const quoteId = quoteResult.data.id;
+        const companyId = company.id;
+        after(() => {
+          generateQuoteRendering({ quoteId, companyId }).catch(() => undefined);
         });
-        renderingStatus = rendering.status;
-
-        if (rendering.status === "COMPLETED") {
-          const renderedQuote = await prisma.quote.findUnique({
-            where: { id: quoteResult.data.id },
-            select: { renderingStorageKey: true, renderingDataUrl: true }
-          });
-          renderingImageUrl = renderedQuote?.renderingStorageKey
-            ? await loadQuoteRenderingDataUrlFromS3(renderedQuote.renderingStorageKey)
-            : renderedQuote?.renderingDataUrl ?? null;
-        }
+        renderingStatus = "PROCESSING";
       }
     }
 
@@ -258,7 +254,6 @@ export async function POST(request: Request) {
       quoteNumber: quoteResult.data.quoteNumber,
       estimatedPrice: Number(quoteResult.data.estimatedPrice),
       renderingStatus,
-      renderingError: renderingStatus === "FAILED" ? "The quote was saved, but its rendering could not be generated." : undefined,
       renderingImageUrl
     });
   } catch (error) {

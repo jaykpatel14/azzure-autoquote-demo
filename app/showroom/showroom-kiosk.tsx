@@ -239,7 +239,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
 
   async function openMobileUploadQr() {
-    const sessionId = `up_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const sessionId = crypto.randomUUID();
     setMobileUploadSessionId(sessionId);
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const uploadLink = `${origin}/showroom/mobile-upload?sessionId=${sessionId}&token=${encodeURIComponent(token)}`;

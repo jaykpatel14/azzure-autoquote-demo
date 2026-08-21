@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getActiveShowroom, nextShowroomCode } from "@/lib/showroom";
@@ -9,7 +9,6 @@ import { calculateMakingPrice, calculateTierPrice } from "@/src/services/pricing
 import { createQuote } from "@/src/services/quotes";
 import { getSettingValue } from "@/lib/app-settings";
 import { generateQuoteRendering } from "@/lib/ai/quote-rendering";
-import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 import { validateEmail } from "@/lib/email-validation";
 
 const schema = z.object({
@@ -114,24 +113,23 @@ export async function POST(request: Request) {
     const displayCode = await nextShowroomCode(session.companyId);
     await prisma.showroomQuote.create({ data: { companyId: session.companyId, quoteId: result.data.id, displayCode, customerNotes: resolvedNotes || null } });
     await consumeMonthlyUsage(reservation.usagePeriodId); reservation = undefined;
-    const rendering = await generateQuoteRendering({ quoteId: result.data.id, companyId: session.companyId }).catch(() => ({ status: "FAILED" as const }));
-    let renderingImageUrl: string | null = null;
-    if (rendering.status === "COMPLETED") {
-      const renderedQuote = await prisma.quote.findUnique({
-        where: { id: result.data.id },
-        select: { renderingStorageKey: true, renderingDataUrl: true }
-      });
-      renderingImageUrl = renderedQuote?.renderingStorageKey
-        ? await loadQuoteRenderingDataUrlFromS3(renderedQuote.renderingStorageKey)
-        : renderedQuote?.renderingDataUrl ?? null;
-    }
+
+    // AI 3D rendering can take 30-75s (image generation round trip). Don't block the
+    // save response on it — that made the kiosk look hung and risked exceeding any
+    // upstream request timeout. Generate it in the background instead; the quote's
+    // renderingStatus flips to COMPLETED once it's ready and is picked up wherever
+    // the quote is viewed afterward.
+    after(() => {
+      generateQuoteRendering({ quoteId: result.data.id, companyId: session.companyId }).catch(() => undefined);
+    });
+
     return NextResponse.json({
       code: displayCode,
       displayCode,
       estimatedPrice: tier.estimatedSellingPrice,
       estimatedSellingPrice: tier.estimatedSellingPrice,
-      renderingStatus: rendering.status,
-      renderingImageUrl
+      renderingStatus: "PROCESSING",
+      renderingImageUrl: null
     });
   } catch (error) {
     if (reservation) await releaseMonthlyUsage(reservation.usagePeriodId).catch(() => undefined);

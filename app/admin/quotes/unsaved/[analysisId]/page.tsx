@@ -4,10 +4,11 @@ import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
-import { calculateMakingPrice, calculateMetalCost, calculateTierPrice } from "@/src/services/pricing";
+import { calculateMakingPrice } from "@/src/services/pricing";
 import { getSettingValue } from "@/lib/app-settings";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
-import { QuotePricingKpis, QuotePricingBreakdown, num } from "@/components/admin/quote-pricing-breakdown";
+import { num } from "@/components/admin/quote-pricing-breakdown";
+import { PricingAuditor } from "@/components/admin/pricing-auditor";
 
 export const dynamic = "force-dynamic";
 
@@ -47,19 +48,19 @@ export default async function AdminUnsavedAnalysisPage({
     Boolean(analysis.company.pricingTier);
 
   let breakdown = null;
-  let tierDivisor = 0;
-  let sellingPrice = 0;
-  let computedMetalCost = 0;
+  let cadCost = 20;
+  let customerMarginPct = 0;
+  let detectedSideShape = "round";
 
   if (hasSpec) {
     const rawCadCost = await getSettingValue("cad_cost_per_quote");
-    const cadCost = rawCadCost !== undefined && rawCadCost !== null && Number(rawCadCost) > 0 ? Number(rawCadCost) : 20;
-    const customerMarginPct = analysis.company.customerMarginPct ?? 0;
+    cadCost = rawCadCost !== undefined && rawCadCost !== null && Number(rawCadCost) > 0 ? Number(rawCadCost) : 20;
+    customerMarginPct = analysis.company.customerMarginPct ?? 0;
     const centerCarat = Math.max(Number(analysis.centerDiamondCarats), 0.0001);
     const sideDiamondQuantity = analysis.sideDiamondQuantity ?? 0;
     const sideDiamondCarats = Number(analysis.sideDiamondCarats ?? 0);
-    
-    const detectedSideShape = (analysis.output as any)?.sideStones?.[0]?.shape ||
+
+    detectedSideShape = (analysis.output as any)?.sideStones?.[0]?.shape ||
       (analysis.centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(analysis.centerShape.toLowerCase()) && sideDiamondQuantity <= 4
         ? "fancy"
         : "round");
@@ -89,14 +90,6 @@ export default async function AdminUnsavedAnalysisPage({
       pricingTier: analysis.company.pricingTier!,
       customerMarginPct
     });
-    tierDivisor = breakdown.tierDivisor;
-    sellingPrice = breakdown.estimatedSellingPrice;
-    computedMetalCost = calculateMetalCost(
-      analysis.selectedMetal,
-      Number(analysis.metalWeightGrams ?? 0),
-      goldSpot,
-      25
-    );
   }
 
   const sourceImageUrl = analysis.sourceImageStorageKey
@@ -137,32 +130,25 @@ export default async function AdminUnsavedAnalysisPage({
 
       {breakdown ? (
         <>
-          <QuotePricingKpis
-            breakdown={breakdown}
-            pricingTier={analysis.company.pricingTier}
-            tierDivisor={tierDivisor}
-            makingPrice={breakdown.makingPrice}
-            sellingPrice={sellingPrice}
-          />
-
           <div className="adminQuoteDetailGrid">
             <section>
-              <QuotePricingBreakdown
-                breakdown={breakdown}
-                computedMetalCost={computedMetalCost}
-                goldSpot={goldSpot}
-                metalType={analysis.selectedMetal}
-                metalWeightGrams={analysis.metalWeightGrams}
-                centerDiamondCarats={analysis.centerDiamondCarats}
-                centerShape={analysis.centerShape}
-                sideDiamondQuantity={analysis.sideDiamondQuantity ?? 0}
-                sideDiamondCarats={analysis.sideDiamondCarats}
-                settingType={analysis.settingType}
-                colorClarity="E VS1"
-                pricingTier={analysis.company.pricingTier}
-                tierDivisor={tierDivisor}
-                makingPrice={breakdown.makingPrice}
-                sellingPrice={sellingPrice}
+              <PricingAuditor
+                initial={{
+                  metalType: analysis.selectedMetal,
+                  metalWeightGrams: Number(analysis.metalWeightGrams ?? 0),
+                  centerDiamondCarats: Number(analysis.centerDiamondCarats ?? 0),
+                  centerShape: analysis.centerShape || "round",
+                  sideDiamondQuantity: analysis.sideDiamondQuantity ?? 0,
+                  sideDiamondCarats: Number(analysis.sideDiamondCarats ?? 0),
+                  sideStoneShape: detectedSideShape,
+                  settingType: analysis.settingType || "prong",
+                  hasWeddingBand: false,
+                  isTwoTone: false,
+                  goldSpotPerOz: goldSpot,
+                  cadCost,
+                  pricingTier: analysis.company.pricingTier!,
+                  customerMarginPct
+                }}
               />
             </section>
 

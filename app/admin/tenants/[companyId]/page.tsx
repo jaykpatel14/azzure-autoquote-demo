@@ -26,10 +26,37 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
 
   const { companyId } = await params;
   let data = null;
+  let loadError: string | null = null;
   try {
     data = await getAdminTenant(companyId);
   } catch (err) {
     console.error("[admin/tenants/[companyId]] Failed to load tenant:", err);
+    loadError = err instanceof Error ? err.message : "Unknown error while loading this tenant.";
+  }
+
+  if (loadError) {
+    return (
+      <InternalAdminShell
+        title="Unable to load tenant"
+        description="The tenant record could not be loaded because of a server error, not because it doesn't exist."
+        navItems={getInternalAdminNav("/admin/tenants")}
+        adminName={context.user.name || context.user.email}
+      >
+        <section className="card" style={{ borderColor: "#ef4444" }}>
+          <h2>Failed to load tenant {companyId}</h2>
+          <p className="muted">
+            This is a server-side error (e.g. a database schema mismatch or connectivity issue), not a missing
+            record. Check the server logs for the full stack trace.
+          </p>
+          <pre style={{ whiteSpace: "pre-wrap", background: "#0f172a", color: "#fca5a5", padding: "12px 16px", borderRadius: 8, fontSize: 13 }}>
+            {loadError}
+          </pre>
+          <Link className="button secondary" href="/admin/tenants">
+            Back to tenants
+          </Link>
+        </section>
+      </InternalAdminShell>
+    );
   }
 
   if (!data || !data.company) {
