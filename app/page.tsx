@@ -7,7 +7,7 @@ import WorkspaceShell from "@/components/workspace-shell";
 import { UsageBar } from "@/src/components/ui/UsageBar";
 import { StatusBadge } from "@/src/components/ui/StatusBadge";
 import { getTrialDaysRemaining, getTrialQuotesRemaining } from "@/lib/billing";
-import { getAuthenticatedCompanyContext } from "@/lib/company";
+import { CompanyAccessError, getAuthenticatedCompanyContext } from "@/lib/company";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getDashboardData } from "@/src/services/dashboard";
@@ -181,12 +181,24 @@ const PLAN_CARDS = [
 
 export default async function HomePage() {
   const adminContext = await getInternalAdminContext();
-  if (adminContext) {
-    redirect("/admin");
+
+  let context;
+  try {
+    context = await getAuthenticatedCompanyContext();
+  } catch (error) {
+    // Internal admins have no company membership of their own. Unless they've opened
+    // a tenant's context from the admin console (handled inside getAuthenticatedCompanyContext),
+    // send them back to the admin console instead of surfacing this as an error.
+    if (adminContext && error instanceof CompanyAccessError) {
+      redirect("/admin");
+    }
+    throw error;
   }
 
-  const context = await getAuthenticatedCompanyContext();
   if (!context) {
+    if (adminContext) {
+      redirect("/admin");
+    }
     return <MarketingPage />;
   }
 

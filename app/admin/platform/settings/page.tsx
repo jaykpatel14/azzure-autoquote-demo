@@ -30,20 +30,24 @@ export default async function AdminPlatformSettingsPage() {
     >
       <section className="statGrid">
         <article className="statCard statCard--admin">
-          <span className="eyebrow">Editable keys</span>
-          <strong>{data.editableKeys.length}</strong>
-        </article>
-        <article className="statCard statCard--admin">
           <span className="eyebrow">Public settings</span>
           <strong>{data.publicSettings.length}</strong>
         </article>
         <article className="statCard statCard--admin">
-          <span className="eyebrow">Secret settings</span>
-          <strong>{data.secretSettings.length}</strong>
+          <span className="eyebrow">Database-backed</span>
+          <strong>{data.publicSettings.filter((setting) => setting.source === "database").length}</strong>
         </article>
         <article className="statCard statCard--admin">
-          <span className="eyebrow">Database-backed</span>
-          <strong>{data.settings.filter((setting) => setting.source === "database").length}</strong>
+          <span className="eyebrow">Environment fallback</span>
+          <strong>{data.publicSettings.filter((setting) => setting.source === "env").length}</strong>
+        </article>
+        <article className="statCard statCard--admin">
+          <span className="eyebrow">Secret keys</span>
+          <strong>
+            <Link href="/admin/platform/api-keys" style={{ color: "inherit" }}>
+              {data.secretSettings.length}
+            </Link>
+          </strong>
         </article>
       </section>
 
@@ -52,12 +56,13 @@ export default async function AdminPlatformSettingsPage() {
           <div>
             <h2>Runtime overrides</h2>
             <p className="muted">
-              Blank a field to remove the database value and fall back to the environment default.
+              Blank a field to remove the database value and fall back to the environment default. Secret values
+              (API keys, webhook secrets) live on the dedicated <Link href="/admin/platform/api-keys">API keys</Link> page.
             </p>
           </div>
         </div>
         <div className="stack">
-          {data.settings.map((setting) => (
+          {data.publicSettings.map((setting) => (
             <form key={setting.key} className="planCard" action="/api/admin/settings" method="post">
               <input type="hidden" name="key" value={setting.key} />
               <input type="hidden" name="redirectTo" value="/admin/platform/settings" />

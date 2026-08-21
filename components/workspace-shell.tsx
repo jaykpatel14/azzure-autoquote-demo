@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import CompanySwitcher from "@/components/company-switcher";
 import SignOutButton from "@/components/sign-out-button";
+import AdminImpersonationBanner from "@/components/admin-impersonation-banner";
+import { CompanyAccessError, getAuthenticatedCompanyContext } from "@/lib/company";
 
 type WorkspaceNavItem = {
   href: string;
@@ -21,7 +23,7 @@ type WorkspaceShellProps = {
   children: ReactNode;
 };
 
-export default function WorkspaceShell({
+export default async function WorkspaceShell({
   eyebrow = "Azzure AI Quote",
   title,
   description,
@@ -32,6 +34,13 @@ export default function WorkspaceShell({
   children
 }: WorkspaceShellProps) {
   const activePage = navItems.find((n) => n.active);
+
+  const impersonatedCompanyName = await getAuthenticatedCompanyContext()
+    .then((context) => (context?.isImpersonating ? context.company.name : null))
+    .catch((error) => {
+      if (error instanceof CompanyAccessError) return null;
+      throw error;
+    });
 
   return (
     <div className="workspaceShell">
@@ -131,6 +140,7 @@ export default function WorkspaceShell({
           {actions ? <div className="heroActions">{actions}</div> : null}
         </header>
 
+        {impersonatedCompanyName ? <AdminImpersonationBanner companyName={impersonatedCompanyName} /> : null}
         {banner ? <div className="pageBannerWrap">{banner}</div> : null}
         {children}
       </main>

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Inter, JetBrains_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/toast-provider";
 import "@/src/styles/design-tokens.css";
@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   title: "Azzure AI Quote | AI Pricing for Luxury Jewelry Retailers",
   description:
     "The ultimate AI-powered pricing engine for luxury jewelry retailers. Close bespoke commissions instantly on the showroom floor with real-time, mathematically perfect quotes."
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

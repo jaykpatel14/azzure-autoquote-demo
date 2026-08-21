@@ -1,7 +1,9 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import SignOutButton from "@/components/sign-out-button";
 import type { InternalAdminNavItem } from "@/lib/internal-admin-nav";
+import { ACTIVE_COMPANY_COOKIE } from "@/lib/company";
 import { prisma } from "@/lib/prisma";
 
 type InternalAdminShellProps = {
@@ -22,6 +24,8 @@ export default async function InternalAdminShell({
   children
 }: InternalAdminShellProps) {
   const pendingCount = await prisma.company.count({ where: { accountStatus: "PENDING_APPROVAL" } });
+  const cookieStore = await cookies();
+  const hasActiveCompanyContext = Boolean(cookieStore.get(ACTIVE_COMPANY_COOKIE)?.value);
 
   return (
     <div className="workspaceShell">
@@ -87,9 +91,13 @@ export default async function InternalAdminShell({
             <span className="adminTopbarTitle">Platform Console</span>
           </div>
           <div className="adminTopbarActions">
-            <Link className="button secondary button--sm" href="/">
+            <Link
+              className="button secondary button--sm"
+              href={hasActiveCompanyContext ? "/" : "/admin/tenants"}
+              title={hasActiveCompanyContext ? "Return to the tenant workspace you're previewing" : "Pick a tenant to preview their workspace"}
+            >
               <span className="material-symbols-outlined" style={{ fontSize: 15 }}>store</span>
-              Jeweler Workspace
+              {hasActiveCompanyContext ? "Jeweler Workspace" : "Preview a Tenant"}
             </Link>
           </div>
         </header>

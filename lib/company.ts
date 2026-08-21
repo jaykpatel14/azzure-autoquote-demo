@@ -13,6 +13,7 @@ import type {
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isPrismaConnectionError } from "@/lib/prisma-errors";
+import { isInternalAdminEmail } from "@/lib/internal-admin";
 
 export const ACTIVE_COMPANY_COOKIE = "azzure-active-company-id";
 
@@ -60,7 +61,53 @@ export type CompanyContext = {
   company: CompanyMembershipCompany;
   membership: CompanyMembership;
   memberships: CompanyMembership[];
+  /** True when this context was synthesized for an internal admin previewing a
+   *  tenant's workspace read-only, rather than a real company membership. */
+  isImpersonating: boolean;
 };
+
+const COMPANY_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+  logoUrl: true,
+  websiteUrl: true,
+  aboutUs: true,
+  primaryColor: true,
+  showroomBackgroundColor: true,
+  showroomBackgroundMediaKey: true,
+  showroomBackgroundMediaType: true,
+  showroomOverlayColor: true,
+  showroomOverlayOpacity: true,
+  showroomTextColor: true,
+  showroomBackgroundFit: true,
+  showroomBackgroundPosition: true,
+  showroomPanelOpacity: true,
+  quoteSequence: true,
+  accountStatus: true,
+  pricingTier: true,
+  customerMarginPct: true,
+  ckCustomerVerified: true,
+  ckCustomerVerifiedAt: true,
+  ckCustomerVerifiedBy: true,
+  ckCustomerRevokedAt: true,
+  ckCustomerNotes: true,
+  approvedAt: true,
+  approvedBy: true,
+  tierChangedAt: true,
+  tierChangedBy: true,
+  suspendedAt: true,
+  suspendedReason: true,
+  adminNotes: true,
+  createdAt: true,
+  updatedAt: true,
+  pricingProfile: true,
+  subscription: {
+    include: {
+      plan: true
+    }
+  }
+} as const;
 
 export function getCompanyRoleRank(role: CompanyRole | null | undefined) {
   if (!role) return 0;
@@ -127,7 +174,7 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
   const userId = session?.user?.id;
   if (!userId) return null;
 
-  let user: CompanyContext["user"] | null = null;
+  let user: (CompanyContext["user"] & { isInternalAdmin: boolean }) | null = null;
   try {
     user = await prisma.user.findUnique({
       where: { id: userId },
@@ -136,56 +183,14 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
         email: true,
         name: true,
         sessionVersion: true,
+        isInternalAdmin: true,
         memberships: {
           select: {
             id: true,
             role: true,
             companyId: true,
             userId: true,
-            company: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-                logoUrl: true,
-                websiteUrl: true,
-                aboutUs: true,
-                primaryColor: true,
-                showroomBackgroundColor: true,
-                showroomBackgroundMediaKey: true,
-                showroomBackgroundMediaType: true,
-                showroomOverlayColor: true,
-                showroomOverlayOpacity: true,
-                showroomTextColor: true,
-                showroomBackgroundFit: true,
-                showroomBackgroundPosition: true,
-                showroomPanelOpacity: true,
-                quoteSequence: true,
-                accountStatus: true,
-                pricingTier: true,
-                customerMarginPct: true,
-                ckCustomerVerified: true,
-        ckCustomerVerifiedAt: true,
-        ckCustomerVerifiedBy: true,
-        ckCustomerRevokedAt: true,
-        ckCustomerNotes: true,
-        approvedAt: true,
-        approvedBy: true,
-                tierChangedAt: true,
-                tierChangedBy: true,
-                suspendedAt: true,
-                suspendedReason: true,
-                adminNotes: true,
-                createdAt: true,
-                updatedAt: true,
-                pricingProfile: true,
-                subscription: {
-                  include: {
-                    plan: true
-                  }
-                }
-              }
-            }
+            company: { select: COMPANY_SELECT }
           },
           orderBy: {
             company: { createdAt: "asc" }
@@ -204,12 +209,48 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
 
   if (!user) return null;
   if (user.sessionVersion !== session.user.sessionVersion) return null;
-  if (user.memberships.length === 0) {
-    throw new CompanyAccessError("Your account is not assigned to any companies.");
-  }
 
   const cookieStore = await cookies();
   const cookieCompanyId = cookieStore.get(ACTIVE_COMPANY_COOKIE)?.value;
+
+  if (user.memberships.length === 0) {
+    // Internal admin/support staff have no company of their own. If they've opened a
+    // tenant's context from the admin console, synthesize a read-only preview instead
+    // of treating them as an unaffiliated (and therefore blocked) customer.
+    if ((user.isInternalAdmin || isInternalAdminEmail(user.email)) && cookieCompanyId) {
+      const company = await prisma.company.findUnique({
+        where: { id: cookieCompanyId },
+        select: COMPANY_SELECT
+      });
+
+      if (!company) return null;
+
+      const impersonatedMembership: CompanyMembership = {
+        id: `impersonation:${company.id}`,
+        role: "VIEWER",
+        companyId: company.id,
+        userId: user.id,
+        company
+      };
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          sessionVersion: user.sessionVersion,
+          memberships: [impersonatedMembership]
+        },
+        membership: impersonatedMembership,
+        memberships: [impersonatedMembership],
+        company,
+        isImpersonating: true
+      };
+    }
+
+    throw new CompanyAccessError("Your account is not assigned to any companies.");
+  }
+
   const membership =
     user.memberships.find((entry) => entry.companyId === cookieCompanyId) ?? user.memberships[0];
 
@@ -223,7 +264,8 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
     },
     membership,
     memberships: user.memberships,
-    company: membership.company
+    company: membership.company,
+    isImpersonating: false
   };
 }
 
@@ -245,6 +287,11 @@ export function isCompanyMember(
   companyId: string
 ) {
   return context.memberships.some((membership) => membership.companyId === companyId);
+}
+
+export async function clearActiveCompanyCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete(ACTIVE_COMPANY_COOKIE);
 }
 
 export async function setActiveCompanyCookie(companyId: string) {
