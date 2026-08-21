@@ -12,7 +12,7 @@ import { convertMetalWeight, type MetalType } from "@/lib/pricing";
 import { validateEmail } from "@/lib/email-validation";
 import type { PricingTier } from "@prisma/client";
 
-type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; backgroundColor: string | null; backgroundMediaUrl: string | null; backgroundMediaType: string | null; aboutUs: string | null };
+type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; backgroundColor: string | null; backgroundMediaUrl: string | null; backgroundMediaType: string | null; overlayColor: string | null; overlayOpacity: number | null; textColor: string | null; backgroundFit: string | null; backgroundPosition: string | null; panelOpacity: number | null; aboutUs: string | null };
 type Pricing = { cadCost: number; customerMarginPct: number; pricingTier: PricingTier | null };
 type Analysis = {
   analysisId: string;
@@ -138,17 +138,15 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       "--color-brand": brandColor,
       "--color-brand-light": `rgb(${lighten(red)}, ${lighten(green)}, ${lighten(blue)})`,
       "--color-brand-glow": `rgba(${red}, ${green}, ${blue}, 0.3)`,
-      "--showroom-background": backgroundColor
+      "--showroom-background": backgroundColor,
+      "--showroom-overlay-color": branding.overlayColor || "#000000",
+      "--showroom-overlay-opacity": String((branding.overlayOpacity ?? 58) / 100),
+      "--showroom-text": branding.textColor || "#ffffff",
+      "--showroom-background-fit": branding.backgroundFit === "contain" ? "contain" : "cover",
+      "--showroom-background-position": branding.backgroundPosition || "center",
+      "--showroom-panel-opacity": `${branding.panelOpacity ?? 34}%`
     } as CSSProperties;
-  }, [branding.backgroundColor, branding.primaryColor]);
-
-  const hasLightBackground = useMemo(() => {
-    const color = branding.backgroundColor || "#08090b";
-    const red = Number.parseInt(color.slice(1, 3), 16);
-    const green = Number.parseInt(color.slice(3, 5), 16);
-    const blue = Number.parseInt(color.slice(5, 7), 16);
-    return (red * 299 + green * 587 + blue * 114) / 1000 > 155;
-  }, [branding.backgroundColor]);
+  }, [branding]);
 
   const [started, setStarted] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
@@ -612,7 +610,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const activeImage = renderingImageUrl || (previews.length > 0 ? previews[0] : null);
 
   return (
-    <div className={`showroom${hasLightBackground ? " showroom--light" : ""}`} style={brandStyle}>
+    <div className="showroom" style={brandStyle}>
       {branding.backgroundMediaUrl ? (
         branding.backgroundMediaType?.startsWith("video/") ? (
           <video className="showroomBackgroundMedia" src={branding.backgroundMediaUrl} autoPlay muted loop playsInline aria-hidden="true" />
@@ -621,10 +619,13 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
         )
       ) : null}
       {branding.backgroundMediaUrl ? <div className="showroomBackgroundOverlay" aria-hidden="true" /> : null}
-      {/* Brand Header */}
       <header className="showroomBrand">
         <div className="showroomBrandIdentity">
-          {branding.logoUrl ? <img src={branding.logoUrl} alt="" /> : null}
+          {branding.logoUrl ? (
+            <div className="showroomBrandLogoWrapper">
+              <img src={branding.logoUrl} alt={branding.companyName || "Store logo"} className="showroomBrandLogo" />
+            </div>
+          ) : null}
           <strong>{branding.companyName || "Azzure Custom Studio"}</strong>
         </div>
 

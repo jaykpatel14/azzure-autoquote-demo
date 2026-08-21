@@ -21,13 +21,13 @@
   background: radial-gradient(circle at 50% 0%, var(--color-brand-glow) 0%, transparent 60%), var(--showroom-background, #08090b);
   position: relative;
   isolation: isolate;
+  color: var(--showroom-text, #fff);
 }
 
 .showroomBackgroundMedia,
 .showroomBackgroundOverlay { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.showroomBackgroundMedia { z-index: -2; object-fit: cover; }
-.showroomBackgroundOverlay { z-index: -1; background: rgba(0, 0, 0, 0.58); }
-.showroom--light .showroomBackgroundOverlay { background: rgba(255, 255, 255, 0.62); }
+.showroomBackgroundMedia { z-index: -2; object-fit: var(--showroom-background-fit, cover); object-position: var(--showroom-background-position, center); }
+.showroomBackgroundOverlay { z-index: -1; background: var(--showroom-overlay-color, #000); opacity: var(--showroom-overlay-opacity, .58); }
 
 /* Header */
 .showroomBrand {
@@ -39,6 +39,24 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding-bottom: 20px;
   margin-bottom: 32px;
+}
+
+.showroomBrandLogoWrapper {
+  background: rgba(255, 255, 255, 0.96);
+  padding: 6px 14px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.showroomBrandLogo {
+  max-width: 180px;
+  max-height: 48px;
+  object-fit: contain;
+  display: block;
 }
 
 .showroomBrand img {
@@ -59,20 +77,8 @@
   font-size: 1.85rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #fff;
+  color: var(--showroom-text, #fff);
 }
-
-.showroom--light { color: #171717; }
-.showroom--light .showroomBrand { border-bottom-color: rgba(0, 0, 0, 0.12); }
-.showroom--light .showroomBrand strong,
-.showroom--light .showroomHeroTitle,
-.showroom--light .showroomCatalogHeader h2,
-.showroom--light .showroomProductContent strong { color: #171717; }
-.showroom--light .showroomSubtext,
-.showroom--light .showroomCatalogHeader p,
-.showroom--light .showroomProductContent p { color: #4b5563; }
-.showroom--light .showroomPresetCard,
-.showroom--light .showroomProductCard { background: rgba(255, 255, 255, 0.72); border-color: rgba(0, 0, 0, 0.12); }
 
 .showroomBadge {
   display: inline-flex;
@@ -104,6 +110,9 @@
   text-align: center;
   padding: 60px 40px;
   box-sizing: border-box;
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--showroom-overlay-color, #000) var(--showroom-panel-opacity, 34%), transparent);
+  backdrop-filter: blur(2px);
 }
 
 .showroomEyebrow {
@@ -120,7 +129,7 @@
   font-size: clamp(2.5rem, 5.5vw, 4.25rem);
   font-weight: 600;
   line-height: 1.1;
-  color: #ffffff;
+  color: var(--showroom-text, #ffffff);
   margin: 0 0 20px;
   letter-spacing: -0.02em;
 }
@@ -133,7 +142,7 @@
 .showroomSubtext {
   font-size: 1.25rem;
   line-height: 1.6;
-  color: #a19f99;
+  color: color-mix(in srgb, var(--showroom-text, #fff) 76%, transparent);
   max-width: 680px;
   margin: 0 auto 40px;
 }
@@ -147,7 +156,7 @@
 }
 
 .showroomPresetCard {
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--showroom-overlay-color, #000) var(--showroom-panel-opacity, 34%), transparent);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 20px;
@@ -181,12 +190,12 @@
 .showroomPresetCard strong {
   font-size: 1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--showroom-text, #fff);
 }
 
 .showroomPresetCard p {
   font-size: 0.8125rem;
-  color: #8e8b84;
+  color: color-mix(in srgb, var(--showroom-text, #fff) 70%, transparent);
   margin: 0;
   line-height: 1.4;
 }
@@ -330,7 +339,7 @@
 .showroomCatalogHeader h2 {
   font-family: var(--font-display, "Playfair Display", Georgia, serif);
   font-size: 1.75rem;
-  color: #fff;
+  color: var(--showroom-text, #fff);
   margin: 0;
 }
 
@@ -341,7 +350,7 @@
 }
 
 .showroomProductCard {
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--showroom-overlay-color, #000) var(--showroom-panel-opacity, 34%), transparent);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   overflow: hidden;
@@ -403,13 +412,13 @@
 .showroomProductContent strong {
   font-size: 1.0625rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--showroom-text, #fff);
   line-height: 1.3;
 }
 
 .showroomProductContent p {
   font-size: 0.8125rem;
-  color: #9ca3af;
+  color: color-mix(in srgb, var(--showroom-text, #fff) 70%, transparent);
   margin: 0;
   line-height: 1.45;
 }

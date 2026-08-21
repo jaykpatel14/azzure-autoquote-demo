@@ -24,6 +24,12 @@ export async function getSettingsProfileData(companyId: string, userId: string) 
         showroomBackgroundColor: true,
         showroomBackgroundMediaKey: true,
         showroomBackgroundMediaType: true,
+        showroomOverlayColor: true,
+        showroomOverlayOpacity: true,
+        showroomTextColor: true,
+        showroomBackgroundFit: true,
+        showroomBackgroundPosition: true,
+        showroomPanelOpacity: true,
         memberships: {
           orderBy: { id: "asc" },
           select: {
@@ -60,6 +66,12 @@ export async function getSettingsTeamData(companyId: string) {
       showroomBackgroundColor: true,
       showroomBackgroundMediaKey: true,
       showroomBackgroundMediaType: true,
+      showroomOverlayColor: true,
+      showroomOverlayOpacity: true,
+      showroomTextColor: true,
+      showroomBackgroundFit: true,
+      showroomBackgroundPosition: true,
+      showroomPanelOpacity: true,
       memberships: {
         orderBy: { id: "asc" },
         select: {

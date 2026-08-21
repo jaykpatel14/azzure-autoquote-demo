@@ -302,11 +302,17 @@ This document logs every key architectural, design, and calculation decision mad
      - Badge scale transitions (`scale(1.05)`) on card focus.
 - **Rationale**: Elevates perceived software quality, clarifies plan comparisons, and creates delightful micro-interactions for prospective retail jewelers.
 
+### 50. Showroom Logo Contrast & Admin Quotes Page Server Resilience
+- **Decision**: 
+  1. **Showroom Logo High-Contrast Container**: Wrapped the showroom header logo in a high-contrast container (`.showroomBrandLogoWrapper`) with a clean luminous backdrop (`background: rgba(255, 255, 255, 0.96); padding: 6px 14px; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.3)`). This ensures dark text / transparent PNG logos (like "Custom King NYC") are immediately visible and high-contrast on dark showroom themes. Also ensured the company name is displayed alongside the logo.
+  2. **Admin Quotes Page 500 Crash Prevention**: Protected `app/admin/quotes/page.tsx` with comprehensive `try...catch` blocks, graceful fallbacks on database queries, strict numeric parsing for `cad_cost_per_quote`, and per-item calculation exception handling so corrupted records or calculation edge cases never crash the admin ledger.
+- **Rationale**: Prevents dark-on-dark logo visibility issues for retail showroom kiosks and guarantees 100% server uptime for internal admin audit operations on Docker / Proxmox servers.
+
 ---
 
 ## Last Updated
 - Date: August 20, 2026
-- Status: Production Ready, All 24 Test Suites Passing (105/105 tests), TypeScript zero errors, Pricing table row & column hover effects active.
+- Status: Production Ready, All 24 Test Suites Passing (107/107 tests), TypeScript zero errors.
 
 
 
@@ -353,3 +359,12 @@ This document logs every key architectural, design, and calculation decision mad
 
 - **Decision**: Standardize visible product copy on “Azzure AI Quote” and visible maker attribution on “Built by azzuresolutions.com,” while leaving technical identifiers unchanged.
 - **Why**: Consistent customer-facing identity is required immediately, whereas renaming package names, route paths, environment keys, user-agent strings, or infrastructure directories would create migration risk without improving the visible brand.
+
+## Showroom appearance customization (2026-08-20)
+
+- **Decision**: Replace automatic light/dark showroom treatment with explicit overlay, text, media-fit, focal-position, and content-panel controls stored per company.
+- **Why**: A background color's luminance cannot predict the readable treatment for a photograph or video. Explicit controls give each store reliable contrast while preserving its imagery and logo.
+- **Decision**: Keep media uploading in Branding Settings and make Showroom Settings responsible for presentation controls.
+- **Why**: This avoids duplicate upload workflows while keeping visual composition changes immediate and reversible.
+- **Decision**: Resolve the post-schema-change development error by regenerating Prisma only after stopping every repository Next.js process and rebuilding Turbopack from a clean generated cache.
+- **Why**: The migrated database and source schema already contained the fields; the validation error listed the older client model, proving that the running server had retained stale generated metadata rather than encountering a database-column error.

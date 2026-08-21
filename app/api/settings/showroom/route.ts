@@ -9,7 +9,13 @@ export const runtime = "nodejs";
 
 const schema = z.object({
   primaryColor: z.string().regex(/^#[0-9a-f]{6}$/i).optional().or(z.literal("")),
-  aboutUs: z.string().trim().max(300).optional().or(z.literal(""))
+  aboutUs: z.string().trim().max(300).optional().or(z.literal("")),
+  overlayColor: z.string().regex(/^#[0-9a-f]{6}$/i),
+  overlayOpacity: z.number().int().min(0).max(90),
+  textColor: z.string().regex(/^#[0-9a-f]{6}$/i),
+  backgroundFit: z.enum(["cover", "contain"]),
+  backgroundPosition: z.enum(["center", "top", "bottom", "left", "right"]),
+  panelOpacity: z.number().int().min(0).max(90)
 });
 
 export async function POST(request: Request) {
@@ -21,7 +27,7 @@ export async function POST(request: Request) {
 
     const { features } = await getCompanyPlanFeatures(context.company.id);
     if (!features.canUseShowroomMode) {
-      return NextResponse.json({ error: "Showroom customization is available on Ultra plan." }, { status: 403 });
+      return NextResponse.json({ error: "Showroom customization is available on the Enterprise plan." }, { status: 403 });
     }
 
     const input = schema.parse(await request.json());
@@ -30,7 +36,13 @@ export async function POST(request: Request) {
       where: { id: context.company.id },
       data: {
         primaryColor: input.primaryColor || null,
-        aboutUs: input.aboutUs || null
+        aboutUs: input.aboutUs || null,
+        showroomOverlayColor: input.overlayColor,
+        showroomOverlayOpacity: input.overlayOpacity,
+        showroomTextColor: input.textColor,
+        showroomBackgroundFit: input.backgroundFit,
+        showroomBackgroundPosition: input.backgroundPosition,
+        showroomPanelOpacity: input.panelOpacity
       }
     });
 
@@ -42,7 +54,8 @@ export async function POST(request: Request) {
       targetId: context.company.id,
       metadata: {
         showroomCustomized: true,
-        primaryColor: input.primaryColor
+        primaryColor: input.primaryColor,
+        appearanceControlsUpdated: true
       }
     }).catch(() => undefined);
 

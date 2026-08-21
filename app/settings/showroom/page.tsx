@@ -64,6 +64,15 @@ export default async function ShowroomSettingsPage() {
           initialAboutUs={context.company.aboutUs}
           companyName={context.company.name}
           logoUrl={context.company.logoUrl}
+          initialBackgroundColor={context.company.showroomBackgroundColor}
+          initialOverlayColor={context.company.showroomOverlayColor}
+          initialOverlayOpacity={context.company.showroomOverlayOpacity}
+          initialTextColor={context.company.showroomTextColor}
+          initialBackgroundFit={context.company.showroomBackgroundFit}
+          initialBackgroundPosition={context.company.showroomBackgroundPosition}
+          initialPanelOpacity={context.company.showroomPanelOpacity}
+          backgroundMediaUrl={session?.isActive && context.company.showroomBackgroundMediaKey ? `/api/showroom/background?token=${encodeURIComponent(session.token)}` : null}
+          backgroundMediaType={context.company.showroomBackgroundMediaType}
         />
       </div>
     </WorkspaceShell>

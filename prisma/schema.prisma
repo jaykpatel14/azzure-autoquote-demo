@@ -77,6 +77,12 @@ model Company {
   showroomBackgroundColor String?
   showroomBackgroundMediaKey String?
   showroomBackgroundMediaType String?
+  showroomOverlayColor String?
+  showroomOverlayOpacity Int?
+  showroomTextColor String?
+  showroomBackgroundFit String?
+  showroomBackgroundPosition String?
+  showroomPanelOpacity Int?
   quoteSequence   Int              @default(0)
   accountStatus   AccountStatus    @default(PENDING_APPROVAL)
   pricingTier     PricingTier?

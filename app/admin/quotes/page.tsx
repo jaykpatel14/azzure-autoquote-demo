@@ -89,74 +89,94 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
     ? { company: { name: { contains: companyFilter, mode: "insensitive" as const } } }
     : {};
 
-  const [quotes, unsavedAnalyses, cadCost] = await Promise.all([
-    prisma.quote.findMany({
-      where: {
-        AND: [
-          companyClause,
-          textFilter
-            ? {
-                OR: [
-                  { quoteNumber: { contains: textFilter, mode: "insensitive" as const } },
-                  { customerName: { contains: textFilter, mode: "insensitive" as const } },
-                  { metalType: { contains: textFilter, mode: "insensitive" as const } }
-                ]
-              }
-            : {}
-        ]
-      },
-      orderBy: { createdAt: "desc" },
-      take: MAX_ROWS_PER_SOURCE,
-      include: {
-        company: { select: { id: true, name: true, pricingTier: true } },
-        analysis: { select: { centerShape: true, settingType: true } }
-      }
-    }),
-    prisma.aiAnalysis.findMany({
-      where: {
-        AND: [
-          { quote: null },
-          companyClause,
-          textFilter ? { selectedMetal: { contains: textFilter, mode: "insensitive" as const } } : {}
-        ]
-      },
-      orderBy: { createdAt: "desc" },
-      take: MAX_ROWS_PER_SOURCE,
-      include: {
-        company: { include: { pricingProfile: true } }
-      }
-    }),
-    getSettingValue("cad_cost_per_quote")
-  ]);
+  let quotes: any[] = [];
+  let unsavedAnalyses: any[] = [];
+  let rawCadCost: number | null = null;
+
+  try {
+    const [fetchedQuotes, fetchedUnsaved, fetchedCad] = await Promise.all([
+      prisma.quote.findMany({
+        where: {
+          AND: [
+            companyClause,
+            textFilter
+              ? {
+                  OR: [
+                    { quoteNumber: { contains: textFilter, mode: "insensitive" as const } },
+                    { customerName: { contains: textFilter, mode: "insensitive" as const } },
+                    { metalType: { contains: textFilter, mode: "insensitive" as const } }
+                  ]
+                }
+              : {}
+          ]
+        },
+        orderBy: { createdAt: "desc" },
+        take: MAX_ROWS_PER_SOURCE,
+        include: {
+          company: { select: { id: true, name: true, pricingTier: true } },
+          analysis: { select: { centerShape: true, settingType: true } }
+        }
+      }).catch((err) => {
+        console.error("[admin/quotes] Failed to fetch quotes:", err);
+        return [];
+      }),
+      prisma.aiAnalysis.findMany({
+        where: {
+          AND: [
+            { quote: null },
+            companyClause,
+            textFilter ? { selectedMetal: { contains: textFilter, mode: "insensitive" as const } } : {}
+          ]
+        },
+        orderBy: { createdAt: "desc" },
+        take: MAX_ROWS_PER_SOURCE,
+        include: {
+          company: { include: { pricingProfile: true } }
+        }
+      }).catch((err) => {
+        console.error("[admin/quotes] Failed to fetch unsaved analyses:", err);
+        return [];
+      }),
+      getSettingValue("cad_cost_per_quote").catch(() => null)
+    ]);
+
+    quotes = fetchedQuotes;
+    unsavedAnalyses = fetchedUnsaved;
+    rawCadCost = fetchedCad;
+  } catch (err) {
+    console.error("[admin/quotes] Unexpected error in Promise.all:", err);
+  }
+
+  const cadCost = typeof rawCadCost === "number" ? rawCadCost : Number(rawCadCost) || 0;
 
   const quoteRows: QuoteRow[] = quotes.map((quote) => {
     const breakdown = (quote.makingPriceBreakdown as unknown as MakingPriceBreakdown) || null;
     return {
       kind: "quote",
       id: quote.id,
-      label: quote.quoteNumber,
+      label: quote.quoteNumber || `QT-${quote.id.slice(-6).toUpperCase()}`,
       href: `/admin/quotes/${quote.id}`,
-      companyName: quote.company.name,
-      companyId: quote.company.id,
-      customerName: quote.customerName,
-      metalType: quote.metalType,
-      metalWeightGrams: Number(quote.metalWeightGrams),
-      centerDiamondCarats: Number(quote.centerDiamondCarats),
+      companyName: quote.company?.name || "Unknown Company",
+      companyId: quote.company?.id || quote.companyId,
+      customerName: quote.customerName || null,
+      metalType: quote.metalType || "14K",
+      metalWeightGrams: Number(quote.metalWeightGrams || 0),
+      centerDiamondCarats: Number(quote.centerDiamondCarats || 0),
       centerShape: quote.analysis?.centerShape ?? null,
-      sideDiamondQuantity: quote.sideDiamondQuantity,
-      sideDiamondCarats: Number(quote.sideDiamondCarats),
+      sideDiamondQuantity: quote.sideDiamondQuantity || 0,
+      sideDiamondCarats: Number(quote.sideDiamondCarats || 0),
       makingPrice: Number(quote.makingPrice ?? 0),
       sellingPrice: Number(quote.estimatedSellingPrice ?? quote.estimatedPrice ?? 0),
       marginPct: breakdown ? breakdown.customerMarginPct : null,
-      tierLabel: quote.company.pricingTier?.replace("TIER_", "T") ?? "—",
+      tierLabel: quote.company?.pricingTier?.replace("TIER_", "T") ?? "—",
       tierDivisor: quote.tierDivisorSnapshot ? `÷${quote.tierDivisorSnapshot}` : "",
-      createdAt: quote.createdAt
+      createdAt: quote.createdAt ? new Date(quote.createdAt) : new Date()
     };
   });
 
   const unsavedRows: UnsavedRow[] = unsavedAnalyses.map((analysis) => {
-    const companyMarginPct = analysis.company.customerMarginPct ?? 0;
-    const pricingTier: PricingTier | null = analysis.company.pricingTier ?? null;
+    const companyMarginPct = analysis.company?.customerMarginPct ?? 0;
+    const pricingTier: PricingTier | null = analysis.company?.pricingTier ?? null;
     const hasSpec =
       analysis.status === "COMPLETED" &&
       analysis.metalWeightGrams != null &&
@@ -169,38 +189,43 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
     let statusNote = "";
 
     if (hasSpec) {
-      const goldSpot = Number(analysis.company.pricingProfile?.goldSpotPerOz ?? 4500);
-      const sideDiamondQuantity = analysis.sideDiamondQuantity ?? 0;
-      const sideDiamondCarats = Number(analysis.sideDiamondCarats ?? 0);
-      const sideStones =
-        sideDiamondQuantity > 0 && sideDiamondCarats > 0
-          ? [
-              {
-                shape: "round",
-                caratWeightEach: sideDiamondCarats / sideDiamondQuantity,
-                count: sideDiamondQuantity,
-                settingType: analysis.settingType || "prong"
-              }
-            ]
-          : [];
+      try {
+        const goldSpot = Number(analysis.company?.pricingProfile?.goldSpotPerOz ?? 4500);
+        const sideDiamondQuantity = analysis.sideDiamondQuantity ?? 0;
+        const sideDiamondCarats = Number(analysis.sideDiamondCarats ?? 0);
+        const sideStones =
+          sideDiamondQuantity > 0 && sideDiamondCarats > 0
+            ? [
+                {
+                  shape: "round",
+                  caratWeightEach: sideDiamondCarats / sideDiamondQuantity,
+                  count: sideDiamondQuantity,
+                  settingType: analysis.settingType || "prong"
+                }
+              ]
+            : [];
 
-      const breakdown = calculateMakingPrice({
-        metalType: analysis.selectedMetal,
-        metalWeightGrams: Number(analysis.metalWeightGrams ?? 0),
-        goldSpotPerOz: goldSpot,
-        centerStone: { shape: analysis.centerShape || "round", caratWeight: Math.max(Number(analysis.centerDiamondCarats), 0.0001) },
-        sideStones,
-        hasWeddingBand: false,
-        isTwoTone: false,
-        colorClarity: "E VS1",
-        cadCost: cadCost ?? 0,
-        customerMarginPct: companyMarginPct
-      });
-      const tierResult = calculateTierPrice(breakdown.makingPrice, pricingTier!);
-      makingPrice = breakdown.makingPrice;
-      sellingPrice = tierResult.estimatedSellingPrice;
+        const breakdown = calculateMakingPrice({
+          metalType: analysis.selectedMetal || "14K",
+          metalWeightGrams: Number(analysis.metalWeightGrams ?? 0),
+          goldSpotPerOz: goldSpot,
+          centerStone: { shape: analysis.centerShape || "round", caratWeight: Math.max(Number(analysis.centerDiamondCarats), 0.0001) },
+          sideStones,
+          hasWeddingBand: false,
+          isTwoTone: false,
+          colorClarity: "E VS1",
+          cadCost: cadCost,
+          customerMarginPct: companyMarginPct
+        });
+        const tierResult = calculateTierPrice(breakdown.makingPrice, pricingTier!);
+        makingPrice = breakdown.makingPrice;
+        sellingPrice = tierResult.estimatedSellingPrice;
+      } catch (err) {
+        console.warn(`[admin/quotes] Failed to calculate spec for analysis ${analysis.id}:`, err);
+        statusNote = "Calculation error";
+      }
     } else if (analysis.status !== "COMPLETED") {
-      statusNote = analysis.status === "FAILED" ? "Analysis failed" : analysis.status.toLowerCase();
+      statusNote = analysis.status === "FAILED" ? "Analysis failed" : analysis.status?.toLowerCase() || "pending";
     } else if (!pricingTier) {
       statusNote = "No pricing tier";
     } else {
@@ -212,13 +237,13 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
       id: analysis.id,
       label: `Unsaved ${analysis.id.slice(-6).toUpperCase()}`,
       href: `/admin/quotes/unsaved/${analysis.id}`,
-      companyName: analysis.company.name,
-      companyId: analysis.company.id,
+      companyName: analysis.company?.name || "Unknown Company",
+      companyId: analysis.company?.id || analysis.companyId,
       customerName: null,
-      metalType: analysis.selectedMetal,
+      metalType: analysis.selectedMetal || "14K",
       metalWeightGrams: Number(analysis.metalWeightGrams ?? 0),
       centerDiamondCarats: Number(analysis.centerDiamondCarats ?? 0),
-      centerShape: analysis.centerShape,
+      centerShape: analysis.centerShape || null,
       sideDiamondQuantity: analysis.sideDiamondQuantity ?? 0,
       sideDiamondCarats: Number(analysis.sideDiamondCarats ?? 0),
       makingPrice,
@@ -226,7 +251,7 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
       marginPct: hasSpec ? companyMarginPct : null,
       tierLabel: pricingTier?.replace("TIER_", "T") ?? "—",
       tierDivisor: "",
-      createdAt: analysis.createdAt,
+      createdAt: analysis.createdAt ? new Date(analysis.createdAt) : new Date(),
       statusNote
     };
   });

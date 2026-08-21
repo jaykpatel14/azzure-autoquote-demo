@@ -8,6 +8,15 @@ interface ShowroomCustomizerProps {
   initialAboutUs: string | null;
   companyName: string;
   logoUrl: string | null;
+  initialBackgroundColor: string | null;
+  initialOverlayColor: string | null;
+  initialOverlayOpacity: number | null;
+  initialTextColor: string | null;
+  initialBackgroundFit: string | null;
+  initialBackgroundPosition: string | null;
+  initialPanelOpacity: number | null;
+  backgroundMediaUrl: string | null;
+  backgroundMediaType: string | null;
 }
 
 const LUXURY_PALETTES = [
@@ -52,10 +61,26 @@ export default function ShowroomCustomizer({
   initialPrimaryColor,
   initialAboutUs,
   companyName,
-  logoUrl
+  logoUrl,
+  initialBackgroundColor,
+  initialOverlayColor,
+  initialOverlayOpacity,
+  initialTextColor,
+  initialBackgroundFit,
+  initialBackgroundPosition,
+  initialPanelOpacity,
+  backgroundMediaUrl,
+  backgroundMediaType
 }: ShowroomCustomizerProps) {
   const [primaryColor, setPrimaryColor] = useState(initialPrimaryColor || "#c9a84c");
   const [aboutUs, setAboutUs] = useState(initialAboutUs || "");
+  const backgroundColor = initialBackgroundColor || "#08090b";
+  const [overlayColor, setOverlayColor] = useState(initialOverlayColor || "#000000");
+  const [overlayOpacity, setOverlayOpacity] = useState(initialOverlayOpacity ?? 58);
+  const [textColor, setTextColor] = useState(initialTextColor || "#ffffff");
+  const [backgroundFit, setBackgroundFit] = useState(initialBackgroundFit === "contain" ? "contain" : "cover");
+  const [backgroundPosition, setBackgroundPosition] = useState(initialBackgroundPosition || "center");
+  const [panelOpacity, setPanelOpacity] = useState(initialPanelOpacity ?? 34);
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
 
@@ -68,7 +93,7 @@ export default function ShowroomCustomizer({
       const response = await fetch("/api/settings/showroom", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ primaryColor, aboutUs })
+        body: JSON.stringify({ primaryColor, aboutUs, overlayColor, overlayOpacity, textColor, backgroundFit, backgroundPosition, panelOpacity })
       });
 
       if (!response.ok) {
@@ -116,7 +141,11 @@ export default function ShowroomCustomizer({
                 <button
                   key={palette.name}
                   type="button"
-                  onClick={() => setPrimaryColor(palette.primaryColor)}
+                  onClick={() => {
+                    setPrimaryColor(palette.primaryColor);
+                    setOverlayColor(palette.bgPreview === "#fcfaf7" ? "#ffffff" : "#000000");
+                    setTextColor(palette.bgPreview === "#fcfaf7" ? "#171717" : "#ffffff");
+                  }}
                   style={{
                     display: "flex",
                     flexDirection: "column",
@@ -141,6 +170,21 @@ export default function ShowroomCustomizer({
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="card stack" style={{ gap: 16 }}>
+            <div>
+              <strong>Background readability</strong>
+              <p className="muted small" style={{ marginBottom: 0 }}>Fine-tune your uploaded image or video without replacing it. Background media is managed in Branding.</p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 16 }}>
+              <div className="field"><label htmlFor="overlayColor">Overlay color</label><input id="overlayColor" type="color" value={overlayColor} onChange={(e) => setOverlayColor(e.target.value)} /></div>
+              <div className="field"><label htmlFor="textColor">Main text color</label><input id="textColor" type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} /></div>
+              <div className="field"><label htmlFor="backgroundFit">Image/video fit</label><select id="backgroundFit" value={backgroundFit} onChange={(e) => setBackgroundFit(e.target.value)}><option value="cover">Fill screen (crop edges)</option><option value="contain">Show full media</option></select></div>
+              <div className="field"><label htmlFor="backgroundPosition">Focal position</label><select id="backgroundPosition" value={backgroundPosition} onChange={(e) => setBackgroundPosition(e.target.value)}>{["center", "top", "bottom", "left", "right"].map((value) => <option value={value} key={value}>{value[0].toUpperCase() + value.slice(1)}</option>)}</select></div>
+            </div>
+            <div className="field"><label htmlFor="overlayOpacity">Media overlay: {overlayOpacity}%</label><input id="overlayOpacity" type="range" min="0" max="90" value={overlayOpacity} onChange={(e) => setOverlayOpacity(Number(e.target.value))} /></div>
+            <div className="field"><label htmlFor="panelOpacity">Content panel strength: {panelOpacity}%</label><input id="panelOpacity" type="range" min="0" max="90" value={panelOpacity} onChange={(e) => setPanelOpacity(Number(e.target.value))} /></div>
           </div>
 
           {/* ── 2. Custom Color Picker ── */}
@@ -191,14 +235,20 @@ export default function ShowroomCustomizer({
             <div
               style={{
                 borderRadius: 16,
-                background: "#0a0b0e",
+                background: backgroundColor,
                 border: "1px solid rgba(255, 255, 255, 0.1)",
                 padding: 24,
-                color: "#ffffff",
+                color: textColor,
                 boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
-                maxWidth: 640
+                maxWidth: 640,
+                position: "relative",
+                overflow: "hidden",
+                isolation: "isolate"
               }}
             >
+              {backgroundMediaUrl ? (backgroundMediaType?.startsWith("video/") ? <video src={backgroundMediaUrl} autoPlay muted loop playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: backgroundFit as "cover" | "contain", objectPosition: backgroundPosition, zIndex: -3 }} /> : <img src={backgroundMediaUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: backgroundFit as "cover" | "contain", objectPosition: backgroundPosition, zIndex: -3 }} />) : null}
+              <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: overlayColor, opacity: overlayOpacity / 100, zIndex: -2 }} />
+              <div aria-hidden="true" style={{ position: "absolute", inset: 16, borderRadius: 12, background: overlayColor, opacity: panelOpacity / 100, zIndex: -1 }} />
               {/* Header Preview */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", paddingBottom: 12, marginBottom: 16 }}>
                 <div>
