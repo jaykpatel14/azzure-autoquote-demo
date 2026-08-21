@@ -223,8 +223,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       clearTimeout(warn);
       clearTimeout(clear);
       setWarning(false);
-      warn = setTimeout(() => setWarning(true), 80_000);
-      clear = setTimeout(reset, 90_000);
+      warn = setTimeout(() => setWarning(true), 110_000);
+      clear = setTimeout(reset, 120_000);
     };
     arm();
     document.addEventListener("touchstart", arm);
