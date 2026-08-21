@@ -22,7 +22,7 @@ type WorkspaceShellProps = {
 };
 
 export default function WorkspaceShell({
-  eyebrow = "Azzure AutoQuote",
+  eyebrow = "Azzure AI Quote",
   title,
   description,
   navItems,
@@ -48,7 +48,7 @@ export default function WorkspaceShell({
           </div>
           <div>
             <strong className="brandTitleText">Azzure</strong>
-            <p className="brandSubtitleText" style={{ margin: 0 }}>AutoQuote AI</p>
+            <p className="brandSubtitleText" style={{ margin: 0 }}>AI Quote</p>
           </div>
         </div>
 
@@ -107,13 +107,21 @@ export default function WorkspaceShell({
             <SignOutButton />
           </div>
         </header>
+        <nav className="mobileWorkspaceNav" aria-label="Mobile workspace navigation">
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href} className={`mobileWorkspaceNavItem${item.active ? " isActive" : ""}`} aria-current={item.active ? "page" : undefined}>
+              <span className="material-symbols-outlined" aria-hidden="true">{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
 
         {/* Sticky top nav bar for desktop */}
         <header className="workspacePageHeader" aria-label="Page header">
           <div>
             {/* Breadcrumb */}
             <nav className="breadcrumbs" aria-label="Breadcrumb" style={{ marginBottom: 12 }}>
-              <span>Azzure AutoQuote</span>
+              <span>Azzure AI Quote</span>
               <span className="material-symbols-outlined" style={{ fontSize: 14 }} aria-hidden="true">chevron_right</span>
               <span className="active">{activePage?.label ?? title}</span>
             </nav>

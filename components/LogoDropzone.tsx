@@ -162,7 +162,7 @@ export default function LogoDropzone({
         ) : (
           <div className="logoLockedBox">
             <p className="muted small">
-              Upload your store logo on the Professional, Enterprise, or Ultra plan. Ultra subscribers unlock full Showroom &amp; Kiosk branding customization.
+              Upload your store logo on the Professional or Enterprise plan. Enterprise subscribers unlock full Showroom &amp; Kiosk branding customization.
             </p>
           </div>
         )}

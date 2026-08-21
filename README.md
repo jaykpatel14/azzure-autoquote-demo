@@ -1,4 +1,4 @@
-# AI AutoQuote MVP
+# Azzure AI Quote
 
 Production-oriented starter for an AI-assisted jewelry quotation SaaS.
 
@@ -165,7 +165,7 @@ Typical steps:
 
 1. Copy `.env.proxmox.example` to `/opt/docker/projects/azzure-autoquote-mvp/.env.proxmox` on the Proxmox host.
 2. Fill in the production-like secrets you want to test.
-3. Run `cd /opt/docker/projects/azzure-autoquote-mvp && docker compose -f docker-compose.proxmox.yml up -d --build`.
+3. Run `cd /opt/docker/projects/azzure-autoquote-mvp && docker compose -f docker-compose.proxmox.yml up -d --build`. The app now waits for the one-shot migration/plan-seed service to complete successfully before starting.
 4. Open `http://<proxmox-host>:8585`.
 5. Check health at `http://<proxmox-host>:8585/api/health`.
 
@@ -173,6 +173,7 @@ GitHub Actions:
 
 - `CI` validates migrations, seed, lint, typecheck, tests, and the production build.
 - `Proxmox Test Deploy` runs on a self-hosted GitHub runner that lives on the Proxmox machine, builds the app locally, applies migrations, seeds the base plans, and restarts the stack.
+- Portainer and manual Compose deployments also run migrations and plan seeding through the `migrate` service before the app container starts; a failed migration prevents an incompatible app version from starting.
 - The self-hosted runner must have Docker and Docker Compose access, and the repository must allow that runner to pick up `develop` workflow jobs.
 - The workflow syncs the repository into `/opt/docker/projects/azzure-autoquote-mvp` before running Docker Compose there.
 

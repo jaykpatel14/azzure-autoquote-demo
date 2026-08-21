@@ -37,7 +37,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
       <section className="authCard">
         <div className="authGrid">
           <aside className="authAside">
-            <p className="eyebrow">AI AutoQuote</p>
+            <p className="eyebrow">Azzure AI Quote</p>
             <h1 className="heading">Reset password</h1>
             <p className="muted">Choose a new password for your account.</p>
             <div className="detailCard" style={{ marginTop: "1.5rem" }}>

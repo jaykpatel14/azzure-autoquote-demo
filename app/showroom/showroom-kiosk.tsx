@@ -260,7 +260,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/showroom/mobile-upload?sessionId=${mobileUploadSessionId}`);
+        const res = await fetch(`/api/showroom/mobile-upload?sessionId=${mobileUploadSessionId}&token=${encodeURIComponent(token)}`);
         const data = await res.json();
         if (data.files && data.files.length > 0) {
           const convertedFiles: File[] = await Promise.all(
@@ -282,7 +282,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     }, 1800);
 
     return () => clearInterval(interval);
-  }, [showMobileUploadModal, mobileUploadSessionId]);
+  }, [showMobileUploadModal, mobileUploadSessionId, token]);
 
   const estimatedSellingPrice = useMemo(() => {
     if (!debouncedAnalysis || !pricing.pricingTier) return 0;
@@ -1253,7 +1253,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
       {warning ? <div className="showroomWarning">Still there? This screen will reset in 10 seconds.</div> : null}
       <footer style={{ marginTop: "auto", textAlign: "center", color: "var(--color-on-surface-variant)", fontSize: 12, padding: "24px 0" }}>
-        Powered by Azzure AutoQuote
+        Azzure AI Quote · Built by azzuresolutions.com
       </footer>
     </div>
   );

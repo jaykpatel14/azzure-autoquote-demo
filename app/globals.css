@@ -1,5 +1,5 @@
 /* ============================================================
-   Azzure AutoQuote — Global Styles
+   Azzure AI Quote — Global Styles
    Light Mode · Material Design 3 · Luxury Tech Aesthetic
    ============================================================ */
 
@@ -878,6 +878,16 @@ textarea:disabled {
   gap: var(--space-2);
   align-items: center;
 }
+
+.mobileWorkspaceNav { display: none; }
+
+.dangerZone {
+  border-color: rgba(186, 26, 26, 0.35) !important;
+  background: rgba(186, 26, 26, 0.035) !important;
+}
+
+.dangerZone .eyebrow,
+.dangerZone h2 { color: #ba1a1a; }
 
 /* ── Page Hero ── */
 .pageHero {
@@ -2420,6 +2430,38 @@ input[type="checkbox"] {
   .mobileTopBar {
     display: flex;
   }
+
+  .mobileWorkspaceNav {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 29;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 8px 4px 12px;
+    background: var(--color-surface-container-lowest);
+    border-bottom: 1px solid var(--color-outline-variant);
+    scrollbar-width: thin;
+  }
+
+  .mobileWorkspaceNavItem {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+    min-height: 42px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    color: var(--color-secondary);
+    text-decoration: none;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .mobileWorkspaceNavItem .material-symbols-outlined { font-size: 18px; }
+  .mobileWorkspaceNavItem.isActive { color: var(--color-primary); background: var(--color-primary-container); }
 
   .twoUp,
   .twoColumnLayout {

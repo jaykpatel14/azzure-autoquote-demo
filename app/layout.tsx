@@ -14,7 +14,7 @@ const uiFont = Inter({ subsets: ["latin"], variable: "--font-ui-loaded", display
 const monoFont = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono-loaded", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Azzure AutoQuote | AI Pricing for Luxury Jewelry Retailers",
+  title: "Azzure AI Quote | AI Pricing for Luxury Jewelry Retailers",
   description:
     "The ultimate AI-powered pricing engine for luxury jewelry retailers. Close bespoke commissions instantly on the showroom floor with real-time, mathematically perfect quotes."
 };

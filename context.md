@@ -304,3 +304,21 @@ azzure-autoquote-mvp/
 - Customers can save a dedicated showroom background color from Branding Settings, preview their logo against it, and use either a light or dark showroom theme with automatic text contrast.
 - Customers can also upload a private S3-backed showroom background image or looping muted video (JPG/PNG/WEBP/MP4/WEBM, up to 50 MB), served only through the active showroom token and displayed beneath a readability overlay.
 - When S3 is unavailable during local development, showroom media automatically falls back to `.data/showroom-backgrounds/`; this directory is git-ignored and the same protected delivery endpoint is used.
+## Launch-readiness audit (2026-08-20)
+
+- Automated checks cover the production build, TypeScript, ESLint, 105 unit/integration tests, Prisma schema validation, and `npm audit`.
+- Security hardening added active-token enforcement and bounded uploads to the phone-to-kiosk bridge, upload content-signature validation, fail-closed lifecycle cron authentication, sanitized database health errors, and production HSTS.
+- Production deployment requires unique non-placeholder `AUTH_SECRET`, Stripe credentials/webhook secret, `BILLING_LIFECYCLE_SECRET` or `CRON_SECRET`, production `APP_URL`, database credentials, and the applicable email/AI/storage credentials.
+- Admin order queries use explicit field projections rather than selecting every Company/Quote column, preventing unrelated newly-added columns from taking down the manufacturing queue while staged migrations are being rolled out.
+## Margin, mobile navigation, and subscription alignment (2026-08-20)
+
+- Customer retail margin is enforced at 50–200% in both UI and API; legacy company margins below 50% are migrated to 50%.
+- Workspace and internal-admin pages expose a horizontally scrollable, touch-friendly mobile navigation bar whenever the desktop sidebar is hidden.
+- Admin subscription selectors are restricted to the canonical Starter, Professional, and Enterprise plans. Legacy Enterprise Ultra subscriptions and pending changes migrate to Enterprise, and stale Ultra plan records are removed.
+- The Proxmox Compose stack now gates app startup on a successful one-shot Prisma migration and canonical plan seed, covering Portainer/manual deployments as well as GitHub Actions.
+- Admin tenant detail pages include a visible danger zone for permanent company deletion. Typed company-name confirmation invokes the existing cascade deletion workflow and redirects back to the tenant roster.
+## Product identity (2026-08-20)
+
+- The customer-facing application name is **Azzure AI Quote**.
+- Product footers, public quotes, showroom mode, PDFs, and email messaging use the attribution **Built by azzuresolutions.com**.
+- Internal package names, API user-agent identifiers, environment variables, database identifiers, and deployment paths retain their existing AutoQuote-based technical names to avoid unnecessary deployment risk.

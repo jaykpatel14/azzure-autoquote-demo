@@ -285,7 +285,7 @@ export default async function HomePage() {
           {dashboard.totalQuotes === 0 ? (
             <div className="emptyState emptyStateIllustrated">
               <QuoteOutlineIllustration />
-              <strong>Welcome to Azzure AutoQuote. Upload a jewelry photo or describe a concept to generate a quote in seconds.</strong>
+              <strong>Welcome to Azzure AI Quote. Upload a jewelry photo or describe a concept to generate a quote in seconds.</strong>
               <p className="muted">Create your first quote and this chart will begin to fill in.</p>
               <Link className="button primary" href="/quotes/new">
                 New quote
@@ -342,7 +342,7 @@ export default async function HomePage() {
         {dashboard.recentQuotes.length === 0 ? (
           <div className="emptyState emptyStateIllustrated">
             <QuoteOutlineIllustration />
-            <strong>Welcome to Azzure AutoQuote. Upload a jewelry photo or describe a concept to generate a quote in seconds.</strong>
+            <strong>Welcome to Azzure AI Quote. Upload a jewelry photo or describe a concept to generate a quote in seconds.</strong>
             <p className="muted">Your latest five quotes will appear here once you save your first estimate.</p>
             <Link className="button primary" href="/quotes/new">
               New quote

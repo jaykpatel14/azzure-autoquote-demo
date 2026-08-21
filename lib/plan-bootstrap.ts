@@ -7,7 +7,6 @@ export type BasePlans = {
   starter: Plan;
   professional: Plan;
   enterprise: Plan;
-  ultra: Plan;
 };
 
 export async function ensureBasePlans(client: PlanClient): Promise<BasePlans> {
@@ -30,7 +29,6 @@ export async function ensureBasePlans(client: PlanClient): Promise<BasePlans> {
   return {
     starter: plans[0],
     professional: plans[1],
-    enterprise: plans[2],
-    ultra: plans[3]
+    enterprise: plans[2]
   };
 }

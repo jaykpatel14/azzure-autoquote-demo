@@ -24,6 +24,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     env_file:
       - .env.proxmox
     environment:
@@ -62,6 +64,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    command: ["sh", "-c", "npm run db:deploy && npm run db:seed"]
+    restart: "no"
 
 volumes:
   proxmox_autoquote_postgres:

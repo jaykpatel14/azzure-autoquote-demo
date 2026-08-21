@@ -274,12 +274,13 @@ export function InteractiveLandingPage() {
   };
 
   const animateDemoPrice = (target: number) => {
-    const start = performance.now();
     const startVal = demoPrice;
     const diff = target - startVal;
     const duration = 400;
+    let start: number | null = null;
 
     const step = (now: number) => {
+      start ??= now;
       const p = Math.min((now - start) / duration, 1);
       const easeOut = 1 - Math.pow(1 - p, 3);
       setDemoPrice(Math.floor(startVal + diff * easeOut));
@@ -419,7 +420,7 @@ export function InteractiveLandingPage() {
             </h1>
             
             <p style={{ fontSize: 18, lineHeight: 1.7, color: "#475569", marginBottom: 36, maxWidth: 500 }}>
-              Upload a customer's inspiration photo — an Instagram screenshot, a magazine clip, anything. Our AI identifies the metal, stones, and setting, and generates an accurate quote instantly.
+              Upload a customer&apos;s inspiration photo — an Instagram screenshot, a magazine clip, anything. Our AI identifies the metal, stones, and setting, and generates an accurate quote instantly.
             </p>
             
             <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
@@ -760,7 +761,7 @@ export function InteractiveLandingPage() {
               a self-service quote studio.
             </h2>
             <p style={{ fontSize: 17, lineHeight: 1.7, color: "#475569", marginBottom: 36 }}>
-              Place a touchscreen kiosk on your showroom floor. Customers walk up, upload a photo of the ring they desire, and receive an instant quote in your store's luxury branding.
+              Place a touchscreen kiosk on your showroom floor. Customers walk up, upload a photo of the ring they desire, and receive an instant quote in your store&apos;s luxury branding.
               <br /><br />
               They walk away with a private quote code. You look it up in your jeweler portal, finalize the CAD specifications, and send it straight into production.
             </p>
@@ -1041,7 +1042,7 @@ export function InteractiveLandingPage() {
         <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#64748B", flexWrap: "wrap", gap: 20 }}>
           <div>
             <p style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 18, color: "#0F172A", fontWeight: 600, marginBottom: 4 }}>Azzure AI Quote</p>
-            <p>A product by Azzure Solutions · London, Ontario, Canada</p>
+            <p>Built by azzuresolutions.com · London, Ontario, Canada</p>
           </div>
           <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
             <Link href="/signin" style={{ color: "#005AB7", fontWeight: 600, textDecoration: "none" }}>Sign in → autoquote.everyfacets.com</Link>
@@ -1115,7 +1116,7 @@ export function InteractiveLandingPage() {
                 <p style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 24, fontWeight: 700, color: "#005AB7", letterSpacing: "0.05em", marginBottom: 20 }}>Crown Jewellers</p>
                 <h3 style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 32, fontWeight: 700, color: "#0F172A", marginBottom: 12 }}>Design Your Dream Ring</h3>
                 <p style={{ fontSize: 15, color: "#64748B", maxWidth: 440, marginBottom: 32, lineHeight: 1.6 }}>
-                  Upload a photo of the piece you love. We'll give you an instant quote in seconds.
+                  Upload a photo of the piece you love. We&apos;ll give you an instant quote in seconds.
                 </p>
                 <button onClick={startKioskUpload} className="button primary" style={{ padding: "14px 32px", fontSize: 15, borderRadius: 8 }}>Start →</button>
               </div>
@@ -1200,7 +1201,7 @@ export function InteractiveLandingPage() {
                 <p style={{ fontSize: 13, color: "#64748B" }}>Your quote reference code:</p>
                 <p style={{ fontFamily: "var(--font-mono-loaded, monospace)", fontSize: 40, fontWeight: 700, color: "#005AB7", letterSpacing: "0.12em", margin: "12px 0" }}>QT-4821</p>
                 <p style={{ fontSize: 15, color: "#64748B", maxWidth: 440, marginBottom: 20, lineHeight: 1.6 }}>
-                  Tell this code to your jeweler.<br />They'll pull up your exact design in seconds.
+                  Tell this code to your jeweler.<br />They&apos;ll pull up your exact design in seconds.
                 </p>
                 <p style={{ fontSize: 13, color: "#64748B", marginBottom: 28 }}>Quote price: $2,380 · Valid for 30 days</p>
                 <button onClick={() => setKioskSlide(6)} className="button primary" style={{ width: "100%", padding: "14px", fontSize: 15, borderRadius: 8 }}>

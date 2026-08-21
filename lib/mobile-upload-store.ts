@@ -33,10 +33,10 @@ export function saveMobileUploads(sessionId: string, kioskToken: string, files: 
   });
 }
 
-export function getMobileUploads(sessionId: string): UploadedMobileFile[] | null {
+export function getMobileUploads(sessionId: string, kioskToken: string): UploadedMobileFile[] | null {
   cleanExpiredSessions();
   const session = mobileUploadStore.get(sessionId);
-  if (!session) return null;
+  if (!session || !kioskToken || session.kioskToken !== kioskToken) return null;
   return session.files;
 }
 

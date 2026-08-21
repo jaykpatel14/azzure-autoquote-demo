@@ -13,7 +13,7 @@ import { buildPublicUrl } from "@/lib/security";
 export const runtime = "nodejs";
 
 const schema = z.object({
-  customerMarginPct: z.coerce.number().min(0, "Margin cannot be negative").max(200, "Margin cannot exceed 200%")
+  customerMarginPct: z.coerce.number().min(50, "Margin must be at least 50%").max(200, "Margin cannot exceed 200%")
 });
 
 async function parseInput(request: Request) {
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.issues[0]?.message || "Invalid margin percentage. Must be between 0% and 200%." },
+        { error: error.issues[0]?.message || "Invalid margin percentage. Must be between 50% and 200%." },
         { status: 400 }
       );
     }

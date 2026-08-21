@@ -60,7 +60,7 @@ export default async function AdminDashboardPage() {
   return (
     <InternalAdminShell
       title="Operations Dashboard"
-      description="Monitor platform health, live revenue, and tenant activity across Azzure AIQuote."
+      description="Monitor platform health, live revenue, and tenant activity across Azzure AI Quote."
       navItems={getInternalAdminNav("/admin")}
       adminName={context.user.name || context.user.email}
       actions={
@@ -83,7 +83,7 @@ export default async function AdminDashboardPage() {
             <span className="material-symbols-outlined" style={{ color: "#f59e0b", fontSize: 24 }}>how_to_reg</span>
             <div>
               <strong style={{ fontSize: "var(--text-base)" }}>{overview.pendingApprovals} account{overview.pendingApprovals === 1 ? " is" : "s are"} waiting for approval</strong>
-              <p className="muted small" style={{ margin: "2px 0 0" }}>Jewelers cannot use Azzure AIQuote until approved by an administrator.</p>
+              <p className="muted small" style={{ margin: "2px 0 0" }}>Jewelers cannot use Azzure AI Quote until approved by an administrator.</p>
             </div>
             <Link className="button primary button--sm" href="/admin/tenants/pending" style={{ marginLeft: "auto" }}>
               Review Accounts

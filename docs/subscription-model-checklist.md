@@ -1,4 +1,4 @@
-# Azzure AutoQuote Subscription Model Checklist
+# Azzure AI Quote Subscription Model Checklist
 
 ## 1. Pricing page
 - [ ] Build the public `/pricing` marketing page

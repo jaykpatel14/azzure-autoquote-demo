@@ -20,7 +20,7 @@ const signupSchema = z.object({
     }
   }),
   password: z.string().min(8, "Password must be at least 8 characters."),
-  planCode: z.enum(["starter", "professional", "enterprise", "ultra"])
+  planCode: z.enum(["starter", "professional", "enterprise"])
 });
 
 type SignupForm = z.infer<typeof signupSchema>;
@@ -145,7 +145,7 @@ export default function SignUpPage() {
     <main className="signupShell">
       <section className="signupCard">
         <div className="signupHeader">
-          <p className="eyebrow">Azzure AIQuote</p>
+          <p className="eyebrow">Azzure AI Quote</p>
           <h1 className="signupTitle">Start your free 14-day trial</h1>
           <p className="signupLead">Full Professional features - No charge today</p>
         </div>

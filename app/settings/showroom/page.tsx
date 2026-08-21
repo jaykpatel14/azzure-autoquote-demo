@@ -26,7 +26,7 @@ export default async function ShowroomSettingsPage() {
 
   const subscription = context.company.subscription;
   const allowed = Boolean(subscription && getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status)).canUseShowroomMode);
-  if (!allowed) redirect("/settings/billing?upgrade=ultra");
+  if (!allowed) redirect("/settings/billing?upgrade=enterprise");
 
   const [session, generated, claimed, converted] = await fetchShowroomStats(context.company.id);
 

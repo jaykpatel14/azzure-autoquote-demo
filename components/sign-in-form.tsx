@@ -51,7 +51,7 @@ export default function SignInForm({
       <section className="authCard">
         <div className="authGrid">
           <aside className="authAside">
-            <p className="eyebrow">AI AutoQuote</p>
+            <p className="eyebrow">Azzure AI Quote</p>
             <h1 className="heading">Sign in</h1>
             <p className="muted">
               Use your email and password to access the private workspace, quote history, and billing controls.

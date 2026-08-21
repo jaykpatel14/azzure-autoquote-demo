@@ -134,7 +134,7 @@ export default async function PricingSettingsPage() {
 
         {/* Live Margin Configuration & Sample Quote Simulator */}
         <PricingMarginSimulator
-          initialMarginPct={company.customerMarginPct ?? 0}
+          initialMarginPct={Math.max(50, company.customerMarginPct ?? 50)}
           goldSpotPerOz={goldSpot}
           canEdit={canEdit && canUseCustomPricing}
         />

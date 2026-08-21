@@ -62,7 +62,7 @@ export function AdminDeleteCompanyButton({
           setError(null);
         }}
       >
-        Delete
+        Delete company
       </button>
 
       {isOpen && (

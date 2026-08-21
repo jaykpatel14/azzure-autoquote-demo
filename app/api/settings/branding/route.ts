@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { buildPublicUrl } from "@/lib/security";
 import { getCompanyPlanFeatures } from "@/src/stripe/plans";
 import { deleteShowroomBackgroundFromS3, storeShowroomBackgroundInS3 } from "@/lib/quote-pdf-s3";
+import { hasAllowedShowroomMediaSignature } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -67,9 +68,13 @@ export async function POST(request: Request) {
     let mediaKey = context.company.showroomBackgroundMediaKey;
     let mediaType = context.company.showroomBackgroundMediaType;
     if (backgroundMedia) {
+      const mediaBuffer = Buffer.from(await backgroundMedia.arrayBuffer());
+      if (!hasAllowedShowroomMediaSignature(mediaBuffer, backgroundMedia.type)) {
+        return NextResponse.json({ error: "The selected background file content does not match its file type." }, { status: 400 });
+      }
       const extension = backgroundMedia.name.split(".").pop()?.replace(/[^a-z0-9]/gi, "").toLowerCase() || "bin";
       const key = `showroom/${context.company.id}/background-${crypto.randomUUID()}.${extension}`;
-      const stored = await storeShowroomBackgroundInS3({ key, buffer: Buffer.from(await backgroundMedia.arrayBuffer()), contentType: backgroundMedia.type });
+      const stored = await storeShowroomBackgroundInS3({ key, buffer: mediaBuffer, contentType: backgroundMedia.type });
       mediaKey = stored.key;
       mediaType = backgroundMedia.type;
     } else if (removeBackgroundMedia) {

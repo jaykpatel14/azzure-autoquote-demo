@@ -27,7 +27,7 @@ export async function sendSignupApprovalAlert(input: {
 
   const websiteLine = input.websiteUrl?.trim() || "Not provided";
   const text = [
-    "A new jewelry business has signed up for AI AutoQuote and is awaiting approval.",
+    "A new jewelry business has signed up for Azzure AI Quote and is awaiting approval.",
     "",
     `Business:  ${input.companyName}`,
     `Owner:     ${input.ownerName}`,
@@ -40,7 +40,7 @@ export async function sendSignupApprovalAlert(input: {
 
   await sendAuthMail({
     to,
-    subject: `New AI AutoQuote signup awaiting approval - ${input.companyName}`,
+    subject: `New Azzure AI Quote signup awaiting approval - ${input.companyName}`,
     text,
     html: `<p>${text.replaceAll("\n", "<br />")}</p>`
   });
@@ -53,11 +53,11 @@ export async function sendAccountApprovedMail(input: {
   tier: "TIER_1" | "TIER_2" | "TIER_3";
 }) {
   const loginUrl = buildAppUrl("/signin");
-  const subject = "Your AI AutoQuote account is approved";
+  const subject = "Your Azzure AI Quote account is approved";
   const body = [
     `Hi ${input.ownerName},`,
     "",
-    `Your AI AutoQuote account for ${input.companyName} has been approved.`,
+    `Your Azzure AI Quote account for ${input.companyName} has been approved.`,
     "",
     `You've been set up on our ${tierLabel(input.tier)} pricing program.`,
     "",
@@ -67,7 +67,7 @@ export async function sendAccountApprovedMail(input: {
     "If you have any questions, reply to this email or contact",
     "support@azzuresolutions.com",
     "",
-    "- The AI AutoQuote Team"
+    "- The Azzure AI Quote Team"
   ].join("\n");
 
   await sendAuthMail({
@@ -85,11 +85,11 @@ export async function sendTierChangeMail(input: {
   previousTier: "TIER_1" | "TIER_2" | "TIER_3" | null;
   newTier: "TIER_1" | "TIER_2" | "TIER_3";
 }) {
-  const subject = "Your AI AutoQuote pricing tier has changed";
+  const subject = "Your Azzure AI Quote pricing tier has changed";
   const body = [
     `Hi ${input.ownerName},`,
     "",
-    `Your AI AutoQuote account for ${input.companyName} has been updated.`,
+    `Your Azzure AI Quote account for ${input.companyName} has been updated.`,
     "",
     `Previous tier: ${input.previousTier ? tierLabel(input.previousTier) : "Not set"}`,
     `Current tier:   ${tierLabel(input.newTier)}`,
@@ -97,7 +97,7 @@ export async function sendTierChangeMail(input: {
     "If you have any questions, contact",
     "support@azzuresolutions.com",
     "",
-    "- The AI AutoQuote Team"
+    "- The Azzure AI Quote Team"
   ].join("\n");
 
   await sendAuthMail({
@@ -114,16 +114,16 @@ export async function sendAccountSuspendedMail(input: {
   companyName: string;
   reason?: string | null;
 }) {
-  const subject = "Your AI AutoQuote account is suspended";
+  const subject = "Your Azzure AI Quote account is suspended";
   const body = [
     `Hi ${input.ownerName},`,
     "",
-    `Your AI AutoQuote account for ${input.companyName} has been suspended.`,
+    `Your Azzure AI Quote account for ${input.companyName} has been suspended.`,
     input.reason ? `Reason: ${input.reason}` : "Reason: Not provided",
     "",
     "Please contact support@azzuresolutions.com if you believe this is a mistake.",
     "",
-    "- The AI AutoQuote Team"
+    "- The Azzure AI Quote Team"
   ].join("\n");
 
   await sendAuthMail({

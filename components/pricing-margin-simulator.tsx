@@ -27,11 +27,9 @@ function formatUsdExact(amount: number) {
 }
 
 const PRESET_MARGINS = [
-  { label: "15% (Competitive)", value: 15 },
-  { label: "25% (Standard)", value: 25 },
-  { label: "35% (Custom Studio)", value: 35 },
   { label: "50% (Luxury Boutique)", value: 50 },
-  { label: "75% (High Margin)", value: 75 }
+  { label: "75% (High Margin)", value: 75 },
+  { label: "100% (Keystone)", value: 100 }
 ];
 
 export default function PricingMarginSimulator({
@@ -39,7 +37,7 @@ export default function PricingMarginSimulator({
   goldSpotPerOz,
   canEdit
 }: PricingMarginSimulatorProps) {
-  const [marginPct, setMarginPct] = useState(initialMarginPct);
+  const [marginPct, setMarginPct] = useState(Math.max(50, initialMarginPct));
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
 
@@ -134,8 +132,8 @@ export default function PricingMarginSimulator({
               <input
                 id="marginRange"
                 type="range"
-                min={0}
-                max={100}
+                min={50}
+                max={200}
                 step={1}
                 value={marginPct}
                 onChange={(e) => setMarginPct(Number(e.target.value))}
@@ -146,11 +144,11 @@ export default function PricingMarginSimulator({
                 <input
                   id="marginInput"
                   type="number"
-                  min={0}
+                  min={50}
                   max={200}
                   step={0.5}
                   value={marginPct}
-                  onChange={(e) => setMarginPct(Math.max(0, Math.min(200, Number(e.target.value) || 0)))}
+                  onChange={(e) => setMarginPct(Math.max(50, Math.min(200, Number(e.target.value) || 50)))}
                   disabled={!canEdit}
                   className="shortInput"
                   style={{ fontSize: "1.15rem", fontWeight: "700", textAlign: "center" }}

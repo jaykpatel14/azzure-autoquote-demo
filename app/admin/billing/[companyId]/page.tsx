@@ -6,6 +6,7 @@ import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 import { resolveMetalPricing, toPricingProfileInput } from "@/lib/metal-pricing";
+import { ensureBasePlans } from "@/lib/plan-bootstrap";
 
 type CompanyBillingPageProps = {
   params: Promise<{
@@ -34,6 +35,7 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
   }
 
   const { companyId } = await params;
+  await ensureBasePlans(prisma);
   const [company, plans] = await Promise.all([
     prisma.company.findUnique({
       where: { id: companyId },
@@ -62,6 +64,7 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
       }
     }),
     prisma.plan.findMany({
+      where: { code: { in: ["starter", "professional", "enterprise"] } },
       orderBy: { monthlyPriceCents: "asc" }
     })
   ]);

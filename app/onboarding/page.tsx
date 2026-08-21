@@ -27,7 +27,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
       <main className="publicQuoteShell onboardingPublicShell">
         <article className="publicQuoteCard card onboardingPublicCard">
           <header className="publicQuoteHeader">
-            <p className="publicQuoteTitle">Welcome to Azzure AutoQuote</p>
+            <p className="publicQuoteTitle">Welcome to Azzure AI Quote</p>
             <p className="publicQuoteBlurb">
               Your 14-day free trial has started. Sign in to finish the guided setup and move into your workspace.
             </p>
@@ -63,7 +63,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
     ? subscription.trialEndsAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
     : subscription?.currentPeriodEnd
     ? subscription.currentPeriodEnd.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-    : new Date(Date.now() + 14 * 86400000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    : "14 days after activation";
 
   return (
     <main className="onboardingShell">
@@ -72,7 +72,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
         <header className="onboardingHero">
           <div className="onboardingBrandBadge">
             <span className="onboardingDiamondIcon">✦</span>
-            <span>AZZURE AUTOQUOTE AI</span>
+            <span>AZZURE AI QUOTE</span>
           </div>
           <h1 className="onboardingTitle">Your 14-Day Free Trial Has Started</h1>
           <p className="onboardingLead">

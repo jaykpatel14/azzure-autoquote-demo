@@ -33,8 +33,8 @@ async function sendTrialReminder(email: string, daysRemaining: number, companyNa
   await sendAuthMail({
     to: email,
     subject: `${companyName} trial: ${daysRemaining} days remaining`,
-    text: `Your Azzure AIQuote trial has ${daysRemaining} days left. Upgrade now: ${actionUrl}`,
-    html: `<p>Your Azzure AIQuote trial has <strong>${daysRemaining}</strong> days left.</p><p><a href="${actionUrl}">Upgrade your plan</a></p>`
+    text: `Your Azzure AI Quote trial has ${daysRemaining} days left. Upgrade now: ${actionUrl}`,
+    html: `<p>Your Azzure AI Quote trial has <strong>${daysRemaining}</strong> days left.</p><p><a href="${actionUrl}">Upgrade your plan</a></p>`
   });
 }
 
@@ -43,8 +43,8 @@ async function sendTrialExpired(email: string, companyName: string) {
   await sendAuthMail({
     to: email,
     subject: `${companyName} trial ended`,
-    text: `Your Azzure AIQuote trial has ended. Visit ${actionUrl} to reactivate billing.`,
-    html: `<p>Your Azzure AIQuote trial has ended.</p><p><a href="${actionUrl}">Reactivate billing</a></p>`
+    text: `Your Azzure AI Quote trial has ended. Visit ${actionUrl} to reactivate billing.`,
+    html: `<p>Your Azzure AI Quote trial has ended.</p><p><a href="${actionUrl}">Reactivate billing</a></p>`
   });
 }
 
@@ -111,7 +111,10 @@ async function processPendingPlanActivation(
 
 export async function POST(request: Request) {
   const secret = process.env.BILLING_LIFECYCLE_SECRET || process.env.CRON_SECRET;
-  if (secret) {
+  if (!secret) {
+    return NextResponse.json({ error: "Lifecycle cron is not configured." }, { status: 503 });
+  }
+  {
     const provided = request.headers.get("x-cron-secret") || request.headers.get("authorization") || "";
     const bearer = provided.startsWith("Bearer ") ? provided.slice("Bearer ".length).trim() : provided.trim();
     if (bearer !== secret) {

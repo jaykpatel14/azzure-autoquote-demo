@@ -93,6 +93,14 @@ export default async function InternalAdminShell({
             </Link>
           </div>
         </header>
+        <nav className="mobileWorkspaceNav" aria-label="Mobile admin navigation">
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href} className={`mobileWorkspaceNavItem${item.active ? " isActive" : ""}`} aria-current={item.active ? "page" : undefined}>
+              <span className="material-symbols-outlined" aria-hidden="true">{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
 
         <header className="pageHero">
           <div>

@@ -4,6 +4,7 @@ import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { formatAdminMoney, getAdminTenant } from "@/src/services/admin-tenants";
+import { AdminDeleteCompanyButton } from "@/components/admin-delete-company-button";
 
 type TenantPageProps = {
   params: Promise<{
@@ -322,6 +323,23 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="card dangerZone">
+        <div className="sectionHeader">
+          <div>
+            <span className="eyebrow">Danger zone</span>
+            <h2>Delete company permanently</h2>
+            <p className="muted">
+              Removes this company from the application and deletes its subscriptions, memberships, quotes, analyses, orders, showroom sessions, audit records, and orphaned user accounts from the database.
+            </p>
+          </div>
+          <AdminDeleteCompanyButton
+            companyId={company.id}
+            companyName={company.name}
+            redirectTo="/admin/tenants"
+          />
         </div>
       </section>
     </InternalAdminShell>

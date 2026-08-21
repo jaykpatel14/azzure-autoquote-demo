@@ -5,6 +5,7 @@ import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { getAdminSubscriptions } from "@/src/services/admin-tenants";
+import { ensureBasePlans } from "@/lib/plan-bootstrap";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +19,10 @@ export default async function AdminSubscriptionPage() {
     redirect("/signin");
   }
 
+  await ensureBasePlans(prisma);
   const [data, plans] = await Promise.all([
     getAdminSubscriptions(),
-    prisma.plan.findMany({ orderBy: { monthlyPriceCents: "asc" } })
+    prisma.plan.findMany({ where: { code: { in: ["starter", "professional", "enterprise"] } }, orderBy: { monthlyPriceCents: "asc" } })
   ]);
 
   return (

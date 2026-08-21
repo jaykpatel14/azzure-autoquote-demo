@@ -15,11 +15,27 @@ export async function getAdminOrders(status?: OrderStatus | "all") {
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
     where: status && status !== "all" ? { status } : undefined,
-    include: {
+    select: {
+      id: true,
+      companyId: true,
+      orderNumber: true,
+      itemName: true,
+      status: true,
+      ckOrderId: true,
+      submittedAt: true,
+      createdAt: true,
+      updatedAt: true,
       company: {
         select: { id: true, name: true, slug: true }
       },
-      quote: true
+      quote: {
+        select: {
+          quoteNumber: true,
+          makingPrice: true,
+          estimatedSellingPrice: true,
+          estimatedPrice: true
+        }
+      }
     }
   });
 
@@ -40,16 +56,27 @@ export async function getAdminOrders(status?: OrderStatus | "all") {
 export async function getAdminOrder(orderId: string) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: {
+    select: {
+      id: true,
+      companyId: true,
+      orderNumber: true,
+      itemName: true,
+      status: true,
+      ckOrderId: true,
+      ckOrderUrl: true,
+      notes: true,
+      submittedAt: true,
+      reviewedAt: true,
+      productionAt: true,
+      completedAt: true,
+      canceledAt: true,
+      cancelledAt: true,
       company: {
-        include: {
-          subscription: {
-            include: { plan: true }
-          }
-        }
+        select: { id: true, name: true, slug: true }
       },
-      quote: true,
+      quote: { select: { quoteNumber: true, estimatedPrice: true } },
       timeline: {
+        select: { id: true, status: true, note: true, createdAt: true },
         orderBy: { createdAt: "asc" }
       }
     }

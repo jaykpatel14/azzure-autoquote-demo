@@ -188,7 +188,7 @@ describe("billing webhook integration", () => {
     expect(subscription.stripeCustomerId).toBe(`cus_${company.companyId}`);
     expect(subscription.stripePriceId).toBe("price_professional");
     expect(subscription.stripeProductId).toBe("prod_professional");
-    expect(usagePeriod.limit).toBe(500);
+    expect(usagePeriod.limit).toBe(1200);
   });
 
   test("caps trialing subscriptions at 40 requests", { timeout: 15000 }, async () => {

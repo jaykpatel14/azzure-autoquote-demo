@@ -327,3 +327,29 @@ This document logs every key architectural, design, and calculation decision mad
 - **Why**: Videos are too large for database fields, public bucket URLs would weaken tenant isolation, and the existing S3 infrastructure already provides durable binary storage.
 - **Decision**: Add a local filesystem fallback specifically for showroom media, identified by a `local:` storage-key prefix, while preferring S3 whenever its upload succeeds.
 - **Why**: This unblocks local demonstrations without cloud credentials and preserves a clean migration path: future uploads automatically use S3 while existing temporary files remain readable until replaced.
+## Launch security decisions (2026-08-20)
+
+- **Decision**: Authenticate both upload and polling sides of the mobile-to-kiosk bridge with an active showroom token, validate UUID session IDs, cap requests/files/aggregate bytes, and verify binary signatures.
+- **Why**: The previous bridge trusted caller-supplied IDs and tokens and could be abused as an unauthenticated memory sink or used to retrieve uploads without proving possession of the kiosk token.
+- **Decision**: Make the subscription lifecycle cron fail closed when its secret is absent and suppress raw database errors from public health responses.
+- **Why**: Missing production configuration must disable privileged automation rather than expose it; public diagnostics should reveal availability but not infrastructure details.
+- **Decision**: Patch vulnerable transitive dependencies with compatible overrides (`postcss` and `deepmerge-ts`) and verify Prisma generation/build behavior rather than accepting a risky Prisma downgrade immediately before launch.
+- **Why**: This reaches zero known npm advisories while preserving the tested Prisma 6.19 application/runtime interface.
+- **Decision**: Replace broad `include: { quote: true }` and Company includes in admin order reads with minimal explicit projections.
+- **Why**: The order UI needs only a few pricing and identity fields. Broad Prisma includes couple this critical admin page to every unrelated schema addition and cause avoidable server errors when staging code and migrations are briefly out of sync.
+## Margin and plan-model consolidation (2026-08-20)
+
+- **Decision**: Enforce the 50% margin floor on the server as well as in the slider/number controls and backfill existing lower values.
+- **Why**: Hiding low presets alone would allow direct API submissions and existing records to continue producing prices below policy.
+- **Decision**: Use a compact horizontally scrolling mobile navigation row in both customer and admin shells.
+- **Why**: The desktop sidebar is intentionally hidden below 768px; a shared touch navigation row restores access without consuming most of a phone screen with a permanently open drawer.
+- **Decision**: Remove Enterprise Ultra from the canonical plan model and migrate its subscriptions to Enterprise while retaining Starter, Professional, and Enterprise.
+- **Why**: Ultra duplicated Enterprise pricing/features and caused admin selectors to disagree with the current three-plan customer offering.
+- **Decision**: Make the Proxmox `app` service depend on successful completion of the `migrate` service, whose default command deploys migrations and seeds canonical plans.
+- **Why**: Previously only the GitHub Actions path explicitly migrated. Portainer or manual Compose launches could start newer application code against an older schema and crash dynamic admin pages.
+- **Decision**: Surface permanent deletion on the primary `/admin/tenants/[companyId]` support screen instead of leaving it only in the secondary Companies UI.
+- **Why**: Tenant management is the admin's operational entry point. A separated danger zone plus exact-name confirmation makes the capability discoverable without making accidental deletion easy.
+## Product naming boundary (2026-08-20)
+
+- **Decision**: Standardize visible product copy on “Azzure AI Quote” and visible maker attribution on “Built by azzuresolutions.com,” while leaving technical identifiers unchanged.
+- **Why**: Consistent customer-facing identity is required immediately, whereas renaming package names, route paths, environment keys, user-agent strings, or infrastructure directories would create migration risk without improving the visible brand.

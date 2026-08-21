@@ -122,6 +122,17 @@ export function hasAllowedImageSignature(bytes: Uint8Array, mimeType: string) {
   return false;
 }
 
+export function hasAllowedShowroomMediaSignature(bytes: Uint8Array, mimeType: string) {
+  if (mimeType.startsWith("image/")) return hasAllowedImageSignature(bytes, mimeType);
+  if (mimeType === "video/mp4") {
+    return bytes.length >= 12 && String.fromCharCode(...bytes.slice(4, 8)) === "ftyp";
+  }
+  if (mimeType === "video/webm") {
+    return bytes.length >= 4 && bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
+  }
+  return false;
+}
+
 export function getClientIp(request: Request | NextRequest) {
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {

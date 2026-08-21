@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       metalWeightGrams: body.metalWeightGrams || 6.5,
       centerDiamondCarats: body.centerDiamondCarats || 2.5,
       sideDiamondCarats: body.sideDiamondCarats || 0.75,
-      customerNotes: body.customerNotes || "Test order dispatch from Azzure AIQuote",
+      customerNotes: body.customerNotes || "Test order dispatch from Azzure AI Quote",
       renderingImageUrl: body.renderingImageUrl || null
     });
 
