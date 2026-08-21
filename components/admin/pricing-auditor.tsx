@@ -42,6 +42,13 @@ export function PricingAuditor({ initial }: { initial: PricingAuditorInitialValu
     setValues((prev) => ({ ...prev, [key]: value }));
   };
 
+  const displayedMetalSpot =
+    values.metalType === "Platinum"
+      ? values.platinumSpotPerOz
+      : values.metalType === "Silver"
+        ? values.silverSpotPerOz
+        : values.goldSpotPerOz;
+
   const isDirty = useMemo(
     () => (Object.keys(initial) as (keyof PricingAuditorInitialValues)[]).some((key) => initial[key] !== values[key]),
     [initial, values]
@@ -308,7 +315,7 @@ export function PricingAuditor({ initial }: { initial: PricingAuditorInitialValu
           <QuotePricingBreakdown
             breakdown={breakdown}
             computedMetalCost={breakdown.metalCost}
-            goldSpot={values.goldSpotPerOz}
+            goldSpot={displayedMetalSpot}
             metalType={values.metalType}
             metalWeightGrams={values.metalWeightGrams}
             centerDiamondCarats={values.centerDiamondCarats}
