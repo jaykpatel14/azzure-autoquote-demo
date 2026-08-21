@@ -31,7 +31,7 @@ export function QuoteCostBreakdown({ breakdown }: { breakdown: MakingPriceBreakd
       <div className="sectionHeader">
         <div>
           <p className="eyebrow">Cost breakdown</p>
-          <h2>What's In This Piece</h2>
+          <h2>What&apos;s In This Piece</h2>
           <p className="muted small">Pricing values were snapshotted when this quote was created.</p>
         </div>
       </div>
