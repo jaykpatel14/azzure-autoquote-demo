@@ -8,12 +8,12 @@ import {
   calculateTierPrice,
   DEFAULT_COLOR_CLARITY
 } from "@/src/services/pricing";
-import { convertMetalWeight, type MetalType } from "@/lib/pricing";
+import { convertMetalWeight, type MetalType, type PricingProfileInput } from "@/lib/pricing";
 import { validateEmail } from "@/lib/email-validation";
 import type { PricingTier } from "@prisma/client";
 
 type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; backgroundColor: string | null; backgroundMediaUrl: string | null; backgroundMediaType: string | null; overlayColor: string | null; overlayOpacity: number | null; textColor: string | null; backgroundFit: string | null; backgroundPosition: string | null; panelOpacity: number | null; aboutUs: string | null };
-type Pricing = { cadCost: number; customerMarginPct: number; pricingTier: PricingTier | null };
+type Pricing = { cadCost: number; customerMarginPct: number; pricingTier: PricingTier | null; pricingProfile: PricingProfileInput };
 type Analysis = {
   analysisId: string;
   jewelryType: string;
@@ -313,6 +313,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
     try {
       const breakdown = calculateProductionCost({
+        pricingProfile: pricing.pricingProfile,
         metalType: debouncedAnalysis.selectedMetal || "14K",
         metalWeightGrams: debouncedAnalysis.metalWeightGrams || 6,
         centerStone: { shape: debouncedAnalysis.centerShape || "round", caratWeight: centerCarat },

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { getActiveShowroom, safeBrandColor } from "@/lib/showroom";
 import { getSettingValue } from "@/lib/app-settings";
+import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricing";
 import ShowroomKiosk from "./showroom-kiosk";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { prisma } from "@/lib/prisma";
@@ -98,6 +99,24 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
   }
 
   const cadCost = (await getSettingValue("cad_cost_per_quote")) ?? 0;
+  // Without this, the kiosk's on-screen price preview (shown while the
+  // customer compares metals/carats) fell back to hardcoded defaults
+  // (gold $4500/oz, platinum $2000/oz) instead of this tenant's real
+  // live/master spot prices, so what customers saw in-store could disagree
+  // with the price the quote actually saved at.
+  const baseProfile = session.company.pricingProfile
+    ? normalizePricingProfile({
+        goldSpotPerOz: Number(session.company.pricingProfile.goldSpotPerOz),
+        platinumSpotPerOz: Number(session.company.pricingProfile.platinumSpotPerOz),
+        silverSpotPerOz: Number(session.company.pricingProfile.silverSpotPerOz),
+        cadCharge: Number(session.company.pricingProfile.cadCharge),
+        centerSettingPerCarat: Number(session.company.pricingProfile.centerSettingPerCarat),
+        sideSettingPerStone: Number(session.company.pricingProfile.sideSettingPerStone),
+        sellingMarginDivisor: Number(session.company.pricingProfile.sellingMarginDivisor),
+        finalMultiplier: Number(session.company.pricingProfile.finalMultiplier)
+      })
+    : undefined;
+  const livePricing = await resolveMetalPricing(features.canUseCustomPricingProfile ? baseProfile : null);
   return (
     <ShowroomKiosk
       token={session.token}
@@ -119,7 +138,8 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
       pricing={{
         cadCost,
         customerMarginPct: session.company.customerMarginPct ?? 0,
-        pricingTier: session.company.pricingTier
+        pricingTier: session.company.pricingTier,
+        pricingProfile: livePricing.pricingProfile
       }}
     />
   );
