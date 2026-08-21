@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { OrderStatus } from "@prisma/client";
 import InternalAdminShell from "@/components/internal-admin-shell";
+import { AdminThumbImage } from "@/components/admin-thumb-image";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { getAdminOrder } from "@/src/services/admin-orders";
@@ -94,20 +95,14 @@ export default async function AdminOrderPage({ params }: OrderPageProps) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              minHeight: "260px",
+              height: "320px",
               position: "relative"
             }}
           >
-            <img
+            <AdminThumbImage
               src={`/api/admin/orders/${order.id}/image`}
               alt={order.itemName || "Jewelry design render"}
-              style={{ width: "100%", height: "auto", maxHeight: "380px", objectFit: "contain", display: "block" }}
-              onError={(e) => {
-                (e.currentTarget as HTMLElement).style.display = "none";
-                if (e.currentTarget.parentElement) {
-                  e.currentTarget.parentElement.innerHTML = '<div style="padding: 40px; text-align: center; color: #94A3B8;"><span style="font-size: 48px; display: block; margin-bottom: 8px;">💎</span>No design render available</div>';
-                }
-              }}
+              fallback="💎"
             />
           </div>
 

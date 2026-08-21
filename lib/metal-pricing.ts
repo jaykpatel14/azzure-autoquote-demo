@@ -222,7 +222,9 @@ export async function resolveMetalPricing(
     });
 
     if (!response.ok) {
-      throw new Error(`Metals.dev request failed with status ${response.status}.`);
+      const errorBody = await response.json().catch(() => null) as MetalsDevLatestResponse | null;
+      const detail = errorBody?.error_message ? ` (${errorBody.error_message})` : "";
+      throw new Error(`Metals.dev request failed with status ${response.status}.${detail}`);
     }
 
 

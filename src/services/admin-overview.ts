@@ -388,10 +388,14 @@ async function buildHealthChecks(): Promise<AdminHealthCheck[]> {
         Accept: "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AzzureAutoQuote/2.0"
       }
-    }).then((response) => ({
-      state: response.ok ? ("operational" as const) : ("degraded" as const),
-      detail: response.ok ? "Metals.dev reachable" : `Metals.dev returned ${response.status}`
-    })),
+    }).then(async (response) => {
+      if (response.ok) {
+        return { state: "operational" as const, detail: "Metals.dev reachable" };
+      }
+      const errorBody = await response.json().catch(() => null) as { error_message?: string } | null;
+      const detail = errorBody?.error_message ? ` (${errorBody.error_message})` : "";
+      return { state: "degraded" as const, detail: `Metals.dev returned ${response.status}${detail}` };
+    }),
     4000,
     { state: "degraded" as const, detail: "Metals.dev ping timed out" }
   ).catch(() => ({ state: "degraded" as const, detail: "Metals.dev ping failed" }));
