@@ -1,4 +1,6 @@
 import type { PricingTier } from "@prisma/client";
+import { DEFAULT_PRICING_PROFILE, type PricingProfileInput } from "@/lib/pricing";
+import { getCenterStonePricePerCarat, getSideStonePricePerCarat } from "@/src/services/diamond-pricing";
 
 export const TIER_DIVISORS: Record<PricingTier, number> = {
   TIER_1: 0.6,
@@ -111,6 +113,9 @@ export function polishingCost(input: WaxInput): number {
 }
 
 export type MakingPriceInput = {
+  pricingProfile?: PricingProfileInput;
+  quantity?: number;
+  stoneOrigin?: "lab" | "natural" | "gemstone";
   metalType?: string;
   metalWeightGrams?: number;
   goldSpotPerOz?: number;
@@ -176,21 +181,21 @@ export function calculateMetalCost(
   metalType = "14K",
   weightGrams = 0,
   spotPrice = 4500,
-  wastagePct = 25
+  wastagePct = 25,
+  profile: PricingProfileInput = {}
 ): number {
   if (weightGrams <= 0) return 0;
   const ozToGram = 31.1034768;
   const normalized = (metalType || "14K").toUpperCase().trim();
   
+  const config = { ...DEFAULT_PRICING_PROFILE, ...profile };
   let purity = 0.585; // 14K default
   let lossFactor = 1 + (wastagePct / 100); // 1.25 default
 
   if (normalized.includes("PLATINUM") || normalized.includes("PLAT")) {
-    purity = 0.95;
-    lossFactor = 1.35;
+    return weightGrams * (Number(config.platinumSpotPerOz) / ozToGram) * (1 + Number(config.platinumLaborPct) / 100);
   } else if (normalized.includes("SILVER") || normalized.includes("925")) {
-    purity = 0.925;
-    lossFactor = 3.5;
+    return weightGrams * (Number(config.silverSpotPerOz) / ozToGram);
   } else if (normalized.includes("18K") || normalized.includes("18")) {
     purity = 0.75;
     lossFactor = 1 + (wastagePct / 100);
@@ -215,6 +220,7 @@ export function calculateMakingPrice(
   const customerMarginPct = input.customerMarginPct ?? 0;
   const pricingTier = input.pricingTier ?? "TIER_2";
   const tierDivisor = TIER_DIVISORS[pricingTier] ?? 0.7;
+  const pricing = { ...DEFAULT_PRICING_PROFILE, ...(input.pricingProfile ?? {}) };
 
   // Validate inputs
   if (input.centerStone.caratWeight <= 0) {
@@ -231,24 +237,41 @@ export function calculateMakingPrice(
     input.metalType ?? "14K",
     input.metalWeightGrams ?? 0,
     input.goldSpotPerOz ?? 4500,
-    25
+    Number(pricing.goldWastagePct),
+    pricing
   );
 
-  const _centerStoneCost = centerStoneCost(
-    input.centerStone.caratWeight,
-    input.centerStone.shape
-  );
+  const hasCenterStone = input.centerStone.caratWeight > 0.0001;
+  const centerPrice = hasCenterStone
+    ? getCenterStonePricePerCarat({
+        origin: input.stoneOrigin ?? "lab",
+        shape: input.centerStone.shape,
+        colorClarity: input.colorClarity ?? DEFAULT_COLOR_CLARITY,
+        caratWeight: input.centerStone.caratWeight,
+        gemstonePerCarat: Number(pricing.gemstonePerCarat)
+      })
+    : { pricePerCarat: 0 };
+  if (centerPrice.error) throw new ValidationError(centerPrice.error);
+  const _centerStoneCost = hasCenterStone ? input.centerStone.caratWeight * centerPrice.pricePerCarat : 0;
 
   const _sideStoneCost = input.sideStones.reduce((total, ss) => {
-    return total + sideStoneCost(ss.caratWeightEach, ss.count, ss.shape);
+    const sidePrice = getSideStonePricePerCarat({
+      origin: input.stoneOrigin ?? "lab",
+      shape: ss.shape ?? "round",
+      colorClarity: input.colorClarity ?? DEFAULT_COLOR_CLARITY,
+      caratWeightEach: ss.caratWeightEach,
+      gemstonePerCarat: Number(pricing.gemstonePerCarat)
+    });
+    if (sidePrice.error) throw new ValidationError(sidePrice.error);
+    return total + ss.caratWeightEach * ss.count * sidePrice.pricePerCarat;
   }, 0);
 
-  const _centerStoneSettingCost = centerStoneSettingCost(
-    input.centerStone.caratWeight
-  );
+  const _centerStoneSettingCost = hasCenterStone ? input.centerStone.caratWeight * Number(pricing.centerSettingPerCarat) : 0;
 
   const _sideStoneSettingCost = input.sideStones.reduce((total, ss) => {
-    return total + sideStoneSettingCost(ss);
+    return total + ss.count * (isSideStoneRound(ss.shape)
+      ? Number(pricing.roundSideSettingPerStone)
+      : Number(pricing.fancySideSettingPerStone));
   }, 0);
 
   const pieceConfig: WaxInput = {
@@ -256,8 +279,10 @@ export function calculateMakingPrice(
     isTwoTone: input.isTwoTone
   };
 
-  const _waxCost = waxCost(pieceConfig);
-  const _polishingCost = polishingCost(pieceConfig);
+  const quantity = Math.min(3, Math.max(1, Math.round(input.quantity ?? 1)));
+  const configuredPieces = pieceCount(pieceConfig);
+  const _waxCost = configuredPieces * Number(pricing.waxPerPiece) * quantity;
+  const _polishingCost = configuredPieces * Number(pricing.polishingPerPiece) * quantity;
   const _cadCost = cadCost;
 
   // Step 1: Production Subtotal = all components (metal + stones + labor + cad) before tier formula and customer margin

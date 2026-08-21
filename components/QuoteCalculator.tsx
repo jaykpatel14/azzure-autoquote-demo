@@ -12,6 +12,7 @@ import {
   calculateTierPrice,
   DEFAULT_COLOR_CLARITY
 } from "@/src/services/pricing";
+import { getCenterStonePricePerCarat } from "@/src/services/diamond-pricing";
 import type { PricingTier } from "@prisma/client";
 
 type QuoteMode = "normal" | "without-center" | "without-center-and-side";
@@ -107,6 +108,13 @@ const ANALYSIS_STAGES = [
   "Estimating diamond specs & settings...",
   "Calculating weight..."
 ] as const;
+
+const LAB_COLOR_CLARITIES = ["D", "E", "F", "G/H"].flatMap((color) =>
+  ["VVS1", "VVS2", "VS1", "VS2", "SI1"].map((clarity) => `${color} ${clarity}`)
+);
+const NATURAL_COLOR_CLARITIES = ["D", "E", "F", "G", "H", "I", "J", "K", "L", "M"].flatMap((color) =>
+  ["IF", "VVS1", "VVS2", "VS1", "VS2", "SI1"].map((clarity) => `${color} ${clarity}`)
+);
 
 const QUOTE_MODE_OPTIONS: Array<{
   value: QuoteMode;
@@ -306,11 +314,20 @@ export default function QuoteCalculator({
   // Manual direct quote specific states
   const [manualJewelryType, setManualJewelryType] = useState<string>(initialQuote?.jewelryType ?? "Ring");
   const [manualMetalWeight, setManualMetalWeight] = useState<number>(initialQuote?.metalWeightGrams ?? 4.5);
+  const [quantity, setQuantity] = useState<number>(1);
+  const [stoneOrigin, setStoneOrigin] = useState<"lab" | "natural" | "gemstone">("lab");
   const [manualCenterShape, setManualCenterShape] = useState<string>(initialQuote?.centerShape ?? "round");
   const [manualCenterCarats, setManualCenterCarats] = useState<number>(initialQuote?.centerDiamondCarats ?? 1.0);
   const [manualCenterClarity, setManualCenterClarity] = useState<string>(DEFAULT_COLOR_CLARITY);
   const [manualSideCount, setManualSideCount] = useState<number>(initialQuote?.sideDiamondQuantity ?? 0);
   const [manualSideCarats, setManualSideCarats] = useState<number>(initialQuote?.sideDiamondCarats ?? 0);
+  const [manualRoundSideCount, setManualRoundSideCount] = useState<number>(initialQuote?.sideDiamondQuantity ?? 0);
+  const [manualRoundSideCarats, setManualRoundSideCarats] = useState<number>(initialQuote?.sideDiamondCarats ?? 0);
+  const [manualFancySideCount, setManualFancySideCount] = useState<number>(0);
+  const [manualFancySideCarats, setManualFancySideCarats] = useState<number>(0);
+  const [manualSideShapes, setManualSideShapes] = useState<Array<"round" | "fancy">>(["round"]);
+  const [manualRoundSideSettings, setManualRoundSideSettings] = useState<string[]>(["prong"]);
+  const [manualFancySideSettings, setManualFancySideSettings] = useState<string[]>(["prong"]);
   const [manualSettingType, setManualSettingType] = useState<string>(initialQuote?.settingType ?? "prong");
   const [manualHasWeddingBand, setManualHasWeddingBand] = useState<boolean>(false);
   const [manualIsTwoTone, setManualIsTwoTone] = useState<boolean>(false);
@@ -547,8 +564,8 @@ export default function QuoteCalculator({
           quoteMode === "without-center" || quoteMode === "without-center-and-side"
             ? 0
             : Number(manualCenterCarats) || 0,
-        sideDiamondCarats: quoteMode === "without-center-and-side" ? 0 : Number(manualSideCarats) || 0,
-        sideDiamondQuantity: quoteMode === "without-center-and-side" ? 0 : Math.round(Number(manualSideCount)) || 0,
+        sideDiamondCarats: quoteMode === "without-center-and-side" ? 0 : manualRoundSideCarats + manualFancySideCarats,
+        sideDiamondQuantity: quoteMode === "without-center-and-side" ? 0 : manualRoundSideCount + manualFancySideCount,
         hasWeddingBand: manualHasWeddingBand,
         isTwoTone: manualIsTwoTone,
         confidence: "high",
@@ -593,6 +610,10 @@ export default function QuoteCalculator({
     manualCenterCarats,
     manualSideCarats,
     manualSideCount,
+    manualRoundSideCarats,
+    manualRoundSideCount,
+    manualFancySideCarats,
+    manualFancySideCount,
     manualHasWeddingBand,
     manualIsTwoTone,
     customerNotes,
@@ -612,7 +633,11 @@ export default function QuoteCalculator({
       ? "fancy"
       : "round";
 
-    const sideStones =
+    const manualGroups = creationMode === "manual" ? [
+      ...(manualSideShapes.includes("round") && manualRoundSideCount > 0 && manualRoundSideCarats > 0 ? [{ shape: "round", caratWeightEach: manualRoundSideCarats / manualRoundSideCount, count: manualRoundSideCount, settingType: manualRoundSideSettings.join(", ") }] : []),
+      ...(manualSideShapes.includes("fancy") && manualFancySideCount > 0 && manualFancySideCarats > 0 ? [{ shape: "fancy", caratWeightEach: manualFancySideCarats / manualFancySideCount, count: manualFancySideCount, settingType: manualFancySideSettings.join(", ") }] : [])
+    ] : null;
+    const sideStones = manualGroups ?? (
       aggregateQuote.sideDiamondQuantity > 0 && aggregateQuote.sideDiamondCarats > 0
         ? [
             {
@@ -622,10 +647,13 @@ export default function QuoteCalculator({
               settingType: aggregateQuote.settingType || "prong"
             }
           ]
-        : [];
+        : []);
 
     try {
       const breakdown = calculateProductionCost({
+        pricingProfile,
+        quantity,
+        stoneOrigin,
         metalType,
         metalWeightGrams: aggregateQuote.metalWeightGrams,
         goldSpotPerOz: pricingProfile?.goldSpotPerOz ?? 4500,
@@ -636,7 +664,7 @@ export default function QuoteCalculator({
         sideStones,
         hasWeddingBand: aggregateQuote.hasWeddingBand,
         isTwoTone: aggregateQuote.isTwoTone,
-        colorClarity: DEFAULT_COLOR_CLARITY,
+        colorClarity: manualCenterClarity,
         cadCost: cadCost && cadCost > 0 ? cadCost : 20,
         pricingTier,
         customerMarginPct
@@ -649,9 +677,21 @@ export default function QuoteCalculator({
     } catch {
       return { costBreakdown: null, estimatedSellingPrice: 0 };
     }
-  }, [aggregateQuote, cadCost, customerMarginPct, pricingTier, metalType, pricingProfile?.goldSpotPerOz]);
+  }, [aggregateQuote, cadCost, customerMarginPct, pricingTier, metalType, pricingProfile, quantity, stoneOrigin, manualCenterClarity, creationMode, manualSideShapes, manualRoundSideCount, manualRoundSideCarats, manualFancySideCount, manualFancySideCarats, manualRoundSideSettings, manualFancySideSettings]);
 
   const canAnalyse = canEdit && facets.some((facet) => facet.status === "pending" || facet.status === "error");
+  const selectedCenterRate = useMemo(() => {
+    const shape = creationMode === "manual" ? manualCenterShape : aggregateQuote?.centerShape ?? "round";
+    const caratWeight = creationMode === "manual" ? manualCenterCarats : aggregateQuote?.centerDiamondCarats ?? 0;
+    if (caratWeight <= 0) return null;
+    return getCenterStonePricePerCarat({
+      origin: stoneOrigin,
+      shape,
+      colorClarity: manualCenterClarity,
+      caratWeight,
+      gemstonePerCarat: Number(pricingProfile?.gemstonePerCarat ?? 40)
+    });
+  }, [aggregateQuote?.centerDiamondCarats, aggregateQuote?.centerShape, creationMode, manualCenterCarats, manualCenterClarity, manualCenterShape, pricingProfile?.gemstonePerCarat, stoneOrigin]);
 
   function updateFacet(id: string, updater: (facet: FacetDraft) => FacetDraft) {
     setFacets((current) => current.map((facet) => (facet.id === id ? updater(facet) : facet)));
@@ -824,7 +864,7 @@ export default function QuoteCalculator({
           analysisId: result.analysisId,
           jewelryType: result.jewelryType || "Jewelry",
           centerShape: result.centerShape ?? "round",
-          centerClarity: DEFAULT_COLOR_CLARITY,
+          centerClarity: manualCenterClarity,
           settingType: result.settingType ?? "prong",
           metalWeightGrams: result.metalWeightGrams,
           centerDiamondCarats: result.centerDiamondCarats,
@@ -1107,20 +1147,26 @@ export default function QuoteCalculator({
           customerEmail,
           customerPhone,
           quoteMode,
+          quantity,
+          stoneOrigin,
           metalType,
           metalWeightGrams: aggregateQuote.metalWeightGrams,
           centerDiamondCarats: aggregateQuote.centerDiamondCarats,
           sideDiamondCarats: aggregateQuote.sideDiamondCarats,
           sideDiamondQuantity: aggregateQuote.sideDiamondQuantity,
           centerShape: aggregateQuote.centerShape ?? "round",
-          centerClarity: DEFAULT_COLOR_CLARITY,
+          centerClarity: manualCenterClarity,
           settingType: aggregateQuote.settingType ?? "prong",
           jewelryType: aggregateQuote.jewelryType ?? "Ring",
           imageDataUrl: manualImageDataUrl,
           customerNotes,
           notes: customerNotes,
           hasWeddingBand: aggregateQuote.hasWeddingBand,
-          isTwoTone: aggregateQuote.isTwoTone
+          isTwoTone: aggregateQuote.isTwoTone,
+          sideStones: creationMode === "manual" ? [
+            ...(manualSideShapes.includes("round") && manualRoundSideCount > 0 ? [{ shape: "round", caratWeightEach: manualRoundSideCarats / manualRoundSideCount, count: manualRoundSideCount, settingType: manualRoundSideSettings.join(", ") }] : []),
+            ...(manualSideShapes.includes("fancy") && manualFancySideCount > 0 ? [{ shape: "fancy", caratWeightEach: manualFancySideCarats / manualFancySideCount, count: manualFancySideCount, settingType: manualFancySideSettings.join(", ") }] : [])
+          ] : undefined
         })
       });
 
@@ -1197,20 +1243,26 @@ export default function QuoteCalculator({
           customerEmail,
           customerPhone,
           quoteMode,
+          quantity,
+          stoneOrigin,
           metalType,
           metalWeightGrams: aggregateQuote.metalWeightGrams,
           centerDiamondCarats: aggregateQuote.centerDiamondCarats,
           sideDiamondCarats: aggregateQuote.sideDiamondCarats,
           sideDiamondQuantity: aggregateQuote.sideDiamondQuantity,
           centerShape: aggregateQuote.centerShape ?? "round",
-          centerClarity: DEFAULT_COLOR_CLARITY,
+          centerClarity: manualCenterClarity,
           settingType: aggregateQuote.settingType ?? "prong",
           jewelryType: aggregateQuote.jewelryType ?? "Ring",
           imageDataUrl: manualImagePreview || undefined,
           customerNotes,
           notes: customerNotes,
           hasWeddingBand: aggregateQuote.hasWeddingBand,
-          isTwoTone: aggregateQuote.isTwoTone
+          isTwoTone: aggregateQuote.isTwoTone,
+          sideStones: creationMode === "manual" ? [
+            ...(manualSideShapes.includes("round") && manualRoundSideCount > 0 ? [{ shape: "round", caratWeightEach: manualRoundSideCarats / manualRoundSideCount, count: manualRoundSideCount, settingType: manualRoundSideSettings.join(", ") }] : []),
+            ...(manualSideShapes.includes("fancy") && manualFancySideCount > 0 ? [{ shape: "fancy", caratWeightEach: manualFancySideCarats / manualFancySideCount, count: manualFancySideCount, settingType: manualFancySideSettings.join(", ") }] : [])
+          ] : undefined
         })
       });
 
@@ -1484,6 +1536,12 @@ export default function QuoteCalculator({
                   {/* Metal & Jewelry Type Row */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
                     <div className="field">
+                      <label htmlFor="manualQuantity">Quantity</label>
+                      <select id="manualQuantity" value={quantity} disabled={!canEdit} onChange={(e) => setQuantity(Number(e.target.value))}>
+                        {[1, 2, 3].map((value) => <option key={value} value={value}>{value}</option>)}
+                      </select>
+                    </div>
+                    <div className="field">
                       <label htmlFor="manualJewelryType">Jewelry Type</label>
                       <select
                         id="manualJewelryType"
@@ -1513,14 +1571,14 @@ export default function QuoteCalculator({
 
                     <div className="field">
                       <label htmlFor="manualMetalWeight">
-                        Metal Weight (grams)
+                        Total Metal Weight (grams, all pieces)
                       </label>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <input
                           id="manualMetalWeight"
                           type="number"
                           min={0.5}
-                          max={50}
+                          max={20}
                           step={0.1}
                           value={manualMetalWeight}
                           disabled={!canEdit}
@@ -1529,7 +1587,7 @@ export default function QuoteCalculator({
                         />
                         <input
                           type="range"
-                          min={1}
+                          min={0.5}
                           max={20}
                           step={0.1}
                           value={manualMetalWeight}
@@ -1548,6 +1606,24 @@ export default function QuoteCalculator({
                       💎 Center Diamond
                     </span>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+                      <div className="field" style={{ margin: 0 }}>
+                        <label htmlFor="manualStoneOrigin">Stone Origin</label>
+                        <select
+                          id="manualStoneOrigin"
+                          value={stoneOrigin}
+                          disabled={!canEdit}
+                          onChange={(e) => {
+                            const value = e.target.value as "lab" | "natural" | "gemstone";
+                            setStoneOrigin(value);
+                            setManualCenterClarity(value === "gemstone" ? "Gemstone / Color Stone" : DEFAULT_COLOR_CLARITY);
+                            if (value === "gemstone") window.alert("Color stones / gemstones must be bigger than 3 mm. Below 3 mm, only natural stones are available and this calculator cannot provide a price.");
+                          }}
+                        >
+                          <option value="lab">Lab Diamond</option>
+                          <option value="natural">Natural Diamond</option>
+                          <option value="gemstone">Color Stone / Gemstone (Lab)</option>
+                        </select>
+                      </div>
                       <div className="field" style={{ margin: 0 }}>
                         <label htmlFor="manualCenterShape">Center Shape</label>
                         <select
@@ -1587,25 +1663,19 @@ export default function QuoteCalculator({
                           disabled={!canEdit}
                           onChange={(e) => setManualCenterClarity(e.target.value)}
                         >
-                          {["D VVS1", "E VS1", "F VS2", "G SI1", "H SI2"].map((c) => (
+                          {(stoneOrigin === "lab"
+                            ? LAB_COLOR_CLARITIES
+                            : stoneOrigin === "natural"
+                              ? NATURAL_COLOR_CLARITIES
+                              : ["Gemstone / Color Stone — $40 per ct"]).map((c) => (
                             <option key={c} value={c}>{c}</option>
                           ))}
                         </select>
+                        <p className="muted small" style={{ margin: "5px 0 0" }}>
+                          {selectedCenterRate?.error ?? (selectedCenterRate ? `${formatCurrency(selectedCenterRate.pricePerCarat)} per carat from the supplied ${stoneOrigin === "gemstone" ? "gemstone" : stoneOrigin} pricing table` : "Enter a center-stone weight to resolve its price band.")}
+                        </p>
                       </div>
 
-                      <div className="field" style={{ margin: 0 }}>
-                        <label htmlFor="manualSettingType">Center Setting</label>
-                        <select
-                          id="manualSettingType"
-                          value={manualSettingType}
-                          disabled={!canEdit}
-                          onChange={(e) => setManualSettingType(e.target.value)}
-                        >
-                          {["prong", "bezel", "halo", "pave", "channel", "flush", "tension"].map((st) => (
-                            <option key={st} value={st}>{st.charAt(0).toUpperCase() + st.slice(1)}</option>
-                          ))}
-                        </select>
-                      </div>
                     </div>
                   </div>
 
@@ -1616,37 +1686,9 @@ export default function QuoteCalculator({
                     </span>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
                       <div className="field" style={{ margin: 0 }}>
-                        <label htmlFor="manualSideCount">Side Stones Count</label>
-                        <input
-                          id="manualSideCount"
-                          type="number"
-                          min={0}
-                          max={150}
-                          step={1}
-                          value={manualSideCount}
-                          disabled={!canEdit}
-                          onChange={(e) => {
-                            const count = Number(e.target.value) || 0;
-                            setManualSideCount(count);
-                            if (count === 0) setManualSideCarats(0);
-                          }}
-                        />
-                      </div>
-
-                      <div className="field" style={{ margin: 0 }}>
-                        <label htmlFor="manualSideCarats">Total Side Weight (ct)</label>
-                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                          <input
-                            id="manualSideCarats"
-                            type="number"
-                            min={0}
-                            max={20}
-                            step={0.01}
-                            value={manualSideCarats}
-                            disabled={!canEdit}
-                            onChange={(e) => setManualSideCarats(Number(e.target.value) || 0)}
-                          />
-                          <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>ct</span>
+                        <label>Side Stone Shapes (select both when applicable)</label>
+                        <div style={{ display: "flex", gap: 14, minHeight: 42, alignItems: "center" }}>
+                          {(["round", "fancy"] as const).map((shape) => <label key={shape} style={{ display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={manualSideShapes.includes(shape)} disabled={!canEdit} onChange={(e) => setManualSideShapes((current) => e.target.checked ? [...current, shape] : current.filter((item) => item !== shape))} />{shape === "round" ? "Round" : "Fancy"}</label>)}
                         </div>
                       </div>
 
@@ -1664,6 +1706,25 @@ export default function QuoteCalculator({
                         </select>
                       </div>
                     </div>
+                    {manualSideShapes.map((shape) => {
+                      const isRound = shape === "round";
+                      const count = isRound ? manualRoundSideCount : manualFancySideCount;
+                      const carats = isRound ? manualRoundSideCarats : manualFancySideCarats;
+                      return <div key={shape} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 12 }}>
+                        <div className="field" style={{ margin: 0 }}><label>{isRound ? "Round" : "Fancy"} Side Stone Count</label><input type="number" min={0} max={150} step={1} value={count} disabled={!canEdit} onChange={(e) => isRound ? setManualRoundSideCount(Number(e.target.value) || 0) : setManualFancySideCount(Number(e.target.value) || 0)} /></div>
+                        <div className="field" style={{ margin: 0 }}><label>Total {isRound ? "Round" : "Fancy"} Side Stone Weight (ct)</label><input type="number" min={0} max={20} step={0.01} value={carats} disabled={!canEdit} onChange={(e) => isRound ? setManualRoundSideCarats(Number(e.target.value) || 0) : setManualFancySideCarats(Number(e.target.value) || 0)} /></div>
+                        <div className="field" style={{ margin: 0 }}>
+                          <label>{isRound ? "Round" : "Fancy"} Side Stone Setting Type</label>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                            {["prong", "bezel", "pave", "channel", "flush", "bar", "shared prong", "micro-pave"].map((setting) => {
+                              const selected = isRound ? manualRoundSideSettings : manualFancySideSettings;
+                              const update = isRound ? setManualRoundSideSettings : setManualFancySideSettings;
+                              return <label key={setting} style={{ display: "flex", gap: 5, alignItems: "center" }}><input type="checkbox" checked={selected.includes(setting)} disabled={!canEdit} onChange={(e) => update((current) => e.target.checked ? [...current, setting] : current.filter((item) => item !== setting))} />{setting}</label>;
+                            })}
+                          </div>
+                        </div>
+                      </div>;
+                    })}
 
                     {/* Additional Options */}
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 20, marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--color-outline-variant, #e2e8f0)" }}>
@@ -1751,6 +1812,13 @@ export default function QuoteCalculator({
               </div>
             </div>
 
+          </QuoteStepCard>
+
+          <QuoteStepCard
+            number="02"
+            title="Upload Pictures & Description"
+            description="Upload reference pictures and add an optional description for the AI review."
+          >
             <div className="field quoteDesignDescription">
               <div className="charCountHeader">
                 <label htmlFor="customerNotes">Describe the requested design <span className="muted small" style={{ fontWeight: 400 }}>(Optional)</span></label>
@@ -1874,10 +1942,41 @@ export default function QuoteCalculator({
             </div>
           </QuoteStepCard>
 
+          <QuoteStepCard
+            number="03"
+            title="Stone Origin & Quality"
+            description="Select the diamond origin and color/clarity quality used for pricing."
+          >
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+              <div className="field" style={{ margin: 0 }}>
+                <label htmlFor="aiStoneOrigin">Stone Origin</label>
+                <select id="aiStoneOrigin" value={stoneOrigin} disabled={!canEdit} onChange={(e) => {
+                  const value = e.target.value as "lab" | "natural" | "gemstone";
+                  setStoneOrigin(value);
+                  setManualCenterClarity(value === "gemstone" ? "Gemstone / Color Stone" : DEFAULT_COLOR_CLARITY);
+                  if (value === "gemstone") window.alert("Color stones / gemstones must be bigger than 3 mm. Below 3 mm, only natural stones are available and this calculator cannot provide a price.");
+                }}>
+                  <option value="lab">Lab Diamond</option>
+                  <option value="natural">Natural Diamond</option>
+                  <option value="gemstone">Color Stone / Gemstone (Lab)</option>
+                </select>
+              </div>
+              <div className="field" style={{ margin: 0 }}>
+                <label htmlFor="aiColorClarity">Color &amp; Clarity (Quality)</label>
+                <select id="aiColorClarity" value={manualCenterClarity} disabled={!canEdit || stoneOrigin === "gemstone"} onChange={(e) => setManualCenterClarity(e.target.value)}>
+                  {(stoneOrigin === "lab" ? LAB_COLOR_CLARITIES : NATURAL_COLOR_CLARITIES).map((value) => <option key={value} value={value}>{value}</option>)}
+                </select>
+                <p className="muted small" style={{ margin: "5px 0 0" }}>
+                  {selectedCenterRate?.error ?? (selectedCenterRate ? `${formatCurrency(selectedCenterRate.pricePerCarat)} per carat from the supplied ${stoneOrigin === "gemstone" ? "gemstone" : stoneOrigin} pricing table` : "The rate will appear after AI estimates the center-stone weight.")}
+                </p>
+              </div>
+            </div>
+          </QuoteStepCard>
+
           {/* ── Step 2: AI Analysis Results ── */}
           {facets.length > 0 ? (
             <QuoteStepCard
-              number="02"
+              number="04"
               title="AI Analysis"
               description="What the AI identified from your photos and description."
             >

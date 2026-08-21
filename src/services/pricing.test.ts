@@ -8,7 +8,7 @@ import {
 } from "@/src/services/pricing";
 
 describe("calculateMakingPrice", () => {
-  it("standard shapes use $125/ct for center stone", () => {
+  it("uses the supplied lab table for a standard center stone", () => {
     const result = calculateMakingPrice({
       centerStone: { shape: "oval", caratWeight: 1.0 },
       sideStones: [],
@@ -16,10 +16,10 @@ describe("calculateMakingPrice", () => {
       isTwoTone: false,
       colorClarity: "E VS1"
     });
-    expect(result.centerStoneCost).toBe(125);
+    expect(result.centerStoneCost).toBe(100);
   });
 
-  it("non-standard shapes use $175/ct for center stone", () => {
+  it("uses the supplied lab table regardless of lab center shape", () => {
     const result = calculateMakingPrice({
       centerStone: { shape: "heart", caratWeight: 1.0 },
       sideStones: [],
@@ -27,10 +27,10 @@ describe("calculateMakingPrice", () => {
       isTwoTone: false,
       colorClarity: "E VS1"
     });
-    expect(result.centerStoneCost).toBe(175);
+    expect(result.centerStoneCost).toBe(100);
   });
 
-  it("round side stones use $80/ct", () => {
+  it("round lab side stones use the supplied inferred-mm band", () => {
     const result = calculateMakingPrice({
       centerStone: { shape: "round", caratWeight: 1.0 },
       sideStones: [{ shape: "round", caratWeightEach: 0.05, count: 10, settingType: "prong" }],
@@ -39,10 +39,10 @@ describe("calculateMakingPrice", () => {
       colorClarity: "E VS1"
     });
     // 10 × 0.05ct = 0.5ct total × $80 = $40
-    expect(result.sideStoneCost).toBe(40);
+    expect(result.sideStoneCost).toBe(35);
   });
 
-  it("non-round / fancy side stones use $130/ct", () => {
+  it("fancy lab side stones use the supplied $150/ct rate", () => {
     const result = calculateMakingPrice({
       centerStone: { shape: "round", caratWeight: 1.0 },
       sideStones: [{ shape: "baguette", caratWeightEach: 0.1, count: 4, settingType: "channel" }],
@@ -51,7 +51,7 @@ describe("calculateMakingPrice", () => {
       colorClarity: "E VS1"
     });
     // 4 × 0.1ct = 0.4ct × $130 = $52
-    expect(result.sideStoneCost).toBe(52);
+    expect(result.sideStoneCost).toBe(60);
   });
 
   it("center stone setting is $20/ct", () => {
@@ -164,10 +164,70 @@ describe("calculateMakingPrice", () => {
     });
 
     expect(result.cadCost).toBe(20);
-    expect(result.subtotal).toBeCloseTo(1804.27, 1);
-    expect(result.makingPrice).toBeCloseTo(2577.53, 1);
-    expect(result.customerMarginAmount).toBeCloseTo(515.51, 1);
-    expect(result.estimatedSellingPrice).toBeCloseTo(3093.04, 1);
+    expect(result.subtotal).toBeCloseTo(2024.27, 1);
+    expect(result.makingPrice).toBeCloseTo(2891.81, 1);
+    expect(result.customerMarginAmount).toBeCloseTo(578.36, 1);
+    expect(result.estimatedSellingPrice).toBeCloseTo(3470.17, 1);
+  });
+
+  it("prices lab color stones and gemstones at $40 per total carat", () => {
+    const result = calculateMakingPrice({
+      stoneOrigin: "gemstone",
+      centerStone: { shape: "oval", caratWeight: 1.5 },
+      sideStones: [{ shape: "round", caratWeightEach: 0.05, count: 10 }],
+      hasWeddingBand: false,
+      isTwoTone: false
+    });
+
+    expect(result.centerStoneCost).toBe(60);
+    expect(result.sideStoneCost).toBe(20);
+  });
+
+  it("treats metal weight as the total while quantity only scales per-piece finishing", () => {
+    const one = calculateMakingPrice({
+      quantity: 1,
+      metalType: "14K",
+      metalWeightGrams: 6,
+      centerStone: { shape: "round", caratWeight: 1 },
+      sideStones: [],
+      hasWeddingBand: false,
+      isTwoTone: false
+    });
+    const three = calculateMakingPrice({
+      quantity: 3,
+      metalType: "14K",
+      metalWeightGrams: 6,
+      centerStone: { shape: "round", caratWeight: 1 },
+      sideStones: [],
+      hasWeddingBand: false,
+      isTwoTone: false
+    });
+
+    expect(three.metalCost).toBe(one.metalCost);
+    expect(three.waxCost).toBe(one.waxCost * 3);
+    expect(three.polishingCost).toBe(one.polishingCost * 3);
+  });
+
+  it("uses platinum at $2,000/oz plus 40% labor and silver at a flat $300/oz", () => {
+    const platinum = calculateMakingPrice({
+      metalType: "Platinum",
+      metalWeightGrams: 31.1034768,
+      centerStone: { shape: "round", caratWeight: 1 },
+      sideStones: [],
+      hasWeddingBand: false,
+      isTwoTone: false
+    });
+    const silver = calculateMakingPrice({
+      metalType: "Silver",
+      metalWeightGrams: 31.1034768,
+      centerStone: { shape: "round", caratWeight: 1 },
+      sideStones: [],
+      hasWeddingBand: false,
+      isTwoTone: false
+    });
+
+    expect(platinum.metalCost).toBe(2800);
+    expect(silver.metalCost).toBe(300);
   });
 });
 

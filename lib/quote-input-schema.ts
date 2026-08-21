@@ -27,6 +27,8 @@ export const quoteSchema = z.object({
   }),
   customerPhone: z.union([z.string().trim().max(50), z.literal("")]).optional(),
   quoteMode: z.enum(quoteModes).default("normal"),
+  quantity: z.coerce.number().int().min(1).max(3).default(1),
+  stoneOrigin: z.enum(["lab", "natural", "gemstone"]).default("lab"),
   metalType: z.enum(METAL_TYPES),
   metalWeightGrams: z.coerce.number().min(0),
   centerDiamondCarats: z.coerce.number().min(0),

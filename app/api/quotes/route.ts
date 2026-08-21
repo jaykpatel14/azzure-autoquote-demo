@@ -73,6 +73,9 @@ export async function POST(request: Request) {
     // 4. Calculate making price breakdown
     const centerCarat = Math.max(adjustedInput.centerDiamondCarats, 0.0001);
     const makingPriceBreakdown = calculateMakingPrice({
+      pricingProfile: livePricing.pricingProfile,
+      quantity: adjustedInput.quantity,
+      stoneOrigin: adjustedInput.stoneOrigin,
       metalType: adjustedInput.metalType,
       metalWeightGrams: adjustedInput.metalWeightGrams,
       goldSpotPerOz: Number(livePricing.pricingProfile.goldSpotPerOz),
@@ -83,7 +86,7 @@ export async function POST(request: Request) {
       sideStones: sideStonesList,
       hasWeddingBand: Boolean(adjustedInput.hasWeddingBand),
       isTwoTone: Boolean(adjustedInput.isTwoTone),
-      colorClarity: "E VS1",
+      colorClarity: adjustedInput.centerClarity || "E VS1",
       cadCost,
       pricingTier: company.pricingTier,
       customerMarginPct
@@ -110,7 +113,7 @@ export async function POST(request: Request) {
       sideDiamondCarats: adjustedInput.sideDiamondCarats,
       sideDiamondQuantity: adjustedInput.sideDiamondQuantity,
       centerShape: adjustedInput.centerShape !== undefined ? adjustedInput.centerShape || null : undefined,
-      centerClarity: "E VS1",
+      centerClarity: adjustedInput.centerClarity || "E VS1",
       settingType: adjustedInput.settingType !== undefined ? adjustedInput.settingType || null : undefined,
       jewelryType: adjustedInput.jewelryType !== undefined ? adjustedInput.jewelryType || null : undefined,
       imageDataUrl: adjustedInput.imageDataUrl || undefined,
@@ -118,7 +121,7 @@ export async function POST(request: Request) {
       estimatedPrice: tierResult.estimatedSellingPrice,
       makingPrice: makingPriceBreakdown.makingPrice,
       makingPriceBreakdown: makingPriceBreakdown as unknown as Prisma.InputJsonValue,
-      colorClarity: "E VS1",
+      colorClarity: adjustedInput.centerClarity || "E VS1",
       cadCost: makingPriceBreakdown.cadCost,
       customerMarginPct: makingPriceBreakdown.customerMarginPct,
       customerMarginAmount: makingPriceBreakdown.customerMarginAmount,

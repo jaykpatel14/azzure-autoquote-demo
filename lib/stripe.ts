@@ -24,6 +24,20 @@ export async function getStripeClient() {
   return stripeClient;
 }
 
+/** Use for read-only dashboards and health checks where Stripe is optional. */
+export async function getOptionalStripeClient() {
+  const secretKey =
+    (await resolveRuntimeSetting("STRIPE_SECRET_KEY", process.env.STRIPE_SECRET_KEY)) || null;
+  if (!secretKey) return null;
+
+  const cached = stripeClients.get(secretKey);
+  if (cached) return cached;
+
+  const stripeClient = new Stripe(secretKey);
+  stripeClients.set(secretKey, stripeClient);
+  return stripeClient;
+}
+
 export async function getStripeWebhookSecret() {
   const secret =
     (await resolveRuntimeSetting("STRIPE_WEBHOOK_SECRET", process.env.STRIPE_WEBHOOK_SECRET)) || null;

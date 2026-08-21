@@ -61,6 +61,9 @@ export async function POST(request: Request) {
     const centerCarat = Math.max(adjustedInput.centerDiamondCarats, 0.0001);
 
     const makingPriceBreakdown = calculateMakingPrice({
+      pricingProfile: livePricing.pricingProfile,
+      quantity: adjustedInput.quantity,
+      stoneOrigin: adjustedInput.stoneOrigin,
       metalType: adjustedInput.metalType,
       metalWeightGrams: adjustedInput.metalWeightGrams,
       goldSpotPerOz: Number(livePricing.pricingProfile.goldSpotPerOz),
@@ -71,7 +74,7 @@ export async function POST(request: Request) {
       sideStones: sideStonesList,
       hasWeddingBand: Boolean(adjustedInput.hasWeddingBand),
       isTwoTone: Boolean(adjustedInput.isTwoTone),
-      colorClarity: "E VS1",
+      colorClarity: adjustedInput.centerClarity || "E VS1",
       cadCost,
       pricingTier: company.pricingTier,
       customerMarginPct

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getStripeClient } from "@/lib/stripe";
+import { getOptionalStripeClient } from "@/lib/stripe";
 import Stripe from "stripe";
 
 type PlatformHealthState = "operational" | "degraded" | "down";
@@ -228,11 +228,12 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
     })
   ]);
 
-  const stripe = await getStripeClient();
-  const activeStripeSubscriptions = await Promise.all(
-    subscriptions
-      .filter((subscription) => Boolean(subscription.stripeSubscriptionId))
-      .map(async (subscription) => {
+  const stripe = await getOptionalStripeClient();
+  const activeStripeSubscriptions = stripe
+    ? await Promise.all(
+        subscriptions
+          .filter((subscription) => Boolean(subscription.stripeSubscriptionId))
+          .map(async (subscription) => {
         const stripeSubscription = (await stripe.subscriptions.retrieve(
           subscription.stripeSubscriptionId!
         )) as Stripe.Subscription;
@@ -251,8 +252,9 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
             (stripeSubscription.items.data[0]?.current_period_end ?? Math.floor(Date.now() / 1000)) * 1000
           )
         };
-      })
-  );
+          })
+      )
+    : [];
 
   const activeTenantCount = companies.filter((company) =>
     ["ACTIVE", "TRIALING", "PAST_DUE"].includes(company.subscription?.status ?? "")
@@ -352,9 +354,12 @@ async function buildHealthChecks(): Promise<AdminHealthCheck[]> {
   ).catch(() => ({ state: "down" as const, detail: "Unable to reach the database" }));
 
   const stripeCheck = await withTimeout<HealthCheckResult>(
-    getStripeClient()
-      .then((stripe) => stripe.balance.retrieve())
-      .then(() => ({ state: "operational" as const, detail: "Stripe API reachable" })),
+    getOptionalStripeClient()
+      .then(async (stripe) => {
+        if (!stripe) return { state: "degraded" as const, detail: "Stripe credentials not configured" };
+        await stripe.balance.retrieve();
+        return { state: "operational" as const, detail: "Stripe API reachable" };
+      }),
     4000,
     { state: "degraded" as const, detail: "Stripe ping timed out" }
   ).catch(() => ({ state: "degraded" as const, detail: "Stripe ping failed" }));

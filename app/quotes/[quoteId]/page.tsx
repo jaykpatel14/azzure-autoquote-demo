@@ -10,6 +10,8 @@ import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { deriveQuoteStatus, getBrandedQuotePublicUrl, getQuotePublicUrl, getQuote } from "@/src/services/quotes";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
+import { QuoteCostBreakdown } from "@/components/quote-cost-breakdown";
+import type { MakingPriceBreakdown } from "@/src/services/pricing";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -59,6 +61,9 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
   }
 
   const quote = result.data;
+  const costBreakdown = quote.makingPriceBreakdown && typeof quote.makingPriceBreakdown === "object"
+    ? quote.makingPriceBreakdown as unknown as MakingPriceBreakdown
+    : null;
   const renderingDataUrl = quote.renderingStorageKey
     ? await loadQuoteRenderingDataUrlFromS3(quote.renderingStorageKey)
     : quote.renderingDataUrl;
@@ -254,6 +259,11 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
           ) : null}
         </article>
       </section>
+      {costBreakdown ? <QuoteCostBreakdown breakdown={costBreakdown} /> : (
+        <section className="card" style={{ marginTop: 20 }}>
+          <p className="muted">A detailed manufacturing ledger is not available for this legacy quote.</p>
+        </section>
+      )}
     </WorkspaceShell>
   );
 }

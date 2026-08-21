@@ -8,7 +8,22 @@ export const ADMIN_SETTING_KEYS = [
   "STRIPE_WEBHOOK_SECRET",
   "RESEND_API_KEY",
   "RESEND_FROM_EMAIL",
-  "cad_cost_per_quote"
+  "cad_cost_per_quote",
+  "master_gold_per_oz",
+  "master_platinum_per_oz",
+  "master_platinum_labor_pct",
+  "master_silver_per_oz",
+  "master_gold_wastage_pct",
+  "master_center_diamond_per_ct",
+  "master_fancy_center_diamond_per_ct",
+  "master_round_side_diamond_per_ct",
+  "master_fancy_side_diamond_per_ct",
+  "master_gemstone_per_ct",
+  "master_center_setting_per_ct",
+  "master_round_side_setting_per_stone",
+  "master_fancy_side_setting_per_stone",
+  "master_wax_per_piece",
+  "master_polishing_per_piece"
 ] as const;
 
 export type AdminSettingKey = (typeof ADMIN_SETTING_KEYS)[number];
@@ -222,6 +237,21 @@ export function getSettingLabel(key: AdminSettingKey) {
       return "Resend sender email";
     case "cad_cost_per_quote":
       return "CAD cost per quote ($)";
+    case "master_gold_per_oz": return "Gold spot price ($/oz)";
+    case "master_platinum_per_oz": return "Platinum price ($/oz)";
+    case "master_platinum_labor_pct": return "Platinum labor (%)";
+    case "master_silver_per_oz": return "Silver price ($/oz)";
+    case "master_gold_wastage_pct": return "Gold wastage / labor (%)";
+    case "master_center_diamond_per_ct": return "Standard center diamond ($/ct)";
+    case "master_fancy_center_diamond_per_ct": return "Fancy center diamond ($/ct)";
+    case "master_round_side_diamond_per_ct": return "Round side diamond ($/ct)";
+    case "master_fancy_side_diamond_per_ct": return "Fancy side diamond ($/ct)";
+    case "master_gemstone_per_ct": return "Color stone / gemstone ($/ct)";
+    case "master_center_setting_per_ct": return "Center setting labor ($/ct)";
+    case "master_round_side_setting_per_stone": return "Round side setting labor ($/stone)";
+    case "master_fancy_side_setting_per_stone": return "Fancy side setting labor ($/stone)";
+    case "master_wax_per_piece": return "Wax / rhodium labor ($/piece)";
+    case "master_polishing_per_piece": return "Polishing labor ($/piece)";
   }
 }
 
@@ -241,5 +271,20 @@ export function getSettingHelpText(key: AdminSettingKey) {
       return "Sender address (e.g. quotes@everyfacets.com or onboarding@resend.dev).";
     case "cad_cost_per_quote":
       return "Configurable flat fee CAD cost snapshotted on every quote creation.";
+    case "master_gold_per_oz": return "Base pure-gold market price used for 10K, 14K, and 18K calculations.";
+    case "master_platinum_per_oz": return "Base platinum price before platinum labor is applied.";
+    case "master_platinum_labor_pct": return "Labor percentage added to platinum only. Default: 40%.";
+    case "master_silver_per_oz": return "Flat silver price with no additional labor. Default: $300/oz.";
+    case "master_gold_wastage_pct": return "Wastage/labor factor applied to gold alloys.";
+    case "master_center_diamond_per_ct": return "Default price per carat for standard-shape center diamonds.";
+    case "master_fancy_center_diamond_per_ct": return "Default price per carat for non-standard center diamonds.";
+    case "master_round_side_diamond_per_ct": return "Default round side-diamond material price per total carat.";
+    case "master_fancy_side_diamond_per_ct": return "Default fancy side-diamond material price per total carat.";
+    case "master_gemstone_per_ct": return "Lab color-stone/gemstone price per total carat.";
+    case "master_center_setting_per_ct": return "Center-stone setting labor per carat; no setting-type selection is required.";
+    case "master_round_side_setting_per_stone": return "Labor for each round side stone.";
+    case "master_fancy_side_setting_per_stone": return "Labor for each fancy side stone.";
+    case "master_wax_per_piece": return "Wax and rhodium labor charged per quantity/piece.";
+    case "master_polishing_per_piece": return "Polishing labor charged per quantity/piece.";
   }
 }

@@ -14,6 +14,7 @@ import { getUsageSummary } from "@/src/services/usage";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 import { PlanGate } from "@/src/components/ui/PlanGate";
 import ShowroomQuoteLookup from "@/components/showroom-quote-lookup";
+import { CompactQuoteCostBreakdown } from "@/components/quote-cost-breakdown";
 
 export const dynamic = "force-dynamic";
 
@@ -252,6 +253,7 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
                   <th scope="col" className="alignRight">
                     Quote price
                   </th>
+                  <th scope="col">Cost breakdown</th>
                   <th scope="col">Status</th>
                   <th scope="col">Created</th>
                   <th scope="col">Actions</th>
@@ -289,6 +291,7 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
                     <td className="alignRight quoteValue">
                       {quote.estimatedPrice === null ? "Not generated" : formatCurrency(quote.estimatedPrice)}
                     </td>
+                    <td>{quote.costBreakdown ? <CompactQuoteCostBreakdown breakdown={quote.costBreakdown} /> : <span className="muted small">Legacy quote</span>}</td>
                     <td>
                       <StatusBadge status={quote.displayStatus} />
                     </td>

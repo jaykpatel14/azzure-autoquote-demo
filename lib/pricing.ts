@@ -25,17 +25,39 @@ export type PricingProfileInput = Partial<{
   sideSettingPerStone: number;
   sellingMarginDivisor: number;
   finalMultiplier: number;
+  platinumLaborPct: number;
+  goldWastagePct: number;
+  standardCenterDiamondPerCarat: number;
+  fancyCenterDiamondPerCarat: number;
+  roundSideDiamondPerCarat: number;
+  fancySideDiamondPerCarat: number;
+  gemstonePerCarat: number;
+  roundSideSettingPerStone: number;
+  fancySideSettingPerStone: number;
+  waxPerPiece: number;
+  polishingPerPiece: number;
 }>;
 
 export const DEFAULT_PRICING_PROFILE = {
   goldSpotPerOz: 4500,
   platinumSpotPerOz: 2000,
-  silverSpotPerOz: 100,
+  silverSpotPerOz: 300,
   cadCharge: 25,
-  centerSettingPerCarat: 15,
+  centerSettingPerCarat: 20,
   sideSettingPerStone: 3,
   sellingMarginDivisor: 0.7,
-  finalMultiplier: 2
+  finalMultiplier: 2,
+  platinumLaborPct: 40,
+  goldWastagePct: 25,
+  standardCenterDiamondPerCarat: 125,
+  fancyCenterDiamondPerCarat: 175,
+  roundSideDiamondPerCarat: 80,
+  fancySideDiamondPerCarat: 130,
+  gemstonePerCarat: 40,
+  roundSideSettingPerStone: 1.25,
+  fancySideSettingPerStone: 5,
+  waxPerPiece: 15,
+  polishingPerPiece: 20
 } as const;
 
 const PURITY: Record<"10K" | "14K" | "18K", number> = {
@@ -85,7 +107,18 @@ export function mergePricingProfiles(
     centerSettingPerCarat: base.centerSettingPerCarat + (extra.centerSettingPerCarat ?? 0),
     sideSettingPerStone: base.sideSettingPerStone + (extra.sideSettingPerStone ?? 0),
     sellingMarginDivisor: base.sellingMarginDivisor + (extra.sellingMarginDivisor ?? 0),
-    finalMultiplier: base.finalMultiplier + (extra.finalMultiplier ?? 0)
+    finalMultiplier: base.finalMultiplier + (extra.finalMultiplier ?? 0),
+    platinumLaborPct: base.platinumLaborPct + (extra.platinumLaborPct ?? 0),
+    goldWastagePct: base.goldWastagePct + (extra.goldWastagePct ?? 0),
+    standardCenterDiamondPerCarat: base.standardCenterDiamondPerCarat + (extra.standardCenterDiamondPerCarat ?? 0),
+    fancyCenterDiamondPerCarat: base.fancyCenterDiamondPerCarat + (extra.fancyCenterDiamondPerCarat ?? 0),
+    roundSideDiamondPerCarat: base.roundSideDiamondPerCarat + (extra.roundSideDiamondPerCarat ?? 0),
+    fancySideDiamondPerCarat: base.fancySideDiamondPerCarat + (extra.fancySideDiamondPerCarat ?? 0),
+    gemstonePerCarat: base.gemstonePerCarat + (extra.gemstonePerCarat ?? 0),
+    roundSideSettingPerStone: base.roundSideSettingPerStone + (extra.roundSideSettingPerStone ?? 0),
+    fancySideSettingPerStone: base.fancySideSettingPerStone + (extra.fancySideSettingPerStone ?? 0),
+    waxPerPiece: base.waxPerPiece + (extra.waxPerPiece ?? 0),
+    polishingPerPiece: base.polishingPerPiece + (extra.polishingPerPiece ?? 0)
   };
 }
 

@@ -5,6 +5,7 @@ import { NotFoundError, ConflictError, type AppResult } from "@/src/lib/errors";
 import { assertPlanFeature } from "@/src/stripe/plans";
 import { CompanyAccessError } from "@/lib/company";
 import { buildBrandedPublicUrl } from "@/lib/security";
+import type { MakingPriceBreakdown } from "@/src/services/pricing";
 
 async function assertApprovedCompany(companyId: string) {
   const company = await prisma.company.findUnique({ where: { id: companyId }, select: { accountStatus: true, pricingTier: true } });
@@ -79,6 +80,7 @@ export type QuoteHistoryRow = {
   thumbnailUrl: string | null;
   status: Exclude<QuoteHistoryFilter, "all">;
   displayStatus: string;
+  costBreakdown?: MakingPriceBreakdown | null;
 };
 
 export type QuoteHistoryPage = {
@@ -376,6 +378,7 @@ export async function getQuoteHistoryPage(params: {
         metalType: true,
         estimatedPrice: true,
         estimatedSellingPrice: true,
+        makingPriceBreakdown: true,
         createdAt: true,
         pdfStoredAt: true,
         analysis: {
@@ -422,7 +425,10 @@ export async function getQuoteHistoryPage(params: {
           : quote.analysis.imageDataUrl ?? null
         : null,
       status: deriveQuoteStatus(quote),
-      displayStatus: deriveQuoteStatus(quote)
+      displayStatus: deriveQuoteStatus(quote),
+      costBreakdown: quote.makingPriceBreakdown && typeof quote.makingPriceBreakdown === "object"
+        ? quote.makingPriceBreakdown as unknown as MakingPriceBreakdown
+        : null
     })),
     ...unsavedAnalyses.map((analysis) => ({
       id: analysis.id,
@@ -442,7 +448,8 @@ export async function getQuoteHistoryPage(params: {
           ? "Analysis failed"
           : analysis.status === "COMPLETED"
             ? "Unsaved"
-            : analysis.status.toLowerCase()
+            : analysis.status.toLowerCase(),
+      costBreakdown: null
     }))
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 

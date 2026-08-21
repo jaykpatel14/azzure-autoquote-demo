@@ -101,4 +101,5 @@ describe("pricing", () => {
     expect(result.source).toBe("configured-default");
     expect(result.pricingProfile.goldSpotPerOz).toBe(3000);
   });
+
 });

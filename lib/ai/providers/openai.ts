@@ -52,6 +52,7 @@ function buildPrompt(
     `This is independent review ${attemptNumber}.`,
     `The currently selected finished metal is ${metal}.`,
     "Estimate the piece from the design description and/or reference image and return a realistic production assessment.",
+    "When a reference image is supplied, use web search to compare it with publicly available visually similar jewelry listings or manufacturer specifications. Use those comparisons only as supporting benchmarks for plausible metal weight and stone weights; never claim an exact match, and prioritize visible geometry plus the selected-metal density conversion.",
     "Benchmark guidelines for realistic finished casting weights (Standard US finger size 6.5-7 in 14K Gold):",
     "- Dainty plain solitaire (1.5-1.8mm shank): 3.0g to 4.2g.",
     "- Classic solitaire with hidden halo or cathedral prongs: 4.2g to 5.4g.",
@@ -194,6 +195,7 @@ export async function createOpenAIJewelryAnalysisProvider(
       const response = await client.responses.parse({
         model,
         store: false,
+        tools: [{ type: "web_search_preview", search_context_size: "medium" }],
         input: [
           {
             role: "developer",

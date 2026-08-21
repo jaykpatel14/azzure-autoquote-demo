@@ -158,12 +158,39 @@ async function buildMetalsDevUrl() {
 export async function resolveMetalPricing(
   pricingProfile?: Partial<PricingProfileInput> | null
 ): Promise<ResolvedMetalPricing> {
-  const configuredProfile = normalizePricingProfile(pricingProfile);
+  const masterKeys = {
+    goldSpotPerOz: "master_gold_per_oz",
+    platinumSpotPerOz: "master_platinum_per_oz",
+    platinumLaborPct: "master_platinum_labor_pct",
+    silverSpotPerOz: "master_silver_per_oz",
+    goldWastagePct: "master_gold_wastage_pct",
+    standardCenterDiamondPerCarat: "master_center_diamond_per_ct",
+    fancyCenterDiamondPerCarat: "master_fancy_center_diamond_per_ct",
+    roundSideDiamondPerCarat: "master_round_side_diamond_per_ct",
+    fancySideDiamondPerCarat: "master_fancy_side_diamond_per_ct",
+    gemstonePerCarat: "master_gemstone_per_ct",
+    centerSettingPerCarat: "master_center_setting_per_ct",
+    roundSideSettingPerStone: "master_round_side_setting_per_stone",
+    fancySideSettingPerStone: "master_fancy_side_setting_per_stone",
+    waxPerPiece: "master_wax_per_piece",
+    polishingPerPiece: "master_polishing_per_piece"
+  } as const;
+  const masterEntries = await Promise.all(
+    Object.entries(masterKeys).map(async ([profileKey, settingKey]) => {
+      const value = await resolveRuntimeSetting(settingKey);
+      const parsed = value === null ? Number.NaN : Number(value);
+      return [profileKey, Number.isFinite(parsed) ? parsed : undefined] as const;
+    })
+  );
+  const masterProfile = Object.fromEntries(masterEntries.filter(([, value]) => value !== undefined));
+  // Company values are legacy fallbacks. Explicit Master Pricing values override them.
+  // Live/cache metal spot values are applied later and have the highest precedence.
+  const configuredProfile = normalizePricingProfile({ ...(pricingProfile ?? {}), ...masterProfile });
   const url = await buildMetalsDevUrl();
   const now = new Date();
   const cachedPricing = await readCachedLivePricing();
 
-  if (cachedPricing && !shouldRefreshLivePricing(cachedPricing, now)) {
+  if (url && cachedPricing && !shouldRefreshLivePricing(cachedPricing, now)) {
     return {
       pricingProfile: {
         ...configuredProfile,
@@ -179,17 +206,9 @@ export async function resolveMetalPricing(
 
   if (!url) {
     return {
-      pricingProfile: cachedPricing
-        ? {
-            ...configuredProfile,
-            ...cachedPricing.pricingProfile
-          }
-        : configuredProfile,
-      source: cachedPricing ? "metals.dev" : "configured-default",
-      message: cachedPricing
-        ? cachedPricing.message ||
-          `Live metal pricing is disabled because METALS_DEV_API_KEY is not set. Using the Toronto 9:00 AM cache instead.`
-        : "Live metal pricing is disabled because METALS_DEV_API_KEY is not set."
+      pricingProfile: configuredProfile,
+      source: "configured-default",
+      message: "Live metal pricing is disabled because METALS_DEV_API_KEY is not set. Using Master Pricing."
     };
   }
 
@@ -238,28 +257,13 @@ export async function resolveMetalPricing(
       message: `Live market spot prices loaded from Metals.dev${payload.timestamp ? ` at ${payload.timestamp}` : "."}`
     };
   } catch (error) {
-    if (cachedPricing) {
-      return {
-        pricingProfile: {
-          ...configuredProfile,
-          ...cachedPricing.pricingProfile
-        },
-        source: "metals.dev",
-        timestamp: cachedPricing.timestamp,
-        message:
-          error instanceof Error
-            ? `Live metal pricing unavailable, using the Toronto 9:00 AM cache instead: ${error.message}`
-            : "Live metal pricing unavailable, using the Toronto 9:00 AM cache instead."
-      };
-    }
-
     return {
       pricingProfile: configuredProfile,
       source: "configured-default",
       message:
         error instanceof Error
-          ? `Live metal pricing unavailable, using configured pricing instead: ${error.message}`
-          : "Live metal pricing unavailable, using configured pricing instead."
+          ? `Live metal pricing unavailable, using Master Pricing instead: ${error.message}`
+          : "Live metal pricing unavailable, using Master Pricing instead."
     };
   }
 }
