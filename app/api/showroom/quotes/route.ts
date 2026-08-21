@@ -14,6 +14,7 @@ import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricin
 import { getCompanyPlanFeatures } from "@/src/stripe/plans";
 import { generateAndStoreQuotePdf } from "@/src/services/quote-pdf";
 import { createShareLink } from "@/src/services/sharing";
+import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 
 const schema = z.object({
   token: z.string().min(20),
@@ -137,14 +138,57 @@ export async function POST(request: Request) {
     await prisma.showroomQuote.create({ data: { companyId: session.companyId, quoteId: result.data.id, displayCode, customerNotes: resolvedNotes || null } });
     await consumeMonthlyUsage(reservation.usagePeriodId); reservation = undefined;
 
-    // AI 3D rendering can take 30-75s (image generation round trip). Don't block the
-    // save response on it — that made the kiosk look hung and risked exceeding any
-    // upstream request timeout. Generate it in the background instead; the quote's
-    // renderingStatus flips to COMPLETED once it's ready and is picked up wherever
-    // the quote is viewed afterward.
-    after(() => {
-      generateQuoteRendering({ quoteId: result.data.id, companyId: session.companyId }).catch(() => undefined);
-    });
+    // The kiosk's own "Analyze Design with AI" step already generates and awaits
+    // a rendering for the analysis (that's the "Calculating live metal spot
+    // pricing & 3D render…" stage) — reuse it here instead of firing a second,
+    // redundant OpenAI image generation. This also matters for the PDF generated
+    // a few lines down: without this, the PDF gets stored before any rendering
+    // exists and permanently shows no AI-rendered design for that first,
+    // most-likely-to-be-viewed copy (the one behind the QR code the customer
+    // scans right after saving).
+    const primaryAnalysisId = analysisIdList[0];
+    const existingRendering = primaryAnalysisId
+      ? await prisma.aiAnalysis.findUnique({
+          where: { id: primaryAnalysisId },
+          select: {
+            renderingStatus: true,
+            renderingStorageKey: true,
+            renderingDataUrl: true,
+            renderingMimeType: true,
+            renderingModel: true,
+            renderingCreatedAt: true
+          }
+        })
+      : null;
+
+    let renderingStatus: "COMPLETED" | "PROCESSING" = "PROCESSING";
+    let renderingImageUrl: string | null = null;
+
+    if (existingRendering?.renderingStatus === "COMPLETED") {
+      await prisma.quote.update({
+        where: { id: result.data.id },
+        data: {
+          renderingStatus: "COMPLETED",
+          renderingStorageKey: existingRendering.renderingStorageKey,
+          renderingDataUrl: existingRendering.renderingDataUrl,
+          renderingMimeType: existingRendering.renderingMimeType,
+          renderingModel: existingRendering.renderingModel,
+          renderingCreatedAt: existingRendering.renderingCreatedAt
+        }
+      });
+      renderingStatus = "COMPLETED";
+      renderingImageUrl = existingRendering.renderingStorageKey
+        ? await loadQuoteRenderingDataUrlFromS3(existingRendering.renderingStorageKey)
+        : existingRendering.renderingDataUrl ?? null;
+    } else {
+      // No completed rendering to reuse — generating one fresh takes 30-75s, so
+      // don't block the save response on it. The PDF generated below just won't
+      // have the AI render yet; a later view of the same link will, since
+      // generateAndStoreQuotePdf always rebuilds the PDF from current data.
+      after(() => {
+        generateQuoteRendering({ quoteId: result.data.id, companyId: session.companyId }).catch(() => undefined);
+      });
+    }
 
     // The kiosk's QR code / "Open PDF Proposal" / "Copy Link" all need a real
     // public share link (`/q/[publicShareToken]`), not the showroom display
@@ -174,8 +218,8 @@ export async function POST(request: Request) {
       shareToken,
       estimatedPrice: tier.estimatedSellingPrice,
       estimatedSellingPrice: tier.estimatedSellingPrice,
-      renderingStatus: "PROCESSING",
-      renderingImageUrl: null
+      renderingStatus,
+      renderingImageUrl
     });
   } catch (error) {
     if (reservation) await releaseMonthlyUsage(reservation.usagePeriodId).catch(() => undefined);

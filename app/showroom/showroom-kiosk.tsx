@@ -217,12 +217,20 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   }, []);
 
   useEffect(() => {
+    // The idle clock only used to reset on touch/pointer activity, so it kept
+    // counting down through an in-flight AI analysis/save/share — a slow
+    // response (or the customer just watching the screen without touching it)
+    // could fire the reset right as results came back, dumping the kiosk back
+    // to the landing screen. Pause the countdown entirely while any of that
+    // work is active, and restart the full window the moment it finishes.
+    const busy = analyzing || saving || sharing || generatingConcept;
     let warn: ReturnType<typeof setTimeout>;
     let clear: ReturnType<typeof setTimeout>;
     const arm = () => {
       clearTimeout(warn);
       clearTimeout(clear);
       setWarning(false);
+      if (busy) return;
       warn = setTimeout(() => setWarning(true), 110_000);
       clear = setTimeout(reset, 120_000);
     };
@@ -235,7 +243,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       document.removeEventListener("touchstart", arm);
       document.removeEventListener("pointerdown", arm);
     };
-  }, [reset]);
+  }, [reset, analyzing, saving, sharing, generatingConcept]);
 
   useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
 

@@ -1042,10 +1042,10 @@ export function InteractiveLandingPage() {
         <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#64748B", flexWrap: "wrap", gap: 20 }}>
           <div>
             <p style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 18, color: "#0F172A", fontWeight: 600, marginBottom: 4 }}>Azzure AI Quote</p>
-            <p>Built by azzuresolutions.com · London, Ontario, Canada</p>
+            <p>Built by azzuresolutions.com</p>
           </div>
           <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-            <Link href="/signin" style={{ color: "#005AB7", fontWeight: 600, textDecoration: "none" }}>Sign in → autoquote.everyfacets.com</Link>
+            <Link href="/signin" style={{ color: "#005AB7", fontWeight: 600, textDecoration: "none" }}>Sign in → azzureaiquote.azzuresolutions.com</Link>
           </div>
         </div>
       </footer>
