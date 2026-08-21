@@ -261,7 +261,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
       </section>
       {costBreakdown ? <QuoteCostBreakdown breakdown={costBreakdown} /> : (
         <section className="card" style={{ marginTop: 20 }}>
-          <p className="muted">A detailed manufacturing ledger is not available for this legacy quote.</p>
+          <p className="muted">A detailed cost breakdown is not available for this legacy quote.</p>
         </section>
       )}
     </WorkspaceShell>

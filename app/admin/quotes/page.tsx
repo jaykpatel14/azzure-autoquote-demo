@@ -7,7 +7,7 @@ import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 import { calculateMakingPrice, calculateTierPrice } from "@/src/services/pricing";
 import { getSettingValue } from "@/lib/app-settings";
-import { resolveMetalPricing } from "@/lib/metal-pricing";
+import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricing";
 import type { MakingPriceBreakdown } from "@/src/services/pricing";
 import type { PricingTier } from "@prisma/client";
 
@@ -198,6 +198,23 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
         const goldSpot = Number(livePricing?.pricingProfile.goldSpotPerOz ?? analysis.company?.pricingProfile?.goldSpotPerOz ?? 4500);
         const platinumSpot = Number(livePricing?.pricingProfile.platinumSpotPerOz ?? analysis.company?.pricingProfile?.platinumSpotPerOz ?? 2000);
         const silverSpot = Number(livePricing?.pricingProfile.silverSpotPerOz ?? analysis.company?.pricingProfile?.silverSpotPerOz ?? 100);
+        // Live spot prices overlay the company's own configured profile, so
+        // rates like center/side setting labor stay the tenant's real values
+        // instead of silently falling back to the global defaults.
+        const rowPricingProfile = normalizePricingProfile({
+          ...(analysis.company?.pricingProfile
+            ? {
+                cadCharge: Number(analysis.company.pricingProfile.cadCharge),
+                centerSettingPerCarat: Number(analysis.company.pricingProfile.centerSettingPerCarat),
+                sideSettingPerStone: Number(analysis.company.pricingProfile.sideSettingPerStone),
+                sellingMarginDivisor: Number(analysis.company.pricingProfile.sellingMarginDivisor),
+                finalMultiplier: Number(analysis.company.pricingProfile.finalMultiplier)
+              }
+            : {}),
+          goldSpotPerOz: goldSpot,
+          platinumSpotPerOz: platinumSpot,
+          silverSpotPerOz: silverSpot
+        });
         const sideDiamondQuantity = analysis.sideDiamondQuantity ?? 0;
         const sideDiamondCarats = Number(analysis.sideDiamondCarats ?? 0);
         const sideStones =
@@ -213,6 +230,7 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
             : [];
 
         const breakdown = calculateMakingPrice({
+          pricingProfile: rowPricingProfile,
           metalType: analysis.selectedMetal || "14K",
           metalWeightGrams: Number(analysis.metalWeightGrams ?? 0),
           goldSpotPerOz: goldSpot,

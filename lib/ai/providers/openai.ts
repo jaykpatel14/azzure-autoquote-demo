@@ -75,7 +75,7 @@ function buildPrompt(
     "- sideStones: all other stones. Group by shape and setting type. For each group, provide the shape (round, baguette, trapezoid, pear, etc.), estimated carat weight of each individual stone, the count of stones in this group, and the setting type (prong, bezel, pavé, channel, bar, etc.).",
     "- colorClarity: always return 'E VS1' — do not attempt to assess from the image.",
     "- confidence: low, medium, or high.",
-    "- assumptions: list of key assumptions made during analysis.",
+    "- assumptions: list of key assumptions made during analysis. Keep each one a short, single sentence (under 200 characters).",
     customerDescription?.trim()
       ? `Customer-provided design description: ${customerDescription.trim()}. Match specifications mentioned in the description.`
       : "No customer description was supplied."

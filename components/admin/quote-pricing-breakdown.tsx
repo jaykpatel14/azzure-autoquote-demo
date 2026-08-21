@@ -93,6 +93,15 @@ export function QuotePricingBreakdown({
   const profit = sellingPrice - makingPrice;
   const profitPct = makingPrice > 0 ? (profit / makingPrice) * 100 : 0;
 
+  // Rates shown in the "@ $X" notes are derived from the actual breakdown
+  // numbers rather than hardcoded, since they depend on the company's own
+  // configured profile (e.g. centerSettingPerCarat) — a hardcoded string here
+  // silently goes stale the moment a tenant's rate differs from the default.
+  const centerCaratsNum = Number(centerDiamondCarats) || 0;
+  const sideCaratsNum = Number(sideDiamondCarats) || 0;
+  const sideQtyNum = Number(sideDiamondQuantity) || 0;
+  const effectiveRate = (total: number, divisor: number) => (divisor > 0 ? total / divisor : 0);
+
   return (
     <>
       {/* Cost Breakdown Card */}
@@ -131,9 +140,7 @@ export function QuotePricingBreakdown({
                 {centerShape || "unknown shape"}
                 <span className="adminBreakdownNote">
                   &nbsp;({colorClarity || "E VS1"}) ·{" "}
-                  {centerShape?.toLowerCase().match(/oval|round|radiant|cushion|elongated|marquise|emerald|pear/)
-                    ? "$125/ct standard"
-                    : "$175/ct fancy"}
+                  {money(effectiveRate(breakdown.centerStoneCost, centerCaratsNum))}/ct
                 </span>
               </span>
               <strong>{money(breakdown.centerStoneCost)}</strong>
@@ -142,7 +149,7 @@ export function QuotePricingBreakdown({
               <span>
                 Side stones — {String(sideDiamondQuantity)}× stones · {num(sideDiamondCarats, 2)}ct total
                 <span className="adminBreakdownNote">
-                  &nbsp;(round $80/ct · fancy $130/ct)
+                  &nbsp;{money(effectiveRate(breakdown.sideStoneCost, sideCaratsNum))}/ct
                 </span>
               </span>
               <strong>{money(breakdown.sideStoneCost)}</strong>
@@ -155,14 +162,14 @@ export function QuotePricingBreakdown({
             <div className="adminBreakdownRow">
               <span>
                 Center setting — {num(centerDiamondCarats, 2)}ct
-                <span className="adminBreakdownNote">&nbsp;@ $20/ct</span>
+                <span className="adminBreakdownNote">&nbsp;@ {money(effectiveRate(breakdown.centerStoneSettingCost, centerCaratsNum))}/ct</span>
               </span>
               <strong>{money(breakdown.centerStoneSettingCost)}</strong>
             </div>
             <div className="adminBreakdownRow">
               <span>
                 Side setting — {String(sideDiamondQuantity)}× {settingType || "prong"}
-                <span className="adminBreakdownNote">&nbsp;(prong/claw $1.25/stone · other $5/stone)</span>
+                <span className="adminBreakdownNote">&nbsp;{money(effectiveRate(breakdown.sideStoneSettingCost, sideQtyNum))}/stone</span>
               </span>
               <strong>{money(breakdown.sideStoneSettingCost)}</strong>
             </div>
@@ -174,14 +181,14 @@ export function QuotePricingBreakdown({
             <div className="adminBreakdownRow">
               <span>
                 Wax casting — {breakdown.pieces} piece{breakdown.pieces === 1 ? "" : "s"}
-                <span className="adminBreakdownNote">&nbsp;@ $15/ea</span>
+                <span className="adminBreakdownNote">&nbsp;@ {money(effectiveRate(breakdown.waxCost, breakdown.pieces))}/ea</span>
               </span>
               <strong>{money(breakdown.waxCost)}</strong>
             </div>
             <div className="adminBreakdownRow">
               <span>
                 Polishing — {breakdown.pieces} piece{breakdown.pieces === 1 ? "" : "s"}
-                <span className="adminBreakdownNote">&nbsp;@ $20/ea</span>
+                <span className="adminBreakdownNote">&nbsp;@ {money(effectiveRate(breakdown.polishingCost, breakdown.pieces))}/ea</span>
               </span>
               <strong>{money(breakdown.polishingCost)}</strong>
             </div>

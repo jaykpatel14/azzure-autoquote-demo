@@ -47,12 +47,19 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
 
   // Reflect today's live market rate in the audit sandbox rather than the
   // company's static configured profile, which drifts from the market and is
-  // never auto-synced with it.
+  // never auto-synced with it. Every other rate (setting labor, CAD, etc.)
+  // still comes from the company's own configured profile, not the global
+  // defaults — resolveMetalPricing only overrides the three spot prices.
   const baseProfile = quote.company.pricingProfile
     ? normalizePricingProfile({
         goldSpotPerOz: Number(quote.company.pricingProfile.goldSpotPerOz),
         platinumSpotPerOz: Number(quote.company.pricingProfile.platinumSpotPerOz),
-        silverSpotPerOz: Number(quote.company.pricingProfile.silverSpotPerOz)
+        silverSpotPerOz: Number(quote.company.pricingProfile.silverSpotPerOz),
+        cadCharge: Number(quote.company.pricingProfile.cadCharge),
+        centerSettingPerCarat: Number(quote.company.pricingProfile.centerSettingPerCarat),
+        sideSettingPerStone: Number(quote.company.pricingProfile.sideSettingPerStone),
+        sellingMarginDivisor: Number(quote.company.pricingProfile.sellingMarginDivisor),
+        finalMultiplier: Number(quote.company.pricingProfile.finalMultiplier)
       })
     : undefined;
   const livePricing = await resolveMetalPricing(baseProfile);
@@ -178,7 +185,8 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
                 silverSpotPerOz: silverSpot,
                 cadCost: breakdown.cadCost,
                 pricingTier: quote.pricingTierSnapshot ?? "TIER_2",
-                customerMarginPct: breakdown.customerMarginPct
+                customerMarginPct: breakdown.customerMarginPct,
+                pricingProfile: livePricing.pricingProfile
               }}
             />
           ) : (

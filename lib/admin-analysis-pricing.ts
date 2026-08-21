@@ -15,7 +15,12 @@ export async function computeAnalysisPricingBreakdown(analysis: AnalysisWithComp
     ? normalizePricingProfile({
         goldSpotPerOz: Number(analysis.company.pricingProfile.goldSpotPerOz),
         platinumSpotPerOz: Number(analysis.company.pricingProfile.platinumSpotPerOz),
-        silverSpotPerOz: Number(analysis.company.pricingProfile.silverSpotPerOz)
+        silverSpotPerOz: Number(analysis.company.pricingProfile.silverSpotPerOz),
+        cadCharge: Number(analysis.company.pricingProfile.cadCharge),
+        centerSettingPerCarat: Number(analysis.company.pricingProfile.centerSettingPerCarat),
+        sideSettingPerStone: Number(analysis.company.pricingProfile.sideSettingPerStone),
+        sellingMarginDivisor: Number(analysis.company.pricingProfile.sellingMarginDivisor),
+        finalMultiplier: Number(analysis.company.pricingProfile.finalMultiplier)
       })
     : undefined;
   const livePricing = await resolveMetalPricing(baseProfile);
@@ -37,7 +42,8 @@ export async function computeAnalysisPricingBreakdown(analysis: AnalysisWithComp
       silverSpot,
       cadCost: 20,
       customerMarginPct: 0,
-      detectedSideShape: "round" as const
+      detectedSideShape: "round" as const,
+      pricingProfile: livePricing.pricingProfile
     };
   }
 
@@ -69,6 +75,7 @@ export async function computeAnalysisPricingBreakdown(analysis: AnalysisWithComp
       : [];
 
   const breakdown = calculateMakingPrice({
+    pricingProfile: livePricing.pricingProfile,
     metalType: analysis.selectedMetal,
     metalWeightGrams: Number(analysis.metalWeightGrams ?? 0),
     goldSpotPerOz: goldSpot,
@@ -84,5 +91,14 @@ export async function computeAnalysisPricingBreakdown(analysis: AnalysisWithComp
     customerMarginPct
   });
 
-  return { breakdown, goldSpot, platinumSpot, silverSpot, cadCost, customerMarginPct, detectedSideShape };
+  return {
+    breakdown,
+    goldSpot,
+    platinumSpot,
+    silverSpot,
+    cadCost,
+    customerMarginPct,
+    detectedSideShape,
+    pricingProfile: livePricing.pricingProfile
+  };
 }

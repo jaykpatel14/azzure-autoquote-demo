@@ -10,7 +10,15 @@ describe("jeweler price visibility", () => {
     "components/QuoteCalculator.tsx",
     "app/showroom/showroom-kiosk.tsx"
   ])("%s does not render making price", (path) => {
-    expect(readFileSync(path, "utf8")).not.toContain("makingPrice");
+    // Word-boundary match: these files legitimately read the makingPriceBreakdown
+    // JSON blob to show a customer-safe cost breakdown (metal/stone/labor line
+    // items, subtotal, final price) — that container name is fine to reference.
+    // What must never appear is the actual Azzure-price accessor `.makingPrice`
+    // itself (Azzure's price to the jeweler) or its tier-formula components.
+    const source = readFileSync(path, "utf8");
+    expect(source).not.toMatch(/\bmakingPrice\b/);
+    expect(source).not.toMatch(/\btierDivisor\b/);
+    expect(source).not.toMatch(/\bcustomerMarginAmount\b/);
   });
 
   test("admin quote detail retains the internal financial view", () => {

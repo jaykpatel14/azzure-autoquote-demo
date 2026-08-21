@@ -25,7 +25,7 @@ export const jewelryAnalysisSchema = z.object({
   sideStones: z.array(sideStoneGroupSchema),
   colorClarity: z.literal("E VS1"),
   confidence: z.enum(["low", "medium", "high"]),
-  assumptions: z.array(z.string().trim().min(1).max(240)).min(1).max(12)
+  assumptions: z.array(z.string().trim().min(1).max(500)).min(1).max(12)
 });
 
 export type JewelryAnalysis = z.infer<typeof jewelryAnalysisSchema>;

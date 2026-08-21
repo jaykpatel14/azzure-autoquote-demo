@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { PricingTier } from "@prisma/client";
 import { calculateMakingPrice, getPricingTierLabel } from "@/src/services/pricing";
-import { METAL_TYPES, type MetalType } from "@/lib/pricing";
+import { METAL_TYPES, type MetalType, type PricingProfileInput } from "@/lib/pricing";
 import { QuotePricingBreakdown, QuotePricingKpis } from "@/components/admin/quote-pricing-breakdown";
 
 const PRICING_TIERS: PricingTier[] = ["TIER_1", "TIER_2", "TIER_3"];
@@ -25,6 +25,10 @@ export type PricingAuditorInitialValues = {
   cadCost: number;
   pricingTier: PricingTier;
   customerMarginPct: number;
+  // The company's own configured rates (center/side setting, gemstone, wax,
+  // polishing, etc.) — without this, calculateMakingPrice silently falls back
+  // to the global defaults instead of what this tenant actually has configured.
+  pricingProfile: PricingProfileInput;
 };
 
 function isMetalType(value: string): value is MetalType {
@@ -59,6 +63,7 @@ export function PricingAuditor({ initial }: { initial: PricingAuditorInitialValu
 
       return {
         breakdown: calculateMakingPrice({
+          pricingProfile: values.pricingProfile,
           metalType: values.metalType,
           metalWeightGrams: values.metalWeightGrams,
           goldSpotPerOz: values.goldSpotPerOz,
