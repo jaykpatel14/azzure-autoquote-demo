@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
+import { AdminThumbImage } from "@/components/admin-thumb-image";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { ADMIN_ORDER_STATUSES, getAdminOrders } from "@/src/services/admin-orders";
@@ -127,16 +128,9 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams?:
                           position: "relative"
                         }}
                       >
-                        <img
+                        <AdminThumbImage
                           src={`/api/admin/orders/${order.id}/image`}
                           alt={order.itemName || "Jewelry design"}
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          onError={(e) => {
-                            (e.currentTarget as HTMLElement).style.display = "none";
-                            if (e.currentTarget.parentElement) {
-                              e.currentTarget.parentElement.innerHTML = '<span style="font-size: 20px;">💍</span>';
-                            }
-                          }}
                         />
                       </div>
                     </Link>

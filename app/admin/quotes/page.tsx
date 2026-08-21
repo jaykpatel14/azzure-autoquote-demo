@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
+import { AdminThumbImage } from "@/components/admin-thumb-image";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
@@ -307,6 +308,7 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
       <section className="card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="adminQuotesTable">
           <div className="adminQuotesHeader">
+            <div></div>
             <div>Quote</div>
             <div>Company · Customer</div>
             <div>Specification</div>
@@ -326,6 +328,18 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
           ) : (
             pageRows.map((row) => (
               <div className="adminQuoteRow" key={`${row.kind}-${row.id}`}>
+                <div>
+                  <Link href={row.href} className="adminQuoteThumb">
+                    <AdminThumbImage
+                      src={
+                        row.kind === "quote"
+                          ? `/api/admin/quotes/${row.id}/image`
+                          : `/api/admin/quotes/unsaved/${row.id}/image`
+                      }
+                      alt={`${row.metalType} ${row.centerShape || "design"}`}
+                    />
+                  </Link>
+                </div>
                 <div>
                   <Link className="adminQuoteLink" href={row.href}>
                     {row.label}
