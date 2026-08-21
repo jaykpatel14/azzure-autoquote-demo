@@ -114,6 +114,8 @@ export type MakingPriceInput = {
   metalType?: string;
   metalWeightGrams?: number;
   goldSpotPerOz?: number;
+  platinumSpotPerOz?: number;
+  silverSpotPerOz?: number;
 
   // Center stone
   centerStone: {
@@ -172,25 +174,37 @@ export type MakingPriceBreakdown = {
   colorClarity: "E VS1";
 };
 
+export type MetalSpotPrices = {
+  goldSpotPerOz?: number;
+  platinumSpotPerOz?: number;
+  silverSpotPerOz?: number;
+};
+
 export function calculateMetalCost(
   metalType = "14K",
   weightGrams = 0,
-  spotPrice = 4500,
+  spotPrices: MetalSpotPrices = {},
   wastagePct = 25
 ): number {
   if (weightGrams <= 0) return 0;
   const ozToGram = 31.1034768;
   const normalized = (metalType || "14K").toUpperCase().trim();
-  
+
   let purity = 0.585; // 14K default
   let lossFactor = 1 + (wastagePct / 100); // 1.25 default
+  // Each metal must price off its own spot rate — platinum and silver trade at
+  // very different prices per oz than gold, so falling back to the gold spot
+  // price here (as this used to do) silently overpriced every non-gold quote.
+  let spotPrice = spotPrices.goldSpotPerOz ?? 4500;
 
   if (normalized.includes("PLATINUM") || normalized.includes("PLAT")) {
     purity = 0.95;
     lossFactor = 1.35;
+    spotPrice = spotPrices.platinumSpotPerOz ?? 2000;
   } else if (normalized.includes("SILVER") || normalized.includes("925")) {
     purity = 0.925;
     lossFactor = 3.5;
+    spotPrice = spotPrices.silverSpotPerOz ?? 100;
   } else if (normalized.includes("18K") || normalized.includes("18")) {
     purity = 0.75;
     lossFactor = 1 + (wastagePct / 100);
@@ -230,7 +244,11 @@ export function calculateMakingPrice(
   const _metalCost = calculateMetalCost(
     input.metalType ?? "14K",
     input.metalWeightGrams ?? 0,
-    input.goldSpotPerOz ?? 4500,
+    {
+      goldSpotPerOz: input.goldSpotPerOz,
+      platinumSpotPerOz: input.platinumSpotPerOz,
+      silverSpotPerOz: input.silverSpotPerOz
+    },
     25
   );
 

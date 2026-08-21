@@ -1,13 +1,27 @@
 import type { AiAnalysis, Company, PricingProfile } from "@prisma/client";
 import { calculateMakingPrice } from "@/src/services/pricing";
 import { getSettingValue } from "@/lib/app-settings";
+import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricing";
 
 type AnalysisWithCompany = AiAnalysis & {
   company: Company & { pricingProfile: PricingProfile | null };
 };
 
 export async function computeAnalysisPricingBreakdown(analysis: AnalysisWithCompany) {
-  const goldSpot = Number(analysis.company.pricingProfile?.goldSpotPerOz ?? 4500);
+  // Admin audit tools should reflect today's live market rate, not the company's
+  // static configured profile (which drifts from the market and is never
+  // auto-synced) — otherwise the audit view silently shows stale spot prices.
+  const baseProfile = analysis.company.pricingProfile
+    ? normalizePricingProfile({
+        goldSpotPerOz: Number(analysis.company.pricingProfile.goldSpotPerOz),
+        platinumSpotPerOz: Number(analysis.company.pricingProfile.platinumSpotPerOz),
+        silverSpotPerOz: Number(analysis.company.pricingProfile.silverSpotPerOz)
+      })
+    : undefined;
+  const livePricing = await resolveMetalPricing(baseProfile);
+  const goldSpot = Number(livePricing.pricingProfile.goldSpotPerOz);
+  const platinumSpot = Number(livePricing.pricingProfile.platinumSpotPerOz);
+  const silverSpot = Number(livePricing.pricingProfile.silverSpotPerOz);
   const hasSpec =
     analysis.status === "COMPLETED" &&
     analysis.metalWeightGrams != null &&
@@ -19,6 +33,8 @@ export async function computeAnalysisPricingBreakdown(analysis: AnalysisWithComp
     return {
       breakdown: null,
       goldSpot,
+      platinumSpot,
+      silverSpot,
       cadCost: 20,
       customerMarginPct: 0,
       detectedSideShape: "round" as const
@@ -56,6 +72,8 @@ export async function computeAnalysisPricingBreakdown(analysis: AnalysisWithComp
     metalType: analysis.selectedMetal,
     metalWeightGrams: Number(analysis.metalWeightGrams ?? 0),
     goldSpotPerOz: goldSpot,
+    platinumSpotPerOz: platinumSpot,
+    silverSpotPerOz: silverSpot,
     centerStone: { shape: analysis.centerShape || "round", caratWeight: centerCarat },
     sideStones,
     hasWeddingBand: false,
@@ -66,5 +84,5 @@ export async function computeAnalysisPricingBreakdown(analysis: AnalysisWithComp
     customerMarginPct
   });
 
-  return { breakdown, goldSpot, cadCost, customerMarginPct, detectedSideShape };
+  return { breakdown, goldSpot, platinumSpot, silverSpot, cadCost, customerMarginPct, detectedSideShape };
 }

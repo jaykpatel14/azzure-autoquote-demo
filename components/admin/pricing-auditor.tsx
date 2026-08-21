@@ -20,6 +20,8 @@ export type PricingAuditorInitialValues = {
   hasWeddingBand: boolean;
   isTwoTone: boolean;
   goldSpotPerOz: number;
+  platinumSpotPerOz: number;
+  silverSpotPerOz: number;
   cadCost: number;
   pricingTier: PricingTier;
   customerMarginPct: number;
@@ -60,6 +62,8 @@ export function PricingAuditor({ initial }: { initial: PricingAuditorInitialValu
           metalType: values.metalType,
           metalWeightGrams: values.metalWeightGrams,
           goldSpotPerOz: values.goldSpotPerOz,
+          platinumSpotPerOz: values.platinumSpotPerOz,
+          silverSpotPerOz: values.silverSpotPerOz,
           centerStone: {
             shape: values.centerShape || "round",
             caratWeight: Math.max(values.centerDiamondCarats, 0.0001)
@@ -129,6 +133,28 @@ export function PricingAuditor({ initial }: { initial: PricingAuditorInitialValu
             min="0"
             value={values.goldSpotPerOz}
             onChange={(e) => set("goldSpotPerOz", Number(e.target.value) || 0)}
+          />
+        </label>
+
+        <label className="field" style={{ margin: 0 }}>
+          <span>Platinum spot ($/oz)</span>
+          <input
+            type="number"
+            step="1"
+            min="0"
+            value={values.platinumSpotPerOz}
+            onChange={(e) => set("platinumSpotPerOz", Number(e.target.value) || 0)}
+          />
+        </label>
+
+        <label className="field" style={{ margin: 0 }}>
+          <span>Silver spot ($/oz)</span>
+          <input
+            type="number"
+            step="1"
+            min="0"
+            value={values.silverSpotPerOz}
+            onChange={(e) => set("silverSpotPerOz", Number(e.target.value) || 0)}
           />
         </label>
 

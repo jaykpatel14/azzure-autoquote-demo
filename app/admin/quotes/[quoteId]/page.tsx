@@ -6,6 +6,7 @@ import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 import { getPricingTierLabel, type MakingPriceBreakdown, calculateMetalCost } from "@/src/services/pricing";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
+import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricing";
 import { QuotePricingKpis, money, num } from "@/components/admin/quote-pricing-breakdown";
 import { PricingAuditor } from "@/components/admin/pricing-auditor";
 
@@ -44,13 +45,24 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
   const profit = sellingPrice - makingPrice;
   const profitPct = makingPrice > 0 ? (profit / makingPrice) * 100 : 0;
 
-  const goldSpot = breakdown
-    ? Number(quote.company.pricingProfile?.goldSpotPerOz ?? 4500)
-    : Number(quote.company.pricingProfile?.goldSpotPerOz ?? 4500);
+  // Reflect today's live market rate in the audit sandbox rather than the
+  // company's static configured profile, which drifts from the market and is
+  // never auto-synced with it.
+  const baseProfile = quote.company.pricingProfile
+    ? normalizePricingProfile({
+        goldSpotPerOz: Number(quote.company.pricingProfile.goldSpotPerOz),
+        platinumSpotPerOz: Number(quote.company.pricingProfile.platinumSpotPerOz),
+        silverSpotPerOz: Number(quote.company.pricingProfile.silverSpotPerOz)
+      })
+    : undefined;
+  const livePricing = await resolveMetalPricing(baseProfile);
+  const goldSpot = Number(livePricing.pricingProfile.goldSpotPerOz);
+  const platinumSpot = Number(livePricing.pricingProfile.platinumSpotPerOz);
+  const silverSpot = Number(livePricing.pricingProfile.silverSpotPerOz);
   const computedMetalCost = calculateMetalCost(
     quote.metalType ?? "14K",
     Number(quote.metalWeightGrams ?? 0),
-    goldSpot,
+    { goldSpotPerOz: goldSpot, platinumSpotPerOz: platinumSpot, silverSpotPerOz: silverSpot },
     25
   );
 
@@ -162,6 +174,8 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
                 hasWeddingBand: breakdown.pieces === 2,
                 isTwoTone: false,
                 goldSpotPerOz: goldSpot,
+                platinumSpotPerOz: platinumSpot,
+                silverSpotPerOz: silverSpot,
                 cadCost: breakdown.cadCost,
                 pricingTier: quote.pricingTierSnapshot ?? "TIER_2",
                 customerMarginPct: breakdown.customerMarginPct
@@ -213,20 +227,24 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
 
           {/* Spot prices card */}
           <div className="card" style={{ marginTop: "1.25rem" }}>
-            <p className="eyebrow">Live Rates at Quote Time</p>
-            <h3 style={{ margin: "0.25rem 0 1rem" }}>Metal Spot Pricing Snapshot</h3>
+            <p className="eyebrow">Current Live Market Rates</p>
+            <h3 style={{ margin: "0.25rem 0 1rem" }}>Metal Spot Pricing (Today)</h3>
+            <p className="muted small" style={{ marginTop: -8, marginBottom: 12 }}>
+              {livePricing.source === "metals.dev" ? "🟢 Live from metals.dev" : "🟡 Configured fallback (live feed unavailable)"} — {livePricing.message}
+              {" "}Not a historical snapshot — the locked price this quote actually charged is the KPI grid above.
+            </p>
             <div className="adminSpotGrid">
               <div className="adminSpotCard">
                 <span>Gold / oz</span>
-                <strong>${num(quote.company.pricingProfile?.goldSpotPerOz ?? 0, 2)}</strong>
+                <strong>${num(goldSpot, 2)}</strong>
               </div>
               <div className="adminSpotCard">
                 <span>Platinum / oz</span>
-                <strong>${num(quote.company.pricingProfile?.platinumSpotPerOz ?? 0, 2)}</strong>
+                <strong>${num(platinumSpot, 2)}</strong>
               </div>
               <div className="adminSpotCard">
                 <span>Silver / oz</span>
-                <strong>${num(quote.company.pricingProfile?.silverSpotPerOz ?? 0, 2)}</strong>
+                <strong>${num(silverSpot, 2)}</strong>
               </div>
               <div className="adminSpotCard">
                 <span>Computed metal cost</span>

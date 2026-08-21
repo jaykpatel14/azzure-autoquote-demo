@@ -7,6 +7,7 @@ import { getInternalAdminNav } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 import { calculateMakingPrice, calculateTierPrice } from "@/src/services/pricing";
 import { getSettingValue } from "@/lib/app-settings";
+import { resolveMetalPricing } from "@/lib/metal-pricing";
 import type { MakingPriceBreakdown } from "@/src/services/pricing";
 import type { PricingTier } from "@prisma/client";
 
@@ -149,6 +150,9 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
   }
 
   const cadCost = typeof rawCadCost === "number" ? rawCadCost : Number(rawCadCost) || 0;
+  // Resolved once and reused for every unsaved-analysis estimate below, rather than
+  // each row falling back to its company's static (often stale) configured profile.
+  const livePricing = await resolveMetalPricing().catch(() => null);
 
   const quoteRows: QuoteRow[] = quotes.map((quote) => {
     const breakdown = (quote.makingPriceBreakdown as unknown as MakingPriceBreakdown) || null;
@@ -191,7 +195,9 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
 
     if (hasSpec) {
       try {
-        const goldSpot = Number(analysis.company?.pricingProfile?.goldSpotPerOz ?? 4500);
+        const goldSpot = Number(livePricing?.pricingProfile.goldSpotPerOz ?? analysis.company?.pricingProfile?.goldSpotPerOz ?? 4500);
+        const platinumSpot = Number(livePricing?.pricingProfile.platinumSpotPerOz ?? analysis.company?.pricingProfile?.platinumSpotPerOz ?? 2000);
+        const silverSpot = Number(livePricing?.pricingProfile.silverSpotPerOz ?? analysis.company?.pricingProfile?.silverSpotPerOz ?? 100);
         const sideDiamondQuantity = analysis.sideDiamondQuantity ?? 0;
         const sideDiamondCarats = Number(analysis.sideDiamondCarats ?? 0);
         const sideStones =
@@ -210,6 +216,8 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
           metalType: analysis.selectedMetal || "14K",
           metalWeightGrams: Number(analysis.metalWeightGrams ?? 0),
           goldSpotPerOz: goldSpot,
+          platinumSpotPerOz: platinumSpot,
+          silverSpotPerOz: silverSpot,
           centerStone: { shape: analysis.centerShape || "round", caratWeight: Math.max(Number(analysis.centerDiamondCarats), 0.0001) },
           sideStones,
           hasWeddingBand: false,

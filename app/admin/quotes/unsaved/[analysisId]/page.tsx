@@ -38,7 +38,7 @@ export default async function AdminUnsavedAnalysisPage({
     redirect(`/admin/quotes/${analysis.quote.id}`);
   }
 
-  const { breakdown, goldSpot, cadCost, customerMarginPct, detectedSideShape } =
+  const { breakdown, goldSpot, platinumSpot, silverSpot, cadCost, customerMarginPct, detectedSideShape } =
     await computeAnalysisPricingBreakdown(analysis);
 
   const sourceImageUrl = analysis.sourceImageStorageKey
@@ -104,6 +104,8 @@ export default async function AdminUnsavedAnalysisPage({
                   hasWeddingBand: false,
                   isTwoTone: false,
                   goldSpotPerOz: goldSpot,
+                  platinumSpotPerOz: platinumSpot,
+                  silverSpotPerOz: silverSpot,
                   cadCost,
                   pricingTier: analysis.company.pricingTier!,
                   customerMarginPct
