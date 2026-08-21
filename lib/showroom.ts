@@ -19,7 +19,8 @@ export async function getActiveShowroom(token: string) {
         include: {
           subscription: {
             include: { plan: true }
-          }
+          },
+          pricingProfile: true
         }
       }
     }

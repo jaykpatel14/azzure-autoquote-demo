@@ -1,13 +1,71 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateMakingPrice,
+  calculateMetalCost,
   calculateTierPrice,
   isSideStoneRound,
   sideStoneCost,
   sideStoneSettingCost
 } from "@/src/services/pricing";
 
+describe("calculateMetalCost", () => {
+  it("Platinum prices off platinumSpotPerOz, not goldSpotPerOz", () => {
+    const withHighGoldSpot = calculateMetalCost("Platinum", 10, { goldSpotPerOz: 4500, platinumSpotPerOz: 2000 });
+    const withoutGoldSpot = calculateMetalCost("Platinum", 10, { platinumSpotPerOz: 2000 });
+    expect(withHighGoldSpot).toBeCloseTo(withoutGoldSpot, 5);
+
+    // An absurdly high gold spot must not leak into the platinum price.
+    const inflatedGoldSpot = calculateMetalCost("Platinum", 10, { goldSpotPerOz: 999999, platinumSpotPerOz: 2000 });
+    expect(inflatedGoldSpot).toBeCloseTo(withoutGoldSpot, 5);
+  });
+
+  it("Silver prices off silverSpotPerOz, not goldSpotPerOz", () => {
+    const withHighGoldSpot = calculateMetalCost("Silver", 10, { goldSpotPerOz: 4500, silverSpotPerOz: 100 });
+    const withoutGoldSpot = calculateMetalCost("Silver", 10, { silverSpotPerOz: 100 });
+    expect(withHighGoldSpot).toBeCloseTo(withoutGoldSpot, 5);
+  });
+
+  it("switching from 14K gold to Platinum/Silver drops the metal cost when their spot rates are lower", () => {
+    // Regression test: switching metal type used to always price off goldSpotPerOz
+    // regardless of which metal was selected, so Platinum/Silver (which trade far
+    // below gold in this profile) appeared MORE expensive than gold instead of less.
+    const goldCost = calculateMetalCost("14K", 10, { goldSpotPerOz: 4500 });
+    const platinumCost = calculateMetalCost("Platinum", 10, { goldSpotPerOz: 4500, platinumSpotPerOz: 2000 });
+    const silverCost = calculateMetalCost("Silver", 10, { goldSpotPerOz: 4500, silverSpotPerOz: 100 });
+
+    expect(platinumCost).toBeLessThan(goldCost);
+    expect(silverCost).toBeLessThan(goldCost);
+  });
+});
+
 describe("calculateMakingPrice", () => {
+  it("Platinum quotes use platinumSpotPerOz through the full breakdown, not goldSpotPerOz", () => {
+    const result = calculateMakingPrice({
+      metalType: "Platinum",
+      metalWeightGrams: 10,
+      goldSpotPerOz: 4500,
+      platinumSpotPerOz: 2000,
+      centerStone: { shape: "round", caratWeight: 1.0 },
+      sideStones: [],
+      hasWeddingBand: false,
+      isTwoTone: false,
+      colorClarity: "E VS1"
+    });
+
+    const withoutGoldSpot = calculateMakingPrice({
+      metalType: "Platinum",
+      metalWeightGrams: 10,
+      platinumSpotPerOz: 2000,
+      centerStone: { shape: "round", caratWeight: 1.0 },
+      sideStones: [],
+      hasWeddingBand: false,
+      isTwoTone: false,
+      colorClarity: "E VS1"
+    });
+
+    expect(result.metalCost).toBeCloseTo(withoutGoldSpot.metalCost, 2);
+  });
+
   it("uses the supplied lab table for a standard center stone", () => {
     const result = calculateMakingPrice({
       centerStone: { shape: "oval", caratWeight: 1.0 },

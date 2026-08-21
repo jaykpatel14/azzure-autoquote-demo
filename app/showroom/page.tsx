@@ -17,7 +17,8 @@ async function resolveOrCreateShowroomSession(companyId: string) {
         include: {
           subscription: {
             include: { plan: true }
-          }
+          },
+          pricingProfile: true
         }
       }
     }
@@ -31,7 +32,8 @@ async function resolveOrCreateShowroomSession(companyId: string) {
           include: {
             subscription: {
               include: { plan: true }
-            }
+            },
+            pricingProfile: true
           }
         }
       }

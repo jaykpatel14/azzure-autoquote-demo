@@ -79,6 +79,8 @@ export async function POST(request: Request) {
       metalType: adjustedInput.metalType,
       metalWeightGrams: adjustedInput.metalWeightGrams,
       goldSpotPerOz: Number(livePricing.pricingProfile.goldSpotPerOz),
+      platinumSpotPerOz: Number(livePricing.pricingProfile.platinumSpotPerOz),
+      silverSpotPerOz: Number(livePricing.pricingProfile.silverSpotPerOz),
       centerStone: {
         shape: adjustedInput.centerShape || "round",
         caratWeight: centerCarat

@@ -657,6 +657,8 @@ export default function QuoteCalculator({
         metalType,
         metalWeightGrams: aggregateQuote.metalWeightGrams,
         goldSpotPerOz: pricingProfile?.goldSpotPerOz ?? 4500,
+        platinumSpotPerOz: pricingProfile?.platinumSpotPerOz ?? 2000,
+        silverSpotPerOz: pricingProfile?.silverSpotPerOz ?? 100,
         centerStone: {
           shape: aggregateQuote.centerShape || "round",
           caratWeight: centerCarat
@@ -677,7 +679,25 @@ export default function QuoteCalculator({
     } catch {
       return { costBreakdown: null, estimatedSellingPrice: 0 };
     }
-  }, [aggregateQuote, cadCost, customerMarginPct, pricingTier, metalType, pricingProfile, quantity, stoneOrigin, manualCenterClarity, creationMode, manualSideShapes, manualRoundSideCount, manualRoundSideCarats, manualFancySideCount, manualFancySideCarats, manualRoundSideSettings, manualFancySideSettings]);
+  }, [
+    aggregateQuote,
+    cadCost,
+    customerMarginPct,
+    pricingTier,
+    metalType,
+    pricingProfile,
+    quantity,
+    stoneOrigin,
+    manualCenterClarity,
+    creationMode,
+    manualSideShapes,
+    manualRoundSideCount,
+    manualRoundSideCarats,
+    manualFancySideCount,
+    manualFancySideCarats,
+    manualRoundSideSettings,
+    manualFancySideSettings
+  ]);
 
   const canAnalyse = canEdit && facets.some((facet) => facet.status === "pending" || facet.status === "error");
   const selectedCenterRate = useMemo(() => {

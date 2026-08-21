@@ -119,6 +119,8 @@ export type MakingPriceInput = {
   metalType?: string;
   metalWeightGrams?: number;
   goldSpotPerOz?: number;
+  platinumSpotPerOz?: number;
+  silverSpotPerOz?: number;
 
   // Center stone
   centerStone: {
@@ -177,20 +179,29 @@ export type MakingPriceBreakdown = {
   colorClarity: "E VS1";
 };
 
+export type MetalSpotPrices = {
+  goldSpotPerOz?: number;
+  platinumSpotPerOz?: number;
+  silverSpotPerOz?: number;
+  platinumLaborPct?: number;
+};
+
 export function calculateMetalCost(
   metalType = "14K",
   weightGrams = 0,
-  spotPrice = 4500,
-  wastagePct = 25,
-  profile: PricingProfileInput = {}
+  spotPrices: MetalSpotPrices = {},
+  wastagePct = 25
 ): number {
   if (weightGrams <= 0) return 0;
   const ozToGram = 31.1034768;
   const normalized = (metalType || "14K").toUpperCase().trim();
-  
-  const config = { ...DEFAULT_PRICING_PROFILE, ...profile };
+  const config = { ...DEFAULT_PRICING_PROFILE, ...spotPrices };
   let purity = 0.585; // 14K default
   let lossFactor = 1 + (wastagePct / 100); // 1.25 default
+  // Each metal must price off its own spot rate — platinum and silver trade at
+  // very different prices per oz than gold, so falling back to the gold spot
+  // price here (as this used to do) silently overpriced every non-gold quote.
+  let spotPrice = Number(config.goldSpotPerOz);
 
   if (normalized.includes("PLATINUM") || normalized.includes("PLAT")) {
     return weightGrams * (Number(config.platinumSpotPerOz) / ozToGram) * (1 + Number(config.platinumLaborPct) / 100);
@@ -236,9 +247,13 @@ export function calculateMakingPrice(
   const _metalCost = calculateMetalCost(
     input.metalType ?? "14K",
     input.metalWeightGrams ?? 0,
-    input.goldSpotPerOz ?? 4500,
-    Number(pricing.goldWastagePct),
-    pricing
+    {
+      goldSpotPerOz: input.goldSpotPerOz ?? Number(pricing.goldSpotPerOz),
+      platinumSpotPerOz: input.platinumSpotPerOz ?? Number(pricing.platinumSpotPerOz),
+      silverSpotPerOz: input.silverSpotPerOz ?? Number(pricing.silverSpotPerOz),
+      platinumLaborPct: Number(pricing.platinumLaborPct)
+    },
+    Number(pricing.goldWastagePct)
   );
 
   const hasCenterStone = input.centerStone.caratWeight > 0.0001;

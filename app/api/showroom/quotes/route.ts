@@ -10,6 +10,8 @@ import { createQuote } from "@/src/services/quotes";
 import { getSettingValue } from "@/lib/app-settings";
 import { generateQuoteRendering } from "@/lib/ai/quote-rendering";
 import { validateEmail } from "@/lib/email-validation";
+import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricing";
+import { getCompanyPlanFeatures } from "@/src/stripe/plans";
 
 const schema = z.object({
   token: z.string().min(20),
@@ -69,9 +71,28 @@ export async function POST(request: Request) {
       : "round";
     const sideStones = input.sideDiamondQuantity ? [{ shape: detectedSideShape, caratWeightEach: resolvedSideCarats / input.sideDiamondQuantity, count: input.sideDiamondQuantity, settingType: input.settingType || "prong" }] : [];
     if (!session.company.pricingTier) throw new Error("Pricing is not configured.");
+
+    const { features } = await getCompanyPlanFeatures(session.companyId);
+    const baseProfile = session.company.pricingProfile
+      ? normalizePricingProfile({
+          goldSpotPerOz: Number(session.company.pricingProfile.goldSpotPerOz),
+          platinumSpotPerOz: Number(session.company.pricingProfile.platinumSpotPerOz),
+          silverSpotPerOz: Number(session.company.pricingProfile.silverSpotPerOz),
+          cadCharge: Number(session.company.pricingProfile.cadCharge),
+          centerSettingPerCarat: Number(session.company.pricingProfile.centerSettingPerCarat),
+          sideSettingPerStone: Number(session.company.pricingProfile.sideSettingPerStone),
+          sellingMarginDivisor: Number(session.company.pricingProfile.sellingMarginDivisor),
+          finalMultiplier: Number(session.company.pricingProfile.finalMultiplier)
+        })
+      : undefined;
+    const livePricing = await resolveMetalPricing(features.canUseCustomPricingProfile ? baseProfile : null);
+
     const making = calculateMakingPrice({
       metalType: resolvedMetal,
       metalWeightGrams: input.metalWeightGrams,
+      goldSpotPerOz: Number(livePricing.pricingProfile.goldSpotPerOz),
+      platinumSpotPerOz: Number(livePricing.pricingProfile.platinumSpotPerOz),
+      silverSpotPerOz: Number(livePricing.pricingProfile.silverSpotPerOz),
       centerStone: { shape: input.centerShape || "round", caratWeight: Math.max(resolvedCenterCarats, 0.0001) },
       sideStones,
       hasWeddingBand: Boolean(input.hasWeddingBand),
