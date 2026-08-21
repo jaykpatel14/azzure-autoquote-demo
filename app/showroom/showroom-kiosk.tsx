@@ -160,6 +160,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const [renderingImageUrl, setRenderingImageUrl] = useState<string | null>(null);
   const [generatingConcept, setGeneratingConcept] = useState(false);
   const [code, setCode] = useState("");
+  const [shareToken, setShareToken] = useState("");
   const [price, setPrice] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState(false);
@@ -511,6 +512,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       const savedCode = body.code || body.displayCode || "";
       const savedPrice = body.estimatedPrice ?? body.estimatedSellingPrice ?? 0;
       setCode(savedCode);
+      setShareToken(body.shareToken || "");
       setPrice(savedPrice);
       if (body.renderingImageUrl) {
         setRenderingImageUrl(body.renderingImageUrl);
@@ -529,6 +531,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setSharing(true);
     setError("");
     let currentCode = code;
+    let currentShareToken = shareToken;
 
     try {
       if (!saved || !currentCode) {
@@ -578,15 +581,21 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Failed to save quote for sharing.");
         currentCode = data.code || data.displayCode || "";
+        currentShareToken = data.shareToken || "";
         setCode(currentCode);
+        setShareToken(currentShareToken);
         setPrice(data.estimatedPrice ?? data.estimatedSellingPrice ?? 0);
         if (data.renderingImageUrl) setRenderingImageUrl(data.renderingImageUrl);
         setSaved(true);
         setSaving(false);
       }
 
+      if (!currentShareToken) {
+        throw new Error("Unable to generate a shareable link for this quote. Please try again.");
+      }
+
       const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const shareUrl = `${origin}/q/${currentCode}`;
+      const shareUrl = `${origin}/q/${currentShareToken}/pdf`;
       setQrShareUrl(shareUrl);
 
       const qrDataUrl = await QRCode.toDataURL(shareUrl, {

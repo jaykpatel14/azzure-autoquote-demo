@@ -1,0 +1,40 @@
+name: Refresh Metal Pricing
+
+on:
+  schedule:
+    # GitHub Actions cron runs in UTC and doesn't observe DST, so both
+    # UTC offsets for 9:00 AM America/Toronto are scheduled. Whichever one
+    # lands after actual local 9am does the real metals.dev fetch; the other
+    # is a no-op (the endpoint's cache is already fresh for the day).
+    - cron: "0 13 * * *" # 9:00 AM EDT (Mar-Nov)
+    - cron: "0 14 * * *" # 9:00 AM EST (Nov-Mar)
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-metal-pricing
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      APP_URL: https://autoquote-test.azzuresolutions.com
+    steps:
+      - name: Call metal pricing refresh endpoint
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::CRON_SECRET repository secret is not set."
+            exit 1
+          fi
+          http_code=$(curl -sS -o response.json -w "%{http_code}" -X POST "$APP_URL/api/cron/refresh-metal-pricing" \
+            -H "Authorization: Bearer $CRON_SECRET")
+          echo "Response:"
+          cat response.json
+          echo ""
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::error::Refresh endpoint returned HTTP $http_code"
+            exit 1
+          fi
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

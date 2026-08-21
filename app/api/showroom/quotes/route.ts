@@ -12,6 +12,8 @@ import { generateQuoteRendering } from "@/lib/ai/quote-rendering";
 import { validateEmail } from "@/lib/email-validation";
 import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricing";
 import { getCompanyPlanFeatures } from "@/src/stripe/plans";
+import { generateAndStoreQuotePdf } from "@/src/services/quote-pdf";
+import { createShareLink } from "@/src/services/sharing";
 
 const schema = z.object({
   token: z.string().min(20),
@@ -144,9 +146,32 @@ export async function POST(request: Request) {
       generateQuoteRendering({ quoteId: result.data.id, companyId: session.companyId }).catch(() => undefined);
     });
 
+    // The kiosk's QR code / "Open PDF Proposal" / "Copy Link" all need a real
+    // public share link (`/q/[publicShareToken]`), not the showroom display
+    // code — the display code only exists in the ShowroomQuote table and was
+    // never a valid lookup key for a Quote, so every scan 404'd. Generating
+    // the PDF + share token requires it exist first, and both are fast local
+    // operations (no external API calls), so it's safe to do inline here.
+    let shareToken: string | null = null;
+    try {
+      await generateAndStoreQuotePdf({
+        quoteId: result.data.id,
+        companyId: session.companyId,
+        customerNameFallback: input.customerName
+      });
+      const shareResult = await createShareLink({ companyId: session.companyId, quoteId: result.data.id });
+      if ("data" in shareResult) {
+        shareToken = shareResult.data.token;
+      }
+    } catch {
+      // Non-fatal — the quote itself is already saved. The kiosk will show an
+      // error if the customer tries to share/scan without a token.
+    }
+
     return NextResponse.json({
       code: displayCode,
       displayCode,
+      shareToken,
       estimatedPrice: tier.estimatedSellingPrice,
       estimatedSellingPrice: tier.estimatedSellingPrice,
       renderingStatus: "PROCESSING",

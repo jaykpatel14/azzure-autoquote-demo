@@ -1194,6 +1194,10 @@ textarea:disabled {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.pricingGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .stack {
   display: grid;
   gap: var(--space-4);
@@ -2403,7 +2407,8 @@ input[type="checkbox"] {
 
 /* ── Responsive ── */
 @media (max-width: 1024px) {
-  .statGrid {
+  .statGrid,
+  .pricingGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2470,7 +2475,8 @@ input[type="checkbox"] {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .statGrid {
+  .statGrid,
+  .pricingGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2486,7 +2492,8 @@ input[type="checkbox"] {
 }
 
 @media (max-width: 480px) {
-  .statGrid {
+  .statGrid,
+  .pricingGrid {
     grid-template-columns: minmax(0, 1fr);
   }
 }

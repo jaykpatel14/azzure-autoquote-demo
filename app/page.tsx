@@ -13,6 +13,7 @@ import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getDashboardData } from "@/src/services/dashboard";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 import { InteractiveLandingPage } from "@/components/InteractiveLandingPage";
+import { resolveMetalPricing } from "@/lib/metal-pricing";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -206,7 +207,10 @@ export default async function HomePage() {
     redirect("/onboarding");
   }
 
-  const dashboard = await getDashboardData(context.company.id);
+  const [dashboard, livePricing] = await Promise.all([
+    getDashboardData(context.company.id),
+    resolveMetalPricing()
+  ]);
 
   const subscription = context.company.subscription;
   const trialDaysRemaining = getTrialDaysRemaining(subscription);
@@ -420,59 +424,105 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section className="grid twoUp" style={{ marginTop: 24 }}>
-        <article className="card">
-          <div className="sectionHeader">
-            <div>
-              <h2>Recent orders</h2>
-              <p className="muted">Enterprise-only manufacturing orders will show up here once enabled.</p>
-            </div>
+      <section className="card" style={{ marginTop: 24 }}>
+        <div className="sectionHeader">
+          <div>
+            <h2>Recent orders</h2>
+            <p className="muted">Enterprise-only manufacturing orders will show up here once enabled.</p>
           </div>
-          {planFeatures?.canPlaceManufacturingOrder ? (
-            dashboard.recentOrders.length === 0 ? (
-              <div className="emptyState">
-                <strong>No orders submitted yet</strong>
-                <p className="muted">Place your first manufacturing order from any finalized quote.</p>
-                <Link className="button primary button--sm" href="/quotes">
-                  View quotes
-                </Link>
-              </div>
-            ) : (
-              <div className="compactList">
-                {dashboard.recentOrders.map((order) => (
-                  <div key={order.id} className="compactRow">
-                    <div>
-                      <strong>{order.orderNumber}</strong>
-                      <p className="muted small">
-                        {order.quoteNumber} · {order.itemName}
-                      </p>
-                    </div>
-                    <div>
-                      <StatusBadge status={order.status} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )
-          ) : (
+        </div>
+        {planFeatures?.canPlaceManufacturingOrder ? (
+          dashboard.recentOrders.length === 0 ? (
             <div className="emptyState">
-              <strong>Upgrade for orders</strong>
-              <p className="muted">The manufacturing workflow is reserved for Enterprise accounts.</p>
-              <Link className="button secondary button--sm" href="/settings/billing?upgrade=1">
-                Review plans
+              <strong>No orders submitted yet</strong>
+              <p className="muted">Place your first manufacturing order from any finalized quote.</p>
+              <Link className="button primary button--sm" href="/quotes">
+                View quotes
               </Link>
             </div>
-          )}
-        </article>
+          ) : (
+            <div className="compactList">
+              {dashboard.recentOrders.map((order) => (
+                <div key={order.id} className="compactRow">
+                  <div>
+                    <strong>{order.orderNumber}</strong>
+                    <p className="muted small">
+                      {order.quoteNumber} · {order.itemName}
+                    </p>
+                  </div>
+                  <div>
+                    <StatusBadge status={order.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : (
+          <div className="emptyState">
+            <strong>Upgrade for orders</strong>
+            <p className="muted">The manufacturing workflow is reserved for Enterprise accounts.</p>
+            <Link className="button secondary button--sm" href="/settings/billing?upgrade=1">
+              Review plans
+            </Link>
+          </div>
+        )}
+      </section>
 
-        <article className="card accentCard">
-          <div className="sectionHeader">
-            <div>
-              <h2>Pricing is handled automatically</h2>
-              <p className="muted">Customers see the approved selling price while internal cost inputs stay private.</p>
+      <section className="card" style={{ marginTop: 24 }}>
+        <div className="sectionHeader">
+          <div>
+            <h2>Live precious metal pricing</h2>
+            <p className="muted">
+              {livePricing.source === "metals.dev"
+                ? "Auto-refreshed daily and used in every new quote's metal cost."
+                : "Live feed unavailable right now — quotes are using the configured fallback pricing below."}
+            </p>
+          </div>
+        </div>
+        <div className="pricingGrid">
+            <div className="detailCard" style={{ borderLeft: "3px solid #f59e0b" }}>
+              <span className="eyebrow" style={{ color: "#d97706" }}>XAU · Gold</span>
+              <strong style={{ fontSize: "1.5rem", fontFamily: "var(--font-display, Georgia, serif)" }}>
+                ${Number(livePricing.pricingProfile.goldSpotPerOz).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                <span style={{ fontSize: "0.875rem", fontWeight: 400, color: "var(--color-on-surface-variant)" }}> / oz</span>
+              </strong>
+              <p className="muted small" style={{ marginTop: 4 }}>
+                14K: ~${(Number(livePricing.pricingProfile.goldSpotPerOz) / 31.1035 * 0.585).toFixed(2)}/g
+              </p>
+            </div>
+
+            <div className="detailCard" style={{ borderLeft: "3px solid #94a3b8" }}>
+              <span className="eyebrow" style={{ color: "#64748b" }}>XPT · Platinum</span>
+              <strong style={{ fontSize: "1.5rem", fontFamily: "var(--font-display, Georgia, serif)" }}>
+                ${Number(livePricing.pricingProfile.platinumSpotPerOz).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                <span style={{ fontSize: "0.875rem", fontWeight: 400, color: "var(--color-on-surface-variant)" }}> / oz</span>
+              </strong>
+              <p className="muted small" style={{ marginTop: 4 }}>
+                950 Plat: ~${(Number(livePricing.pricingProfile.platinumSpotPerOz) / 31.1035).toFixed(2)}/g
+              </p>
+            </div>
+
+            <div className="detailCard" style={{ borderLeft: "3px solid #cbd5e1" }}>
+              <span className="eyebrow" style={{ color: "#64748b" }}>XAG · Silver</span>
+              <strong style={{ fontSize: "1.5rem", fontFamily: "var(--font-display, Georgia, serif)" }}>
+                ${Number(livePricing.pricingProfile.silverSpotPerOz).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                <span style={{ fontSize: "0.875rem", fontWeight: 400, color: "var(--color-on-surface-variant)" }}> / oz</span>
+              </strong>
+              <p className="muted small" style={{ marginTop: 4 }}>
+                925 Silver: ~${(Number(livePricing.pricingProfile.silverSpotPerOz) / 31.1035).toFixed(2)}/g
+              </p>
+            </div>
+
+            <div className="detailCard" style={{ borderLeft: "3px solid #0284c7" }}>
+              <span className="eyebrow" style={{ color: "#0284c7" }}>Feed status</span>
+              <strong style={{ fontSize: "1.125rem" }}>
+                {livePricing.source === "metals.dev" ? "🟢 Live" : "🟡 Fallback"}
+              </strong>
+              <p className="muted small" style={{ marginTop: 4 }}>
+                {livePricing.message || "Daily spot rate auto-refreshed."}
+              </p>
             </div>
           </div>
-        </article>
       </section>
     </WorkspaceShell>
   );
