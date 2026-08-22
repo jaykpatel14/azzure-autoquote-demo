@@ -11,15 +11,15 @@ export type InternalAdminNavItem = {
 };
 
 export const NAV_ITEMS = [
-  { href: "/admin", label: "Overview", icon: "dashboard", priority: "primary", roles: ["SUPER_ADMIN", "OPERATIONS_MANAGER", "SUPPORT_ADMIN"] },
+  { href: "/admin", label: "Overview", icon: "dashboard", priority: "primary", roles: ["SUPER_ADMIN", "SUPPORT_ADMIN"] },
   { href: "/admin/sales", label: "Sales Quotes", icon: "request_quote", priority: "primary", roles: ["SUPER_ADMIN", "SALESMAN"] },
   { href: "/admin/orders", label: "Manufacturing Orders", icon: "shopping_bag", priority: "primary", roles: ["SUPER_ADMIN", "OPERATIONS_MANAGER", "ESTIMATOR_ADMIN"] },
   { href: "/admin/quotes", label: "Quote Audit", icon: "receipt_long", priority: "primary", roles: ["SUPER_ADMIN", "ESTIMATOR_ADMIN", "OPERATIONS_MANAGER"] },
-  { href: "/admin/tenants", label: "Tenants", icon: "store", priority: "primary", roles: ["SUPER_ADMIN", "OPERATIONS_MANAGER", "SUPPORT_ADMIN"] },
-  { href: "/admin/tenants/pending", label: "Approvals", icon: "how_to_reg", priority: "primary", roles: ["SUPER_ADMIN", "OPERATIONS_MANAGER"] },
+  { href: "/admin/tenants", label: "Tenants", icon: "store", priority: "primary", roles: ["SUPER_ADMIN", "SUPPORT_ADMIN"] },
+  { href: "/admin/tenants/pending", label: "Approvals", icon: "how_to_reg", priority: "primary", roles: ["SUPER_ADMIN"] },
   { href: "/admin/team", label: "Admin Team", icon: "badge", priority: "primary", roles: ["SUPER_ADMIN"] },
-  { href: "/admin/tenants/subscriptions", label: "Subscriptions", icon: "credit_card", priority: "secondary", roles: ["SUPER_ADMIN", "OPERATIONS_MANAGER"] },
-  { href: "/admin/analytics", label: "Analytics", icon: "analytics", priority: "secondary", roles: ["SUPER_ADMIN", "OPERATIONS_MANAGER"] },
+  { href: "/admin/tenants/subscriptions", label: "Subscriptions", icon: "credit_card", priority: "secondary", roles: ["SUPER_ADMIN"] },
+  { href: "/admin/analytics", label: "Analytics", icon: "analytics", priority: "secondary", roles: ["SUPER_ADMIN"] },
   { href: "/admin/platform/api-keys", label: "API keys", icon: "key", priority: "secondary", roles: ["SUPER_ADMIN"] },
   { href: "/admin/platform/settings", label: "Settings", icon: "settings", priority: "secondary", roles: ["SUPER_ADMIN"] }
 ] as const satisfies readonly InternalAdminNavItem[];
