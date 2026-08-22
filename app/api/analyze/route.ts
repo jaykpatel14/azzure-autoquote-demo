@@ -244,8 +244,8 @@ export async function POST(request: Request) {
             ),
             confidence: attemptResult.result.output.confidence,
             notes: attemptResult.result.output.assumptions.join(" | "),
-            output: attemptResult.result.output as unknown as Prisma.InputJsonValue,
-            rawResponse: attemptResult.result.rawResponse as Prisma.InputJsonValue
+            output: stripNullBytes(attemptResult.result.output) as unknown as Prisma.InputJsonValue,
+            rawResponse: stripNullBytes(attemptResult.result.rawResponse) as Prisma.InputJsonValue
           }
         });
         continue;
