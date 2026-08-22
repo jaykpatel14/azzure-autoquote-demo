@@ -11,5 +11,7 @@ export async function getAdminSalesQuotes() {
     }
   });
 
-  return quotes;
+  const companies = await prisma.company.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } });
+
+  return { quotes, companies };
 }

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { AdminSalesImpersonate } from "@/components/admin-sales-impersonate";
 import { getAdminSalesQuotes } from "@/src/services/admin-sales";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export default async function AdminSalesDashboard() {
     redirect("/admin");
   }
 
-  const quotes = await getAdminSalesQuotes();
+  const { quotes, companies } = await getAdminSalesQuotes();
 
   return (
     <InternalAdminShell
@@ -26,6 +27,7 @@ export default async function AdminSalesDashboard() {
       description="View recent quotes across all tenants. Displaying Making Price and Tier Pricing only."
       navItems={getInternalAdminNav("/admin/sales")}
       adminName={context.user.name || context.user.email}
+      actions={<AdminSalesImpersonate companies={companies} />}
     >
       <section className="card">
         <div className="sectionHeader">
