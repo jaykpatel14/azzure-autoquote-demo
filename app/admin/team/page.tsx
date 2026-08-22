@@ -22,6 +22,8 @@ function formatRoleLabel(role: string) {
       return "Estimator Admin";
     case "SUPPORT_ADMIN":
       return "Support Specialist";
+    case "SALESMAN":
+      return "Azzure Salesman";
     default:
       return role.replace("_", " ");
   }

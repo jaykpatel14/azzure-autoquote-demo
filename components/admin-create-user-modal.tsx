@@ -187,6 +187,7 @@ export function AdminCreateUserModal() {
                   <option value="SUPER_ADMIN">Super Administrator (Full platform & tenant access)</option>
                   <option value="ESTIMATOR_ADMIN">Estimator Admin (Manage live metals & quote diagnostics)</option>
                   <option value="SUPPORT_ADMIN">Support Specialist (Tenant onboarding & support)</option>
+                  <option value="SALESMAN">Azzure Salesman (Sales & quoting restricted access)</option>
                 </select>
               </div>
 
