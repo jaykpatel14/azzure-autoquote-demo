@@ -9,6 +9,7 @@ import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricing";
 import { QuotePricingKpis, money, num } from "@/components/admin/quote-pricing-breakdown";
 import { PricingAuditor } from "@/components/admin/pricing-auditor";
+import ManufacturingOrderModal from "@/components/manufacturing-order-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +75,7 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
   );
 
   const sideDiamondQuantity = quote.sideDiamondQuantity ?? 0;
-  const detectedSideShape = (quote.analysis?.output as any)?.sideStones?.[0]?.shape ||
+  const detectedSideShape = (quote.analysis?.output as { sideStones?: { shape: string }[] })?.sideStones?.[0]?.shape ||
     (quote.analysis?.centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(quote.analysis.centerShape.toLowerCase()) && sideDiamondQuantity <= 4
       ? "fancy"
       : "round");
@@ -94,7 +95,7 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
     <InternalAdminShell
       title={`Quote ${quote.quoteNumber}`}
       description="Internal pricing audit — full cost ledger, margin analysis, and tier mechanics."
-      navItems={getInternalAdminNav("/admin/quotes", admin.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/quotes", admin.user.adminRole )}
       adminName={admin.user.name || admin.user.email}
       actions={
         <>
@@ -112,6 +113,16 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
           >
             Print / Download PDF
           </a>
+          {!quote.order && quote.company.accountStatus === "APPROVED" && (
+            <ManufacturingOrderModal quote={{
+                ...quote,
+                metalWeightGrams: Number(quote.metalWeightGrams),
+                centerDiamondCarats: Number(quote.centerDiamondCarats),
+                sideDiamondCarats: Number(quote.sideDiamondCarats),
+                estimatedSellingPrice: quote.estimatedSellingPrice ? Number(quote.estimatedSellingPrice) : null,
+                estimatedPrice: quote.estimatedPrice ? Number(quote.estimatedPrice) : null
+              }} />
+          )}
         </>
       }
     >
@@ -347,6 +358,16 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
               <p className="eyebrow">AI Analysis Notes</p>
               <p className="muted small" style={{ marginTop: "0.5rem", lineHeight: 1.6 }}>
                 {quote.analysis.notes}
+              </p>
+            </div>
+          )}
+
+          {/* Customer / Jeweler Notes */}
+          {quote.notes && (
+            <div className="card" style={{ marginTop: "1.25rem" }}>
+              <p className="eyebrow">Customer / Jeweler Notes</p>
+              <p className="muted small" style={{ marginTop: "0.5rem", lineHeight: 1.6 }}>
+                {quote.notes}
               </p>
             </div>
           )}

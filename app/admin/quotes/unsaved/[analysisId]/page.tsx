@@ -49,7 +49,7 @@ export default async function AdminUnsavedAnalysisPage({
     <InternalAdminShell
       title={`Unsaved Analysis ${analysisId.slice(-6).toUpperCase()}`}
       description="Internal pricing audit — live estimate for a jeweler analysis that has not been saved as a quote."
-      navItems={getInternalAdminNav("/admin/quotes", admin.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/quotes", admin.user.adminRole )}
       adminName={admin.user.name || admin.user.email}
       actions={
         <>

@@ -35,7 +35,7 @@ export default async function AdminTeamPage() {
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/team", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/team", context.user.adminRole );
 
   const users = await getInternalAdminUsers();
 
@@ -43,7 +43,7 @@ export default async function AdminTeamPage() {
     <InternalAdminShell
       title="Backend Staff & Admin Users"
       description="Manage internal staff accounts who can work on customer orders, dispatch manufacturing jobs, and audit quotes."
-      navItems={getInternalAdminNav("/admin/team", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/team", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <AdminCreateUserModal />

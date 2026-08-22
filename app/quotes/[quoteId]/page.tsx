@@ -84,9 +84,23 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
       description="Review the approved quote details, download the PDF, or open the public customer view."
       navItems={getWorkspaceNav("/quotes")}
       actions={
-        <Link className="button secondary" href="/quotes">
-          Back to quotes
-        </Link>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Link className="button secondary" href="/quotes">
+            Back to quotes
+          </Link>
+          {status !== "ordered" && status !== "expired" ? (
+            <PlanGate feature="canPlaceManufacturingOrder" fallbackHref="/settings/billing?upgrade=1">
+              <ManufacturingOrderModal quote={{
+                ...quote,
+                metalWeightGrams: Number(quote.metalWeightGrams),
+                centerDiamondCarats: Number(quote.centerDiamondCarats),
+                sideDiamondCarats: Number(quote.sideDiamondCarats),
+                estimatedSellingPrice: quote.estimatedSellingPrice ? Number(quote.estimatedSellingPrice) : null,
+                estimatedPrice: quote.estimatedPrice ? Number(quote.estimatedPrice) : null
+              }} />
+            </PlanGate>
+          ) : null}
+        </div>
       }
     >
       <section className="grid twoUp">
@@ -199,6 +213,13 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
             <div className="detailCard detailCard--stacked">
               <span>Photo description &amp; notes</span>
               <p className="muted">{quote.analysis.notes}</p>
+            </div>
+          ) : null}
+
+          {quote.notes ? (
+            <div className="detailCard detailCard--stacked">
+              <span>Customer / Jeweler Notes</span>
+              <p className="muted">{quote.notes}</p>
             </div>
           ) : null}
 

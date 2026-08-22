@@ -17,7 +17,7 @@ export default async function AdminTenantsPage({ searchParams }: { searchParams?
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/tenants", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/tenants", context.user.adminRole );
 
   const data = await getAdminTenants();
   const filters = (await searchParams) ?? {};
@@ -36,7 +36,7 @@ export default async function AdminTenantsPage({ searchParams }: { searchParams?
     <InternalAdminShell
       title="Tenant management"
       description="Inspect every company, their subscription state, recent activity, and support-critical metadata."
-      navItems={getInternalAdminNav("/admin/tenants", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/tenants", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <>

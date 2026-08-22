@@ -47,6 +47,17 @@ docker run --rm \
   "${APP_IMAGE}" \
   ./node_modules/.bin/prisma migrate deploy --schema=/app/prisma/schema.prisma
 
+echo "Validating migration status..."
+
+if ! docker run --rm \
+  --env-file "${ENV_FILE}" \
+  "${APP_IMAGE}" \
+  ./node_modules/.bin/prisma migrate status --schema=/app/prisma/schema.prisma; then
+  echo "ERROR: Prisma schema drift detected. Database migrations and schema are not in sync."
+  echo "Please generate a migration locally (npx prisma migrate dev) and push."
+  exit 1
+fi
+
 echo "Migrations completed."
 
 if docker ps -a --format '{{.Names}}' |

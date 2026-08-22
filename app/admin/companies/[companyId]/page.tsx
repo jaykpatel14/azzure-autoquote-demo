@@ -21,7 +21,7 @@ export default async function AdminCompanyPage({ params }: AdminCompanyPageProps
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/companies", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/companies", context.user.adminRole );
 
   const { companyId } = await params;
   const company = await prisma.company.findUnique({
@@ -58,7 +58,7 @@ export default async function AdminCompanyPage({ params }: AdminCompanyPageProps
     <InternalAdminShell
       title={company.name}
       description="Review billing, quote history, team access, and support evidence for this company."
-      navItems={getInternalAdminNav("/admin/companies", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/companies", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>

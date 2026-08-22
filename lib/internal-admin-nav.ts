@@ -26,7 +26,7 @@ export const NAV_ITEMS = [
 
 export function getInternalAdminNav(activeHref: string, userRole?: string | null): InternalAdminNavItem[] {
   return NAV_ITEMS
-    .filter(item => !item.roles || !userRole || item.roles.includes(userRole as any))
+    .filter(item => !item.roles || !userRole || (item.roles as readonly string[]).includes(userRole as AdminUserRole))
     .map((item) => ({
       ...item,
       active: item.href === activeHref || (activeHref.startsWith(item.href) && item.href !== "/admin")
@@ -39,9 +39,9 @@ export function requireAdminRouteAccess(activeHref: string, userRole?: string | 
   // Find the base nav item for this route (match longest prefix)
   const matchedNav = [...NAV_ITEMS].sort((a, b) => b.href.length - a.href.length).find(item => activeHref.startsWith(item.href) && (item.href !== "/admin" || activeHref === "/admin"));
   
-  if (matchedNav && matchedNav.roles && !matchedNav.roles.includes(userRole as any)) {
+  if (matchedNav && matchedNav.roles && !(matchedNav.roles as readonly string[]).includes(userRole as AdminUserRole)) {
     // User is NOT allowed. Redirect to their first allowed route.
-    const allowed = NAV_ITEMS.filter(item => !item.roles || item.roles.includes(userRole as any));
+    const allowed = NAV_ITEMS.filter(item => !item.roles || (item.roles as readonly string[]).includes(userRole as AdminUserRole));
     if (allowed.length > 0) {
       redirect(allowed[0].href);
     } else {

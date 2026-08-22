@@ -628,7 +628,7 @@ export default function QuoteCalculator({
 
   // Recalculate production cost & end customer price client-side in real-time
   const { costBreakdown, estimatedSellingPrice } = useMemo<{
-    costBreakdown: unknown;
+    costBreakdown: ReturnType<typeof calculateProductionCost> | null;
     estimatedSellingPrice: number;
   }>(() => {
     if (!aggregateQuote) return { costBreakdown: null, estimatedSellingPrice: 0 };
@@ -2333,16 +2333,16 @@ export default function QuoteCalculator({
             {/* Live Quote Price */}
             <div className="quotePreviewPriceBlock">
               <p className="eyebrow" style={{ marginBottom: 4 }}>Live Estimate</p>
-              {showAllTiers && costBreakdown && (costBreakdown as any).subtotal ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginTop: "12px", marginBottom: "16px" }}>
+              {showAllTiers && costBreakdown && costBreakdown.subtotal ? (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginTop: "12px", marginBottom: "16px" }}>
                   {(["TIER_1", "TIER_2", "TIER_3"] as const).map(tier => {
-                    const tierResult = calculateTierPrice((costBreakdown as any).subtotal, tier, 0);
+                    const tierResult = calculateTierPrice(costBreakdown.subtotal, tier, 0);
                     return (
-                      <div key={tier} style={{ background: "var(--color-surface-container)", padding: "16px", borderRadius: "8px", border: "1px solid var(--color-outline)", textAlign: "center" }}>
-                        <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--color-primary)", marginBottom: "4px" }}>
+                      <div key={tier} style={{ background: "var(--color-surface-container)", padding: "12px 8px", borderRadius: "8px", border: "1px solid var(--color-outline)", textAlign: "center", minWidth: 0 }}>
+                        <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--color-primary)", marginBottom: "4px" }}>
                           {tier.replace('_', ' ')}
                         </div>
-                        <div style={{ fontSize: "1.5rem", fontWeight: 700 }}>
+                        <div style={{ fontSize: "clamp(1rem, 2.5vw, 1.25rem)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {formatCurrency(tierResult.estimatedSellingPrice)}
                         </div>
                       </div>

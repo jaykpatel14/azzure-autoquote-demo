@@ -12,13 +12,13 @@ export default async function AdminCreateCompanyPage() {
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/companies", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/companies", context.user.adminRole );
 
   return (
     <InternalAdminShell
       title="Create company"
       description="Provision a new customer tenant and seed its first user from the internal admin console."
-      navItems={getInternalAdminNav("/admin/companies", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/companies", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/companies">

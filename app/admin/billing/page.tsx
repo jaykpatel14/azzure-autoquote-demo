@@ -13,7 +13,7 @@ export default async function AdminBillingPage() {
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/billing", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/billing", context.user.adminRole );
 
   const companies = await prisma.company.findMany({
     orderBy: { createdAt: "desc" },
@@ -32,7 +32,7 @@ export default async function AdminBillingPage() {
     <InternalAdminShell
       title="Billing"
       description="Edit every company billing record, pricing profile, and support identifier from one place."
-      navItems={getInternalAdminNav("/admin/billing", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/billing", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/settings">

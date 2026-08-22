@@ -19,7 +19,7 @@ export default async function AdminSubscriptionPage() {
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/tenants/subscriptions", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/tenants/subscriptions", context.user.adminRole );
 
   await ensureBasePlans(prisma);
   const [data, plans] = await Promise.all([
@@ -31,7 +31,7 @@ export default async function AdminSubscriptionPage() {
     <InternalAdminShell
       title="Subscription management"
       description="Review every customer subscription, adjust plan state, and jump back to billing when needed."
-      navItems={getInternalAdminNav("/admin/tenants/subscriptions", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/tenants/subscriptions", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <>

@@ -99,7 +99,7 @@ export async function POST(request: Request) {
     });
 
     if ("error" in result) {
-      return NextResponse.json({ error: result.error.userMessage }, { status: result.error.statusCode });
+      return NextResponse.json({ error: { message: result.error.userMessage, code: result.error.statusCode === 404 ? "NOT_FOUND" : "BAD_REQUEST" } }, { status: result.error.statusCode });
     }
 
     const orderUrl = buildPublicUrl(`/orders/${result.data.id}`).toString();
@@ -135,18 +135,18 @@ export async function POST(request: Request) {
     return NextResponse.redirect(buildPublicUrl(`/orders/${result.data.id}`), 303);
   } catch (error) {
     if (error instanceof PlanError) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
+      return NextResponse.json({ error: { message: error.message, code: "UNAUTHORIZED" } }, { status: 403 });
     }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.issues[0]?.message || "Invalid order payload." },
+        { error: { message: error.issues[0]?.message || "Invalid order payload.", code: "BAD_REQUEST" } },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to create order." },
-      { status: 400 }
+      { error: { message: error instanceof Error ? error.message : "Unable to create order.", code: "INTERNAL_ERROR" } },
+      { status: 500 }
     );
   }
 }

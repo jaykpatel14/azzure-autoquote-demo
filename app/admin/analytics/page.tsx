@@ -13,7 +13,7 @@ export default async function AdminAnalyticsPage() {
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/analytics", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/analytics", context.user.adminRole );
 
   const data = await getAdminAnalytics();
 
@@ -21,7 +21,7 @@ export default async function AdminAnalyticsPage() {
     <InternalAdminShell
       title="Platform analytics"
       description="High-level platform signals for quotes, orders, analyses, and tenant growth."
-      navItems={getInternalAdminNav("/admin/analytics", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/analytics", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <>

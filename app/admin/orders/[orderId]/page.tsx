@@ -25,7 +25,7 @@ export default async function AdminOrderPage({ params }: OrderPageProps) {
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/orders", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/orders", context.user.adminRole );
 
   const { orderId } = await params;
   const order = await getAdminOrder(orderId);
@@ -40,7 +40,7 @@ export default async function AdminOrderPage({ params }: OrderPageProps) {
     <InternalAdminShell
       title={order.orderNumber}
       description="Review and update the order from intake through completed production."
-      navItems={getInternalAdminNav("/admin/orders", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/orders", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>

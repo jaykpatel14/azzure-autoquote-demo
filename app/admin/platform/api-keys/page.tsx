@@ -13,7 +13,7 @@ export default async function AdminApiKeysPage() {
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/platform/api-keys", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/platform/api-keys", context.user.adminRole );
 
   const data = await getAdminPlatformSettings();
 
@@ -21,7 +21,7 @@ export default async function AdminApiKeysPage() {
     <InternalAdminShell
       title="API key management"
       description="Rotate secrets and verify which platform keys are currently stored in the runtime settings table."
-      navItems={getInternalAdminNav("/admin/platform/api-keys", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/platform/api-keys", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/platform/settings">

@@ -16,7 +16,7 @@ export default async function AdminSalesDashboard() {
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/sales", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/sales", context.user.adminRole );
 
   const { companies } = await getAdminSalesQuotes();
   const cadCost = (await getSettingValue("cad_cost_per_quote")) ?? 0;
@@ -26,11 +26,11 @@ export default async function AdminSalesDashboard() {
     <InternalAdminShell
       title="Sales Dashboard"
       description="Create and assign quotes for your tenants directly from this dashboard."
-      navItems={getInternalAdminNav("/admin/sales", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/sales", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
     >
       <AdminSalesQuotingContainer 
-        companies={companies as any} 
+        companies={companies } 
         cadCost={cadCost} 
         livePricing={livePricing} 
       />

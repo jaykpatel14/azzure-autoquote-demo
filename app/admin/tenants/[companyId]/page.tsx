@@ -24,7 +24,7 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/tenants", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/tenants", context.user.adminRole );
 
   const { companyId } = await params;
   let data = null;
@@ -41,7 +41,7 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
       <InternalAdminShell
         title="Unable to load tenant"
         description="The tenant record could not be loaded because of a server error, not because it doesn't exist."
-        navItems={getInternalAdminNav("/admin/tenants", context.user.adminRole as any)}
+        navItems={getInternalAdminNav("/admin/tenants", context.user.adminRole )}
         adminName={context.user.name || context.user.email}
       >
         <section className="card" style={{ borderColor: "#ef4444" }}>
@@ -82,7 +82,7 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
     <InternalAdminShell
       title={company.name}
       description="Tenant detail with subscription health, pricing profile, activity history, and support actions."
-      navItems={getInternalAdminNav("/admin/tenants", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/tenants", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>

@@ -18,7 +18,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams?:
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/orders", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/orders", context.user.adminRole );
 
   const data = await getAdminOrders("all");
   const tab = (await searchParams)?.tab ?? "needs-ck";
@@ -41,7 +41,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams?:
     <InternalAdminShell
       title="Manufacturing Order Queue"
       description="Track order status, hand work to production, and test CustomKing dispatches."
-      navItems={getInternalAdminNav("/admin/orders", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/orders", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <>

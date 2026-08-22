@@ -15,7 +15,7 @@ export default async function AdminPlatformSettingsPage() {
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/platform/settings", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/platform/settings", context.user.adminRole );
 
   const data = await getAdminPlatformSettings();
   const masterPricingSettings = data.publicSettings.filter((setting) => setting.key.startsWith("master_") || setting.key === "cad_cost_per_quote");
@@ -43,7 +43,7 @@ export default async function AdminPlatformSettingsPage() {
     <InternalAdminShell
       title="Platform settings"
       description="Manage runtime configuration and secret-backed environment overrides from one place."
-      navItems={getInternalAdminNav("/admin/platform/settings", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/platform/settings", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/platform/api-keys">

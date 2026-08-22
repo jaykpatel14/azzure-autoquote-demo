@@ -34,7 +34,7 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/billing", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/billing", context.user.adminRole );
 
   const { companyId } = await params;
   await ensureBasePlans(prisma);
@@ -86,7 +86,7 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
     <InternalAdminShell
       title={`${company.name} billing`}
       description="Edit the company billing record, pricing profile, and subscription details from one screen."
-      navItems={getInternalAdminNav("/admin/billing", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/billing", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/billing">

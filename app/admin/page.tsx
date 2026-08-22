@@ -52,7 +52,7 @@ export default async function AdminDashboardPage() {
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin", context.user.adminRole );
 
   const [overview, livePricing] = await Promise.all([
     getAdminOverviewData(),
@@ -63,7 +63,7 @@ export default async function AdminDashboardPage() {
     <InternalAdminShell
       title="Operations Dashboard"
       description="Monitor platform health, live revenue, and tenant activity across Azzure AI Quote."
-      navItems={getInternalAdminNav("/admin", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <>

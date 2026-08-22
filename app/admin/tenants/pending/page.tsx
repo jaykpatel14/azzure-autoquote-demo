@@ -20,7 +20,7 @@ export default async function PendingApprovalsPage() {
     redirect("/signin");
   }
 
-  requireAdminRouteAccess("/admin/tenants/pending", context.user.adminRole as any);
+  requireAdminRouteAccess("/admin/tenants/pending", context.user.adminRole );
 
   const companies = await getPendingApprovalCompanies();
 
@@ -28,7 +28,7 @@ export default async function PendingApprovalsPage() {
     <InternalAdminShell
       title="Pending approvals"
       description="Review new companies, assign a pricing tier, and approve or suspend access."
-      navItems={getInternalAdminNav("/admin/tenants/pending", context.user.adminRole as any)}
+      navItems={getInternalAdminNav("/admin/tenants/pending", context.user.adminRole )}
       adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/tenants">
