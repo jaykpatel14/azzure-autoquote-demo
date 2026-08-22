@@ -97,6 +97,7 @@ type QuoteCalculatorProps = {
     assumptions: string[] | null;
   };
   companyName?: string;
+  assignedCompanyId?: string;
   companyLogoUrl?: string | null;
   canShareQuoteLink?: boolean;
   canPlaceManufacturingOrder?: boolean;
@@ -295,6 +296,7 @@ export default function QuoteCalculator({
   initialQuote,
   companyName,
   companyLogoUrl,
+  assignedCompanyId,
   canShareQuoteLink = false,
   canPlaceManufacturingOrder = false,
   canDownloadPdf = false
@@ -482,6 +484,7 @@ export default function QuoteCalculator({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+        assignedCompanyId,
           prompt: textToUse,
           metalType,
           customerNotes: customerNotes || undefined
@@ -1161,6 +1164,7 @@ export default function QuoteCalculator({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+        assignedCompanyId,
           analysisId: aggregateQuote.analysisId,
           analysisIds: completedFacets.map((facet) => facet.output?.analysisId).filter(Boolean),
           customerName,
@@ -1258,6 +1262,7 @@ export default function QuoteCalculator({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+        assignedCompanyId,
           analysisId: aggregateQuote.analysisId,
           customerName,
           customerEmail,

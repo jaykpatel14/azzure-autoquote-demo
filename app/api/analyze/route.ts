@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { METAL_TYPES } from "@/lib/pricing";
 import {
   requireCompanyContext,
+  requireAdminSalesContext,
   AuthRequiredError,
   CompanyAccessError,
   canCreateQuotes
@@ -50,7 +51,16 @@ export async function POST(request: Request) {
   let reservation: { usagePeriodId: string; isOverage: boolean } | undefined;
 
   try {
-    const companyContext = await requireCompanyContext();
+    
+    const form = await request.formData();
+    const assignedCompanyId = form.get("assignedCompanyId") as string | null;
+
+    let companyContext;
+    if (assignedCompanyId) {
+      companyContext = await requireAdminSalesContext(assignedCompanyId) as any;
+    } else {
+      companyContext = await requireCompanyContext();
+    }
     if (!canCreateQuotes(companyContext.membership?.role ?? "CUSTOMER")) {
       throw new CompanyAccessError("You do not have permission to create estimates.");
     }
@@ -58,7 +68,7 @@ export async function POST(request: Request) {
       throw new CompanyAccessError("Account approval and a pricing tier are required to create quotes.");
     }
     assertBillableSubscription(companyContext.company.subscription);
-    const form = await request.formData();
+    
     const rawImages = [
       ...form.getAll("images"),
       ...form.getAll("image"),

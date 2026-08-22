@@ -13,7 +13,7 @@ import type {
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isPrismaConnectionError } from "@/lib/prisma-errors";
-import { isInternalAdminEmail } from "@/lib/internal-admin";
+import { isInternalAdminEmail, getInternalAdminContext } from "@/lib/internal-admin";
 
 export const ACTIVE_COMPANY_COOKIE = "azzure-active-company-id";
 
@@ -322,4 +322,37 @@ export function canAccessShowroomRole(role: CompanyRole | null | undefined) {
 
 export function canSeeFullPricing(role: CompanyRole | null | undefined) {
   return role !== "SALESMAN" && hasCompanyRole(role, "ESTIMATOR");
+}
+
+
+export async function requireAdminSalesContext(companyId: string) {
+  const adminContext = await getInternalAdminContext();
+  if (!adminContext || (adminContext.user.adminRole !== "SALESMAN" && adminContext.user.adminRole !== "SUPER_ADMIN" && adminContext.user.adminRole !== "OPERATIONS_MANAGER")) {
+    throw new CompanyAccessError("Not authorized to assign quotes as an admin.");
+  }
+
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: COMPANY_SELECT
+  });
+
+  if (!company) {
+    throw new CompanyAccessError("Invalid target company.");
+  }
+
+  const syntheticMembership = {
+    id: "salesman:" + company.id,
+    role: "ESTIMATOR" as CompanyRole,
+    companyId: company.id,
+    userId: adminContext.user.id,
+    company: company as any
+  };
+
+  return {
+    user: adminContext.user,
+    membership: syntheticMembership,
+    company: company as any,
+    memberships: [syntheticMembership],
+    isImpersonating: true
+  };
 }
