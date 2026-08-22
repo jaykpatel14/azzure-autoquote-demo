@@ -8,6 +8,7 @@ export type InternalAdminNavItem = {
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Overview", icon: "dashboard", priority: "primary" },
+  { href: "/admin/sales", label: "Sales Quotes", icon: "request_quote", priority: "primary" },
   { href: "/admin/tenants", label: "Tenants", icon: "store", priority: "primary" },
   { href: "/admin/tenants/pending", label: "Approvals", icon: "how_to_reg", priority: "primary" },
   { href: "/admin/quotes", label: "Quote Audit", icon: "receipt_long", priority: "primary" },

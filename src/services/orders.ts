@@ -5,6 +5,7 @@ import { assertPlanFeature } from "@/src/stripe/plans";
 import { dispatchCustomKingOrder, type CustomKingSpecs } from "@/lib/customking-api";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 import { generateAndStoreQuotePdf } from "@/src/services/quote-pdf";
+import { sendEmail } from "@/lib/mailer";
 
 export type OrderTimelineStep = {
   status: OrderStatus | "SUBMITTED" | "CK_ORDER_PLACED" | "CANCELLED";
@@ -232,6 +233,24 @@ export async function submitOrder(params: {
 
     return createdOrder;
   });
+
+  try {
+    const ordersEmail = process.env.CUSTOMKING_ORDERS_EMAIL || "orders@customkingnyc.com";
+    await sendEmail({
+      to: ordersEmail,
+      subject: `[Azzure Orders] New Order Submitted: ${order.orderNumber}`,
+      text: `A new manufacturing order (${order.orderNumber}) has been submitted by ${company.name}.`,
+      html: `
+        <h2>New Manufacturing Order Submitted</h2>
+        <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+        <p><strong>Tenant:</strong> ${company.name}</p>
+        <p><strong>Quote ID:</strong> ${quote.quoteNumber}</p>
+        <p>Please check the admin console for full details.</p>
+      `
+    });
+  } catch (err) {
+    console.error("Failed to send order notification email", err);
+  }
 
   // Automatically dispatch to Custom King right away. If this fails (network
   // issue, CK API down, etc.) the order stays SUBMITTED and Azzure staff can
