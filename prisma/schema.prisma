@@ -334,6 +334,7 @@ model Quote {
   renderingModel        String?
   renderingError        String?
   renderingCreatedAt    DateTime?
+  notes                 String?
   createdAt             DateTime        @default(now())
   company               Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   analysis              AiAnalysis?     @relation(fields: [analysisId], references: [id])

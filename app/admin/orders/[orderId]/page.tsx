@@ -156,11 +156,12 @@ export default async function AdminOrderPage({ params }: OrderPageProps) {
               </div>
             </div>
 
-            {order.notes ? (
+            {(order.notes || quote?.notes) ? (
               <div className="detailCard" style={{ background: "#F8FAFC" }}>
-                <span>Order Notes / Instructions</span>
-                <p style={{ margin: "4px 0 0", fontSize: "14px", color: "#334155", lineHeight: 1.5 }}>
-                  {order.notes}
+                <span>Order & Quote Notes / Instructions</span>
+                <p style={{ margin: "4px 0 0", fontSize: "14px", color: "#334155", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                  {quote?.notes ? `[Jeweler Quote Notes]:\n${quote.notes}\n\n` : ""}
+                  {order.notes ? `[Order Notes]:\n${order.notes}` : ""}
                 </p>
               </div>
             ) : null}

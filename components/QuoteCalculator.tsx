@@ -298,6 +298,7 @@ export default function QuoteCalculator({
   companyName,
   companyLogoUrl,
   assignedCompanyId,
+  showAllTiers = false,
   canShareQuoteLink = false,
   canPlaceManufacturingOrder = false,
   canDownloadPdf = false

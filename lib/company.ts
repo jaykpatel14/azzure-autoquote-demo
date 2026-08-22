@@ -346,15 +346,17 @@ export async function requireAdminSalesContext(companyId: string) {
           accountStatus: "APPROVED",
           pricingTier: "TIER_2",
           customerMarginPct: 0,
-          subscription: {
-            create: {
-              status: "active",
-              plan: "growth",
-              stripeCustomerId: "internal",
-              stripeSubscriptionId: "internal",
-              onboardingComplete: true
+            subscription: {
+              create: {
+                status: "ACTIVE",
+                plan: { connect: { code: "growth" } },
+                stripeCustomerId: "internal",
+                stripeSubscriptionId: "internal",
+                onboardingComplete: true,
+                currentPeriodStart: new Date(),
+                currentPeriodEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 10))
+              }
             }
-          }
         },
         select: COMPANY_SELECT
       });

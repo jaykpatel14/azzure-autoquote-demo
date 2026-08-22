@@ -107,6 +107,7 @@ export async function getAdminOrder(orderId: string) {
           makingPrice: true,
           estimatedSellingPrice: true,
           estimatedPrice: true,
+          notes: true,
           renderingStorageKey: true,
           renderingDataUrl: true,
           analysis: {

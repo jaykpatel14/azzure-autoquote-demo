@@ -280,7 +280,8 @@ export async function createQuote(
             pricingTierSnapshot: input.pricingTierSnapshot ?? null,
             tierDivisorSnapshot: input.tierDivisorSnapshot ?? null,
             estimatedSellingPrice: input.estimatedSellingPrice ?? null,
-            isOverage: Boolean(usage && usage.used > usage.limit)
+            isOverage: Boolean(usage && usage.used > usage.limit),
+            notes: input.notes ?? null
           }
         });
       });

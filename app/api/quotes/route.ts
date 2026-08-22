@@ -52,12 +52,14 @@ export async function POST(request: Request) {
     }
     const input = quoteSchema.parse(body);
     const company = companyContext.company;
-    let allowCustomPricing = false;
-    
+    let features;
     if (assignedCompanyId !== "INTERNAL") {
-      const { features } = await getCompanyPlanFeatures(company.id);
-      allowCustomPricing = features.canUseCustomPricingProfile;
+      const plan = await getCompanyPlanFeatures(company.id);
+      features = plan.features;
+    } else {
+      features = { canGenerateAIImages: true, canUseCustomPricingProfile: true } as any;
     }
+    const allowCustomPricing = features.canUseCustomPricingProfile;
 
     if (!company.pricingTier) {
       throw new CompanyAccessError("Your account does not have a pricing tier assigned.");
