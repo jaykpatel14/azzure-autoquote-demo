@@ -155,7 +155,25 @@ async function buildMetalsDevUrl() {
   return url;
 }
 
+// Global promise to prevent thundering herd API requests when Next.js prefetches multiple pages concurrently
+let pendingLivePricingPromise: Promise<ResolvedMetalPricing> | null = null;
+
 export async function resolveMetalPricing(
+  pricingProfile?: Partial<PricingProfileInput> | null
+): Promise<ResolvedMetalPricing> {
+  if (pendingLivePricingPromise) {
+    return pendingLivePricingPromise;
+  }
+
+  const promise = doResolveMetalPricing(pricingProfile).finally(() => {
+    pendingLivePricingPromise = null;
+  });
+
+  pendingLivePricingPromise = promise;
+  return promise;
+}
+
+async function doResolveMetalPricing(
   pricingProfile?: Partial<PricingProfileInput> | null
 ): Promise<ResolvedMetalPricing> {
   const masterKeys = {
