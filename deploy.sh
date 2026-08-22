@@ -33,6 +33,10 @@ aws ecr get-login-password --region "${AWS_REGION}" |
     --username AWS \
     --password-stdin "${ECR_REGISTRY}"
 
+echo "Pruning unused Docker images to free up disk space..."
+
+docker image prune -af --filter "until=24h" || true
+
 echo "Pulling application image..."
 docker pull "${APP_IMAGE}"
 
