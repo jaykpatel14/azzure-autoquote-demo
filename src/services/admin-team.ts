@@ -6,7 +6,8 @@ export type AdminUserRole =
   | "SUPER_ADMIN"
   | "OPERATIONS_MANAGER"
   | "ESTIMATOR_ADMIN"
-  | "SUPPORT_ADMIN"`r`n  | "SALESMAN";
+  | "SUPPORT_ADMIN"
+  | "SALESMAN";
 
 export type AdminUserSummary = {
   id: string;
