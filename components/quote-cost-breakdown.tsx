@@ -70,3 +70,26 @@ export function CompactQuoteCostBreakdown({ breakdown }: { breakdown: MakingPric
     </div>
   );
 }
+
+export function RestrictedQuoteCostBreakdown({ breakdown }: { breakdown: MakingPriceBreakdown }) {
+  return (
+    <section className="card" style={{ marginTop: 20 }}>
+      <div className="sectionHeader">
+        <div>
+          <p className="eyebrow">Cost overview</p>
+          <h2>Pricing</h2>
+        </div>
+      </div>
+      <div className="detailStack">
+        <div className="detailRow">
+          <span>Manufacturing cost</span>
+          <strong>{money(breakdown.makingPrice)}</strong>
+        </div>
+        <div className="quotePreview">
+          <span className="muted small">Final customer price</span>
+          <strong className="quotePrice">{money(breakdown.estimatedSellingPrice)}</strong>
+        </div>
+      </div>
+    </section>
+  );
+}

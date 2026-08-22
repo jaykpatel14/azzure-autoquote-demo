@@ -10,7 +10,7 @@ import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { deriveQuoteStatus, getBrandedQuotePublicUrl, getQuotePublicUrl, getQuote } from "@/src/services/quotes";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
-import { QuoteCostBreakdown } from "@/components/quote-cost-breakdown";
+import { QuoteCostBreakdown, RestrictedQuoteCostBreakdown } from "@/components/quote-cost-breakdown";
 import type { MakingPriceBreakdown } from "@/src/services/pricing";
 
 function formatCurrency(value: number) {
@@ -223,7 +223,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
           ) : null}
         </article>
       </section>
-      {costBreakdown ? (canSeeFullPricing(context.membership?.role) ? <QuoteCostBreakdown breakdown={costBreakdown} /> : <section className="card" style={{ marginTop: 20 }}><div className="sectionHeader"><div><p className="eyebrow">Cost overview</p><h2>Pricing</h2></div></div><div className="detailStack"><div className="detailRow"><span>Manufacturing cost</span><strong>{money(costBreakdown.makingPrice)}</strong></div><div className="quotePreview"><span className="muted small">Final customer price</span><strong className="quotePrice">{money(costBreakdown.estimatedSellingPrice)}</strong></div></div></section>) : (
+      {costBreakdown ? (canSeeFullPricing(context.membership?.role) ? <QuoteCostBreakdown breakdown={costBreakdown} /> : <RestrictedQuoteCostBreakdown breakdown={costBreakdown} />) : (
         <section className="card" style={{ marginTop: 20 }}>
           <p className="muted">A detailed cost breakdown is not available for this legacy quote.</p>
         </section>
