@@ -9,7 +9,7 @@ const createSchema = z.object({
   name: z.string().trim().optional(),
   email: z.string().trim().email(),
   password: z.string().min(8, "Password must be at least 8 characters."),
-  adminRole: z.enum(["SUPER_ADMIN", "OPERATIONS_MANAGER", "ESTIMATOR_ADMIN", "SUPPORT_ADMIN"]).default("OPERATIONS_MANAGER")
+  adminRole: z.enum(["SUPER_ADMIN", "OPERATIONS_MANAGER", "ESTIMATOR_ADMIN", "SUPPORT_ADMIN", "SALESMAN"]).default("OPERATIONS_MANAGER")
 });
 
 export async function GET() {
