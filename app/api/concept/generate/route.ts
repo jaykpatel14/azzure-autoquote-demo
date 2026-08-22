@@ -25,6 +25,7 @@ import { assertPlanFeature, PlanError } from "@/src/stripe/plans";
 export const runtime = "nodejs";
 
 const conceptRequestSchema = z.object({
+  assignedCompanyId: z.string().nullable().optional(),
   prompt: z.string().trim().min(3).max(2000),
   metalType: z.enum(METAL_TYPES).default("14K"),
   customerNotes: z.string().trim().max(1000).optional()
@@ -61,38 +62,42 @@ function extractSpecsFromPromptText(prompt: string, metalType: string) {
   let settingType = "prong";
   if (lower.includes("bezel")) settingType = "bezel";
   else if (lower.includes("halo")) settingType = "halo";
-  else if (lower.includes("pavé") || lower.includes("pave")) settingType = "pave";
-  else if (lower.includes("channel")) settingType = "channel";
   else if (lower.includes("tension")) settingType = "tension";
 
-  // Detect Side Diamonds
+  // Side Stones
+  let hasSideStones = false;
   let sideQuantity = 0;
   let sideCarats = 0.0;
-  if (lower.includes("halo") || lower.includes("pavé") || lower.includes("pave") || lower.includes("side stone") || lower.includes("accent")) {
-    sideQuantity = lower.includes("hidden halo") ? 14 : lower.includes("halo") ? 20 : 16;
-    sideCarats = Number((sideQuantity * 0.02).toFixed(2));
-  } else if (lower.includes("three-stone") || lower.includes("3 stone") || lower.includes("3-stone")) {
+  if (lower.includes("halo")) {
+    hasSideStones = true;
+    sideQuantity = 24;
+    sideCarats = 0.5;
+  } else if (lower.includes("three stone") || lower.includes("3 stone")) {
+    hasSideStones = true;
     sideQuantity = 2;
-    sideCarats = Number((centerCarats * 0.5).toFixed(2));
+    sideCarats = centerCarats * 0.5;
+  } else if (lower.includes("pave") || lower.includes("pavé")) {
+    hasSideStones = true;
+    sideQuantity = 14;
+    sideCarats = 0.35;
+  } else if (lower.includes("side stones") || lower.includes("accent")) {
+    hasSideStones = true;
+    sideQuantity = 2;
+    sideCarats = 0.5;
   }
 
-  // Detect Metal Weight
-  let metalWeight = 3.8;
-  if (metalType === "Platinum") metalWeight = 5.6;
-  else if (lower.includes("chunky") || lower.includes("wide band") || lower.includes("mens") || lower.includes("men's")) metalWeight = 7.5;
-  else if (lower.includes("delicate") || lower.includes("thin band") || lower.includes("dainty")) metalWeight = 2.8;
-
-  // Detect Jewelry Type
-  let jewelryType = "Ring";
-  if (lower.includes("necklace") || lower.includes("pendant")) jewelryType = "Necklace";
-  else if (lower.includes("earring") || lower.includes("stud")) jewelryType = "Earrings";
-  else if (lower.includes("bracelet") || lower.includes("bangle")) jewelryType = "Bracelet";
-
+  // Bands & Tone
   const hasWeddingBand = lower.includes("bridal set") || lower.includes("wedding band") || lower.includes("matching band");
-  const isTwoTone = lower.includes("two tone") || lower.includes("two-tone");
+  const isTwoTone = lower.includes("two tone") || lower.includes("two-tone") || lower.includes("mixed metal");
+
+  // Metal Weight Approximation
+  let metalWeight = 4.0;
+  if (centerCarats > 2.0) metalWeight += 1.5;
+  if (hasSideStones) metalWeight += 1.0;
+  if (hasWeddingBand) metalWeight += 3.0;
 
   return {
-    jewelryType,
+    jewelryType: "Ring",
     centerShape: shape,
     centerDiamondCarats: centerCarats,
     settingType,
@@ -108,18 +113,28 @@ export async function POST(request: Request) {
   let reservation: { usagePeriodId: string; isOverage: boolean } | undefined;
 
   try {
-    const companyContext = await requireCompanyContext();
+    const body = await request.json();
+    const { assignedCompanyId, prompt, metalType, customerNotes } = conceptRequestSchema.parse(body);
+
+    let companyContext;
+    if (assignedCompanyId) {
+      const { requireAdminSalesContext } = await import("@/lib/company");
+      companyContext = await requireAdminSalesContext(assignedCompanyId) as any;
+    } else {
+      companyContext = await requireCompanyContext();
+    }
+
     if (!canCreateQuotes(companyContext.membership?.role ?? "CUSTOMER")) {
       throw new CompanyAccessError("You do not have permission to create estimates.");
     }
     if (companyContext.company.accountStatus !== "APPROVED" || !companyContext.company.pricingTier) {
       throw new CompanyAccessError("Account approval and a pricing tier are required to create quotes.");
     }
-    assertBillableSubscription(companyContext.company.subscription);
-    await assertPlanFeature(companyContext.company.id, "canGenerateAIImages");
-
-    const body = await request.json();
-    const { prompt, metalType, customerNotes } = conceptRequestSchema.parse(body);
+    
+    if (assignedCompanyId !== "INTERNAL") {
+      assertBillableSubscription(companyContext.company.subscription);
+      await assertPlanFeature(companyContext.company.id, "canGenerateAIImages");
+    }
 
     reservation = await reserveMonthlyUsage(companyContext.company.id);
 

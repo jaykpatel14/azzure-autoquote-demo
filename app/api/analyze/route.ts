@@ -67,8 +67,9 @@ export async function POST(request: Request) {
     if (companyContext.company.accountStatus !== "APPROVED" || !companyContext.company.pricingTier) {
       throw new CompanyAccessError("Account approval and a pricing tier are required to create quotes.");
     }
-    assertBillableSubscription(companyContext.company.subscription);
-    
+    if (assignedCompanyId !== "INTERNAL") {
+      assertBillableSubscription(companyContext.company.subscription);
+    }
     const rawImages = [
       ...form.getAll("images"),
       ...form.getAll("image"),

@@ -332,10 +332,39 @@ export async function requireAdminSalesContext(companyId: string) {
     throw new CompanyAccessError("Not authorized to assign quotes as an admin.");
   }
 
-  const company = await prisma.company.findUnique({
-    where: { id: companyId },
-    select: COMPANY_SELECT
-  });
+  let company;
+  if (companyId === "INTERNAL") {
+    company = await prisma.company.findFirst({
+      where: { name: "Azzure Internal" },
+      select: COMPANY_SELECT
+    });
+    if (!company) {
+      company = await prisma.company.create({
+        data: {
+          name: "Azzure Internal",
+          slug: "azzure-internal",
+          accountStatus: "APPROVED",
+          pricingTier: "TIER_2",
+          customerMarginPct: 0,
+          subscription: {
+            create: {
+              status: "active",
+              plan: "growth",
+              stripeCustomerId: "internal",
+              stripeSubscriptionId: "internal",
+              onboardingComplete: true
+            }
+          }
+        },
+        select: COMPANY_SELECT
+      });
+    }
+  } else {
+    company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: COMPANY_SELECT
+    });
+  }
 
   if (!company) {
     throw new CompanyAccessError("Invalid target company.");

@@ -97,7 +97,8 @@ type QuoteCalculatorProps = {
     assumptions: string[] | null;
   };
   companyName?: string;
-  assignedCompanyId?: string;
+  assignedCompanyId?: string | null;
+  showAllTiers?: boolean;
   companyLogoUrl?: string | null;
   canShareQuoteLink?: boolean;
   canPlaceManufacturingOrder?: boolean;
@@ -2331,9 +2332,28 @@ export default function QuoteCalculator({
             {/* Live Quote Price */}
             <div className="quotePreviewPriceBlock">
               <p className="eyebrow" style={{ marginBottom: 4 }}>Live Estimate</p>
-              <div className="quotePrice" style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}>
-                {formatCurrency(estimatedSellingPrice)}
-              </div>
+              {showAllTiers && costBreakdown && (costBreakdown as any).subtotal ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginTop: "12px", marginBottom: "16px" }}>
+                  {(["TIER_1", "TIER_2", "TIER_3"] as const).map(tier => {
+                    const tierResult = calculateTierPrice((costBreakdown as any).subtotal, tier, 0);
+                    return (
+                      <div key={tier} style={{ background: "var(--color-surface-container)", padding: "16px", borderRadius: "8px", border: "1px solid var(--color-outline)", textAlign: "center" }}>
+                        <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--color-primary)", marginBottom: "4px" }}>
+                          {tier.replace('_', ' ')}
+                        </div>
+                        <div style={{ fontSize: "1.5rem", fontWeight: 700 }}>
+                          {formatCurrency(tierResult.estimatedSellingPrice)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="quotePrice" style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}>
+                  {formatCurrency(estimatedSellingPrice)}
+                </div>
+              )}
+              
               {aggregateQuote ? (
                 <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-primary)", margin: "8px 0", background: "var(--color-surface-container)", padding: "6px 12px", borderRadius: "var(--radius-sm)", borderLeft: "3px solid var(--color-primary)" }}>
                   {metalType} · {aggregateQuote.centerDiamondCarats > 0 ? `${aggregateQuote.centerDiamondCarats.toFixed(2)}ct ${aggregateQuote.centerShape || "Diamond"}` : "No Center Stone"}{aggregateQuote.sideDiamondQuantity > 0 ? ` · ${aggregateQuote.sideDiamondCarats.toFixed(2)}ct Side (${aggregateQuote.sideDiamondQuantity}×)` : ""}{aggregateQuote.hasWeddingBand ? " + Band" : ""}{aggregateQuote.isTwoTone ? " (Two-Tone)" : ""} {aggregateQuote.jewelryType || "Ring"}
@@ -2342,7 +2362,7 @@ export default function QuoteCalculator({
               <div className="quoteMeta" style={{ marginTop: 12 }}>
                 <div>
                   <span>Customer</span>
-                  <strong>{customerName || "Unassigned"}</strong>
+                  <strong>{customerName || (showAllTiers ? "Global (Unassigned)" : "Unassigned")}</strong>
                 </div>
                 <div>
                   <span>Metal</span>

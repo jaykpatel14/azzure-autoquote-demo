@@ -38,6 +38,7 @@ export function AdminSalesQuotingContainer({
     source: string;
   };
 }) {
+  const [mode, setMode] = useState<"GLOBAL" | "TENANT">("GLOBAL");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
 
   const selectedCompany = companies.find(c => c.id === selectedCompanyId);
@@ -64,27 +65,59 @@ export function AdminSalesQuotingContainer({
   return (
     <div className="flex-col gap-6" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <section className="card" style={{ padding: "24px" }}>
-        <div className="sectionHeader" style={{ marginBottom: "16px" }}>
+        <div className="sectionHeader" style={{ marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <h2>Select a Tenant</h2>
-            <p className="muted small">Choose the tenant to create this quote for. The system will apply their specific tier pricing markup automatically.</p>
+            <h2>Quoting Mode</h2>
+            <p className="muted small">
+              {mode === "GLOBAL" 
+                ? "Global Calculator: Create a quote from scratch and compare pricing across all tiers simultaneously."
+                : "Assign to Tenant: Choose a tenant to apply their specific tier pricing markup automatically."}
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: "8px", background: "var(--surface-color)", padding: "4px", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+            <button 
+              className={`button button--sm ${mode === "GLOBAL" ? "primary" : "secondary"}`}
+              onClick={() => setMode("GLOBAL")}
+            >
+              Global Calculator
+            </button>
+            <button 
+              className={`button button--sm ${mode === "TENANT" ? "primary" : "secondary"}`}
+              onClick={() => setMode("TENANT")}
+            >
+              Assign to Tenant
+            </button>
           </div>
         </div>
         
-        <select 
-          className="input" 
-          value={selectedCompanyId} 
-          onChange={(e) => setSelectedCompanyId(e.target.value)}
-          style={{ maxWidth: "400px" }}
-        >
-          <option value="" disabled>-- Select Tenant --</option>
-          {companies.map(c => (
-            <option key={c.id} value={c.id}>{c.name} {c.subscription?.status === 'TRIALING' ? '(Trial)' : ''}</option>
-          ))}
-        </select>
+        {mode === "TENANT" && (
+          <select 
+            className="input" 
+            value={selectedCompanyId} 
+            onChange={(e) => setSelectedCompanyId(e.target.value)}
+            style={{ maxWidth: "400px", marginTop: "12px" }}
+          >
+            <option value="" disabled>-- Select Tenant --</option>
+            {companies.map(c => (
+              <option key={c.id} value={c.id}>{c.name} {c.subscription?.status === 'TRIALING' ? '(Trial)' : ''}</option>
+            ))}
+          </select>
+        )}
       </section>
 
-      {selectedCompany ? (
+      {mode === "GLOBAL" ? (
+        <QuoteCalculator
+          canEdit={true}
+          companyName="Global Estimate"
+          pricingTier="TIER_2"
+          customerMarginPct={0}
+          cadCost={cadCost}
+          pricingProfile={livePricing.pricingProfile}
+          pricingSourceLabel="Creating global estimate as Sales admin"
+          showAllTiers={true}
+          assignedCompanyId="INTERNAL"
+        />
+      ) : selectedCompany ? (
         <QuoteCalculator
           canEdit={true}
           companyName={selectedCompany.name}

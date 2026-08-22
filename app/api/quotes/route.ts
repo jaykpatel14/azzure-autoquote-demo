@@ -35,8 +35,12 @@ export async function POST(request: Request) {
     } else {
       companyContext = await requireCompanyContext();
     }
-    assertBillableSubscription(companyContext.company.subscription);
-    await assertPlanFeature(companyContext.company.id, "canCreateQuotes");
+
+    if (assignedCompanyId !== "INTERNAL") {
+      assertBillableSubscription(companyContext.company.subscription);
+      await assertPlanFeature(companyContext.company.id, "canCreateQuotes");
+    }
+    
     if (!canCreateQuotes(companyContext.membership?.role ?? "CUSTOMER")) {
       throw new CompanyAccessError("You do not have permission to create quotes.");
     }
@@ -46,10 +50,14 @@ export async function POST(request: Request) {
     if (!isCompanyApproved(companyContext.company)) {
       throw new CompanyAccessError("Your account is pending approval. You cannot create quotes yet.");
     }
-    const input = quoteSchema.parse(await request.json());
+    const input = quoteSchema.parse(body);
     const company = companyContext.company;
-    const { features } = await getCompanyPlanFeatures(company.id);
-    const allowCustomPricing = features.canUseCustomPricingProfile;
+    let allowCustomPricing = false;
+    
+    if (assignedCompanyId !== "INTERNAL") {
+      const { features } = await getCompanyPlanFeatures(company.id);
+      allowCustomPricing = features.canUseCustomPricingProfile;
+    }
 
     if (!company.pricingTier) {
       throw new CompanyAccessError("Your account does not have a pricing tier assigned.");
