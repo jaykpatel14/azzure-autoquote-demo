@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { generateUniqueQuotePrefix } from "@/lib/quote-number";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
 import { DEFAULT_TRIAL_QUOTE_CAP, TRIAL_DAYS, isPlanCode } from "@/lib/subscription-plans";
 import { generateToken } from "@/lib/tokens";
@@ -45,11 +46,14 @@ export async function onboardCompanyOwner(
   const periodStart = now;
   const periodEnd = trialEndsAt;
 
+  const quotePrefix = await generateUniqueQuotePrefix(tx, input.companyName);
+
   const company = await tx.company.create({
     data: {
       name: input.companyName,
       slug: slugifyCompanyName(input.companyName),
       quoteSequence: 0,
+      quotePrefix,
       accountStatus: "PENDING_APPROVAL",
       pricingTier: null,
       pricingProfile: { create: {} }

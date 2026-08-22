@@ -1,4 +1,5 @@
 import type { MembershipRole, Prisma, PrismaClient, SubscriptionStatus } from "@prisma/client";
+import { generateUniqueQuotePrefix } from "@/lib/quote-number";
 import { getEffectiveMonthlyLimit } from "@/lib/billing";
 import { generateToken } from "@/lib/tokens";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
@@ -147,11 +148,14 @@ export async function createAdminCompanyWithMember(
 ) {
   const companySlug = await findUniqueCompanySlug(client, input.companyName, input.companySlug);
 
+  const quotePrefix = await generateUniqueQuotePrefix(client, input.name || "Unknown");
+
   const company = await client.company.create({
     data: {
       name: input.companyName.trim(),
       slug: companySlug,
       quoteSequence: 0,
+      quotePrefix,
       pricingProfile: { create: {} }
     }
   });

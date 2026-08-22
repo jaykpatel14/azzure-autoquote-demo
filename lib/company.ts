@@ -84,6 +84,7 @@ const COMPANY_SELECT = {
   showroomBackgroundFit: true,
   showroomBackgroundPosition: true,
   showroomPanelOpacity: true,
+  quotePrefix: true,
   quoteSequence: true,
   accountStatus: true,
   pricingTier: true,
