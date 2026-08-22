@@ -38,6 +38,8 @@ type QuoteDetailPageProps = {
   }>;
 };
 
+function money(value: unknown) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value ?? 0)); }
+
 export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) {
   const context = await getAuthenticatedCompanyContext();
   if (!context) {
