@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { getInternalAdminUsers } from "@/src/services/admin-team";
 import { AdminCreateUserModal } from "@/components/admin-create-user-modal";
 
@@ -35,13 +35,15 @@ export default async function AdminTeamPage() {
     redirect("/signin");
   }
 
+  requireAdminRouteAccess("/admin/team", context.user.adminRole as any);
+
   const users = await getInternalAdminUsers();
 
   return (
     <InternalAdminShell
       title="Backend Staff & Admin Users"
       description="Manage internal staff accounts who can work on customer orders, dispatch manufacturing jobs, and audit quotes."
-      navItems={getInternalAdminNav("/admin/team")}
+      navItems={getInternalAdminNav("/admin/team", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <AdminCreateUserModal />

@@ -68,50 +68,51 @@ enum PricingTier {
 }
 
 model Company {
-  id              String           @id @default(cuid())
-  name            String
-  slug            String           @unique
-  logoUrl         String?
-  websiteUrl      String?
-  aboutUs         String?
-  primaryColor    String?
-  showroomBackgroundColor String?
-  showroomBackgroundMediaKey String?
+  id                          String           @id @default(cuid())
+  name                        String
+  slug                        String           @unique
+  logoUrl                     String?
+  websiteUrl                  String?
+  aboutUs                     String?
+  primaryColor                String?
+  showroomBackgroundColor     String?
+  showroomBackgroundMediaKey  String?
   showroomBackgroundMediaType String?
-  showroomOverlayColor String?
-  showroomOverlayOpacity Int?
-  showroomTextColor String?
-  showroomBackgroundFit String?
-  showroomBackgroundPosition String?
-  showroomPanelOpacity Int?
-  quoteSequence   Int              @default(0)
-  accountStatus   AccountStatus    @default(PENDING_APPROVAL)
-  pricingTier     PricingTier?
-  customerMarginPct Float          @default(0)
-  ckCustomerVerified Boolean        @default(false)
-  ckCustomerVerifiedAt DateTime?
-  ckCustomerVerifiedBy String?
-  ckCustomerRevokedAt DateTime?
-  ckCustomerNotes  String?
-  approvedAt      DateTime?
-  approvedBy      String?
-  tierChangedAt   DateTime?
-  tierChangedBy   String?
-  suspendedAt     DateTime?
-  suspendedReason String?
-  adminNotes      String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  memberships     Membership[]
-  subscription    Subscription?
-  pricingProfile  PricingProfile?
-  analyses        AiAnalysis[]
-  quotes          Quote[]
-  orders          Order[]
-  usagePeriods    UsagePeriod[]
-  auditLogs       AuditLog[]
-  showroomSession ShowroomSession?
-  showroomQuotes  ShowroomQuote[]
+  showroomOverlayColor        String?
+  showroomOverlayOpacity      Int?
+  showroomTextColor           String?
+  showroomBackgroundFit       String?
+  showroomBackgroundPosition  String?
+  showroomPanelOpacity        Int?
+  quotePrefix                 String?          @unique
+  quoteSequence               Int              @default(0)
+  accountStatus               AccountStatus    @default(PENDING_APPROVAL)
+  pricingTier                 PricingTier?
+  customerMarginPct           Float            @default(0)
+  ckCustomerVerified          Boolean          @default(false)
+  ckCustomerVerifiedAt        DateTime?
+  ckCustomerVerifiedBy        String?
+  ckCustomerRevokedAt         DateTime?
+  ckCustomerNotes             String?
+  approvedAt                  DateTime?
+  approvedBy                  String?
+  tierChangedAt               DateTime?
+  tierChangedBy               String?
+  suspendedAt                 DateTime?
+  suspendedReason             String?
+  adminNotes                  String?
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @updatedAt
+  memberships                 Membership[]
+  subscription                Subscription?
+  pricingProfile              PricingProfile?
+  analyses                    AiAnalysis[]
+  quotes                      Quote[]
+  orders                      Order[]
+  usagePeriods                UsagePeriod[]
+  auditLogs                   AuditLog[]
+  showroomSession             ShowroomSession?
+  showroomQuotes              ShowroomQuote[]
 }
 
 model AppSetting {
@@ -125,22 +126,22 @@ model AppSetting {
 }
 
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  name         String?
-  avatarUrl    String?
-  passwordHash String?
-  emailVerifiedAt DateTime?
-  sessionVersion Int       @default(0)
-  isInternalAdmin Boolean   @default(false)
-  adminRole    String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  memberships  Membership[]
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  name                    String?
+  avatarUrl               String?
+  passwordHash            String?
+  emailVerifiedAt         DateTime?
+  sessionVersion          Int                      @default(0)
+  isInternalAdmin         Boolean                  @default(false)
+  adminRole               String?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  memberships             Membership[]
   emailVerificationTokens EmailVerificationToken[]
-  passwordResetTokens PasswordResetToken[]
-  auditLogs     AuditLog[] @relation("AuditLogActor")
-  updatedAppSettings AppSetting[]
+  passwordResetTokens     PasswordResetToken[]
+  auditLogs               AuditLog[]               @relation("AuditLogActor")
+  updatedAppSettings      AppSetting[]
 }
 
 model Membership {
@@ -155,15 +156,15 @@ model Membership {
 }
 
 model Plan {
-  id               String         @id @default(cuid())
-  code             String         @unique
-  name             String
+  id                String         @id @default(cuid())
+  code              String         @unique
+  name              String
   monthlyPriceCents Int
-  monthlyLimit     Int
-  isConfigurable   Boolean        @default(false)
-  stripeProductId  String?
-  stripePriceId    String?
-  subscriptions    Subscription[]
+  monthlyLimit      Int
+  isConfigurable    Boolean        @default(false)
+  stripeProductId   String?
+  stripePriceId     String?
+  subscriptions     Subscription[]
 }
 
 model Subscription {
@@ -207,31 +208,31 @@ model UsagePeriod {
 }
 
 model PricingProfile {
-  id                    String   @id @default(cuid())
-  companyId             String   @unique
-  goldSpotPerOz          Decimal  @default(4500)
-  platinumSpotPerOz      Decimal  @default(2000)
-  silverSpotPerOz        Decimal  @default(100)
-  cadCharge              Decimal  @default(25)
-  centerSettingPerCarat  Decimal  @default(15)
-  sideSettingPerStone    Decimal  @default(3)
-  sellingMarginDivisor   Decimal  @default(0.70)
-  finalMultiplier        Decimal  @default(2)
-  company                Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id                    String  @id @default(cuid())
+  companyId             String  @unique
+  goldSpotPerOz         Decimal @default(4500)
+  platinumSpotPerOz     Decimal @default(2000)
+  silverSpotPerOz       Decimal @default(100)
+  cadCharge             Decimal @default(25)
+  centerSettingPerCarat Decimal @default(15)
+  sideSettingPerStone   Decimal @default(3)
+  sellingMarginDivisor  Decimal @default(0.70)
+  finalMultiplier       Decimal @default(2)
+  company               Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
 model AiAnalysis {
-  id                    String         @id @default(cuid())
+  id                    String          @id @default(cuid())
   companyId             String
-  provider              String         @default("openai")
-  model                 String         @default("gpt-5-mini")
-  modelVersion          String         @default("gpt-5-mini")
-  promptVersion         String         @default("jewelry-analysis-v1")
+  provider              String          @default("openai")
+  model                 String          @default("gpt-5-mini")
+  modelVersion          String          @default("gpt-5-mini")
+  promptVersion         String          @default("jewelry-analysis-v1")
   imageDataUrl          String?
   sourceImageStorageKey String?
   sourceImageMimeType   String?
   sourceImageSizeBytes  Int?
-  status                AnalysisStatus @default(PENDING)
+  status                AnalysisStatus  @default(PENDING)
   selectedMetal         String
   jewelryType           String?
   centerShape           String?
@@ -239,9 +240,9 @@ model AiAnalysis {
   settingType           String?
   assumptions           Json?
   moderationModel       String?
-  moderationFlagged     Boolean        @default(false)
+  moderationFlagged     Boolean         @default(false)
   moderationResult      Json?
-  reviewCount           Int            @default(3)
+  reviewCount           Int             @default(3)
   metalWeightGrams      Decimal?
   centerDiamondCarats   Decimal?
   sideDiamondCarats     Decimal?
@@ -257,48 +258,48 @@ model AiAnalysis {
   renderingModel        String?
   renderingError        String?
   renderingCreatedAt    DateTime?
-  createdAt             DateTime       @default(now())
+  createdAt             DateTime        @default(now())
   completedAt           DateTime?
-  company               Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company               Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   attempts              AiAttempt[]
   quote                 Quote?
 }
 
 model AiAttempt {
-  id                    String     @id @default(cuid())
-  analysisId            String
-  attemptNumber         Int
-  provider              String     @default("openai")
-  model                 String     @default("gpt-5-mini")
-  modelVersion          String     @default("gpt-5-mini")
-  promptVersion         String     @default("jewelry-analysis-v1")
-  responseId            String?
-  retryCount            Int        @default(0)
-  latencyMs             Int        @default(0)
-  promptTokens          Int?
-  completionTokens      Int?
-  totalTokens           Int?
-  metalWeightGrams      Decimal?
-  centerDiamondCarats   Decimal?
-  sideDiamondCarats     Decimal?
-  sideDiamondQuantity   Int?
-  confidence            String?
-  notes                 String?
-  output                Json?
-  rawResponse           Json?
-  errorMessage          String?
-  errorCode             String?
-  errorType             String?
-  createdAt              DateTime   @default(now())
-  analysis               AiAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  id                  String     @id @default(cuid())
+  analysisId          String
+  attemptNumber       Int
+  provider            String     @default("openai")
+  model               String     @default("gpt-5-mini")
+  modelVersion        String     @default("gpt-5-mini")
+  promptVersion       String     @default("jewelry-analysis-v1")
+  responseId          String?
+  retryCount          Int        @default(0)
+  latencyMs           Int        @default(0)
+  promptTokens        Int?
+  completionTokens    Int?
+  totalTokens         Int?
+  metalWeightGrams    Decimal?
+  centerDiamondCarats Decimal?
+  sideDiamondCarats   Decimal?
+  sideDiamondQuantity Int?
+  confidence          String?
+  notes               String?
+  output              Json?
+  rawResponse         Json?
+  errorMessage        String?
+  errorCode           String?
+  errorType           String?
+  createdAt           DateTime   @default(now())
+  analysis            AiAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
 
   @@unique([analysisId, attemptNumber])
 }
 
 model Quote {
-  id                    String      @id @default(cuid())
+  id                    String          @id @default(cuid())
   companyId             String
-  analysisId            String?     @unique
+  analysisId            String?         @unique
   referenceAnalysisIds  Json?
   order                 Order?
   quoteNumber           String
@@ -313,30 +314,30 @@ model Quote {
   estimatedPrice        Decimal
   makingPrice           Float?
   makingPriceBreakdown  Json?
-  colorClarity          String      @default("E VS1")
-  cadCost               Float       @default(0)
-  customerMarginPct     Float       @default(0)
-  customerMarginAmount  Float       @default(0)
+  colorClarity          String          @default("E VS1")
+  cadCost               Float           @default(0)
+  customerMarginPct     Float           @default(0)
+  customerMarginAmount  Float           @default(0)
   pricingTierSnapshot   PricingTier?
   tierDivisorSnapshot   Decimal?
   estimatedSellingPrice Decimal?
-  publicShareToken      String?     @unique
+  publicShareToken      String?         @unique
   sharedAt              DateTime?
-  isOverage             Boolean     @default(false)
-  pdfStorageKey         String?     @unique
+  isOverage             Boolean         @default(false)
+  pdfStorageKey         String?         @unique
   pdfStoredAt           DateTime?
-  pdfContentType        String?     @default("application/pdf")
+  pdfContentType        String?         @default("application/pdf")
   renderingStatus       RenderingStatus @default(PENDING)
-  renderingStorageKey   String?     @unique
+  renderingStorageKey   String?         @unique
   renderingDataUrl      String?
-  renderingMimeType     String?     @default("image/jpeg")
+  renderingMimeType     String?         @default("image/jpeg")
   renderingModel        String?
   renderingError        String?
   renderingCreatedAt    DateTime?
-  createdAt             DateTime    @default(now())
-  company               Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  analysis              AiAnalysis? @relation(fields: [analysisId], references: [id])
-  showroomQuote          ShowroomQuote?
+  createdAt             DateTime        @default(now())
+  company               Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  analysis              AiAnalysis?     @relation(fields: [analysisId], references: [id])
+  showroomQuote         ShowroomQuote?
 
   @@unique([companyId, quoteNumber])
 }
@@ -371,31 +372,31 @@ model ShowroomQuote {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  companyId       String
-  quoteId         String      @unique
-  orderNumber     String      @unique
-  itemName        String
-  status          OrderStatus @default(SUBMITTED)
-  ckOrderId       String?     @unique
-  ckOrderUrl      String?
-  ckOrderPlacedAt DateTime?
-  ckOrderPlacedBy String?
-  notes           String?
-  submittedAt     DateTime    @default(now())
-  reviewedAt      DateTime?
-  productionAt    DateTime?
-  completedAt     DateTime?
-  completedBy     String?
-  canceledAt      DateTime?
-  cancelledAt     DateTime?
-  cancelledBy     String?
+  id                 String       @id @default(cuid())
+  companyId          String
+  quoteId            String       @unique
+  orderNumber        String       @unique
+  itemName           String
+  status             OrderStatus  @default(SUBMITTED)
+  ckOrderId          String?      @unique
+  ckOrderUrl         String?
+  ckOrderPlacedAt    DateTime?
+  ckOrderPlacedBy    String?
+  notes              String?
+  submittedAt        DateTime     @default(now())
+  reviewedAt         DateTime?
+  productionAt       DateTime?
+  completedAt        DateTime?
+  completedBy        String?
+  canceledAt         DateTime?
+  cancelledAt        DateTime?
+  cancelledBy        String?
   cancellationReason String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  quote           Quote       @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  timeline        OrderEvent[]
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  company            Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  quote              Quote        @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  timeline           OrderEvent[]
 }
 
 model OrderEvent {
@@ -403,7 +404,7 @@ model OrderEvent {
   orderId       String
   status        OrderStatus
   note          String?
-  internalNote   String?
+  internalNote  String?
   createdAt     DateTime    @default(now())
   createdBy     String
   isAdminAction Boolean     @default(false)
@@ -413,25 +414,25 @@ model OrderEvent {
 }
 
 model EmailVerificationToken {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   userId     String
-  tokenHash  String   @unique
+  tokenHash  String    @unique
   expiresAt  DateTime
   consumedAt DateTime?
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
 }
 
 model PasswordResetToken {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   userId     String
-  tokenHash  String   @unique
+  tokenHash  String    @unique
   expiresAt  DateTime
   consumedAt DateTime?
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
 }
@@ -455,12 +456,12 @@ model AuditLog {
 }
 
 model StripeWebhookEvent {
-  id           String   @id @default(cuid())
-  eventId      String   @unique
+  id           String    @id @default(cuid())
+  eventId      String    @unique
   eventType    String
-  livemode     Boolean  @default(false)
+  livemode     Boolean   @default(false)
   payload      Json
   processedAt  DateTime?
   errorMessage String?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { getAdminOverviewData } from "@/src/services/admin-overview";
 import { resolveMetalPricing } from "@/lib/metal-pricing";
 
@@ -52,6 +52,8 @@ export default async function AdminDashboardPage() {
     redirect("/signin");
   }
 
+  requireAdminRouteAccess("/admin", context.user.adminRole as any);
+
   const [overview, livePricing] = await Promise.all([
     getAdminOverviewData(),
     resolveMetalPricing()
@@ -61,7 +63,7 @@ export default async function AdminDashboardPage() {
     <InternalAdminShell
       title="Operations Dashboard"
       description="Monitor platform health, live revenue, and tenant activity across Azzure AI Quote."
-      navItems={getInternalAdminNav("/admin")}
+      navItems={getInternalAdminNav("/admin", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <>

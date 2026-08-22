@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +12,13 @@ export default async function AdminCreateCompanyPage() {
     redirect("/signin");
   }
 
+  requireAdminRouteAccess("/admin/companies", context.user.adminRole as any);
+
   return (
     <InternalAdminShell
       title="Create company"
       description="Provision a new customer tenant and seed its first user from the internal admin console."
-      navItems={getInternalAdminNav("/admin/companies")}
+      navItems={getInternalAdminNav("/admin/companies", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/companies">

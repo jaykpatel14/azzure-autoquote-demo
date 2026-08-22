@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 import { getPricingTierLabel, type MakingPriceBreakdown, calculateMetalCost } from "@/src/services/pricing";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
@@ -94,7 +94,7 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
     <InternalAdminShell
       title={`Quote ${quote.quoteNumber}`}
       description="Internal pricing audit — full cost ledger, margin analysis, and tier mechanics."
-      navItems={getInternalAdminNav("/admin/quotes")}
+      navItems={getInternalAdminNav("/admin/quotes", admin.user.adminRole as any)}
       adminName={admin.user.name || admin.user.email}
       actions={
         <>

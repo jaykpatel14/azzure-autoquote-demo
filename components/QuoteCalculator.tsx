@@ -97,6 +97,7 @@ type QuoteCalculatorProps = {
     assumptions: string[] | null;
   };
   companyName?: string;
+  assignedCompanyId?: string;
   companyLogoUrl?: string | null;
   canShareQuoteLink?: boolean;
   canPlaceManufacturingOrder?: boolean;
@@ -295,6 +296,7 @@ export default function QuoteCalculator({
   initialQuote,
   companyName,
   companyLogoUrl,
+  assignedCompanyId,
   canShareQuoteLink = false,
   canPlaceManufacturingOrder = false,
   canDownloadPdf = false
@@ -482,6 +484,7 @@ export default function QuoteCalculator({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+        assignedCompanyId,
           prompt: textToUse,
           metalType,
           customerNotes: customerNotes || undefined
@@ -820,6 +823,7 @@ export default function QuoteCalculator({
     formData.append("metalType", metal);
     if (description) {
       formData.append("description", description);
+      if (assignedCompanyId) formData.append("assignedCompanyId", assignedCompanyId);
     }
 
     const response = await fetch("/api/analyze", {
@@ -961,6 +965,7 @@ export default function QuoteCalculator({
         const formData = new FormData();
         formData.append("metalType", metalType);
         formData.append("description", description);
+      if (assignedCompanyId) formData.append("assignedCompanyId", assignedCompanyId);
         const response = await fetch("/api/analyze", { method: "POST", body: formData });
         const responseText = await response.text();
         const result = (responseText ? JSON.parse(responseText) : {}) as FacetOutput;
@@ -1035,6 +1040,8 @@ export default function QuoteCalculator({
       const formData = new FormData();
       formData.append("metalType", metalType);
       if (description) formData.append("description", description);
+      if (assignedCompanyId) formData.append("assignedCompanyId", assignedCompanyId);
+      if (assignedCompanyId) formData.append("assignedCompanyId", assignedCompanyId);
       files.forEach((file) => formData.append("images", file));
 
       const response = await fetch("/api/analyze", { method: "POST", body: formData });
@@ -1161,6 +1168,7 @@ export default function QuoteCalculator({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+        assignedCompanyId,
           analysisId: aggregateQuote.analysisId,
           analysisIds: completedFacets.map((facet) => facet.output?.analysisId).filter(Boolean),
           customerName,
@@ -1258,6 +1266,7 @@ export default function QuoteCalculator({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+        assignedCompanyId,
           analysisId: aggregateQuote.analysisId,
           customerName,
           customerEmail,

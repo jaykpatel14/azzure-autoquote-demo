@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { AdminThumbImage } from "@/components/admin-thumb-image";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { ADMIN_ORDER_STATUSES, getAdminOrders } from "@/src/services/admin-orders";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +17,8 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams?:
   if (!context) {
     redirect("/signin");
   }
+
+  requireAdminRouteAccess("/admin/orders", context.user.adminRole as any);
 
   const data = await getAdminOrders("all");
   const tab = (await searchParams)?.tab ?? "needs-ck";
@@ -39,7 +41,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams?:
     <InternalAdminShell
       title="Manufacturing Order Queue"
       description="Track order status, hand work to production, and test CustomKing dispatches."
-      navItems={getInternalAdminNav("/admin/orders")}
+      navItems={getInternalAdminNav("/admin/orders", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <>

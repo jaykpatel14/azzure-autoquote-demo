@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
   requireCompanyContext,
+  requireAdminSalesContext,
   AuthRequiredError,
   CompanyAccessError,
   canCreateQuotes,
@@ -24,7 +25,16 @@ import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 
 export async function POST(request: Request) {
   try {
-    const companyContext = await requireCompanyContext();
+    
+    const body = await request.json();
+    const assignedCompanyId = body.assignedCompanyId as string | null;
+
+    let companyContext;
+    if (assignedCompanyId) {
+      companyContext = await requireAdminSalesContext(assignedCompanyId) as any;
+    } else {
+      companyContext = await requireCompanyContext();
+    }
     assertBillableSubscription(companyContext.company.subscription);
     await assertPlanFeature(companyContext.company.id, "canCreateQuotes");
     if (!canCreateQuotes(companyContext.membership?.role ?? "CUSTOMER")) {
