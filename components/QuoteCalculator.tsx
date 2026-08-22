@@ -489,7 +489,7 @@ export default function QuoteCalculator({
       });
 
       if (!response.ok) {
-        const errorPayload = await response.json().catch(() => ({}));
+        const errorPayload = await response.clone().json().catch(() => ({}));
         throw new Error(errorPayload.error || "Concept generation failed.");
       }
 
