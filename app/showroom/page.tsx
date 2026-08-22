@@ -4,7 +4,7 @@ import { getActiveShowroom, safeBrandColor } from "@/lib/showroom";
 import { getSettingValue } from "@/lib/app-settings";
 import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricing";
 import ShowroomKiosk from "./showroom-kiosk";
-import { getAuthenticatedCompanyContext } from "@/lib/company";
+import { getAuthenticatedCompanyContext, canAccessShowroomRole } from "@/lib/company";
 import { prisma } from "@/lib/prisma";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 
@@ -50,7 +50,7 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
   if (!session) {
     // Fallback: If no token or invalid token, check if user is authenticated to a company
     const context = await getAuthenticatedCompanyContext().catch(() => null);
-    if (context?.company) {
+    if (context?.company && canAccessShowroomRole(context.membership.role)) {
       session = await resolveOrCreateShowroomSession(context.company.id);
     }
   }

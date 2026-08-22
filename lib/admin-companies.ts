@@ -4,7 +4,7 @@ import { generateToken } from "@/lib/tokens";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
 import { DEFAULT_TRIAL_QUOTE_CAP } from "@/lib/subscription-plans";
 
-const MEMBERSHIP_ROLES: MembershipRole[] = ["OWNER", "ADMIN", "ESTIMATOR", "VIEWER", "CUSTOMER", "MANUFACTURING"];
+const MEMBERSHIP_ROLES: MembershipRole[] = ["OWNER", "ADMIN", "ESTIMATOR", "SALESMAN", "VIEWER", "CUSTOMER", "MANUFACTURING"];
 
 function resolveMembershipRole(role?: string): MembershipRole {
   return MEMBERSHIP_ROLES.includes(role as MembershipRole) ? (role as MembershipRole) : "CUSTOMER";

@@ -36,6 +36,7 @@ export type CompanyRole = MembershipRole | "CUSTOMER" | "MANUFACTURING";
 const COMPANY_ROLE_RANK: Record<CompanyRole, number> = {
   VIEWER: 0,
   ESTIMATOR: 1,
+  SALESMAN: 1,
   MANUFACTURING: 1,
   ADMIN: 2,
   OWNER: 3,
@@ -314,4 +315,11 @@ export function toMembershipCompanies(
     slug: membership.company.slug,
     role: membership.role
   }));
+}
+export function canAccessShowroomRole(role: CompanyRole | null | undefined) {
+  return role !== "SALESMAN" && hasCompanyRole(role, "ESTIMATOR");
+}
+
+export function canSeeFullPricing(role: CompanyRole | null | undefined) {
+  return role !== "SALESMAN" && hasCompanyRole(role, "ESTIMATOR");
 }

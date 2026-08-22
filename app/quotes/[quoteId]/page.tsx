@@ -5,7 +5,7 @@ import WorkspaceShell from "@/components/workspace-shell";
 import ManufacturingOrderModal from "@/components/manufacturing-order-modal";
 import { StatusBadge } from "@/src/components/ui/StatusBadge";
 import { PlanGate } from "@/src/components/ui/PlanGate";
-import { getAuthenticatedCompanyContext } from "@/lib/company";
+import { getAuthenticatedCompanyContext, canSeeFullPricing } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { deriveQuoteStatus, getBrandedQuotePublicUrl, getQuotePublicUrl, getQuote } from "@/src/services/quotes";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
@@ -259,7 +259,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
           ) : null}
         </article>
       </section>
-      {costBreakdown ? <QuoteCostBreakdown breakdown={costBreakdown} /> : (
+      {costBreakdown ? (canSeeFullPricing(context.membership?.role) ? <QuoteCostBreakdown breakdown={costBreakdown} /> : <section className="card" style={{ marginTop: 20 }}><div className="sectionHeader"><div><p className="eyebrow">Cost overview</p><h2>Pricing</h2></div></div><div className="detailStack"><div className="detailRow"><span>Manufacturing cost</span><strong>{money(costBreakdown.makingPrice)}</strong></div><div className="quotePreview"><span className="muted small">Final customer price</span><strong className="quotePrice">{money(costBreakdown.estimatedSellingPrice)}</strong></div></div></section>) : (
         <section className="card" style={{ marginTop: 20 }}>
           <p className="muted">A detailed cost breakdown is not available for this legacy quote.</p>
         </section>

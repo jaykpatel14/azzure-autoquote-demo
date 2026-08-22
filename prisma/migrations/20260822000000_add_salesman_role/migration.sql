@@ -1,0 +1,1 @@
+ALTER TYPE "MembershipRole" ADD VALUE 'SALESMAN';
