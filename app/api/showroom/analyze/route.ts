@@ -1,3 +1,4 @@
+import { stripNullBytes } from "@/lib/sanitize";
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { getActiveShowroom } from "@/lib/showroom";
