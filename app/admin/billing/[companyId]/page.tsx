@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { SubscriptionStatus } from "@prisma/client";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 import { resolveMetalPricing, toPricingProfileInput } from "@/lib/metal-pricing";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
@@ -33,6 +33,8 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
   if (!context) {
     redirect("/signin");
   }
+
+  requireAdminRouteAccess("/admin/billing", context.user.adminRole as any);
 
   const { companyId } = await params;
   await ensureBasePlans(prisma);
@@ -84,7 +86,7 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
     <InternalAdminShell
       title={`${company.name} billing`}
       description="Edit the company billing record, pricing profile, and subscription details from one screen."
-      navItems={getInternalAdminNav("/admin/billing")}
+      navItems={getInternalAdminNav("/admin/billing", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/billing">

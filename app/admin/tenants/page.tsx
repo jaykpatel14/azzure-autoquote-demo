@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { formatAdminMoney, getAdminTenants } from "@/src/services/admin-tenants";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +16,8 @@ export default async function AdminTenantsPage({ searchParams }: { searchParams?
   if (!context) {
     redirect("/signin");
   }
+
+  requireAdminRouteAccess("/admin/tenants", context.user.adminRole as any);
 
   const data = await getAdminTenants();
   const filters = (await searchParams) ?? {};
@@ -34,7 +36,7 @@ export default async function AdminTenantsPage({ searchParams }: { searchParams?
     <InternalAdminShell
       title="Tenant management"
       description="Inspect every company, their subscription state, recent activity, and support-critical metadata."
-      navItems={getInternalAdminNav("/admin/tenants")}
+      navItems={getInternalAdminNav("/admin/tenants", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { getAdminPlatformSettings } from "@/src/services/admin-platform";
 import { getSettingHelpText, getSettingLabel } from "@/lib/app-settings";
 import { DEFAULT_PRICING_PROFILE } from "@/lib/pricing";
@@ -14,6 +14,8 @@ export default async function AdminPlatformSettingsPage() {
   if (!context) {
     redirect("/signin");
   }
+
+  requireAdminRouteAccess("/admin/platform/settings", context.user.adminRole as any);
 
   const data = await getAdminPlatformSettings();
   const masterPricingSettings = data.publicSettings.filter((setting) => setting.key.startsWith("master_") || setting.key === "cad_cost_per_quote");
@@ -41,7 +43,7 @@ export default async function AdminPlatformSettingsPage() {
     <InternalAdminShell
       title="Platform settings"
       description="Manage runtime configuration and secret-backed environment overrides from one place."
-      navItems={getInternalAdminNav("/admin/platform/settings")}
+      navItems={getInternalAdminNav("/admin/platform/settings", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/platform/api-keys">

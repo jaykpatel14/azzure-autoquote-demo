@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { getAdminPlatformSettings } from "@/src/services/admin-platform";
 
 export const dynamic = "force-dynamic";
@@ -13,13 +13,15 @@ export default async function AdminApiKeysPage() {
     redirect("/signin");
   }
 
+  requireAdminRouteAccess("/admin/platform/api-keys", context.user.adminRole as any);
+
   const data = await getAdminPlatformSettings();
 
   return (
     <InternalAdminShell
       title="API key management"
       description="Rotate secrets and verify which platform keys are currently stored in the runtime settings table."
-      navItems={getInternalAdminNav("/admin/platform/api-keys")}
+      navItems={getInternalAdminNav("/admin/platform/api-keys", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/platform/settings">

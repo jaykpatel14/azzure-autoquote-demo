@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { getAdminSubscriptions } from "@/src/services/admin-tenants";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
 
@@ -19,6 +19,8 @@ export default async function AdminSubscriptionPage() {
     redirect("/signin");
   }
 
+  requireAdminRouteAccess("/admin/tenants/subscriptions", context.user.adminRole as any);
+
   await ensureBasePlans(prisma);
   const [data, plans] = await Promise.all([
     getAdminSubscriptions(),
@@ -29,7 +31,7 @@ export default async function AdminSubscriptionPage() {
     <InternalAdminShell
       title="Subscription management"
       description="Review every customer subscription, adjust plan state, and jump back to billing when needed."
-      navItems={getInternalAdminNav("/admin/tenants/subscriptions")}
+      navItems={getInternalAdminNav("/admin/tenants/subscriptions", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <>

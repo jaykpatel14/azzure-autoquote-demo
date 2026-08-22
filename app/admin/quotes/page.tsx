@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { AdminThumbImage } from "@/components/admin-thumb-image";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 import { calculateMakingPrice, calculateTierPrice } from "@/src/services/pricing";
 import { getSettingValue } from "@/lib/app-settings";
@@ -296,7 +296,7 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
     <InternalAdminShell
       title="Quote Audit Center"
       description="Full platform-wide quote ledger with cost, margin, and tier breakdowns — including analyses jewelers haven't saved as quotes yet."
-      navItems={getInternalAdminNav("/admin/quotes")}
+      navItems={getInternalAdminNav("/admin/quotes", admin.user.adminRole as any)}
       adminName={admin.user.name || admin.user.email}
     >
       {/* ── Filters ── */}

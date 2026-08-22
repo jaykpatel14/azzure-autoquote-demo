@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 
 import { AdminDeleteCompanyButton } from "@/components/admin-delete-company-button";
@@ -14,6 +14,8 @@ export default async function AdminCompaniesPage() {
   if (!context) {
     redirect("/signin");
   }
+
+  requireAdminRouteAccess("/admin/companies", context.user.adminRole as any);
 
   const companies = await prisma.company.findMany({
     orderBy: { createdAt: "desc" },
@@ -36,7 +38,7 @@ export default async function AdminCompaniesPage() {
     <InternalAdminShell
       title="Customer companies"
       description="Inspect every tenant, their billing health, and the latest quote activity."
-      navItems={getInternalAdminNav("/admin/companies")}
+      navItems={getInternalAdminNav("/admin/companies", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <>

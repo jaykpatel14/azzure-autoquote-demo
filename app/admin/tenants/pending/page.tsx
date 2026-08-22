@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { getPendingApprovalCompanies } from "@/src/services/admin-tenants";
 
 export const dynamic = "force-dynamic";
@@ -20,13 +20,15 @@ export default async function PendingApprovalsPage() {
     redirect("/signin");
   }
 
+  requireAdminRouteAccess("/admin/tenants/pending", context.user.adminRole as any);
+
   const companies = await getPendingApprovalCompanies();
 
   return (
     <InternalAdminShell
       title="Pending approvals"
       description="Review new companies, assign a pricing tier, and approve or suspend access."
-      navItems={getInternalAdminNav("/admin/tenants/pending")}
+      navItems={getInternalAdminNav("/admin/tenants/pending", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/tenants">

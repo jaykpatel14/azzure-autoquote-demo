@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { AdminSalesImpersonate } from "@/components/admin-sales-impersonate";
 import { getAdminSalesQuotes } from "@/src/services/admin-sales";
 
@@ -15,9 +15,11 @@ function formatCurrency(value: number | any) {
 
 export default async function AdminSalesDashboard() {
   const context = await getInternalAdminContext();
-  if (!context || context.user.adminRole !== "SALESMAN") {
-    redirect("/admin");
+  if (!context) {
+    redirect("/signin");
   }
+
+  requireAdminRouteAccess("/admin/sales", context.user.adminRole as any);
 
   const { quotes, companies } = await getAdminSalesQuotes();
 
@@ -25,7 +27,7 @@ export default async function AdminSalesDashboard() {
     <InternalAdminShell
       title="Sales Dashboard"
       description="View recent quotes across all tenants. Displaying Making Price and Tier Pricing only."
-      navItems={getInternalAdminNav("/admin/sales")}
+      navItems={getInternalAdminNav("/admin/sales", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={<AdminSalesImpersonate companies={companies} />}
     >

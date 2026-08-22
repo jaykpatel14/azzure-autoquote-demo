@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { formatAdminMoney, getAdminTenant } from "@/src/services/admin-tenants";
 import { AdminDeleteCompanyButton } from "@/components/admin-delete-company-button";
 
@@ -24,6 +24,8 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
     redirect("/signin");
   }
 
+  requireAdminRouteAccess("/admin/tenants", context.user.adminRole as any);
+
   const { companyId } = await params;
   let data = null;
   let loadError: string | null = null;
@@ -39,7 +41,7 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
       <InternalAdminShell
         title="Unable to load tenant"
         description="The tenant record could not be loaded because of a server error, not because it doesn't exist."
-        navItems={getInternalAdminNav("/admin/tenants")}
+        navItems={getInternalAdminNav("/admin/tenants", context.user.adminRole as any)}
         adminName={context.user.name || context.user.email}
       >
         <section className="card" style={{ borderColor: "#ef4444" }}>
@@ -80,7 +82,7 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
     <InternalAdminShell
       title={company.name}
       description="Tenant detail with subscription health, pricing profile, activity history, and support actions."
-      navItems={getInternalAdminNav("/admin/tenants")}
+      navItems={getInternalAdminNav("/admin/tenants", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>

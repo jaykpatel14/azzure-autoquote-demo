@@ -4,7 +4,7 @@ import { OrderStatus } from "@prisma/client";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { AdminThumbImage } from "@/components/admin-thumb-image";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { getAdminOrder } from "@/src/services/admin-orders";
 
 type OrderPageProps = {
@@ -25,6 +25,8 @@ export default async function AdminOrderPage({ params }: OrderPageProps) {
     redirect("/signin");
   }
 
+  requireAdminRouteAccess("/admin/orders", context.user.adminRole as any);
+
   const { orderId } = await params;
   const order = await getAdminOrder(orderId);
   if (!order) {
@@ -38,7 +40,7 @@ export default async function AdminOrderPage({ params }: OrderPageProps) {
     <InternalAdminShell
       title={order.orderNumber}
       description="Review and update the order from intake through completed production."
-      navItems={getInternalAdminNav("/admin/orders")}
+      navItems={getInternalAdminNav("/admin/orders", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>

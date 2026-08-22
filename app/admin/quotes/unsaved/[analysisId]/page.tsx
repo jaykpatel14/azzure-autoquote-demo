@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 import { computeAnalysisPricingBreakdown } from "@/lib/admin-analysis-pricing";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
@@ -49,7 +49,7 @@ export default async function AdminUnsavedAnalysisPage({
     <InternalAdminShell
       title={`Unsaved Analysis ${analysisId.slice(-6).toUpperCase()}`}
       description="Internal pricing audit — live estimate for a jeweler analysis that has not been saved as a quote."
-      navItems={getInternalAdminNav("/admin/quotes")}
+      navItems={getInternalAdminNav("/admin/quotes", admin.user.adminRole as any)}
       adminName={admin.user.name || admin.user.email}
       actions={
         <>

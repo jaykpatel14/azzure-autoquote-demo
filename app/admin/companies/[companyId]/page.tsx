@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 import { AdminDeleteCompanyButton } from "@/components/admin-delete-company-button";
 import { AdminDeleteMemberButton } from "@/components/admin-delete-member-button";
@@ -20,6 +20,8 @@ export default async function AdminCompanyPage({ params }: AdminCompanyPageProps
   if (!context) {
     redirect("/signin");
   }
+
+  requireAdminRouteAccess("/admin/companies", context.user.adminRole as any);
 
   const { companyId } = await params;
   const company = await prisma.company.findUnique({
@@ -56,7 +58,7 @@ export default async function AdminCompanyPage({ params }: AdminCompanyPageProps
     <InternalAdminShell
       title={company.name}
       description="Review billing, quote history, team access, and support evidence for this company."
-      navItems={getInternalAdminNav("/admin/companies")}
+      navItems={getInternalAdminNav("/admin/companies", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>

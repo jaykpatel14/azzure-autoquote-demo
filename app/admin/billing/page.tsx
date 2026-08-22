@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { getInternalAdminNav } from "@/lib/internal-admin-nav";
+import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +12,8 @@ export default async function AdminBillingPage() {
   if (!context) {
     redirect("/signin");
   }
+
+  requireAdminRouteAccess("/admin/billing", context.user.adminRole as any);
 
   const companies = await prisma.company.findMany({
     orderBy: { createdAt: "desc" },
@@ -30,7 +32,7 @@ export default async function AdminBillingPage() {
     <InternalAdminShell
       title="Billing"
       description="Edit every company billing record, pricing profile, and support identifier from one place."
-      navItems={getInternalAdminNav("/admin/billing")}
+      navItems={getInternalAdminNav("/admin/billing", context.user.adminRole as any)}
       adminName={context.user.name || context.user.email}
       actions={
         <Link className="button secondary" href="/admin/settings">
