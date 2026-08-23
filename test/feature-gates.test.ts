@@ -83,10 +83,11 @@ describe("server enforcement wiring", () => {
   });
   test("quote creation enforces billing, approval, tier and pricing-profile entitlement", () => {
     const route = source("app/api/quotes/route.ts");
+    const orchestrator = source("src/services/quote-orchestrator.ts");
     expect(route).toContain("assertBillableSubscription");
     expect(route).toContain("isCompanyApproved");
-    expect(route).toContain("!company.pricingTier");
-    expect(route).toContain("features.canUseCustomPricingProfile");
+    expect(orchestrator).toContain("!company.pricingTier");
+    expect(orchestrator).toContain("features.canUseCustomPricingProfile");
   });
   test("overage is allowed only outside trials and is reported to Stripe", () => {
     expect(source("lib/usage.ts")).toContain('company.subscription?.status !== "TRIALING" && features.overageEnabled');
