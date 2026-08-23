@@ -123,6 +123,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: { message: error.message, code: "UNAUTHORIZED" } }, { status: 403 });
     }
 
+    if (error && typeof error === "object" && "statusCode" in error && "userMessage" in error) {
+      const appError = error as any;
+      return NextResponse.json(
+        { error: { message: appError.userMessage, code: appError.code || "INTERNAL_ERROR" } },
+        { status: appError.statusCode }
+      );
+    }
+
     return NextResponse.json(
       { error: { message: error instanceof Error ? error.message : "Unable to save quote.", code: "INTERNAL_ERROR" } },
       { status: 500 }

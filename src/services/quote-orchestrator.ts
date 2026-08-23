@@ -116,7 +116,7 @@ export async function processAndCreateQuote(
   });
 
   if ("error" in quoteResult) {
-    throw new Error(quoteResult.error.userMessage);
+    throw quoteResult.error;
   }
 
   return { quoteResult, input, features };
