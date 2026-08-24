@@ -219,20 +219,68 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
     // Internal admin/support staff have no company of their own. If they've opened a
     // tenant's context from the admin console, synthesize a read-only preview instead
     // of treating them as an unaffiliated (and therefore blocked) customer.
-    if ((user.isInternalAdmin || isInternalAdminEmail(user.email)) && cookieCompanyId) {
-      const company = await prisma.company.findUnique({
-        where: { id: cookieCompanyId },
+    if ((user.isInternalAdmin || isInternalAdminEmail(user.email))) {
+      // If a company cookie is set, use it to synthesize impersonated context
+      if (cookieCompanyId) {
+        const company = await prisma.company.findUnique({
+          where: { id: cookieCompanyId },
+          select: COMPANY_SELECT
+        });
+
+        if (!company) {
+          // Cookie company not found, try to find an approved company as fallback
+          const fallbackCompany = await prisma.company.findFirst({
+            where: { accountStatus: "APPROVED" },
+            select: COMPANY_SELECT
+          });
+
+          if (!fallbackCompany) return null;
+
+          cookieCompanyId = fallbackCompany.id;
+        }
+
+        const impersonatedMembership: CompanyMembership = {
+          id: `impersonation:${cookieCompanyId}`,
+          role: "VIEWER",
+          companyId: cookieCompanyId,
+          userId: user.id,
+          company: await prisma.company.findUnique({
+            where: { id: cookieCompanyId },
+            select: COMPANY_SELECT
+          })!
+        };
+
+        return {
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            sessionVersion: user.sessionVersion,
+            memberships: [impersonatedMembership]
+          },
+          membership: impersonatedMembership,
+          memberships: [impersonatedMembership],
+          company: impersonatedMembership.company,
+          isImpersonating: true
+        };
+      }
+
+      // No cookieCompanyId set - find an approved company as fallback for internal admin access
+      const fallbackCompany = await prisma.company.findFirst({
+        where: { accountStatus: "APPROVED" },
         select: COMPANY_SELECT
       });
 
-      if (!company) return null;
+      if (!fallbackCompany) {
+        throw new CompanyAccessError("Your account is not assigned to any companies. Please set a company cookie or contact support.");
+      }
 
       const impersonatedMembership: CompanyMembership = {
-        id: `impersonation:${company.id}`,
-        role: "VIEWER",
-        companyId: company.id,
+        id: `admin-fallback:${fallbackCompany.id}`,
+        role: "OWNER" as const,
+        companyId: fallbackCompany.id,
         userId: user.id,
-        company
+        company: fallbackCompany
       };
 
       return {
@@ -245,11 +293,12 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
         },
         membership: impersonatedMembership,
         memberships: [impersonatedMembership],
-        company,
+        company: fallbackCompany,
         isImpersonating: true
       };
     }
 
+    // Non-admin user with no memberships
     throw new CompanyAccessError("Your account is not assigned to any companies.");
   }
 
