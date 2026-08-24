@@ -2257,24 +2257,28 @@ export default function QuoteCalculator({
                         />
                       </label>
                       <div className="facetCheckboxGroup facetFullWidth">
-                        <label className="facetCheckboxLabel">
-                          <input
-                            type="checkbox"
-                            checked={facet.output!.hasWeddingBand ?? false}
-                            onChange={(e) => updateFacetOutput(facet.id, "hasWeddingBand", e.target.checked)}
-                            disabled={!canEdit}
-                          />
-                          <span>Ring + wedding band (2 pieces)</span>
-                        </label>
-                        <label className="facetCheckboxLabel">
-                          <input
-                            type="checkbox"
-                            checked={facet.output!.isTwoTone ?? false}
-                            onChange={(e) => updateFacetOutput(facet.id, "isTwoTone", e.target.checked)}
-                            disabled={!canEdit}
-                          />
-                          <span>Two-tone gold</span>
-                        </label>
+                        {facet.output?.jewelryType === "Ring" && (
+                          <label className="facetCheckboxLabel">
+                            <input
+                              type="checkbox"
+                              checked={facet.output!.hasWeddingBand ?? false}
+                              onChange={(e) => updateFacetOutput(facet.id, "hasWeddingBand", e.target.checked)}
+                              disabled={!canEdit}
+                            />
+                            <span>Ring + wedding band (2 pieces)</span>
+                          </label>
+                        )}
+                        {facet.output?.jewelryType === "Ring" && (
+                          <label className="facetCheckboxLabel">
+                            <input
+                              type="checkbox"
+                              checked={facet.output!.isTwoTone ?? false}
+                              onChange={(e) => updateFacetOutput(facet.id, "isTwoTone", e.target.checked)}
+                              disabled={!canEdit}
+                            />
+                            <span>Two-tone gold</span>
+                          </label>
+                        )}
                       </div>
                     </div>
                   </article>
