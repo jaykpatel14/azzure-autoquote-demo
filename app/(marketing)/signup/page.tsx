@@ -142,7 +142,7 @@ export default function SignUpPage() {
         <div className="signupHeader">
           <p className="eyebrow">Azzure AI Quote</p>
           <h1 className="signupTitle">Start your free 14-day trial</h1>
-          <p className="signupLead">Full Professional features - No charge today</p>
+          <p className="signupLead">Full Enterprise features - No charge today</p>
         </div>
 
         <form className="signupForm" onSubmit={handleSubmit} noValidate>
