@@ -632,8 +632,23 @@
   }
   .showroomPanel {
     padding: 30px 10px;
+    border-radius: 16px;
   }
   .showroomCatalogGrid {
     grid-template-columns: 1fr;
+  }
+  .showroomHeroTitle {
+    font-size: clamp(2rem, 8vw, 3rem);
+  }
+}
+
+/* Kiosk 1080p Touch Screen Optimizations */
+@media (pointer: coarse) and (min-width: 1024px) {
+  .showroomPanel {
+    padding: 80px 60px;
+  }
+  .showroomButton {
+    min-height: 72px;
+    font-size: 1.25rem;
   }
 }

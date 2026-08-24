@@ -798,6 +798,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       </label>
                       <input
                         id="showroomCustomerName"
+                        autoComplete="name"
+                        inputMode="text"
                         value={customerName}
                         onChange={(e) => {
                           setCustomerName(e.target.value);
@@ -821,6 +823,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       <input
                         id="showroomCustomerEmail"
                         type="email"
+                        autoComplete="email"
+                        inputMode="email"
                         value={customerEmail}
                         onChange={(e) => {
                           setCustomerEmail(e.target.value);
@@ -844,6 +848,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       <input
                         id="showroomCustomerPhone"
                         type="tel"
+                        autoComplete="tel"
+                        inputMode="tel"
                         value={customerPhone}
                         onChange={(e) => {
                           setCustomerPhone(e.target.value);
