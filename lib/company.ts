@@ -213,7 +213,7 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
   if (user.sessionVersion !== session.user.sessionVersion) return null;
 
   const cookieStore = await cookies();
-  const cookieCompanyId = cookieStore.get(ACTIVE_COMPANY_COOKIE)?.value;
+  let cookieCompanyId = cookieStore.get(ACTIVE_COMPANY_COOKIE)?.value;
 
   if (user.memberships.length === 0) {
     // Internal admin/support staff have no company of their own. If they've opened a
@@ -222,7 +222,7 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
     if ((user.isInternalAdmin || isInternalAdminEmail(user.email))) {
       // If a company cookie is set, use it to synthesize impersonated context
       if (cookieCompanyId) {
-        const company = await prisma.company.findUnique({
+        let company = await prisma.company.findUnique({
           where: { id: cookieCompanyId },
           select: COMPANY_SELECT
         });
@@ -237,6 +237,7 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
           if (!fallbackCompany) return null;
 
           cookieCompanyId = fallbackCompany.id;
+          company = fallbackCompany;
         }
 
         const impersonatedMembership: CompanyMembership = {
@@ -244,10 +245,7 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
           role: "VIEWER",
           companyId: cookieCompanyId,
           userId: user.id,
-          company: await prisma.company.findUnique({
-            where: { id: cookieCompanyId },
-            select: COMPANY_SELECT
-          })!
+          company: company as unknown as CompanyMembershipCompany
         };
 
         return {
