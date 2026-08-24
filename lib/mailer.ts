@@ -38,13 +38,27 @@ async function getResendClient(apiKey: string) {
   return resendClient;
 }
 
+/**
+ * Strip wrapping double-quotes that some .env parsers leave on the value.
+ * e.g. `"Azzure AutoQuote <no-reply@azzuresolutions.com>"` → `Azzure AutoQuote <no-reply@azzuresolutions.com>`
+ */
+function sanitizeFrom(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let cleaned = raw.trim();
+  if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+  return cleaned || null;
+}
+
 async function resolveMailCredentials() {
   const apiKey = (await resolveRuntimeSetting("RESEND_API_KEY")) || process.env.RESEND_API_KEY?.trim() || null;
-  const from =
+  const from = sanitizeFrom(
     (await resolveRuntimeSetting("RESEND_FROM_EMAIL")) ||
-    process.env.RESEND_FROM_EMAIL?.trim() ||
-    process.env.EMAIL_FROM?.trim() ||
-    null;
+    process.env.RESEND_FROM_EMAIL ||
+    process.env.EMAIL_FROM ||
+    null
+  );
 
   return { apiKey, from };
 }
