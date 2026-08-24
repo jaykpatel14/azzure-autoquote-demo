@@ -19,7 +19,6 @@ const registerSchema = z.object({
     }
   }),
   password: z.string().min(8).max(200),
-  name: z.string().trim().min(1).max(120).optional(),
   companyName: z.string().trim().min(2).max(120)
 });
 
@@ -42,34 +41,47 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = hashPassword(input.password);
+    let createdUser: { id: string, email: string, name: string | null } | null = null;
+    let createdCompany: { id: string, name: string, createdAt: Date } | null = null;
 
-    const { user, company } = await prisma.$transaction(async (tx) => {
-      return onboardCompanyOwner(tx, {
-        email,
-        name: input.name,
-        passwordHash,
-        companyName: input.companyName
+    try {
+      const { user, company } = await prisma.$transaction(async (tx) => {
+        return onboardCompanyOwner(tx, {
+          email,
+          passwordHash,
+          companyName: input.companyName
+        });
       });
-    });
+      
+      createdUser = user;
+      createdCompany = company;
 
-    const token = await createEmailVerificationToken(user.id, company.id);
-    const verificationUrl = buildAppUrl(`/verify-email?token=${token}`);
+      const token = await createEmailVerificationToken(user.id, company.id);
+      const verificationUrl = buildAppUrl(`/verify-email?token=${token}`);
 
-    await sendAuthMail({
-      to: user.email,
-      subject: "Verify your Azzure AI Quote account",
-      text: `Verify your email address: ${verificationUrl}`,
-      html: `<p>Verify your email address: <a href="${verificationUrl}">${verificationUrl}</a></p>`
-    });
+      await sendAuthMail({
+        to: user.email,
+        subject: "Verify your Azzure AI Quote account",
+        text: `Verify your email address: ${verificationUrl}`,
+        html: `<p>Verify your email address: <a href="${verificationUrl}">${verificationUrl}</a></p>`
+      });
 
-    await sendSignupApprovalAlert({
-      companyName: company.name,
-      ownerName: input.name?.trim() || user.name || user.email,
-      ownerEmail: user.email,
-      signedUpAt: company.createdAt
-    });
+      await sendSignupApprovalAlert({
+        companyName: company.name,
+        ownerName: user.email,
+        ownerEmail: user.email,
+        signedUpAt: company.createdAt
+      });
 
-    return NextResponse.json({ ok: true, email: user.email });
+      return NextResponse.json({ ok: true, email: user.email });
+    } catch (innerError) {
+      if (createdCompany) {
+        await prisma.company.delete({ where: { id: createdCompany.id } }).catch(() => {});
+      } else if (createdUser) {
+        await prisma.user.delete({ where: { id: createdUser.id } }).catch(() => {});
+      }
+      throw innerError;
+    }
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unable to create account." },

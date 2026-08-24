@@ -9,7 +9,6 @@ import { validateEmail } from "@/lib/email-validation";
 
 const signupSchema = z.object({
   companyName: z.string().trim().min(2, "Please enter a business name."),
-  name: z.string().trim().min(1, "Please enter your name."),
   email: z.string().trim().superRefine((val, ctx) => {
     const check = validateEmail(val);
     if (!check.valid) {
@@ -28,7 +27,6 @@ type FieldName = keyof SignupForm;
 
 const EMPTY_ERRORS: Record<FieldName, string> = {
   companyName: "",
-  name: "",
   email: "",
   password: "",
   planCode: ""
@@ -58,14 +56,12 @@ export default function SignUpPage() {
   const initialPlan = normalizePlanCode(searchParams.get("plan"));
   const [form, setForm] = useState<SignupForm>({
     companyName: "",
-    name: "",
     email: "",
     password: "",
     planCode: initialPlan
   });
   const [touched, setTouched] = useState<Record<FieldName, boolean>>({
     companyName: false,
-    name: false,
     email: false,
     password: false,
     planCode: true
@@ -106,7 +102,6 @@ export default function SignUpPage() {
     setErrors(nextErrors);
     setTouched({
       companyName: true,
-      name: true,
       email: true,
       password: true,
       planCode: true
@@ -167,19 +162,7 @@ export default function SignUpPage() {
             ) : null}
           </label>
 
-          <label className="field signupField">
-            <span>Your name *</span>
-            <input
-              id="name"
-              value={form.name}
-              onChange={(event) => setField("name", event.target.value)}
-              onBlur={() => validateField("name", form.name)}
-              aria-invalid={touched.name && Boolean(errors.name)}
-              aria-describedby={touched.name && errors.name ? "name-error" : undefined}
-              required
-            />
-            {touched.name && errors.name ? <p className="fieldError" id="name-error">{errors.name}</p> : null}
-          </label>
+
 
           <label className="field signupField">
             <span>Email address *</span>
