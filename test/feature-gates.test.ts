@@ -52,10 +52,10 @@ describe("subscription feature matrix", () => {
     expect(PLAN_FEATURES.plan_enterprise.maxSeats).toBe(Number.POSITIVE_INFINITY);
     expect(PLAN_FEATURES.plan_enterprise.hasPdfImages).toBe(true);
   });
-  test("trial users always resolve to Professional features", () => {
-    expect(resolvePlanId({ id: "plan_enterprise", code: "enterprise" }, "TRIALING")).toBe("plan_professional");
-    expect(PLAN_FEATURES[resolvePlanId({ id: "plan_enterprise", code: "enterprise" }, "TRIALING")].canShareQuoteLink).toBe(true);
-    expect(PLAN_FEATURES[resolvePlanId({ id: "plan_enterprise", code: "enterprise" }, "TRIALING")].canPlaceManufacturingOrder).toBe(false);
+  test("trial users always resolve to Enterprise features", () => {
+    expect(resolvePlanId({ id: "plan_professional", code: "professional" }, "TRIALING")).toBe("plan_enterprise");
+    expect(PLAN_FEATURES[resolvePlanId({ id: "plan_professional", code: "professional" }, "TRIALING")].canUseShowroomMode).toBe(true);
+    expect(PLAN_FEATURES[resolvePlanId({ id: "plan_professional", code: "professional" }, "TRIALING")].canPlaceManufacturingOrder).toBe(true);
   });
   test("unknown persisted plan IDs fail closed", () => {
     expect(() => resolvePlanId({ id: "price_unknown", code: "mystery" }, "ACTIVE")).toThrow("Unknown planId");
