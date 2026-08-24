@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { saveMobileUploads, getMobileUploads, clearMobileUploads, type UploadedMobileFile } from "@/lib/mobile-upload-store";
-import { hasAllowedImageSignature } from "@/lib/security";
+import { hasAllowedImageSignature, detectImageMimeType } from "@/lib/security";
 import { getActiveShowroom } from "@/lib/showroom";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/security";
@@ -53,9 +53,9 @@ export async function POST(request: Request) {
 
     for (const entry of entries) {
       if (entry instanceof File && entry.size > 0) {
-        if (!ALLOWED_TYPES.has(entry.type) || entry.size > MAX_FILE_SIZE) {
+        if (entry.size > MAX_FILE_SIZE) {
           return NextResponse.json(
-            { error: `File "${entry.name}" exceeds 10 MB limit or is not a JPG/PNG/WEBP.` },
+            { error: `File "${entry.name}" exceeds 10 MB limit.` },
             { status: 400 }
           );
         }
@@ -63,17 +63,18 @@ export async function POST(request: Request) {
         const buffer = Buffer.from(await entry.arrayBuffer());
         totalBytes += buffer.length;
         if (totalBytes > 20 * 1024 * 1024) return NextResponse.json({ error: "Combined uploads must be 20 MB or less." }, { status: 400 });
-        if (!hasAllowedImageSignature(buffer, entry.type)) {
+        const detectedType = detectImageMimeType(buffer);
+        if (!detectedType) {
           return NextResponse.json(
-            { error: `File "${entry.name}" is not a valid image file.` },
+            { error: `File "${entry.name}" is not a valid JPG/PNG/WEBP image.` },
             { status: 400 }
           );
         }
 
         uploadedFiles.push({
           name: entry.name,
-          type: entry.type,
-          dataUrl: `data:${entry.type};base64,${buffer.toString("base64")}`
+          type: detectedType,
+          dataUrl: `data:${detectedType};base64,${buffer.toString("base64")}`
         });
       }
     }

@@ -30,7 +30,7 @@ import {
   serializeError
 } from "@/lib/ai/errors";
 import type { JewelryAnalysis } from "@/lib/ai/schema";
-import { hasAllowedImageSignature } from "@/lib/security";
+import { hasAllowedImageSignature, detectImageMimeType } from "@/lib/security";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 import {
   buildAnalysisImageStorageKey,
@@ -94,28 +94,29 @@ export async function POST(request: Request) {
     let primaryBytes: Buffer | null = null;
 
     for (const image of rawImages.slice(0, 3)) {
-      if (!ALLOWED_TYPES.has(image.type) || image.size > MAX_FILE_SIZE) {
+      if (image.size > MAX_FILE_SIZE) {
         return NextResponse.json(
-          { error: `File "${image.name}" exceeds 10 MB or is not a JPG, PNG, or WEBP.` },
+          { error: `File "${image.name}" exceeds 10 MB.` },
           { status: 400 }
         );
       }
 
       const fileBytes = Buffer.from(await image.arrayBuffer());
-      if (!hasAllowedImageSignature(fileBytes, image.type)) {
+      const detectedType = detectImageMimeType(fileBytes);
+      if (!detectedType) {
         return NextResponse.json(
-          { error: `File "${image.name}" does not match its declared image type.` },
+          { error: `File "${image.name}" is not a valid JPG, PNG, or WEBP image.` },
           { status: 400 }
         );
       }
 
       if (!primaryBytes) {
         primaryBytes = fileBytes;
-        primaryImageType = image.type;
+        primaryImageType = detectedType;
         primaryImageSizeBytes = image.size;
       }
 
-      imageDataUrls.push(`data:${image.type};base64,${fileBytes.toString("base64")}`);
+      imageDataUrls.push(`data:${detectedType};base64,${fileBytes.toString("base64")}`);
     }
 
     reservation = await reserveMonthlyUsage(companyContext.company.id);
