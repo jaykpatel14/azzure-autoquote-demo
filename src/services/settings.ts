@@ -8,7 +8,8 @@ export async function getSettingsProfileData(companyId: string, userId: string) 
         id: true,
         email: true,
         name: true,
-        avatarUrl: true
+        avatarUrl: true,
+        kioskPinHash: true
       }
     }),
     prisma.company.findUnique({

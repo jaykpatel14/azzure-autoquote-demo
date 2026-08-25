@@ -11,6 +11,8 @@ import {
 import { convertMetalWeight, type MetalType, type PricingProfileInput } from "@/lib/pricing";
 import { validateEmail } from "@/lib/email-validation";
 import type { PricingTier } from "@prisma/client";
+import KioskStaffPinModal from "@/components/kiosk-staff-pin-modal";
+import KioskStaffView from "@/components/kiosk-staff-view";
 
 type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; backgroundColor: string | null; backgroundMediaUrl: string | null; backgroundMediaType: string | null; overlayColor: string | null; overlayOpacity: number | null; textColor: string | null; backgroundFit: string | null; backgroundPosition: string | null; panelOpacity: number | null; aboutUs: string | null };
 type Pricing = { cadCost: number; customerMarginPct: number; pricingTier: PricingTier | null; pricingProfile: PricingProfileInput };
@@ -183,6 +185,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const [showMobileUploadModal, setShowMobileUploadModal] = useState(false);
   const [mobileUploadSessionId, setMobileUploadSessionId] = useState<string>("");
   const [mobileUploadQrDataUrl, setMobileUploadQrDataUrl] = useState<string | null>(null);
+
+  // Staff Mode States
+  const [showStaffPinModal, setShowStaffPinModal] = useState(false);
+  const [staffSession, setStaffSession] = useState<{ staffName: string; staffId: string; sessionToken: string } | null>(null);
 
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
   const debouncedAnalysis = useDebouncedValue(analysis, 300);
@@ -627,6 +633,17 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
   const activeImage = renderingImageUrl || (previews.length > 0 ? previews[0] : null);
 
+  if (staffSession) {
+    return (
+      <KioskStaffView
+        staffName={staffSession.staffName}
+        sessionToken={staffSession.sessionToken}
+        brandColor={branding.primaryColor || "#c9a84c"}
+        onExit={() => setStaffSession(null)}
+      />
+    );
+  }
+
   return (
     <div className="showroom" style={brandStyle}>
       {branding.backgroundMediaUrl ? (
@@ -724,11 +741,33 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
             className="showroomButton"
             type="button"
             onClick={() => setStarted(true)}
-            style={{ marginBottom: 48 }}
+            style={{ marginBottom: 16 }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 24 }}>auto_awesome</span>
             Design Your Custom Ring
           </button>
+
+          <div style={{ textAlign: "center", marginBottom: 40, borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: 14 }}>
+            <button
+              type="button"
+              onClick={() => setShowStaffPinModal(true)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "rgba(255, 255, 255, 0.4)",
+                fontSize: "13px",
+                fontWeight: 500,
+                cursor: "pointer",
+                padding: "6px 14px",
+                textDecoration: "none",
+                transition: "color 0.2s ease"
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255, 255, 255, 0.8)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255, 255, 255, 0.4)")}
+            >
+              Staff Access
+            </button>
+          </div>
 
           {/* Curated Recent Customer Designs / Products Gallery */}
           <div className="showroomCatalogSection">
@@ -1277,6 +1316,19 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       ) : null}
 
       {warning ? <div className="showroomWarning">Still there? This screen will reset in 10 seconds.</div> : null}
+
+      {showStaffPinModal ? (
+        <KioskStaffPinModal
+          showroomToken={token}
+          brandColor={branding.primaryColor || "#c9a84c"}
+          onClose={() => setShowStaffPinModal(false)}
+          onAuthenticated={(session) => {
+            setShowStaffPinModal(false);
+            setStaffSession(session);
+          }}
+        />
+      ) : null}
+
       <footer style={{ marginTop: "auto", textAlign: "center", color: "var(--color-on-surface-variant)", fontSize: 12, padding: "24px 0" }}>
         Azzure AI Quote · Built by azzuresolutions.com
       </footer>

@@ -4,6 +4,7 @@ import { getActiveShowroom, safeBrandColor } from "@/lib/showroom";
 import { getSettingValue } from "@/lib/app-settings";
 import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricing";
 import ShowroomKiosk from "./showroom-kiosk";
+import ShowroomDeviceProvider from "@/components/showroom-device-provider";
 import { getAuthenticatedCompanyContext, canAccessShowroomRole } from "@/lib/company";
 import { prisma } from "@/lib/prisma";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
@@ -99,11 +100,6 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
   }
 
   const cadCost = (await getSettingValue("cad_cost_per_quote")) ?? 0;
-  // Without this, the kiosk's on-screen price preview (shown while the
-  // customer compares metals/carats) fell back to hardcoded defaults
-  // (gold $4500/oz, platinum $2000/oz) instead of this tenant's real
-  // live/master spot prices, so what customers saw in-store could disagree
-  // with the price the quote actually saved at.
   const baseProfile = session.company.pricingProfile
     ? normalizePricingProfile({
         goldSpotPerOz: Number(session.company.pricingProfile.goldSpotPerOz),
@@ -117,30 +113,42 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
       })
     : undefined;
   const livePricing = await resolveMetalPricing(features.canUseCustomPricingProfile ? baseProfile : null);
+
+  const brandingData = {
+    companyName: session.company.name,
+    logoUrl: session.company.logoUrl,
+    primaryColor: safeBrandColor(session.company.primaryColor),
+    backgroundColor: safeBrandColor(session.company.showroomBackgroundColor),
+    backgroundMediaUrl: session.company.showroomBackgroundMediaKey ? `/api/showroom/background?token=${encodeURIComponent(session.token)}` : null,
+    backgroundMediaType: session.company.showroomBackgroundMediaType,
+    overlayColor: session.company.showroomOverlayColor,
+    overlayOpacity: session.company.showroomOverlayOpacity,
+    textColor: session.company.showroomTextColor,
+    backgroundFit: session.company.showroomBackgroundFit,
+    backgroundPosition: session.company.showroomBackgroundPosition,
+    panelOpacity: session.company.showroomPanelOpacity,
+    aboutUs: session.company.aboutUs
+  };
+
   return (
-    <ShowroomKiosk
-      token={session.token}
+    <ShowroomDeviceProvider
+      showroomToken={session.token}
       branding={{
         companyName: session.company.name,
         logoUrl: session.company.logoUrl,
-        primaryColor: safeBrandColor(session.company.primaryColor),
-        backgroundColor: safeBrandColor(session.company.showroomBackgroundColor),
-        backgroundMediaUrl: session.company.showroomBackgroundMediaKey ? `/api/showroom/background?token=${encodeURIComponent(session.token)}` : null,
-        backgroundMediaType: session.company.showroomBackgroundMediaType,
-        overlayColor: session.company.showroomOverlayColor,
-        overlayOpacity: session.company.showroomOverlayOpacity,
-        textColor: session.company.showroomTextColor,
-        backgroundFit: session.company.showroomBackgroundFit,
-        backgroundPosition: session.company.showroomBackgroundPosition,
-        panelOpacity: session.company.showroomPanelOpacity,
-        aboutUs: session.company.aboutUs
+        primaryColor: safeBrandColor(session.company.primaryColor)
       }}
-      pricing={{
-        cadCost,
-        customerMarginPct: session.company.customerMarginPct ?? 0,
-        pricingTier: session.company.pricingTier,
-        pricingProfile: livePricing.pricingProfile
-      }}
-    />
+    >
+      <ShowroomKiosk
+        token={session.token}
+        branding={brandingData}
+        pricing={{
+          cadCost,
+          customerMarginPct: session.company.customerMarginPct ?? 0,
+          pricingTier: session.company.pricingTier,
+          pricingProfile: livePricing.pricingProfile
+        }}
+      />
+    </ShowroomDeviceProvider>
   );
 }

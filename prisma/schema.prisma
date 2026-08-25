@@ -113,6 +113,7 @@ model Company {
   auditLogs                   AuditLog[]
   showroomSession             ShowroomSession?
   showroomQuotes              ShowroomQuote[]
+  showroomDevices             ShowroomDevice[]
 }
 
 model AppSetting {
@@ -135,6 +136,7 @@ model User {
   sessionVersion          Int                      @default(0)
   isInternalAdmin         Boolean                  @default(false)
   adminRole               String?
+  kioskPinHash            String?
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   memberships             Membership[]
@@ -344,13 +346,47 @@ model Quote {
 }
 
 model ShowroomSession {
+  id         String           @id @default(cuid())
+  companyId  String           @unique
+  token      String           @unique @default(cuid())
+  isActive   Boolean          @default(true)
+  createdAt  DateTime         @default(now())
+  lastUsedAt DateTime         @default(now())
+  company    Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  devices    ShowroomDevice[]
+}
+
+model ShowroomDevice {
+  id           String          @id @default(cuid())
+  companyId    String
+  sessionId    String
+  deviceToken  String          @unique @default(cuid())
+  deviceName   String
+  platform     String          @default("android")
+  userAgent    String?
+  lastSeenAt   DateTime        @default(now())
+  lastSeenIp   String?
+  isActive     Boolean         @default(true)
+  registeredAt DateTime        @default(now())
+
+  session      ShowroomSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  company      Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([sessionId])
+}
+
+model KioskStaffSession {
   id         String   @id @default(cuid())
-  companyId  String   @unique
   token      String   @unique @default(cuid())
-  isActive   Boolean  @default(true)
+  userId     String
+  companyId  String
+  staffName  String
+  expiresAt  DateTime
   createdAt  DateTime @default(now())
-  lastUsedAt DateTime @default(now())
-  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([token])
 }
 
 model ShowroomQuote {

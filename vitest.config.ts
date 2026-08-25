@@ -8,6 +8,9 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: false,
+    env: {
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/autoquote_test"
+    },
     include: ["test/**/*.test.ts", "src/**/*.test.ts"]
   },
   resolve: {

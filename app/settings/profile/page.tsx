@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import SettingsTabs from "@/components/settings-tabs";
 import WorkspaceShell from "@/components/workspace-shell";
+import KioskPinForm from "@/components/kiosk-pin-form";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getSettingsProfileData } from "@/src/services/settings";
@@ -86,6 +87,16 @@ export default async function ProfileSettingsPage() {
               Update password
             </button>
           </form>
+        </article>
+
+        <article className="card">
+          <div className="sectionHeader">
+            <div>
+              <h2>Kiosk Staff PIN</h2>
+              <p className="muted">Set a personal 4-digit PIN to access quote lookup mode on in-store showroom screens.</p>
+            </div>
+          </div>
+          <KioskPinForm hasPin={Boolean(data.user.kioskPinHash)} />
         </article>
       </section>
     </WorkspaceShell>
