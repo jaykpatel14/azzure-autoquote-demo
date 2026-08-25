@@ -17,8 +17,7 @@ function MobileUploadInner() {
 
   function handleFileSelection(newFiles: File[]) {
     setError("");
-    const combined = [...files, ...newFiles].slice(0, 3);
-    setFiles(combined);
+    setFiles(newFiles.slice(0, 1));
   }
 
   function removeFile(indexToRemove: number) {
@@ -177,7 +176,6 @@ function MobileUploadInner() {
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  multiple
                   style={{ display: "none" }}
                   onChange={(e) => {
                     const selected = Array.from(e.target.files || []);

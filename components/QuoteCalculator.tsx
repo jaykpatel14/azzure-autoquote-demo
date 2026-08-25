@@ -728,25 +728,26 @@ export default function QuoteCalculator({
     setSavedQuote(null);
     setRenderingImageUrl(null);
     setDraftIsFresh(false);
-    const nextFacets = selectedFiles.map((file, index) => ({
+    const file = selectedFiles[0];
+    const nextFacet = {
       id: uid(),
       file,
       previewUrl: URL.createObjectURL(file),
       isObjectUrl: true,
-      title: `Photo ${facetsRef.current.length + index + 1}`,
+      title: "Reference Photo",
       description: "",
       showDescription: false,
       status: "pending" as FacetStatus,
       stageIndex: 0,
       output: null,
       error: ""
-    }));
+    };
 
-    setFacets((current) => [...current, ...nextFacets]);
-    setActiveFacetId((current) => current ?? nextFacets[0].id);
-    setStatus("Photos uploaded. Click 'Analyze with AI' to start.");
+    setFacets([nextFacet]);
+    setActiveFacetId(nextFacet.id);
+    setStatus("Photo uploaded. Click 'Analyze with AI' to start.");
     showToast({
-      message: `${selectedFiles.length} photo(s) added. Click 'Analyze with AI' to run analysis.`,
+      message: "Reference photo added. Click 'Analyze with AI' to run analysis.",
       variant: "info",
       autoDismiss: true
     });
@@ -1883,8 +1884,8 @@ export default function QuoteCalculator({
                 <div className="dropzoneIcon">
                   <span className="material-symbols-outlined" style={{ fontSize: 28, color: "var(--color-primary)" }}>cloud_upload</span>
                 </div>
-                <strong>Add customer reference photos</strong>
-                <span className="muted small">JPG, PNG, or WEBP · up to 10 MB each</span>
+                <strong>Add customer reference photo</strong>
+                <span className="muted small">JPG, PNG, or WEBP · 1 image max (up to 10 MB)</span>
               </div>
               <div className="dropzoneActions" style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
                 <label className="button primary button--sm">
@@ -1893,9 +1894,9 @@ export default function QuoteCalculator({
                   Take photo
                 </label>
                 <label className="button secondary button--sm">
-                  <input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} />
+                  <input type="file" accept="image/jpeg,image/png,image/webp" disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} />
                   <span className="material-symbols-outlined" style={{ fontSize: 16 }}>folder_open</span>
-                  Choose files
+                  Choose file
                 </label>
                 <button
                   type="button"

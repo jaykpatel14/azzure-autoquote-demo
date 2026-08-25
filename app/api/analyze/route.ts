@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     let primaryImageSizeBytes: number = 0;
     let primaryBytes: Buffer | null = null;
 
-    for (const image of rawImages.slice(0, 3)) {
+    for (const image of rawImages.slice(0, 1)) {
       if (image.size > MAX_FILE_SIZE) {
         return NextResponse.json(
           { error: `File "${image.name}" exceeds 10 MB.` },

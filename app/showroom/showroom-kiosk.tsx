@@ -283,7 +283,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
               return new File([blob], f.name || `phone_photo_${idx + 1}.jpg`, { type: f.type || "image/jpeg" });
             })
           );
-          setFiles((prev) => [...prev, ...convertedFiles].slice(0, 3));
+          setFiles(convertedFiles.slice(0, 1));
           setAnalysis(null);
           setRenderingImageUrl(null);
           setError("");
@@ -949,8 +949,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       <div className="dropzoneIcon">
                         <span className="material-symbols-outlined" style={{ fontSize: 28, color: "var(--color-primary)" }}>smartphone</span>
                       </div>
-                      <strong>Add Reference Photos</strong>
-                      <span className="muted small">Scan the QR code to upload securely from your phone, or snap a live photo</span>
+                      <strong>Add Reference Photo</strong>
+                      <span className="muted small">Scan the QR code to upload securely from your phone, or snap a live photo (1 photo)</span>
                     </div>
                     <div className="dropzoneActions" style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
                       <button
@@ -975,7 +975,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                           onChange={(event) => {
                             const selected = Array.from(event.target.files || []);
                             if (selected.length) {
-                              setFiles((prev) => [...prev, ...selected].slice(0, 3));
+                              setFiles(selected.slice(0, 1));
                               setAnalysis(null);
                               setRenderingImageUrl(null);
                               setError("");
