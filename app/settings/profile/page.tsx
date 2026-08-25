@@ -98,6 +98,29 @@ export default async function ProfileSettingsPage() {
           </div>
           <KioskPinForm hasPin={Boolean(data.user.kioskPinHash)} />
         </article>
+
+        <article className="card">
+          <div className="sectionHeader">
+            <div>
+              <h2>Using Staff Mode</h2>
+              <p className="muted">How associates access customer quotes in-store.</p>
+            </div>
+          </div>
+          <div className="stack" style={{ gap: 12, color: "var(--color-on-surface-variant)", fontSize: "0.875rem", lineHeight: 1.5 }}>
+            <p style={{ margin: 0 }}>
+              <strong style={{ color: "var(--color-on-surface)" }}>1. Staff Access Button:</strong> On your showroom kiosk welcome screen, tap the discreet <em>Staff Access</em> link.
+            </p>
+            <p style={{ margin: 0 }}>
+              <strong style={{ color: "var(--color-on-surface)" }}>2. Enter Your 4-Digit PIN:</strong> Tap your personal PIN on the touch numpad to unlock the sales lookup view.
+            </p>
+            <p style={{ margin: 0 }}>
+              <strong style={{ color: "var(--color-on-surface)" }}>3. Fast Quote Lookup:</strong> Search any code (e.g. <code>QT-4821</code>) to view customer designs, specs, and selling prices. Making costs and margins remain strictly protected.
+            </p>
+            <p style={{ margin: 0 }}>
+              <strong style={{ color: "var(--color-on-surface)" }}>4. Auto-Lock Protection:</strong> The kiosk automatically locks and returns to the customer welcome screen after 90 seconds of inactivity.
+            </p>
+          </div>
+        </article>
       </section>
     </WorkspaceShell>
   );

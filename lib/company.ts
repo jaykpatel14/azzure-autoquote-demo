@@ -14,6 +14,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isPrismaConnectionError } from "@/lib/prisma-errors";
 import { isInternalAdminEmail, getInternalAdminContext } from "@/lib/internal-admin";
+import { ensureBasePlans } from "@/lib/plan-bootstrap";
 
 export const ACTIVE_COMPANY_COOKIE = "azzure-active-company-id";
 
@@ -348,6 +349,7 @@ export async function requireAdminSalesContext(companyId: string) {
       select: COMPANY_SELECT
     });
     if (!company) {
+      const plans = await ensureBasePlans(prisma);
       company = await prisma.company.create({
         data: {
           name: "Azzure Internal",
@@ -355,17 +357,18 @@ export async function requireAdminSalesContext(companyId: string) {
           accountStatus: "APPROVED",
           pricingTier: "TIER_2",
           customerMarginPct: 0,
-            subscription: {
-              create: {
-                status: "ACTIVE",
-                plan: { connect: { code: "growth" } },
-                stripeCustomerId: "internal",
-                stripeSubscriptionId: "internal",
-                onboardingComplete: true,
-                currentPeriodStart: new Date(),
-                currentPeriodEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 10))
-              }
+          pricingProfile: { create: {} },
+          subscription: {
+            create: {
+              status: "ACTIVE",
+              planId: plans.enterprise.id,
+              stripeCustomerId: "internal",
+              stripeSubscriptionId: "internal",
+              onboardingComplete: true,
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 10))
             }
+          }
         },
         select: COMPANY_SELECT
       });

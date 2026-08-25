@@ -10,18 +10,21 @@ const TABS = [
   { href: "/settings/pricing", label: "Pricing & Margin" },
   { href: "/settings/branding", label: "Company & Branding" },
   { href: "/settings/team", label: "Team" },
-  { href: "/settings/billing", label: "Billing" }
+  { href: "/settings/billing", label: "Billing" },
+  { href: "/settings/showroom", label: "Showroom & Devices" }
 ];
 
-export default function SettingsTabs({ activeHref, showShowroom = false }: SettingsTabsProps) {
-  const tabs = showShowroom ? [...TABS, { href: "/settings/showroom", label: "Showroom" }] : TABS;
+export default function SettingsTabs({ activeHref }: SettingsTabsProps) {
   return (
     <nav className="settingsTabs" aria-label="Settings tabs">
-      {tabs.map((tab) => (
-        <Link key={tab.href} className={`settingsTab${activeHref === tab.href ? " isActive" : ""}`} href={tab.href}>
-          {tab.label}
-        </Link>
-      ))}
+      {TABS.map((tab) => {
+        const isActive = activeHref === tab.href || (tab.href === "/settings/showroom" && activeHref.startsWith("/settings/showroom"));
+        return (
+          <Link key={tab.href} className={`settingsTab${isActive ? " isActive" : ""}`} href={tab.href}>
+            {tab.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }
