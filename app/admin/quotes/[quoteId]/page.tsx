@@ -290,7 +290,11 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
               </div>
               <div className="detailRow">
                 <span>Customer</span>
-                <strong>{quote.customerName || "Unassigned"}</strong>
+                {admin.user.adminRole === "OPERATIONS_MANAGER" ? (
+                  <strong style={{ fontStyle: "italic", opacity: 0.7, color: "var(--color-on-surface-variant)" }}>[Confidential to Jeweler]</strong>
+                ) : (
+                  <strong>{quote.customerName || "Unassigned"}</strong>
+                )}
               </div>
               <div className="detailRow">
                 <span>Created</span>

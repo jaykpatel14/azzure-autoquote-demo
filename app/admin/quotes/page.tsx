@@ -388,7 +388,11 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
                   <Link className="adminQuoteCompanyLink" href={`/admin/tenants/${row.companyId}`}>
                     {row.companyName}
                   </Link>
-                  <span className="muted small">{row.customerName || "—"}</span>
+                  {admin.user.adminRole === "OPERATIONS_MANAGER" ? (
+                    <span className="muted small" style={{ fontStyle: "italic", opacity: 0.7 }}>[Customer Confidential]</span>
+                  ) : (
+                    <span className="muted small">{row.customerName || "—"}</span>
+                  )}
                 </div>
                 <div>
                   <strong className="adminQuoteMetal">{row.metalType}</strong>

@@ -22,7 +22,8 @@ type RouteContext = {
 // reports they were never able to download their PDF.
 export async function GET(_request: Request, { params }: RouteContext) {
   try {
-    await requireInternalAdminContext();
+    const adminContext = await requireInternalAdminContext();
+    const isOps = adminContext.user.adminRole === "OPERATIONS_MANAGER";
 
     const parsed = paramsSchema.safeParse(await params);
     if (!parsed.success) {
@@ -54,9 +55,9 @@ export async function GET(_request: Request, { params }: RouteContext) {
       companyName: quote.company.name,
       quoteNumber: quote.quoteNumber,
       createdAt: quote.createdAt,
-      customerName: quote.customerName?.trim() || quote.company.name || "Customer",
-      customerEmail: quote.customerEmail?.trim() || null,
-      customerPhone: quote.customerPhone?.trim() || null,
+      customerName: isOps ? quote.company.name : (quote.customerName?.trim() || quote.company.name || "Customer"),
+      customerEmail: isOps ? null : (quote.customerEmail?.trim() || null),
+      customerPhone: isOps ? null : (quote.customerPhone?.trim() || null),
       customerNotes: quote.analysis?.notes || null,
       customerImageDataUrl: sourceImageDataUrl,
       referenceImageDataUrls: sourceImageDataUrl ? [sourceImageDataUrl] : [],
