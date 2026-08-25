@@ -190,18 +190,19 @@ export async function POST(request: Request) {
       data: {
         status: "COMPLETED",
         completedAt: new Date(),
-        jewelryType: merged.jewelryType,
+        jewelryType: merged.jewelryType ? stripNullBytes(merged.jewelryType) : null,
+        selectedMetal: merged.selectedMetal ? stripNullBytes(merged.selectedMetal) : metalType,
         metalWeightGrams: merged.metalWeightGrams,
         centerDiamondCarats: merged.centerDiamondCarats,
         sideDiamondCarats: merged.sideDiamondCarats,
         sideDiamondQuantity: merged.sideDiamondQuantity,
-        confidence: merged.confidence,
-        centerShape: merged.centerShape,
+        confidence: merged.confidence ? stripNullBytes(merged.confidence) : "medium",
+        centerShape: merged.centerShape ? stripNullBytes(merged.centerShape) : null,
         centerClarity: "E VS1",
-        settingType: merged.settingType,
-        assumptions: merged.assumptions,
-        notes: merged.notes,
-        output: merged
+        settingType: merged.settingType ? stripNullBytes(merged.settingType) : null,
+        assumptions: stripNullBytes(merged.assumptions) as Prisma.InputJsonValue,
+        notes: stripNullBytes(merged.notes),
+        output: stripNullBytes(merged) as unknown as Prisma.InputJsonValue
       }
     });
 

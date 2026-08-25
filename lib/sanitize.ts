@@ -2,11 +2,13 @@ export function stripNullBytes<T = unknown>(obj: T): T {
   if (obj === null || obj === undefined) return obj;
 
   if (typeof obj === "string") {
-    // Strip both raw 0x00 and escaped unicode nulls
+    // Strip raw null byte 0x00, escaped unicode nulls, and escaped hex nulls
     return obj
       .replace(/\0/g, "")
       .replace(/\\u0000/g, "")
-      .replace(/\u0000/g, "") as unknown as T;
+      .replace(/\u0000/g, "")
+      .replace(/\\x00/g, "")
+      .replace(/\x00/g, "") as unknown as T;
   }
 
   if (typeof obj === "number" || typeof obj === "boolean" || typeof obj === "bigint") {
