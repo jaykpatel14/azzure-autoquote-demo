@@ -338,7 +338,7 @@ export function canSeeFullPricing(role: CompanyRole | null | undefined) {
 
 export async function requireAdminSalesContext(companyId: string) {
   const adminContext = await getInternalAdminContext();
-  if (!adminContext || (adminContext.user.adminRole !== "SALESMAN" && adminContext.user.adminRole !== "SUPER_ADMIN" && adminContext.user.adminRole !== "OPERATIONS_MANAGER")) {
+  if (!adminContext) {
     throw new CompanyAccessError("Not authorized to assign quotes as an admin.");
   }
 
