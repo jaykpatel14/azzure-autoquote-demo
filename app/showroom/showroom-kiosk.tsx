@@ -402,8 +402,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
         filesToAnalyze.forEach((file) => form.append("images", file));
       }
       const response = await fetch("/api/showroom/analyze", { method: "POST", body: form });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "Analysis failed.");
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.error || "Analysis failed. Please try again.");
+      if (!body) throw new Error("The server is momentarily busy or updating. Please try again.");
       setAnalysisIds([body.analysisId]);
       setAnalysis(body);
       if (body.renderingImageUrl) {
@@ -434,9 +435,12 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
         })
       });
 
-      const body = await response.json();
+      const body = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(body.error || "Failed to generate AI 3D concept.");
+        throw new Error(body?.error || "Failed to generate AI 3D concept.");
+      }
+      if (!body) {
+        throw new Error("The server is momentarily busy. Please try again.");
       }
 
       if (body.imageUrl) {
@@ -521,8 +525,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
         })
       });
 
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "Failed to save quote.");
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.error || "Failed to save quote.");
+      if (!body) throw new Error("Server was momentarily busy. Please try again.");
 
       const savedCode = body.code || body.displayCode || "";
       const savedPrice = body.estimatedPrice ?? body.estimatedSellingPrice ?? 0;
@@ -593,8 +598,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
         });
 
         window.clearInterval(progressTimer);
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Failed to save quote for sharing.");
+        const data = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(data?.error || "Failed to save quote for sharing.");
+        if (!data) throw new Error("Server was momentarily busy. Please try again.");
         currentCode = data.code || data.displayCode || "";
         currentShareToken = data.shareToken || "";
         setCode(currentCode);
