@@ -41,19 +41,22 @@ export default function ShowroomDeviceProvider({
   const router = useRouter();
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(DEVICE_TOKEN_KEY);
-      if (stored) {
-        setDeviceToken(stored);
+    const timer = setTimeout(() => {
+      try {
+        const stored = localStorage.getItem(DEVICE_TOKEN_KEY);
+        if (stored) {
+          setDeviceToken(stored);
+          setStatus("ready");
+        } else {
+          setStatus("registering");
+        }
+      } catch {
+        // If localStorage is blocked/unavailable (private mode, strict webview policy),
+        // gracefully proceed as a guest session without device registration.
         setStatus("ready");
-      } else {
-        setStatus("registering");
       }
-    } catch {
-      // If localStorage is blocked/unavailable (private mode, strict webview policy),
-      // gracefully proceed as a guest session without device registration.
-      setStatus("ready");
-    }
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // Heartbeat loop: Runs while kiosk is ready with a registered device token
@@ -96,9 +99,14 @@ export default function ShowroomDeviceProvider({
       }
     };
 
-    performHeartbeat();
+    const timer = setTimeout(() => {
+      void performHeartbeat();
+    }, 0);
     const interval = setInterval(performHeartbeat, 2 * 60 * 1000); // every 2 minutes
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [deviceToken, showroomToken, status, router]);
 
   if (status === "checking") {

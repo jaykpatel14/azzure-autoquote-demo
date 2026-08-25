@@ -130,7 +130,10 @@ export default function KioskStaffView({
   }, [sessionToken, onExit]);
 
   useEffect(() => {
-    fetchRecentQuotes();
+    const timer = setTimeout(() => {
+      void fetchRecentQuotes();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchRecentQuotes]);
 
   // Lookup quote by code

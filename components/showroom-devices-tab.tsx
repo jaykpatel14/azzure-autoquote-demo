@@ -102,9 +102,14 @@ export default function ShowroomDevicesTab({
   }, []);
 
   useEffect(() => {
-    fetchDevices();
+    const timer = setTimeout(() => {
+      void fetchDevices();
+    }, 0);
     const interval = setInterval(fetchDevices, 30000); // refresh every 30s
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [fetchDevices]);
 
   const handleSaveRename = async (e: React.FormEvent) => {
