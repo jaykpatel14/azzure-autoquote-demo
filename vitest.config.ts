@@ -9,7 +9,7 @@ export default defineConfig({
     environment: "node",
     globals: false,
     env: {
-      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/autoquote_test"
+      DATABASE_URL: process.env.DATABASE_URL || "postgresql://autoquote:autoquote@127.0.0.1:5432/autoquote?schema=public"
     },
     include: ["test/**/*.test.ts", "src/**/*.test.ts"]
   },
