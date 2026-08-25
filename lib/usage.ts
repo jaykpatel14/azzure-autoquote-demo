@@ -51,21 +51,50 @@ export async function reserveMonthlyUsage(companyId: string) {
       FOR UPDATE
     `;
 
-    if (!usage) {
-      throw new Error("No active usage period found for this company.");
+    let activeUsage = usage;
+    if (!activeUsage) {
+      const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      const periodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+      const monthlyLimit = isTrial ? 40 : Number.isFinite(features.quotesPerMonth) ? features.quotesPerMonth : 2500;
+
+      const created = await tx.usagePeriod.upsert({
+        where: {
+          companyId_periodStart_periodEnd: {
+            companyId,
+            periodStart,
+            periodEnd
+          }
+        },
+        create: {
+          companyId,
+          periodStart,
+          periodEnd,
+          limit: monthlyLimit,
+          used: 0,
+          reserved: 0
+        },
+        update: {}
+      });
+
+      activeUsage = {
+        id: created.id,
+        limit: created.limit,
+        used: created.used,
+        reserved: created.reserved
+      };
     }
 
-    if (!canReserveUsage(usage) && !permitsOverage) {
+    if (!canReserveUsage(activeUsage) && !permitsOverage) {
       const planName = features.quotesPerMonth <= 100 ? "Starter" : "your current";
-      throw new UsageLimitError(`Monthly limit of ${usage.limit} estimates reached for ${planName} plan. Upgrade to a higher plan or enable overage.`);
+      throw new UsageLimitError(`Monthly limit of ${activeUsage.limit} estimates reached for ${planName} plan. Upgrade to a higher plan or enable overage.`);
     }
 
     await tx.usagePeriod.update({
-      where: { id: usage.id },
+      where: { id: activeUsage.id },
       data: { reserved: { increment: 1 } }
     });
 
-    return { usagePeriodId: usage.id, isOverage: !canReserveUsage(usage) };
+    return { usagePeriodId: activeUsage.id, isOverage: !canReserveUsage(activeUsage) };
   });
 }
 
