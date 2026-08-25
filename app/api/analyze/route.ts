@@ -209,7 +209,7 @@ export async function POST(request: Request) {
       data: {
         moderationModel: moderation.model,
         moderationFlagged: moderation.flagged,
-        moderationResult: moderation.rawResponse as Prisma.InputJsonValue
+        moderationResult: stripNullBytes(moderation.rawResponse) as Prisma.InputJsonValue
       }
     });
 
@@ -239,7 +239,7 @@ export async function POST(request: Request) {
             model: provider.model,
             modelVersion: provider.modelVersion,
             promptVersion: provider.promptVersion,
-            responseId: attemptResult.result.responseId,
+            responseId: attemptResult.result.responseId ? stripNullBytes(attemptResult.result.responseId) : null,
             retryCount: attemptResult.retryCount,
             latencyMs: attemptResult.latencyMs,
             promptTokens: attemptResult.result.usage?.inputTokens,
@@ -256,7 +256,7 @@ export async function POST(request: Request) {
               0
             ),
             confidence: attemptResult.result.output.confidence,
-            notes: attemptResult.result.output.assumptions.join(" | "),
+            notes: stripNullBytes(attemptResult.result.output.assumptions.join(" | ")),
             output: stripNullBytes(attemptResult.result.output) as unknown as Prisma.InputJsonValue,
             rawResponse: stripNullBytes(attemptResult.result.rawResponse) as Prisma.InputJsonValue
           }
@@ -274,10 +274,10 @@ export async function POST(request: Request) {
           promptVersion: provider.promptVersion,
           retryCount: attemptResult.retryCount,
           latencyMs: attemptResult.latencyMs,
-          errorMessage: attemptResult.failure.error.message,
-          errorCode: attemptResult.failure.error.code,
-          errorType: attemptResult.failure.error.type,
-          rawResponse: attemptResult.failure.error
+          errorMessage: attemptResult.failure.error.message ? stripNullBytes(attemptResult.failure.error.message) : null,
+          errorCode: attemptResult.failure.error.code ? stripNullBytes(attemptResult.failure.error.code) : null,
+          errorType: attemptResult.failure.error.type ? stripNullBytes(attemptResult.failure.error.type) : null,
+          rawResponse: stripNullBytes(attemptResult.failure.error) as Prisma.InputJsonValue
         }
       });
 

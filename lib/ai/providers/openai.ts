@@ -149,7 +149,11 @@ export async function createOpenAIJewelryAnalysisProvider(
         return {
           model: response.model,
           flagged: response.results.some((result) => result.flagged),
-          rawResponse: response
+          rawResponse: {
+            id: response.id,
+            model: response.model,
+            results: response.results
+          }
         };
       }
 
@@ -161,7 +165,11 @@ export async function createOpenAIJewelryAnalysisProvider(
         return {
           model: response.model,
           flagged: response.results.some((result) => result.flagged),
-          rawResponse: response
+          rawResponse: {
+            id: response.id,
+            model: response.model,
+            results: response.results
+          }
         };
       }
 
@@ -223,7 +231,11 @@ export async function createOpenAIJewelryAnalysisProvider(
         latencyMs: Date.now() - start,
         retryCount: 0,
         usage: normalizeUsage(response.usage),
-        rawResponse: response
+        rawResponse: {
+          id: response.id,
+          model: response.model,
+          usage: response.usage
+        }
       };
     }
   };

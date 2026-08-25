@@ -162,7 +162,7 @@ export async function POST(request: Request) {
           model: provider.model,
           modelVersion: provider.modelVersion,
           promptVersion: provider.promptVersion,
-          responseId: attempt.result.responseId,
+          responseId: attempt.result.responseId ? stripNullBytes(attempt.result.responseId) : null,
           retryCount: attempt.retryCount,
           latencyMs: attempt.latencyMs,
           metalWeightGrams: attempt.result.output.metal_weight_grams,
@@ -176,6 +176,7 @@ export async function POST(request: Request) {
             0
           ),
           confidence: attempt.result.output.confidence,
+          notes: stripNullBytes((attempt.result.output.assumptions || []).join(" | ")),
           output: stripNullBytes(attempt.result.output) as unknown as Prisma.InputJsonValue,
           rawResponse: stripNullBytes(attempt.result.rawResponse) as Prisma.InputJsonValue
         }

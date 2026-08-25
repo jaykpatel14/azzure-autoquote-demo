@@ -162,4 +162,22 @@ describe("openai jewelry analysis provider", () => {
       expect(result.result.output.centerStone.caratWeight).toBe(1.2);
     }
   });
+
+  test("stripNullBytes removes null bytes from strings, nested objects, and arrays", async () => {
+    const { stripNullBytes } = await import("@/lib/sanitize");
+
+    expect(stripNullBytes("hello\0world")).toBe("helloworld");
+    expect(stripNullBytes("hello\\u0000world")).toBe("helloworld");
+    expect(stripNullBytes({ a: "test\0value", b: ["item\0 1", { c: "deep\0" }] })).toEqual({
+      a: "testvalue",
+      b: ["item 1", { c: "deep" }]
+    });
+
+    const error = new Error("err\0or");
+    expect(stripNullBytes(error)).toEqual({
+      name: "Error",
+      message: "error",
+      stack: expect.any(String)
+    });
+  });
 });
