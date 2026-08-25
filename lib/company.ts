@@ -222,22 +222,13 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
     if ((user.isInternalAdmin || isInternalAdminEmail(user.email))) {
       // If a company cookie is set, use it to synthesize impersonated context
       if (cookieCompanyId) {
-        let company = await prisma.company.findUnique({
+        const company = await prisma.company.findUnique({
           where: { id: cookieCompanyId },
           select: COMPANY_SELECT
         });
 
         if (!company) {
-          // Cookie company not found, try to find an approved company as fallback
-          const fallbackCompany = await prisma.company.findFirst({
-            where: { accountStatus: "APPROVED" },
-            select: COMPANY_SELECT
-          });
-
-          if (!fallbackCompany) return null;
-
-          cookieCompanyId = fallbackCompany.id;
-          company = fallbackCompany;
+          return null;
         }
 
         const impersonatedMembership: CompanyMembership = {
@@ -263,37 +254,8 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
         };
       }
 
-      // No cookieCompanyId set - find an approved company as fallback for internal admin access
-      const fallbackCompany = await prisma.company.findFirst({
-        where: { accountStatus: "APPROVED" },
-        select: COMPANY_SELECT
-      });
-
-      if (!fallbackCompany) {
-        throw new CompanyAccessError("Your account is not assigned to any companies. Please set a company cookie or contact support.");
-      }
-
-      const impersonatedMembership: CompanyMembership = {
-        id: `admin-fallback:${fallbackCompany.id}`,
-        role: "OWNER" as const,
-        companyId: fallbackCompany.id,
-        userId: user.id,
-        company: fallbackCompany
-      };
-
-      return {
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          sessionVersion: user.sessionVersion,
-          memberships: [impersonatedMembership]
-        },
-        membership: impersonatedMembership,
-        memberships: [impersonatedMembership],
-        company: fallbackCompany,
-        isImpersonating: true
-      };
+      // No cookieCompanyId set for internal admin - return null so caller knows no tenant context is active
+      return null;
     }
 
     // Non-admin user with no memberships

@@ -6,6 +6,7 @@ declare module "next-auth" {
       id: string;
       sessionVersion: number;
       role: "AZZURE_ADMIN" | "CUSTOMER";
+      adminRole?: "SUPER_ADMIN" | "OPERATIONS_MANAGER" | "ESTIMATOR_ADMIN" | "SUPPORT_ADMIN" | "SALESMAN" | null;
       companyId: string;
       companyName: string;
       planId: "plan_starter" | "plan_professional" | "plan_enterprise" | "plan_ultra";
@@ -26,5 +27,6 @@ declare module "next-auth/jwt" {
     pricingTier?: "TIER_1" | "TIER_2" | "TIER_3" | null;
     ckCustomerVerified?: boolean;
     role?: "AZZURE_ADMIN" | "CUSTOMER";
+    adminRole?: "SUPER_ADMIN" | "OPERATIONS_MANAGER" | "ESTIMATOR_ADMIN" | "SUPPORT_ADMIN" | "SALESMAN" | null;
   }
 }

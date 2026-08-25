@@ -6,10 +6,12 @@ import { signIn } from "next-auth/react";
 
 export default function SignInForm({
   initialEmail,
-  verified
+  verified,
+  next
 }: {
   initialEmail: string;
   verified: boolean;
+  next?: string;
 }) {
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
@@ -23,11 +25,13 @@ export default function SignInForm({
     setLoading(true);
     setStatus("");
 
+    const targetUrl = next || "/";
+
     const result = await signIn("credentials", {
       email,
       password,
       redirect: false,
-      callbackUrl: "/"
+      callbackUrl: targetUrl
     });
 
     if (result?.error) {
@@ -43,7 +47,7 @@ export default function SignInForm({
     // Force a new document request after Auth.js writes the session cookie.
     // A client-side transition can reuse the anonymous home-page response and
     // leave a successfully signed-in user looking at the public pricing page.
-    window.location.assign(result?.url || "/");
+    window.location.assign(next || result?.url || "/");
   }
 
   return (
