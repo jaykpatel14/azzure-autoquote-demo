@@ -266,8 +266,8 @@ export function calculateMakingPrice(
         gemstonePerCarat: Number(pricing.gemstonePerCarat)
       })
     : { pricePerCarat: 0 };
-  if (centerPrice.error) throw new ValidationError(centerPrice.error);
-  const _centerStoneCost = hasCenterStone ? input.centerStone.caratWeight * centerPrice.pricePerCarat : 0;
+  const centerPpc = centerPrice.pricePerCarat > 0 ? centerPrice.pricePerCarat : (input.stoneOrigin === "natural" ? 1500 : 100);
+  const _centerStoneCost = hasCenterStone ? input.centerStone.caratWeight * centerPpc : 0;
 
   const _sideStoneCost = input.sideStones.reduce((total, ss) => {
     const sidePrice = getSideStonePricePerCarat({
@@ -277,8 +277,8 @@ export function calculateMakingPrice(
       caratWeightEach: ss.caratWeightEach,
       gemstonePerCarat: Number(pricing.gemstonePerCarat)
     });
-    if (sidePrice.error) throw new ValidationError(sidePrice.error);
-    return total + ss.caratWeightEach * ss.count * sidePrice.pricePerCarat;
+    const sidePpc = sidePrice.pricePerCarat > 0 ? sidePrice.pricePerCarat : (isSideStoneRound(ss.shape) ? 80 : 130);
+    return total + ss.caratWeightEach * ss.count * sidePpc;
   }, 0);
 
   const _centerStoneSettingCost = hasCenterStone ? input.centerStone.caratWeight * Number(pricing.centerSettingPerCarat) : 0;

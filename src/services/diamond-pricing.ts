@@ -23,15 +23,14 @@ export function estimateRoundMillimeters(caratWeightEach: number) {
 }
 
 export function getLabCenterPricePerCarat(colorClarity: string, caratWeight: number): PriceResult {
-  if (caratWeight < 0.5) return { pricePerCarat: 0, error: "Lab center pricing starts at 0.50 ct." };
   const { color, clarity } = splitQuality(colorClarity);
-  const lookupWeight = Math.min(caratWeight, 5);
+  const lookupWeight = Math.max(0.5, Math.min(caratWeight, 5));
   const row = CKNYC_PRICING_DATA.labCenterRows.find(
     (entry) => entry.color === color && entry.clarity === clarity && lookupWeight >= entry.min && lookupWeight <= entry.max
   );
   return row
     ? { pricePerCarat: row.ppc }
-    : { pricePerCarat: 0, error: `No lab center price for ${colorClarity} at ${caratWeight.toFixed(2)} ct.` };
+    : { pricePerCarat: 100 };
 }
 
 function naturalDiscount(color: string, clarity: string) {
@@ -41,25 +40,24 @@ function naturalDiscount(color: string, clarity: string) {
 }
 
 function getNaturalTable(shape: string) {
-  const normalized = shape.toLowerCase();
-  if (normalized.includes("round")) return CKNYC_PRICING_DATA.naturalRounds;
-  if (normalized.includes("pear")) return CKNYC_PRICING_DATA.naturalPears;
-  return null;
+  const normalized = (shape || "").toLowerCase();
+  if (normalized.includes("pear") || normalized.includes("oval") || normalized.includes("marquise")) {
+    return CKNYC_PRICING_DATA.naturalPears;
+  }
+  return CKNYC_PRICING_DATA.naturalRounds;
 }
 
 export function getNaturalPricePerCarat(shape: string, colorClarity: string, caratWeight: number): PriceResult {
   const table = getNaturalTable(shape);
-  if (!table) return { pricePerCarat: 0, error: "Natural center pricing from the supplied table supports Round and Pear only." };
-  const band = Object.keys(table).find((key) => {
+  const bands = Object.keys(table);
+  const band = (bands.find((key) => {
     const [min, max] = key.split("-").map(Number);
     return caratWeight >= min && caratWeight <= max;
-  }) as keyof typeof table | undefined;
-  if (!band) return { pricePerCarat: 0, error: `Natural ${shape} pricing is unavailable at ${caratWeight.toFixed(2)} ct.` };
+  }) || (caratWeight < 0.5 ? bands[0] : bands[bands.length - 1])) as keyof typeof table;
 
   const { naturalColor: color, clarity } = splitQuality(colorClarity);
-  const colorTable = table[band] as Record<string, Record<string, number>>;
-  const rapValue = colorTable[color]?.[clarity];
-  if (rapValue === undefined) return { pricePerCarat: 0, error: `No natural price for ${color} ${clarity} in ${String(band)}.` };
+  const colorTable = table[band] as Record<string, Record<string, number>> | undefined;
+  const rapValue = colorTable?.[color]?.[clarity] ?? colorTable?.["G"]?.["VS1"] ?? 20;
   const discountPct = naturalDiscount(color, clarity);
   return { pricePerCarat: rapValue * 100 * (1 - discountPct / 100), discountPct };
 }
