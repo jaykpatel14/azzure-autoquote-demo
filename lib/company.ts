@@ -213,43 +213,52 @@ export async function getAuthenticatedCompanyContext(): Promise<CompanyContext |
   if (user.sessionVersion !== session.user.sessionVersion) return null;
 
   const cookieStore = await cookies();
-  const cookieCompanyId = cookieStore.get(ACTIVE_COMPANY_COOKIE)?.value;
+  let cookieCompanyId = cookieStore.get(ACTIVE_COMPANY_COOKIE)?.value;
 
   if (user.memberships.length === 0) {
     // Internal admin/support staff have no company of their own. If they've opened a
     // tenant's context from the admin console, synthesize a read-only preview instead
     // of treating them as an unaffiliated (and therefore blocked) customer.
-    if ((user.isInternalAdmin || isInternalAdminEmail(user.email)) && cookieCompanyId) {
-      const company = await prisma.company.findUnique({
-        where: { id: cookieCompanyId },
-        select: COMPANY_SELECT
-      });
+    if ((user.isInternalAdmin || isInternalAdminEmail(user.email))) {
+      // If a company cookie is set, use it to synthesize impersonated context
+      if (cookieCompanyId) {
+        const company = await prisma.company.findUnique({
+          where: { id: cookieCompanyId },
+          select: COMPANY_SELECT
+        });
 
-      if (!company) return null;
+        if (!company) {
+          return null;
+        }
 
-      const impersonatedMembership: CompanyMembership = {
-        id: `impersonation:${company.id}`,
-        role: "VIEWER",
-        companyId: company.id,
-        userId: user.id,
-        company
-      };
+        const impersonatedMembership: CompanyMembership = {
+          id: `impersonation:${cookieCompanyId}`,
+          role: "VIEWER",
+          companyId: cookieCompanyId,
+          userId: user.id,
+          company: company as unknown as CompanyMembershipCompany
+        };
 
-      return {
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          sessionVersion: user.sessionVersion,
-          memberships: [impersonatedMembership]
-        },
-        membership: impersonatedMembership,
-        memberships: [impersonatedMembership],
-        company,
-        isImpersonating: true
-      };
+        return {
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            sessionVersion: user.sessionVersion,
+            memberships: [impersonatedMembership]
+          },
+          membership: impersonatedMembership,
+          memberships: [impersonatedMembership],
+          company: impersonatedMembership.company,
+          isImpersonating: true
+        };
+      }
+
+      // No cookieCompanyId set for internal admin - return null so caller knows no tenant context is active
+      return null;
     }
 
+    // Non-admin user with no memberships
     throw new CompanyAccessError("Your account is not assigned to any companies.");
   }
 

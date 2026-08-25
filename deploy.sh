@@ -33,9 +33,16 @@ aws ecr get-login-password --region "${AWS_REGION}" |
     --username AWS \
     --password-stdin "${ECR_REGISTRY}"
 
-echo "Pruning unused Docker images to free up disk space..."
+echo "Pruning Docker objects to free up disk space..."
 
-docker image prune -af --filter "until=24h" || true
+# Clean up unused images, containers, networks, and volumes
+docker system prune -af --volumes 2>/dev/null || true
+
+# Also remove dangling images specifically
+docker image prune -af --filter "until=1h" 2>/dev/null || true
+
+echo "Disk space available after pruning:"
+df -h / 2>/dev/null || true
 
 echo "Pulling application image..."
 docker pull "${APP_IMAGE}"

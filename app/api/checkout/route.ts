@@ -12,7 +12,6 @@ import { isPlanCode } from "@/lib/subscription-plans";
 const checkoutSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(200),
-  name: z.string().trim().min(1).max(120).optional(),
   companyName: z.string().trim().min(2).max(120),
   planCode: z.string().trim().default("professional")
 });
@@ -92,48 +91,62 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = hashPassword(input.password);
-    const { user, company } = await prisma.$transaction(async (tx) =>
-      onboardCompanyOwner(tx, {
-        email,
-        name: input.name,
-        passwordHash,
-        companyName: input.companyName,
+    let createdUser: { id: string, email: string, name: string | null } | null = null;
+    let createdCompany: { id: string, name: string, createdAt: Date } | null = null;
+
+    try {
+      const { user, company } = await prisma.$transaction(async (tx) =>
+        onboardCompanyOwner(tx, {
+          email,
+          passwordHash,
+          companyName: input.companyName,
+          planCode
+        })
+      );
+      
+      createdUser = user;
+      createdCompany = company;
+
+      const token = await createEmailVerificationToken(user.id, company.id);
+      const verificationUrl = buildAppUrl(`/verify-email?token=${token}`);
+
+      await sendAuthMail({
+        to: user.email,
+        subject: "Verify your Azzure AI Quote account",
+        text: `Verify your email address: ${verificationUrl}`,
+        html: `<p>Verify your email address: <a href="${verificationUrl}">${verificationUrl}</a></p>`
+      });
+
+      const checkout = await createStripeCheckoutSession({
+        companyId: company.id,
+        email: user.email,
         planCode
-      })
-    );
+      });
 
-    const token = await createEmailVerificationToken(user.id, company.id);
-    const verificationUrl = buildAppUrl(`/verify-email?token=${token}`);
+      if ("error" in checkout) {
+        throw new Error(checkout.error);
+      }
 
-    await sendAuthMail({
-      to: user.email,
-      subject: "Verify your Azzure AI Quote account",
-      text: `Verify your email address: ${verificationUrl}`,
-      html: `<p>Verify your email address: <a href="${verificationUrl}">${verificationUrl}</a></p>`
-    });
+      await sendSignupApprovalAlert({
+        companyName: company.name,
+        ownerName: user.email,
+        ownerEmail: user.email,
+        signedUpAt: company.createdAt
+      });
 
-    const checkout = await createStripeCheckoutSession({
-      companyId: company.id,
-      email: user.email,
-      planCode
-    });
-
-    if ("error" in checkout) {
-      return NextResponse.json({ error: checkout.error }, { status: 409 });
+      return NextResponse.json({
+        ok: true,
+        email: user.email,
+        url: checkout.url
+      });
+    } catch (innerError) {
+      if (createdCompany) {
+        await prisma.company.delete({ where: { id: createdCompany.id } }).catch(() => {});
+      } else if (createdUser) {
+        await prisma.user.delete({ where: { id: createdUser.id } }).catch(() => {});
+      }
+      throw innerError;
     }
-
-    await sendSignupApprovalAlert({
-      companyName: company.name,
-      ownerName: input.name?.trim() || user.name || user.email,
-      ownerEmail: user.email,
-      signedUpAt: company.createdAt
-    });
-
-    return NextResponse.json({
-      ok: true,
-      email: user.email,
-      url: checkout.url
-    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unable to create account." },

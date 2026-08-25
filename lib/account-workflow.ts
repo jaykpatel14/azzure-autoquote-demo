@@ -52,14 +52,14 @@ export async function sendAccountApprovedMail(input: {
   companyName: string;
   tier: "TIER_1" | "TIER_2" | "TIER_3";
 }) {
+  // ponytail: tier is kept in the signature for audit/compat but is intentionally
+  // NOT surfaced in the email body — customers should not see their assigned tier.
   const loginUrl = buildAppUrl("/signin");
   const subject = "Your Azzure AI Quote account is approved";
   const body = [
     `Hi ${input.ownerName},`,
     "",
     `Your Azzure AI Quote account for ${input.companyName} has been approved.`,
-    "",
-    `You've been set up on our ${tierLabel(input.tier)} pricing program.`,
     "",
     "Log in to start generating quotes:",
     loginUrl,

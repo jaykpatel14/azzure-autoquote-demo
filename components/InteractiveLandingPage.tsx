@@ -55,6 +55,15 @@ const PRESETS = {
 
 type PresetKey = keyof typeof PRESETS;
 
+// ponytail: maps each preset to a real 3D rendered catalog image so the live
+// demo shows a photorealistic render instead of the inline SVG illustration.
+const PRESET_RENDER: Record<PresetKey, string> = {
+  "oval-solitaire": "/images/catalog/oval_solitaire.jpg",
+  "pave-band": "/images/catalog/cushion_pave.jpg",
+  "halo-ring": "/images/catalog/pear_halo.jpg",
+  "tennis-bracelet": "/images/catalog/emerald_3stone.jpg"
+};
+
 function calculateDemoPrice(adjustments: {
   metal: string;
   centerShape: string;
@@ -409,18 +418,18 @@ export function InteractiveLandingPage() {
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "#EFF6FF", border: "1px solid #DBEAFE", borderRadius: 9999, marginBottom: 24 }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#005AB7", display: "inline-block" }} />
               <span style={{ fontSize: 12, fontWeight: 600, color: "#005AB7", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                Introducing Azzure AI Quote v2.0
+                The World&apos;s First AI Powered Live Quotation System
               </span>
             </div>
-            
+
             <h1 style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontWeight: 700, fontSize: "clamp(46px, 5.5vw, 76px)", lineHeight: 1.08, color: "#0F172A", marginBottom: 24, letterSpacing: "-0.02em" }}>
-              Quote any piece<br />
-              of jewelry.<br />
-              <span style={{ color: "#005AB7" }}>In seconds.</span>
+              AI powered live<br />
+              quotation.<br />
+              <span style={{ color: "#005AB7" }}>Enabled with 3D rendered images.</span>
             </h1>
-            
+
             <p style={{ fontSize: 18, lineHeight: 1.7, color: "#475569", marginBottom: 36, maxWidth: 500 }}>
-              Upload a customer&apos;s inspiration photo — an Instagram screenshot, a magazine clip, anything. Our AI identifies the metal, stones, and setting, and generates an accurate quote instantly.
+              Upload a customer&apos;s inspiration photo — an Instagram screenshot, a magazine clip, anything. Our AI identifies the metal, stones, and setting, then renders a photorealistic 3D concept and generates an accurate quote in seconds.
             </p>
             
             <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
@@ -486,8 +495,19 @@ export function InteractiveLandingPage() {
 
               {/* Right Render & Price */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", textAlign: "center" }}>
-                <div style={{ width: "100%", height: 140, display: "flex", alignItems: "center", justifyContent: "center", background: "#F8FAFC", borderRadius: 10, border: "1px solid #E2E8F0", marginBottom: 12 }}>
-                  <RingIllustration type="solitaire" className={heroRingDrawn ? "drawn" : ""} />
+                <div style={{ width: "100%", height: 140, display: "flex", alignItems: "center", justifyContent: "center", background: "#F8FAFC", borderRadius: 10, border: "1px solid #E2E8F0", marginBottom: 12, overflow: "hidden" }}>
+                  <img
+                    src="/images/catalog/oval_solitaire.jpg"
+                    alt="3D rendered solitaire engagement ring"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      opacity: heroRingDrawn ? 1 : 0,
+                      transform: heroRingDrawn ? "scale(1)" : "scale(1.06)",
+                      transition: "opacity 0.8s ease, transform 0.8s ease"
+                    }}
+                  />
                 </div>
 
                 <div style={{ width: "100%", borderTop: "1px solid #F1F5F9", paddingTop: 12, marginBottom: 14 }}>
@@ -530,7 +550,7 @@ export function InteractiveLandingPage() {
         <hr style={{ border: "none", height: 1, background: "linear-gradient(90deg, transparent, #CBD5E1, transparent)" }} />
 
         <p style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontWeight: 700, fontSize: 34, lineHeight: 1.4, color: "#0F172A", padding: "28px 0" }}>
-          Azzure AI Quote turns that photo into a professional quote<br />
+          Azzure AI Quote turns that photo into a photorealistic 3D render and a professional quote<br />
           — accurate, branded, ready to share — in under <span style={{ color: "#005AB7" }}>60 seconds</span>.
         </p>
       </section>
@@ -568,7 +588,7 @@ export function InteractiveLandingPage() {
           <h2 style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: "clamp(36px, 4vw, 52px)", fontWeight: 700, color: "#0F172A", marginBottom: 14 }}>
             Try it yourself.
           </h2>
-          <p style={{ fontSize: 17, color: "#64748B" }}>Pick a ring style. Watch the AI work. See your quote adjust live.</p>
+          <p style={{ fontSize: 17, color: "#64748B" }}>Pick a ring style. Watch the AI work. See a 3D rendered image and your quote adjust live.</p>
         </div>
 
         {/* Preset Selector */}
@@ -681,8 +701,12 @@ export function InteractiveLandingPage() {
 
           {/* Right Display & Price */}
           <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 32, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ width: 160, height: 160, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-              <RingIllustration type={PRESETS[activePreset].svgType} />
+            <div style={{ width: 160, height: 160, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, overflow: "hidden", borderRadius: 12 }}>
+              <img
+                src={PRESET_RENDER[activePreset]}
+                alt="3D rendered jewelry concept"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
             </div>
             <div style={{ borderTop: "1px solid #E2E8F0", paddingTop: 18, width: "100%" }}>
               <p style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748B", marginBottom: 4 }}>Quote price</p>
@@ -1184,6 +1208,9 @@ export function InteractiveLandingPage() {
                     <p style={{ fontSize: 14, color: "#1E293B" }}><strong>Side stones:</strong> 20 round, pavé</p>
                   </div>
                   <div style={{ background: "#F8FAFC", padding: 20, borderRadius: 12, textAlign: "center", border: "1px solid #E2E8F0" }}>
+                    <div style={{ width: 64, height: 64, margin: "0 auto 8px", overflow: "hidden", borderRadius: 8 }}>
+                      <img src="/images/catalog/oval_solitaire.jpg" alt="3D rendered ring" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
                     <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "#64748B" }}>Quote price</p>
                     <p style={{ fontFamily: "var(--font-display-loaded, Georgia, serif)", fontSize: 32, fontWeight: 700, color: "#005AB7" }}>$2,380</p>
                   </div>

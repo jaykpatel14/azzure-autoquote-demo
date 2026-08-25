@@ -145,6 +145,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.name = user.name;
         token.sessionVersion = "sessionVersion" in user ? user.sessionVersion ?? 0 : 0;
         token.role = (isInternalAdminEmail(user.email) || ("isInternalAdmin" in user && Boolean(user.isInternalAdmin))) ? "AZZURE_ADMIN" : "CUSTOMER";
+        token.adminRole = "adminRole" in user && typeof user.adminRole === "string" ? (user.adminRole as "SUPER_ADMIN" | "OPERATIONS_MANAGER" | "ESTIMATOR_ADMIN" | "SUPPORT_ADMIN" | "SALESMAN") : null;
         token.companyId = "companyId" in user && typeof user.companyId === "string" ? user.companyId : "";
         token.companyName = "companyName" in user && typeof user.companyName === "string" ? user.companyName : "";
         token.planId =
@@ -170,6 +171,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.sub ?? "";
         session.user.sessionVersion = typeof token.sessionVersion === "number" ? token.sessionVersion : 0;
         session.user.role = token.role === "AZZURE_ADMIN" ? "AZZURE_ADMIN" : "CUSTOMER";
+        session.user.adminRole = (token.adminRole as "SUPER_ADMIN" | "OPERATIONS_MANAGER" | "ESTIMATOR_ADMIN" | "SUPPORT_ADMIN" | "SALESMAN" | null) ?? null;
         session.user.companyId = typeof token.companyId === "string" ? token.companyId : "";
         session.user.companyName = typeof token.companyName === "string" ? token.companyName : "";
         session.user.planId =

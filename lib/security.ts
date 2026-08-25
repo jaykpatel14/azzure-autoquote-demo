@@ -103,23 +103,45 @@ export function isSameOriginRequest(request: Request | NextRequest) {
   }
 }
 
-export function hasAllowedImageSignature(bytes: Uint8Array, mimeType: string) {
-  if (mimeType === "image/jpeg") {
-    return JPEG_SIGNATURE.every((byte, index) => bytes[index] === byte);
+export function hasAllowedImageSignature(bytes: Uint8Array, _mimeType?: string) {
+  // Verify actual file bytes regardless of the declared MIME type.
+  // Browsers sometimes send a mismatched MIME type (e.g. a WebP file with a
+  // .jpg extension is uploaded as image/jpeg), so trust the bytes, not the type.
+  if (JPEG_SIGNATURE.every((byte, index) => bytes[index] === byte)) {
+    return true;
   }
 
-  if (mimeType === "image/png") {
-    return PNG_SIGNATURE.every((byte, index) => bytes[index] === byte);
+  if (PNG_SIGNATURE.every((byte, index) => bytes[index] === byte)) {
+    return true;
   }
 
-  if (mimeType === "image/webp") {
-    return (
-      WEBP_SIGNATURE_PREFIX.every((byte, index) => bytes[index] === byte) &&
-      WEBP_SIGNATURE_SUFFIX.every((byte, index) => bytes[index + 8] === byte)
-    );
+  if (
+    WEBP_SIGNATURE_PREFIX.every((byte, index) => bytes[index] === byte) &&
+    WEBP_SIGNATURE_SUFFIX.every((byte, index) => bytes[index + 8] === byte)
+  ) {
+    return true;
   }
 
   return false;
+}
+
+export function detectImageMimeType(bytes: Uint8Array): string | null {
+  if (JPEG_SIGNATURE.every((byte, index) => bytes[index] === byte)) {
+    return "image/jpeg";
+  }
+
+  if (PNG_SIGNATURE.every((byte, index) => bytes[index] === byte)) {
+    return "image/png";
+  }
+
+  if (
+    WEBP_SIGNATURE_PREFIX.every((byte, index) => bytes[index] === byte) &&
+    WEBP_SIGNATURE_SUFFIX.every((byte, index) => bytes[index + 8] === byte)
+  ) {
+    return "image/webp";
+  }
+
+  return null;
 }
 
 export function hasAllowedShowroomMediaSignature(bytes: Uint8Array, mimeType: string) {

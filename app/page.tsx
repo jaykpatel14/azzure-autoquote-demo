@@ -7,7 +7,8 @@ import WorkspaceShell from "@/components/workspace-shell";
 import { UsageBar } from "@/src/components/ui/UsageBar";
 import { StatusBadge } from "@/src/components/ui/StatusBadge";
 import { getTrialDaysRemaining, getTrialQuotesRemaining } from "@/lib/billing";
-import { CompanyAccessError, getAuthenticatedCompanyContext } from "@/lib/company";
+import { cookies } from "next/headers";
+import { ACTIVE_COMPANY_COOKIE, CompanyAccessError, getAuthenticatedCompanyContext } from "@/lib/company";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getDashboardData } from "@/src/services/dashboard";
@@ -183,6 +184,19 @@ const PLAN_CARDS = [
 export default async function HomePage() {
   const adminContext = await getInternalAdminContext();
 
+  // When an internal admin navigates to the root dashboard, redirect to the admin console
+  // (or sales dashboard for sales users) unless they are explicitly impersonating/previewing a tenant company via cookie.
+  if (adminContext) {
+    const cookieStore = await cookies();
+    const cookieCompanyId = cookieStore.get(ACTIVE_COMPANY_COOKIE)?.value;
+    if (!cookieCompanyId) {
+      if (adminContext.user.adminRole === "SALESMAN") {
+        redirect("/admin/sales");
+      }
+      redirect("/admin");
+    }
+  }
+
   let context;
   try {
     context = await getAuthenticatedCompanyContext();
@@ -191,6 +205,9 @@ export default async function HomePage() {
     // a tenant's context from the admin console (handled inside getAuthenticatedCompanyContext),
     // send them back to the admin console instead of surfacing this as an error.
     if (adminContext && error instanceof CompanyAccessError) {
+      if (adminContext.user.adminRole === "SALESMAN") {
+        redirect("/admin/sales");
+      }
       redirect("/admin");
     }
     throw error;
@@ -198,6 +215,9 @@ export default async function HomePage() {
 
   if (!context) {
     if (adminContext) {
+      if (adminContext.user.adminRole === "SALESMAN") {
+        redirect("/admin/sales");
+      }
       redirect("/admin");
     }
     return <MarketingPage />;

@@ -141,7 +141,8 @@ INSERT INTO "Membership" (
   "userId"
 ) VALUES
   ('membership_demo_owner', 'CUSTOMER', 'company_demo_jewelry', 'user_demo_owner'),
-  ('membership_demo_acme', 'CUSTOMER', 'company_demo_jewelry', 'user_demo_acme')
+  ('membership_demo_acme', 'CUSTOMER', 'company_demo_jewelry', 'user_demo_acme'),
+  ('membership_internal_admin', 'OWNER', 'company_demo_jewelry', 'user_internal_admin')
 ON CONFLICT ("companyId","userId") DO UPDATE SET
   "role" = EXCLUDED."role";
 

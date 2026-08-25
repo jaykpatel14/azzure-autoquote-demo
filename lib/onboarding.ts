@@ -6,7 +6,6 @@ import { generateToken } from "@/lib/tokens";
 
 type OnboardingInput = {
   email: string;
-  name?: string | null;
   passwordHash: string;
   companyName: string;
   planCode?: string | null;
@@ -38,7 +37,6 @@ export async function onboardCompanyOwner(
   const user = await tx.user.create({
     data: {
       email: input.email,
-      name: input.name ?? null,
       passwordHash: input.passwordHash
     }
   });
