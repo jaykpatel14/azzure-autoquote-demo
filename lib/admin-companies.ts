@@ -31,6 +31,10 @@ type AdminMemberInput = {
 type AdminCompanyInput = AdminMemberInput & {
   companyName: string;
   companySlug?: string | null;
+  accountStatus?: "PENDING_APPROVAL" | "APPROVED" | "SUSPENDED";
+  pricingTier?: "TIER_1" | "TIER_2" | "TIER_3" | null;
+  planCode?: "starter" | "professional" | "enterprise";
+  subscriptionStatus?: SubscriptionStatus;
 };
 
 type AdminBillingInput = {
@@ -146,9 +150,14 @@ export async function createAdminCompanyWithMember(
   adminUserId: string,
   input: AdminCompanyInput
 ) {
+  await ensureBasePlans(client);
   const companySlug = await findUniqueCompanySlug(client, input.companyName, input.companySlug);
-
   const quotePrefix = await generateUniqueQuotePrefix(client, input.name || "Unknown");
+
+  const accountStatus = input.accountStatus ?? "APPROVED";
+  const pricingTier = input.pricingTier !== undefined ? input.pricingTier : (accountStatus === "APPROVED" ? "TIER_2" : null);
+  const planCode = input.planCode ?? "starter";
+  const subscriptionStatus = input.subscriptionStatus ?? "ACTIVE";
 
   const company = await client.company.create({
     data: {
@@ -156,9 +165,43 @@ export async function createAdminCompanyWithMember(
       slug: companySlug,
       quoteSequence: 0,
       quotePrefix,
+      accountStatus,
+      pricingTier,
+      approvedAt: accountStatus === "APPROVED" ? new Date() : null,
+      approvedBy: accountStatus === "APPROVED" ? adminUserId : null,
       pricingProfile: { create: {} }
     }
   });
+
+  const plan = await client.plan.findUnique({
+    where: { code: planCode }
+  });
+
+  if (plan) {
+    const now = new Date();
+    const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    await client.subscription.create({
+      data: {
+        companyId: company.id,
+        planId: plan.id,
+        status: subscriptionStatus,
+        onboardingComplete: true,
+        trialQuoteCap: DEFAULT_TRIAL_QUOTE_CAP,
+        trialQuotesUsed: 0,
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd
+      }
+    });
+
+    await client.usagePeriod.create({
+      data: {
+        companyId: company.id,
+        periodStart: now,
+        periodEnd,
+        limit: plan.monthlyLimit
+      }
+    });
+  }
 
   const user = await createOrReuseUser(client, {
     email: input.email,

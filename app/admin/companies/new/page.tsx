@@ -75,14 +75,53 @@ export default async function AdminCreateCompanyPage() {
             />
           </label>
 
+          <div className="grid twoUp">
+            <label className="field">
+              <span>Pricing tier</span>
+              <select name="pricingTier" defaultValue="TIER_2" required>
+                <option value="TIER_1">Tier 1 - Premium (divide by 0.6)</option>
+                <option value="TIER_2">Tier 2 - Standard (divide by 0.7)</option>
+                <option value="TIER_3">Tier 3 - Basic (divide by 0.8)</option>
+              </select>
+            </label>
+
+            <label className="field">
+              <span>Subscription plan</span>
+              <select name="planCode" defaultValue="starter" required>
+                <option value="starter">Starter Plan (300 quotes/mo)</option>
+                <option value="professional">Professional Plan (1,200 quotes/mo)</option>
+                <option value="enterprise">Enterprise Plan (2,500 quotes/mo)</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="grid twoUp">
+            <label className="field">
+              <span>Account status</span>
+              <select name="accountStatus" defaultValue="APPROVED" required>
+                <option value="APPROVED">Approved &amp; Active</option>
+                <option value="PENDING_APPROVAL">Pending Approval</option>
+                <option value="SUSPENDED">Suspended</option>
+              </select>
+            </label>
+
+            <label className="field">
+              <span>Subscription billing status</span>
+              <select name="subscriptionStatus" defaultValue="ACTIVE" required>
+                <option value="ACTIVE">Active (Standard)</option>
+                <option value="TRIALING">Trialing (14-day trial)</option>
+              </select>
+            </label>
+          </div>
+
           <p className="disclaimer">
-            If the email already exists, the system will reuse that account and only add the
-            company membership. When creating a brand new user, a password is required.
+            If the email already exists, the system will reuse that account and add the
+            company membership. When creating a brand new user, an initial password is required.
           </p>
 
           <div className="heroActions">
             <button className="button primary" type="submit">
-              Create company
+              Create &amp; Provision Tenant
             </button>
           </div>
         </form>

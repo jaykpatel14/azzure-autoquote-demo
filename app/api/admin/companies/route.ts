@@ -13,6 +13,10 @@ const schema = z.object({
   memberEmail: z.string().trim().email("A valid email address is required."),
   memberName: z.string().optional(),
   memberPassword: z.string().optional(),
+  pricingTier: z.enum(["TIER_1", "TIER_2", "TIER_3"]).optional(),
+  planCode: z.enum(["starter", "professional", "enterprise"]).optional(),
+  accountStatus: z.enum(["APPROVED", "PENDING_APPROVAL", "SUSPENDED"]).optional(),
+  subscriptionStatus: z.enum(["ACTIVE", "TRIALING"]).optional(),
   redirectTo: z.string().optional()
 });
 
@@ -29,6 +33,10 @@ async function parseInput(request: Request) {
     memberEmail: String(formData.get("memberEmail") || ""),
     memberName: String(formData.get("memberName") || ""),
     memberPassword: String(formData.get("memberPassword") || ""),
+    pricingTier: (formData.get("pricingTier") as "TIER_1" | "TIER_2" | "TIER_3") || undefined,
+    planCode: (formData.get("planCode") as "starter" | "professional" | "enterprise") || undefined,
+    accountStatus: (formData.get("accountStatus") as "APPROVED" | "PENDING_APPROVAL" | "SUSPENDED") || undefined,
+    subscriptionStatus: (formData.get("subscriptionStatus") as "ACTIVE" | "TRIALING") || undefined,
     redirectTo: String(formData.get("redirectTo") || "")
   });
 }
@@ -44,7 +52,11 @@ export async function POST(request: Request) {
         companySlug: input.companySlug,
         email: input.memberEmail,
         name: input.memberName,
-        password: input.memberPassword
+        password: input.memberPassword,
+        pricingTier: input.pricingTier,
+        planCode: input.planCode,
+        accountStatus: input.accountStatus,
+        subscriptionStatus: input.subscriptionStatus
       });
     });
 
