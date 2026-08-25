@@ -305,19 +305,19 @@ export async function POST(request: Request) {
         data: {
           status: "COMPLETED",
           completedAt: new Date(),
-          jewelryType: merged.jewelryType,
-          selectedMetal: merged.selectedMetal,
+          jewelryType: merged.jewelryType ? stripNullBytes(merged.jewelryType) : null,
+          selectedMetal: merged.selectedMetal ? stripNullBytes(merged.selectedMetal) : selectedMetal,
           metalWeightGrams: merged.metalWeightGrams,
           centerDiamondCarats: merged.centerDiamondCarats,
           sideDiamondCarats: merged.sideDiamondCarats,
           sideDiamondQuantity: merged.sideDiamondQuantity,
-          confidence: merged.confidence,
-          centerShape: merged.centerShape,
-          centerClarity: merged.centerClarity,
-          settingType: merged.settingType,
-          assumptions: merged.assumptions,
-          notes: merged.notes,
-          output: merged
+          confidence: merged.confidence ? stripNullBytes(merged.confidence) : "medium",
+          centerShape: merged.centerShape ? stripNullBytes(merged.centerShape) : null,
+          centerClarity: merged.centerClarity ? stripNullBytes(merged.centerClarity) : null,
+          settingType: merged.settingType ? stripNullBytes(merged.settingType) : null,
+          assumptions: stripNullBytes(merged.assumptions) as Prisma.InputJsonValue,
+          notes: stripNullBytes(merged.notes),
+          output: stripNullBytes(merged) as unknown as Prisma.InputJsonValue
         }
       });
       await tx.usagePeriod.update({
