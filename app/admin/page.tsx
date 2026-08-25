@@ -54,10 +54,39 @@ export default async function AdminDashboardPage() {
 
   requireAdminRouteAccess("/admin", context.user.adminRole );
 
-  const [overview, livePricing] = await Promise.all([
-    getAdminOverviewData(),
-    resolveMetalPricing()
-  ]);
+  let overview;
+  let livePricing;
+
+  try {
+    [overview, livePricing] = await Promise.all([
+      getAdminOverviewData(),
+      resolveMetalPricing()
+    ]);
+  } catch (err) {
+    console.error("[admin/page] Failed to load overview metrics:", err);
+    overview = {
+      stats: [
+        { label: "Active tenants", value: "—", subtext: "Platform metrics loading" },
+        { label: "Quotes today", value: "—", subtext: "across all tenants" },
+        { label: "Open orders", value: "—", subtext: "submitted / in production" },
+        { label: "MRR", value: "$0", subtext: "live Stripe subscription total" },
+        { label: "Churn this month", value: "0", subtext: "Stripe cancellations this month" }
+      ],
+      feed: [],
+      health: [],
+      pendingApprovals: 0,
+      ordersNeedingCkId: 0
+    };
+    livePricing = await resolveMetalPricing().catch(() => ({
+      source: "fallback" as const,
+      pricingProfile: {
+        goldSpotPerOz: 4500,
+        platinumSpotPerOz: 2000,
+        silverSpotPerOz: 100
+      },
+      message: "Standard rates active"
+    }));
+  }
 
   return (
     <InternalAdminShell

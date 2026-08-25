@@ -229,32 +229,46 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
   ]);
 
   const stripe = await getOptionalStripeClient();
-  const activeStripeSubscriptions = stripe
-    ? await Promise.all(
-        subscriptions
-          .filter((subscription) => Boolean(subscription.stripeSubscriptionId))
-          .map(async (subscription) => {
-        const stripeSubscription = (await stripe.subscriptions.retrieve(
-          subscription.stripeSubscriptionId!
-        )) as Stripe.Subscription;
-        const lineTotal = stripeSubscription.items.data.reduce((sum, item) => {
-          const unitAmount = item.price.unit_amount ?? 0;
-          return sum + unitAmount * (item.quantity ?? 1);
-        }, 0);
+  let activeStripeSubscriptions: Array<{
+    id: string;
+    amount: number;
+    status: string;
+    companyId: string | null;
+    companyName: string | null;
+    billingCycleEnd: Date;
+  }> = [];
 
-        return {
-          id: stripeSubscription.id,
-          amount: lineTotal / 100,
-          status: stripeSubscription.status,
-          companyId: stripeSubscription.metadata?.companyId ?? null,
-          companyName: companies.find((company) => company.id === stripeSubscription.metadata?.companyId)?.name ?? null,
-          billingCycleEnd: new Date(
-            (stripeSubscription.items.data[0]?.current_period_end ?? Math.floor(Date.now() / 1000)) * 1000
-          )
-        };
-          })
-      )
-    : [];
+  if (stripe) {
+    const results = await Promise.all(
+      subscriptions
+        .filter((subscription) => Boolean(subscription.stripeSubscriptionId))
+        .map(async (subscription) => {
+          try {
+            const stripeSubscription = (await stripe.subscriptions.retrieve(
+              subscription.stripeSubscriptionId!
+            )) as Stripe.Subscription;
+            const lineTotal = (stripeSubscription.items?.data || []).reduce((sum, item) => {
+              const unitAmount = item.price?.unit_amount ?? 0;
+              return sum + unitAmount * (item.quantity ?? 1);
+            }, 0);
+
+            return {
+              id: stripeSubscription.id,
+              amount: lineTotal / 100,
+              status: stripeSubscription.status,
+              companyId: stripeSubscription.metadata?.companyId ?? null,
+              companyName: companies.find((company) => company.id === stripeSubscription.metadata?.companyId)?.name ?? null,
+              billingCycleEnd: new Date(
+                (stripeSubscription.items?.data?.[0]?.current_period_end ?? Math.floor(Date.now() / 1000)) * 1000
+              )
+            };
+          } catch {
+            return null;
+          }
+        })
+    );
+    activeStripeSubscriptions = results.filter((s): s is NonNullable<typeof s> => s !== null);
+  }
 
   const activeTenantCount = companies.filter((company) =>
     ["ACTIVE", "TRIALING", "PAST_DUE"].includes(company.subscription?.status ?? "")
@@ -305,17 +319,20 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
         company.subscription?.status === "TRIALING"
           ? `New signup: ${company.name}`
           : `Tenant ${company.name} is active`,
-      href: `/admin/companies/${company.id}`,
+      href: `/admin/tenants/${company.id}`,
       tone: getStatusTone(company.subscription?.status ?? "ACTIVE"),
       occurredAt: company.createdAt
     })),
     ...auditLogs.map((entry): AdminOverviewFeedItem => {
       const isAdminSessionEvent = entry.action === "SIGN_IN" || entry.action === "SIGN_OUT";
+      const companyName = entry.company?.name || "System";
       return {
         id: `audit-${entry.id}`,
         label: isAdminSessionEvent ? "ADMIN" : "EVENT",
-        description: isAdminSessionEvent ? describeAuditAction(entry.action, entry.metadata) : `${describeAuditAction(entry.action, entry.metadata)}: ${entry.company.name}`,
-        href: isAdminSessionEvent ? undefined : `/admin/companies/${entry.company.id}`,
+        description: isAdminSessionEvent
+          ? describeAuditAction(entry.action, entry.metadata)
+          : `${describeAuditAction(entry.action, entry.metadata)}: ${companyName}`,
+        href: isAdminSessionEvent || !entry.company ? undefined : `/admin/tenants/${entry.company.id}`,
         tone: getStatusTone(entry.action),
         occurredAt: entry.createdAt
       };
@@ -333,7 +350,7 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
       id: `stripe-${subscription.id}`,
       label: subscription.status === "active" ? "MRR" : subscription.status.toUpperCase(),
       description: `${subscription.companyName ?? "Unknown tenant"} billing cycle ends ${formatRelativeTime(subscription.billingCycleEnd)}`,
-      href: subscription.companyId ? `/admin/companies/${subscription.companyId}` : undefined,
+      href: subscription.companyId ? `/admin/tenants/${subscription.companyId}` : undefined,
       tone: getStatusTone(subscription.status),
       occurredAt: subscription.billingCycleEnd
     }))
