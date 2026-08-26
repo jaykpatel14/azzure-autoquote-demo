@@ -17,7 +17,7 @@ function MobileUploadInner() {
 
   function handleFileSelection(newFiles: File[]) {
     setError("");
-    setFiles(newFiles.slice(0, 1));
+    setFiles(newFiles.slice(0, 4));
   }
 
   function removeFile(indexToRemove: number) {
@@ -104,7 +104,7 @@ function MobileUploadInner() {
           Upload to Showroom Screen
         </h1>
         <p style={{ fontSize: "0.875rem", color: "#94a3b8", margin: "0 0 24px", lineHeight: 1.4 }}>
-          Snap a photo or select up to 3 inspiration images from your phone to send directly to the kiosk.
+          Snap photos or select up to 4 inspiration images from your phone to send directly to the kiosk.
         </p>
 
         {success ? (
@@ -148,6 +148,7 @@ function MobileUploadInner() {
                   type="file"
                   accept="image/*"
                   capture="environment"
+                  multiple
                   style={{ display: "none" }}
                   onChange={(e) => {
                     const selected = Array.from(e.target.files || []);
@@ -176,6 +177,7 @@ function MobileUploadInner() {
                 <input
                   type="file"
                   accept="image/*"
+                  multiple
                   style={{ display: "none" }}
                   onChange={(e) => {
                     const selected = Array.from(e.target.files || []);

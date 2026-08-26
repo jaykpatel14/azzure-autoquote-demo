@@ -81,6 +81,50 @@ export const FALLBACK_JEWELRY_FACTS: DynamicJewelryFact[] = [
       question: "How old is a natural diamond?",
       answer: "Most natural diamonds are older than dinosaurs and nearly a quarter the age of the universe!"
     }
+  },
+  {
+    category: "Ring Anatomy",
+    icon: "hardware",
+    headline: "Why Hidden Halos Look Bigger",
+    fact: "A hidden halo sits under the center stone, so it adds sparkle from the side without changing the face-up shape. That little trick can make a ring feel dramatically larger under showroom lights.",
+    sourceOrTrend: "Atelier Craft Notes",
+    trivia: {
+      question: "What does a hidden halo actually do?",
+      answer: "It adds hidden brilliance beneath the center stone for extra sparkle and a larger visual profile."
+    }
+  },
+  {
+    category: "Diamond Science",
+    icon: "diamond",
+    headline: "Why Cut Beats Carat",
+    fact: "Two diamonds with the same carat weight can look very different depending on cut quality. A well-cut stone returns more light, so it often looks brighter and sometimes even larger than a heavier but poorly cut diamond.",
+    sourceOrTrend: "GIA Cut Grading",
+    trivia: {
+      question: "Which matters more for sparkle: cut or carat?",
+      answer: "Cut is usually the biggest driver of sparkle and visual size."
+    }
+  },
+  {
+    category: "Metal Craft",
+    icon: "savings",
+    headline: "The Secret of Rhodium Finish",
+    fact: "White gold is often finished with rhodium plating to create a cooler, brighter surface. Over time, that finish can wear and reveal the warmer gold tone beneath, which is why periodic re-plating is common.",
+    sourceOrTrend: "Bench Jeweler Finish Guide",
+    trivia: {
+      question: "Why is white gold re-plated?",
+      answer: "To restore its bright white surface after the rhodium finish wears down."
+    }
+  },
+  {
+    category: "Gemology Lore",
+    icon: "visibility",
+    headline: "Ovals Stretch the Finger",
+    fact: "Elongated center stones like oval, pear, and marquise shapes create a longer visual line on the hand. That flattering proportion is one reason they stay popular in custom bridal design.",
+    sourceOrTrend: "Shape Proportion Trend",
+    trivia: {
+      question: "Which shape is famous for making fingers look longer?",
+      answer: "Oval, pear, and marquise cuts all create a lengthening effect."
+    }
   }
 ];
 
@@ -126,7 +170,7 @@ export async function fetchAIWebJewelryFacts(forceFresh = false): Promise<Dynami
       (await resolveRuntimeSetting("OPENAI_MODEL", process.env.OPENAI_MODEL)) ||
       "gpt-5-mini";
 
-    const prompt = `Search the web and fine jewelry gemology archives for 6 highly entertaining, viral, and fascinating facts and trivia about custom fine jewelry, diamonds, precious metals, colored gemstones, and engagement ring craftsmanship.
+    const prompt = `Search the web and fine jewelry gemology archives for 10 highly entertaining, viral, and fascinating facts and trivia about custom fine jewelry, diamonds, precious metals, colored gemstones, and engagement ring craftsmanship.
     
 Make each fact deeply interesting so customers in a jewelry showroom love reading it while waiting for their AI quote.
 
@@ -165,7 +209,7 @@ For each fact provide:
     });
 
     const parsed = response.output_parsed as { facts: DynamicJewelryFact[] } | undefined;
-    if (parsed && Array.isArray(parsed.facts) && parsed.facts.length >= 4) {
+    if (parsed && Array.isArray(parsed.facts) && parsed.facts.length >= 8) {
       cachedFacts = parsed.facts;
       cacheExpiry = now + 30 * 60 * 1000; // 30 minutes cache
       return parsed.facts;

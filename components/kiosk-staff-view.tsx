@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { calculateMakingPrice, DEFAULT_COLOR_CLARITY } from "@/src/services/pricing";
+import type { PricingProfileInput } from "@/lib/pricing";
+import type { PricingTier } from "@prisma/client";
 
 type StaffQuoteItem = {
   id: string;
@@ -19,6 +22,8 @@ type QuoteDetail = {
   displayCode: string;
   status: string;
   createdAt: string;
+  pricingTierSnapshot?: string | null;
+  tierDivisorSnapshot?: number | null;
   customerName: string | null;
   customerEmail: string | null;
   customerPhone: string | null;
@@ -29,6 +34,10 @@ type QuoteDetail = {
   jewelryType: string;
   uploadedImageUrl: string | null;
   renderingImageUrl: string | null;
+  pricingContext?: {
+    customerMarginPct: number;
+    pricingProfile: PricingProfileInput | null;
+  };
   specs: {
     metalType: string;
     metalWeightGrams: number | null;
@@ -58,6 +67,19 @@ function formatRelativeTime(dateString: string): string {
   const diffHours = Math.floor(diffMins / 60);
   if (diffHours < 24) return `${diffHours}h ago`;
   return `${Math.floor(diffHours / 24)}d ago`;
+}
+
+function parseOptionalNumber(value: string): number | undefined {
+  if (!value.trim()) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function formatOptionalPrice(value: number | null | undefined) {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
+    return "—";
+  }
+  return formatPrice(value);
 }
 
 type KioskStaffViewProps = {
@@ -164,6 +186,13 @@ export default function KioskStaffView({
     return () => clearTimeout(timer);
   }, [fetchRecentQuotes]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void fetchRecentQuotes();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchRecentQuotes]);
+
   // Initialize edit fields when a quote is opened
   const initEditFields = (q: QuoteDetail) => {
     setEditCustomerName(q.customerName || "");
@@ -176,7 +205,7 @@ export default function KioskStaffView({
     setEditSideCarats(q.specs.sideCarats ? String(q.specs.sideCarats) : "");
     setEditSideCount(q.specs.sideDiamondQuantity ? String(q.specs.sideDiamondQuantity) : "");
     setEditSettingType(q.specs.settingType || "Prong");
-    setEditPrice(q.estimatedPrice ? String(q.estimatedPrice) : "");
+    setEditPrice("");
     setEditJewelerNotes(q.jewelerNotes || "");
     const statusVal = q.status as "PENDING" | "CLAIMED" | "IN_REVIEW" | "COMPLETED" | "EXPIRED";
     setEditStatus(["PENDING", "CLAIMED", "IN_REVIEW", "COMPLETED", "EXPIRED"].includes(statusVal) ? statusVal : "CLAIMED");
@@ -184,6 +213,70 @@ export default function KioskStaffView({
     setSaveSuccessMessage(null);
     setSaveErrorMessage(null);
   };
+
+  const liveEstimatedPrice = useMemo(() => {
+    if (!selectedQuote) return null;
+
+    const pricingProfile = selectedQuote.pricingContext?.pricingProfile;
+    if (!pricingProfile) return selectedQuote.estimatedPrice;
+
+    const metalType = editMetalType || selectedQuote.specs.metalType || selectedQuote.metalType || "14K";
+    const metalWeightGrams = parseOptionalNumber(editMetalWeight) ?? selectedQuote.specs.metalWeightGrams ?? 0;
+    const centerCarats = parseOptionalNumber(editCenterCarats) ?? selectedQuote.specs.centerCarats ?? 0;
+    const sideCarats = parseOptionalNumber(editSideCarats) ?? selectedQuote.specs.sideCarats ?? 0;
+    const sideCount = parseOptionalNumber(editSideCount) ?? selectedQuote.specs.sideDiamondQuantity ?? 0;
+    const centerShape = editCenterShape || selectedQuote.specs.centerShape || "Round";
+    const settingType = editSettingType || selectedQuote.specs.settingType || "Prong";
+    const customerMarginPct = selectedQuote.pricingContext?.customerMarginPct ?? 0;
+    const pricingTier = (selectedQuote.pricingTierSnapshot as PricingTier | undefined) ?? "TIER_2";
+    const sideShape = ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(centerShape.toLowerCase()) && sideCount <= 4
+      ? "fancy"
+      : "round";
+
+    try {
+      return calculateMakingPrice({
+        pricingProfile,
+        metalType,
+        metalWeightGrams,
+        centerStone: {
+          shape: centerShape,
+          caratWeight: Math.max(centerCarats, 0.0001)
+        },
+        sideStones:
+          sideCarats > 0 && sideCount > 0
+            ? [
+                {
+                  shape: sideShape,
+                  caratWeightEach: sideCarats / sideCount,
+                  count: sideCount,
+                  settingType
+                }
+              ]
+            : [],
+        hasWeddingBand: false,
+        isTwoTone: false,
+        colorClarity: DEFAULT_COLOR_CLARITY,
+        cadCost: Number(pricingProfile.cadCharge ?? 25),
+        pricingTier,
+        customerMarginPct
+      }).estimatedSellingPrice;
+    } catch {
+      return selectedQuote.estimatedPrice;
+    }
+  }, [
+    editCenterCarats,
+    editCenterShape,
+    editMetalType,
+    editMetalWeight,
+    editSettingType,
+    editSideCarats,
+    editSideCount,
+    selectedQuote
+  ]);
+
+  const displayedQuotePrice = isEditing
+    ? liveEstimatedPrice ?? selectedQuote?.estimatedPrice ?? 0
+    : selectedQuote?.estimatedPrice ?? 0;
 
   // Lookup quote by code
   const handleLookup = async (codeToLookup?: string) => {
@@ -245,7 +338,7 @@ export default function KioskStaffView({
           sideCarats: editSideCarats ? parseFloat(editSideCarats) : undefined,
           sideDiamondQuantity: editSideCount ? parseInt(editSideCount, 10) : undefined,
           settingType: editSettingType,
-          estimatedPrice: editPrice ? parseFloat(editPrice) : undefined,
+          estimatedPrice: parseOptionalNumber(editPrice) ?? liveEstimatedPrice ?? undefined,
           jewelerNotes: editJewelerNotes.trim(),
           status: editStatus
         })
@@ -693,9 +786,12 @@ export default function KioskStaffView({
                       step="1"
                       value={editPrice}
                       onChange={(e) => setEditPrice(e.target.value)}
-                      placeholder="e.g. 3450"
+                      placeholder="Leave blank to use live estimate"
                       style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #e6cb78", borderRadius: 8, color: "#e6cb78", fontWeight: 700, fontSize: "1.1rem" }}
                     />
+                    <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
+                      Live estimate: <strong style={{ color: "#fff" }}>{formatOptionalPrice(liveEstimatedPrice)}</strong>
+                    </span>
                   </label>
 
                   {/* Quote Status */}
@@ -774,7 +870,7 @@ export default function KioskStaffView({
                     Estimated Selling Price
                   </span>
                   <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "#ffffff", marginTop: 4 }}>
-                    {formatPrice(selectedQuote.estimatedPrice)}
+                    {formatPrice(displayedQuotePrice)}
                   </div>
                   <div style={{ marginTop: 8 }}>
                     <span style={{ fontSize: "0.85rem", padding: "4px 10px", borderRadius: 6, background: "rgba(201, 168, 76, 0.15)", color: brandColor, fontWeight: 700 }}>

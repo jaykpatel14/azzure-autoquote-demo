@@ -215,6 +215,15 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const [showStaffPinModal, setShowStaffPinModal] = useState(false);
   const [staffSession, setStaffSession] = useState<{ staffName: string; staffId: string; sessionToken: string } | null>(null);
   const [marketingIndex, setMarketingIndex] = useState(0);
+  const [displayMode, setDisplayMode] = useState<"showroom" | "marketing">(() => {
+    if (typeof window === "undefined") return "showroom";
+    try {
+      const storedMode = window.localStorage.getItem("azzure_showroom_display_mode");
+      return storedMode === "marketing" || storedMode === "showroom" ? storedMode : "showroom";
+    } catch {
+      return "showroom";
+    }
+  });
 
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
   const debouncedAnalysis = useDebouncedValue(analysis, 300);
@@ -250,6 +259,14 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setShowMobileUploadModal(false);
     setMobileUploadSessionId("");
     setMobileUploadQrDataUrl(null);
+  }, []);
+
+  const addReferenceFiles = useCallback((incomingFiles: File[]) => {
+    if (incomingFiles.length === 0) return;
+    setFiles((current) => [...current, ...incomingFiles].slice(0, 4));
+    setAnalysis(null);
+    setRenderingImageUrl(null);
+    setError("");
   }, []);
 
   // Fetch dynamic AI web-searched fine jewelry facts
@@ -325,6 +342,28 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const marketingImages = branding.marketingImages || [];
   const hasMarketingSlider = marketingImages.length > 1;
   const currentMarketingIndex = marketingImages.length > 0 ? marketingIndex % marketingImages.length : 0;
+  const marketingIsImmersive = displayMode === "marketing";
+  const marketingPanelMaxWidth = marketingIsImmersive ? 1440 : 760;
+  const marketingPanelPadding = marketingIsImmersive ? 28 : 14;
+  const marketingMediaBleed = marketingIsImmersive ? `-${marketingPanelPadding}px` : 0;
+  const marketingImageMinHeight = marketingIsImmersive ? 680 : 320;
+  const marketingImageMaxHeight = marketingIsImmersive ? 860 : 360;
+  const marketingImageAspectRatio = marketingIsImmersive ? "16 / 9" : "16 / 10";
+  const marketingImageFit = displayMode === "marketing" ? "cover" : "contain";
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("azzure_showroom_display_mode", displayMode);
+    } catch {}
+  }, [displayMode]);
+
+  useEffect(() => {
+    if (displayMode !== "marketing" || !hasMarketingSlider) return;
+    const timer = window.setInterval(() => {
+      setMarketingIndex((current) => (current + 1) % marketingImages.length);
+    }, 4500);
+    return () => window.clearInterval(timer);
+  }, [displayMode, hasMarketingSlider, marketingImages.length]);
 
   const goToPreviousFact = useCallback(() => {
     setFactIndex((current) => (current - 1 + totalFacts) % totalFacts);
@@ -382,18 +421,15 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
           headers: showroomHeaders
         });
         const data = await res.json();
-        if (data.files && data.files.length > 0) {
-          const convertedFiles: File[] = await Promise.all(
-            data.files.map(async (f: { name: string; type: string; dataUrl: string }, idx: number) => {
-              const fetchRes = await fetch(f.dataUrl);
-              const blob = await fetchRes.blob();
-              return new File([blob], f.name || `phone_photo_${idx + 1}.jpg`, { type: f.type || "image/jpeg" });
-            })
-          );
-          setFiles(convertedFiles.slice(0, 1));
-          setAnalysis(null);
-          setRenderingImageUrl(null);
-          setError("");
+          if (data.files && data.files.length > 0) {
+            const convertedFiles: File[] = await Promise.all(
+              data.files.map(async (f: { name: string; type: string; dataUrl: string }, idx: number) => {
+                const fetchRes = await fetch(f.dataUrl);
+                const blob = await fetchRes.blob();
+                return new File([blob], f.name || `phone_photo_${idx + 1}.jpg`, { type: f.type || "image/jpeg" });
+              })
+            );
+            addReferenceFiles(convertedFiles);
           setShowMobileUploadModal(false);
         }
       } catch {
@@ -402,7 +438,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     }, 1800);
 
     return () => clearInterval(interval);
-  }, [showMobileUploadModal, mobileUploadSessionId, token, showroomHeaders]);
+  }, [showMobileUploadModal, mobileUploadSessionId, token, showroomHeaders, addReferenceFiles]);
 
   const estimatedSellingPrice = useMemo(() => {
     if (!debouncedAnalysis || !pricing.pricingTier) return 0;
@@ -880,7 +916,40 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
             </div>
           </div>
 
-          <div style={{ textAlign: "center", marginBottom: 40, borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: 14 }}>
+          <div style={{ textAlign: "center", marginBottom: 18, borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: 14 }}>
+            <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+              <button
+                type="button"
+                className="button secondary button--sm"
+                onClick={() => setDisplayMode("showroom")}
+                style={{
+                  minWidth: 132,
+                  background: displayMode === "showroom" ? "linear-gradient(135deg, rgba(201,168,76,0.28), rgba(201,168,76,0.12))" : "rgba(255,255,255,0.04)",
+                  borderColor: displayMode === "showroom" ? "rgba(201,168,76,0.5)" : "rgba(255,255,255,0.08)",
+                  color: displayMode === "showroom" ? "#f6e09e" : "#cbd5e1"
+                }}
+              >
+                Showroom Mode
+              </button>
+              <button
+                type="button"
+                className="button secondary button--sm"
+                onClick={() => {
+                  setDisplayMode("marketing");
+                  if (marketingImages.length > 1) {
+                    setMarketingIndex(0);
+                  }
+                }}
+                style={{
+                  minWidth: 132,
+                  background: displayMode === "marketing" ? "linear-gradient(135deg, rgba(56,189,248,0.25), rgba(56,189,248,0.1))" : "rgba(255,255,255,0.04)",
+                  borderColor: displayMode === "marketing" ? "rgba(56,189,248,0.5)" : "rgba(255,255,255,0.08)",
+                  color: displayMode === "marketing" ? "#7dd3fc" : "#cbd5e1"
+                }}
+              >
+                Marketing Mode
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => setShowStaffPinModal(true)}
@@ -905,7 +974,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
           {marketingImages.length > 0 ? (
             <section
               style={{
-                marginTop: 8,
+                marginTop: 4,
                 paddingTop: 20,
                 borderTop: "1px solid rgba(255, 255, 255, 0.08)"
               }}
@@ -914,19 +983,30 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                 style={{
                   borderRadius: 24,
                   border: "1px solid rgba(255,255,255,0.1)",
-                  background: "rgba(10, 11, 14, 0.55)",
-                  padding: 14,
-                  boxShadow: "0 18px 50px rgba(0,0,0,0.45)",
-                  maxWidth: 760,
-                  margin: "0 auto"
+                  background: marketingIsImmersive
+                    ? "radial-gradient(circle at top, rgba(56,189,248,0.18), rgba(10,11,14,0.94) 52%, rgba(0,0,0,0.96) 100%)"
+                    : "rgba(10, 11, 14, 0.55)",
+                  padding: marketingPanelPadding,
+                  boxShadow: marketingIsImmersive ? "0 30px 120px rgba(0,0,0,0.72)" : "0 18px 50px rgba(0,0,0,0.45)",
+                  maxWidth: marketingPanelMaxWidth,
+                  margin: "0 auto",
+                  minHeight: marketingIsImmersive ? "min(82vh, 1000px)" : undefined,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between"
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: marketingIsImmersive ? 18 : 12 }}>
                   <div>
                     <span className="eyebrow" style={{ marginBottom: 4, display: "block" }}>Featured Pieces</span>
                     <strong style={{ color: "#fff" }}>
                       {hasMarketingSlider ? `${currentMarketingIndex + 1} of ${marketingImages.length}` : "1 image"}
                     </strong>
+                    {marketingIsImmersive ? (
+                      <div style={{ marginTop: 4, color: "#7dd3fc", fontSize: "0.8rem", fontWeight: 600 }}>
+                        Full-screen marketing mode
+                      </div>
+                    ) : null}
                   </div>
                   {hasMarketingSlider ? (
                     <div style={{ display: "flex", gap: 8 }}>
@@ -951,48 +1031,79 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                 </div>
 
                 {hasMarketingSlider ? (
-                  <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div
+                    style={{
+                      borderRadius: marketingIsImmersive ? 0 : 18,
+                      overflow: "hidden",
+                      border: marketingIsImmersive ? "none" : "1px solid rgba(255,255,255,0.08)",
+                      background: marketingIsImmersive ? "rgba(0, 0, 0, 0.22)" : "rgba(0, 0, 0, 0.18)",
+                      aspectRatio: marketingImageAspectRatio,
+                      minHeight: marketingImageMinHeight,
+                      boxShadow: marketingIsImmersive ? "inset 0 0 0 1px rgba(255,255,255,0.04)" : "none",
+                      marginLeft: marketingMediaBleed,
+                      marginRight: marketingMediaBleed,
+                      width: marketingIsImmersive ? `calc(100% + ${marketingPanelPadding * 2}px)` : "100%"
+                    }}
+                  >
                     <div
                       style={{
                         display: "flex",
                         transform: `translateX(-${currentMarketingIndex * 100}%)`,
-                        transition: "transform 420ms ease",
+                        transition: marketingIsImmersive ? "transform 620ms cubic-bezier(0.22, 1, 0.36, 1)" : "transform 420ms ease",
                         willChange: "transform"
                       }}
                     >
                       {marketingImages.map((image, index) => (
-                        <div key={image} style={{ minWidth: "100%" }}>
+                        <div
+                          key={image}
+                          style={{
+                            minWidth: "100%",
+                            minHeight: marketingImageMinHeight,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: marketingIsImmersive ? 0 : 0
+                          }}
+                        >
                           <img
                             src={image}
                             alt={`Showroom marketing piece ${index + 1}`}
-                            style={{ width: "100%", height: 320, objectFit: "cover", display: "block" }}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              maxHeight: marketingImageMaxHeight,
+                              objectFit: marketingImageFit,
+                              objectPosition: "center center",
+                              display: "block",
+                              borderRadius: marketingIsImmersive ? 0 : 0
+                            }}
                           />
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div style={{ borderRadius: marketingIsImmersive ? 0 : 18, overflow: "hidden", border: marketingIsImmersive ? "none" : "1px solid rgba(255,255,255,0.08)", background: "rgba(0, 0, 0, 0.18)", aspectRatio: marketingImageAspectRatio, minHeight: marketingImageMinHeight, marginLeft: marketingMediaBleed, marginRight: marketingMediaBleed, width: marketingIsImmersive ? `calc(100% + ${marketingPanelPadding * 2}px)` : "100%" }}>
                     <img
                       src={marketingImages[0]}
                       alt="Showroom marketing piece"
-                      style={{ width: "100%", height: 320, objectFit: "cover", display: "block" }}
+                      style={{ width: "100%", height: "100%", maxHeight: marketingImageMaxHeight, objectFit: marketingImageFit, objectPosition: "center center", display: "block" }}
                     />
                   </div>
                 )}
 
                 {hasMarketingSlider ? (
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: marketingIsImmersive ? 18 : 12, justifyContent: marketingIsImmersive ? "center" : "flex-start" }}>
                     {marketingImages.map((image, index) => (
                       <button
                         key={image}
                         type="button"
                         onClick={() => setMarketingIndex(index)}
                         style={{
-                          width: 44,
-                          height: 44,
+                          width: marketingIsImmersive ? 58 : 44,
+                          height: marketingIsImmersive ? 58 : 44,
                           padding: 0,
-                          borderRadius: 10,
+                          borderRadius: marketingIsImmersive ? 14 : 10,
                           overflow: "hidden",
                           border: index === marketingIndex ? "2px solid var(--color-brand)" : "1px solid rgba(255,255,255,0.12)",
                           background: "transparent",
@@ -1167,19 +1278,18 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                         <input
                           type="file"
                           accept="image/*"
+                          multiple
                           onChange={(event) => {
                             const selected = Array.from(event.target.files || []);
                             if (selected.length) {
-                              setFiles(selected.slice(0, 1));
-                              setAnalysis(null);
-                              setRenderingImageUrl(null);
-                              setError("");
+                              addReferenceFiles(selected);
                             }
+                            event.currentTarget.value = "";
                           }}
                           style={{ display: "none" }}
                         />
                         <span className="material-symbols-outlined" style={{ fontSize: 18 }}>folder_open</span>
-                        Choose File
+                        Choose Photos
                       </label>
                     </div>
                   </div>
@@ -1194,7 +1304,11 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                           </div>
                         ))}
                       </div>
-                    ) : null}
+                        ) : null}
+
+                    <p className="muted small" style={{ margin: "10px 0 0" }}>
+                      Upload up to 4 photos with different angles so the AI can read the piece more accurately.
+                    </p>
 
                     {/* Explicit Analyze & Stop Buttons for Showroom Kiosk */}
                     <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -1756,12 +1870,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
         isOpen={showLiveCamera}
         onClose={() => setShowLiveCamera(false)}
         title="Snap Jewelry Reference Photo"
-        onCapture={(capturedFile) => {
-          setFiles([capturedFile]);
-          setAnalysis(null);
-          setRenderingImageUrl(null);
-          setError("");
-        }}
+        onCapture={(capturedFile) => addReferenceFiles([capturedFile])}
       />
 
       <footer style={{ marginTop: "auto", textAlign: "center", color: "var(--color-on-surface-variant)", fontSize: 12, padding: "24px 0" }}>

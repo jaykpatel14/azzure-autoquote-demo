@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { checkRateLimit, clearRateLimitState } from "@/lib/rate-limit";
 import { normalizeShowroomCode } from "@/lib/showroom";
+import { toPricingProfileInput } from "@/lib/metal-pricing";
 import {
   loadAnalysisImageDataUrlFromS3,
   loadQuoteRenderingDataUrlFromS3
@@ -242,7 +243,13 @@ export async function getStaffQuoteDetail(companyId: string, codeInput: string) 
     include: {
       quote: {
         include: {
-          analysis: true
+          analysis: true,
+          company: {
+            select: {
+              customerMarginPct: true,
+              pricingProfile: true
+            }
+          }
         }
       }
     }
@@ -270,6 +277,8 @@ export async function getStaffQuoteDetail(companyId: string, codeInput: string) 
     displayCode: showroomQuote.displayCode,
     status: showroomQuote.status,
     createdAt: showroomQuote.createdAt,
+    pricingTierSnapshot: q.pricingTierSnapshot || null,
+    tierDivisorSnapshot: q.tierDivisorSnapshot ? Number(q.tierDivisorSnapshot) : null,
     customerName: q.customerName || null,
     customerEmail: q.customerEmail || null,
     customerPhone: q.customerPhone || null,
@@ -280,6 +289,10 @@ export async function getStaffQuoteDetail(companyId: string, codeInput: string) 
     jewelryType: analysis?.jewelryType || "Ring",
     uploadedImageUrl,
     renderingImageUrl,
+    pricingContext: {
+      customerMarginPct: Number(q.company?.customerMarginPct ?? 0),
+      pricingProfile: toPricingProfileInput(q.company?.pricingProfile ?? null)
+    },
     specs: {
       metalType: q.metalType,
       metalWeightGrams: q.metalWeightGrams ? Number(q.metalWeightGrams) : null,
