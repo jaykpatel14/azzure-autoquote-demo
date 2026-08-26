@@ -218,7 +218,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
   const debouncedAnalysis = useDebouncedValue(analysis, 300);
-  const showroomHeaders = deviceToken ? { "X-Device-Token": deviceToken } : undefined;
+  const showroomHeaders = useMemo(
+    () => (deviceToken ? { "X-Device-Token": deviceToken } : undefined),
+    [deviceToken]
+  );
 
   const reset = useCallback(() => {
     setStarted(false);
@@ -264,7 +267,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     } catch {
       // Retain fallback collection on error
     }
-  }, []);
+  }, [showroomHeaders]);
 
   const buildFactOrder = useCallback((total: number, seed: number) => {
     if (total <= 1) {
@@ -321,10 +324,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const totalFacts = jewelryFacts.length || JEWELRY_FACTS_COLLECTION.length;
   const marketingImages = branding.marketingImages || [];
   const hasMarketingSlider = marketingImages.length > 1;
-
-  useEffect(() => {
-    setMarketingIndex(0);
-  }, [marketingImages.length]);
+  const currentMarketingIndex = marketingImages.length > 0 ? marketingIndex % marketingImages.length : 0;
 
   const goToPreviousFact = useCallback(() => {
     setFactIndex((current) => (current - 1 + totalFacts) % totalFacts);
@@ -402,7 +402,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     }, 1800);
 
     return () => clearInterval(interval);
-  }, [showMobileUploadModal, mobileUploadSessionId, token]);
+  }, [showMobileUploadModal, mobileUploadSessionId, token, showroomHeaders]);
 
   const estimatedSellingPrice = useMemo(() => {
     if (!debouncedAnalysis || !pricing.pricingTier) return 0;
@@ -925,7 +925,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                   <div>
                     <span className="eyebrow" style={{ marginBottom: 4, display: "block" }}>Featured Pieces</span>
                     <strong style={{ color: "#fff" }}>
-                      {hasMarketingSlider ? `${marketingIndex + 1} of ${marketingImages.length}` : "1 image"}
+                      {hasMarketingSlider ? `${currentMarketingIndex + 1} of ${marketingImages.length}` : "1 image"}
                     </strong>
                   </div>
                   {hasMarketingSlider ? (
@@ -955,7 +955,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                     <div
                       style={{
                         display: "flex",
-                        transform: `translateX(-${marketingIndex * 100}%)`,
+                        transform: `translateX(-${currentMarketingIndex * 100}%)`,
                         transition: "transform 420ms ease",
                         willChange: "transform"
                       }}
