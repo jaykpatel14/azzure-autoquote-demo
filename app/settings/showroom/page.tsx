@@ -86,6 +86,84 @@ export default async function ShowroomSettingsPage({
             </p>
           </section>
 
+          <section className="card stack">
+            <div className="sectionHeader">
+              <div>
+                <span className="eyebrow">Device Registration</span>
+                <h2>How screens get linked</h2>
+                <p className="muted">
+                  The first-time registration happens on the showroom screen itself. Open the kiosk URL on a TV or tablet,
+                  enter a screen name once, and it will appear in Registered Devices automatically.
+                </p>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gap: 12,
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))"
+              }}
+            >
+              <div
+                style={{
+                  padding: 16,
+                  borderRadius: 14,
+                  background: "rgba(255, 255, 255, 0.03)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)"
+                }}
+              >
+                <strong style={{ display: "block", marginBottom: 6 }}>1. Open the kiosk URL</strong>
+                <p className="muted small" style={{ margin: 0 }}>
+                  Launch the showroom link on the physical display you want to register.
+                </p>
+              </div>
+              <div
+                style={{
+                  padding: 16,
+                  borderRadius: 14,
+                  background: "rgba(255, 255, 255, 0.03)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)"
+                }}
+              >
+                <strong style={{ display: "block", marginBottom: 6 }}>2. Name the screen once</strong>
+                <p className="muted small" style={{ margin: 0 }}>
+                  The kiosk saves its token locally and stays linked on future visits.
+                </p>
+              </div>
+              <div
+                style={{
+                  padding: 16,
+                  borderRadius: 14,
+                  background: "rgba(255, 255, 255, 0.03)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)"
+                }}
+              >
+                <strong style={{ display: "block", marginBottom: 6 }}>3. Manage it here</strong>
+                <p className="muted small" style={{ margin: 0 }}>
+                  Rename, deactivate, or review the screen from the Registered Devices tab.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <Link
+                href="/settings/showroom?tab=devices"
+                className="button primary"
+                style={{ padding: "10px 18px" }}
+              >
+                Open Registered Devices
+              </Link>
+              <Link
+                href={session?.isActive ? `/showroom?token=${encodeURIComponent(session.token)}` : "/settings/showroom?tab=devices"}
+                className="button secondary"
+                style={{ padding: "10px 18px" }}
+              >
+                Open Kiosk URL
+              </Link>
+            </div>
+          </section>
+
           {/* Luxury Showroom Theme & Color Customizer */}
           <ShowroomCustomizer
             initialPrimaryColor={context.company.primaryColor}

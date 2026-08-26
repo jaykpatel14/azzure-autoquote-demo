@@ -320,6 +320,11 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
   const totalFacts = jewelryFacts.length || JEWELRY_FACTS_COLLECTION.length;
   const marketingImages = branding.marketingImages || [];
+  const hasMarketingSlider = marketingImages.length > 1;
+
+  useEffect(() => {
+    setMarketingIndex(0);
+  }, [marketingImages.length]);
 
   const goToPreviousFact = useCallback(() => {
     setFactIndex((current) => (current - 1 + totalFacts) % totalFacts);
@@ -853,7 +858,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       ) : !started ? (
         /* ── 2. WELCOME / STANDBY SCREEN: Inspiration Product Catalog ── */
         <section className="showroomPanel">
-          <div style={{ display: "grid", gridTemplateColumns: marketingImages.length > 0 ? "minmax(0, 1.05fr) minmax(320px, 0.95fr)" : "1fr", gap: 24, alignItems: "center" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 24, alignItems: "center" }}>
             <div>
               <p className="showroomEyebrow">Bespoke Jewelry Studio &amp; Instant AI Estimator</p>
               <h1 className="showroomHeroTitle">
@@ -867,78 +872,12 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                 className="showroomButton"
                 type="button"
                 onClick={() => setStarted(true)}
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: 8 }}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 24 }}>diamond</span>
                 Create Your Custom Piece
               </button>
             </div>
-
-            {marketingImages.length > 0 ? (
-              <div
-                style={{
-                  borderRadius: 24,
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  background: "rgba(10, 11, 14, 0.55)",
-                  padding: 14,
-                  boxShadow: "0 18px 50px rgba(0,0,0,0.45)"
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <div>
-                    <span className="eyebrow" style={{ marginBottom: 4, display: "block" }}>Featured Pieces</span>
-                    <strong style={{ color: "#fff" }}>{marketingIndex + 1} of {marketingImages.length}</strong>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      type="button"
-                      className="button secondary button--sm"
-                      onClick={() => setMarketingIndex((current) => (current - 1 + marketingImages.length) % marketingImages.length)}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="button secondary button--sm"
-                      onClick={() => setMarketingIndex((current) => (current + 1) % marketingImages.length)}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <img
-                    src={marketingImages[marketingIndex]}
-                    alt={`Showroom marketing piece ${marketingIndex + 1}`}
-                    style={{ width: "100%", height: 320, objectFit: "cover", display: "block" }}
-                  />
-                </div>
-
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-                  {marketingImages.map((image, index) => (
-                    <button
-                      key={image}
-                      type="button"
-                      onClick={() => setMarketingIndex(index)}
-                      style={{
-                        width: 44,
-                        height: 44,
-                        padding: 0,
-                        borderRadius: 10,
-                        overflow: "hidden",
-                        border: index === marketingIndex ? "2px solid var(--color-brand)" : "1px solid rgba(255,255,255,0.12)",
-                        background: "transparent",
-                        cursor: "pointer"
-                      }}
-                      aria-label={`View marketing image ${index + 1}`}
-                    >
-                      <img src={image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
           </div>
 
           <div style={{ textAlign: "center", marginBottom: 40, borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: 14 }}>
@@ -962,6 +901,113 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
               Staff Access
             </button>
           </div>
+
+          {marketingImages.length > 0 ? (
+            <section
+              style={{
+                marginTop: 8,
+                paddingTop: 20,
+                borderTop: "1px solid rgba(255, 255, 255, 0.08)"
+              }}
+            >
+              <div
+                style={{
+                  borderRadius: 24,
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "rgba(10, 11, 14, 0.55)",
+                  padding: 14,
+                  boxShadow: "0 18px 50px rgba(0,0,0,0.45)",
+                  maxWidth: 760,
+                  margin: "0 auto"
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <div>
+                    <span className="eyebrow" style={{ marginBottom: 4, display: "block" }}>Featured Pieces</span>
+                    <strong style={{ color: "#fff" }}>
+                      {hasMarketingSlider ? `${marketingIndex + 1} of ${marketingImages.length}` : "1 image"}
+                    </strong>
+                  </div>
+                  {hasMarketingSlider ? (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        type="button"
+                        className="button secondary button--sm"
+                        onClick={() => setMarketingIndex((current) => (current - 1 + marketingImages.length) % marketingImages.length)}
+                        aria-label="Previous marketing image"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="button secondary button--sm"
+                        onClick={() => setMarketingIndex((current) => (current + 1) % marketingImages.length)}
+                        aria-label="Next marketing image"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+
+                {hasMarketingSlider ? (
+                  <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        transform: `translateX(-${marketingIndex * 100}%)`,
+                        transition: "transform 420ms ease",
+                        willChange: "transform"
+                      }}
+                    >
+                      {marketingImages.map((image, index) => (
+                        <div key={image} style={{ minWidth: "100%" }}>
+                          <img
+                            src={image}
+                            alt={`Showroom marketing piece ${index + 1}`}
+                            style={{ width: "100%", height: 320, objectFit: "cover", display: "block" }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <img
+                      src={marketingImages[0]}
+                      alt="Showroom marketing piece"
+                      style={{ width: "100%", height: 320, objectFit: "cover", display: "block" }}
+                    />
+                  </div>
+                )}
+
+                {hasMarketingSlider ? (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                    {marketingImages.map((image, index) => (
+                      <button
+                        key={image}
+                        type="button"
+                        onClick={() => setMarketingIndex(index)}
+                        style={{
+                          width: 44,
+                          height: 44,
+                          padding: 0,
+                          borderRadius: 10,
+                          overflow: "hidden",
+                          border: index === marketingIndex ? "2px solid var(--color-brand)" : "1px solid rgba(255,255,255,0.12)",
+                          background: "transparent",
+                          cursor: "pointer"
+                        }}
+                        aria-label={`View marketing image ${index + 1}`}
+                      >
+                        <img src={image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
 
         </section>
       ) : (
