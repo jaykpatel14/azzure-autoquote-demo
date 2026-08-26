@@ -217,26 +217,127 @@ export async function getStaffQuoteDetail(companyId: string, codeInput: string) 
   const analysis = q.analysis;
   const rawPrice = q.estimatedSellingPrice ?? q.estimatedPrice;
   const priceNum = rawPrice ? Number(rawPrice) : 0;
-  const renderUrl = q.renderingDataUrl || analysis?.renderingDataUrl || analysis?.imageDataUrl || null;
+  const uploadedImageUrl = analysis?.imageDataUrl || null;
+  const renderingImageUrl = q.renderingDataUrl || analysis?.renderingDataUrl || null;
 
   return {
     id: showroomQuote.id,
+    quoteId: q.id,
     displayCode: showroomQuote.displayCode,
     status: showroomQuote.status,
     createdAt: showroomQuote.createdAt,
-    customerNotes: showroomQuote.customerNotes,
+    customerName: q.customerName || null,
+    customerEmail: q.customerEmail || null,
+    customerPhone: q.customerPhone || null,
+    customerNotes: showroomQuote.customerNotes || q.notes || null,
+    jewelerNotes: showroomQuote.jewelerNotes || null,
     estimatedPrice: priceNum,
     metalType: q.metalType,
     jewelryType: analysis?.jewelryType || "Ring",
-    renderingImageUrl: renderUrl,
+    uploadedImageUrl,
+    renderingImageUrl,
     specs: {
       metalType: q.metalType,
       metalWeightGrams: q.metalWeightGrams ? Number(q.metalWeightGrams) : null,
       centerCarats: q.centerDiamondCarats ? Number(q.centerDiamondCarats) : null,
-      centerShape: analysis?.centerShape || null,
+      centerShape: analysis?.centerShape || "Round",
+      centerClarity: q.colorClarity || "E VS1",
       sideCarats: q.sideDiamondCarats ? Number(q.sideDiamondCarats) : null,
       sideDiamondQuantity: q.sideDiamondQuantity ?? analysis?.sideDiamondQuantity ?? null,
-      settingType: analysis?.settingType || null
+      settingType: analysis?.settingType || "Prong"
     }
   };
+}
+
+export type StaffQuoteUpdateInput = {
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  metalType?: string;
+  metalWeightGrams?: number;
+  centerCarats?: number;
+  centerShape?: string;
+  centerClarity?: string;
+  sideCarats?: number;
+  sideDiamondQuantity?: number;
+  settingType?: string;
+  estimatedPrice?: number;
+  customerNotes?: string;
+  jewelerNotes?: string;
+  status?: "PENDING" | "CLAIMED" | "IN_REVIEW" | "COMPLETED" | "EXPIRED";
+};
+
+export async function updateStaffQuote(
+  companyId: string,
+  codeInput: string,
+  updates: StaffQuoteUpdateInput
+) {
+  const normalizedCode = normalizeShowroomCode(codeInput);
+  if (!normalizedCode) return null;
+
+  const showroomQuote = await prisma.showroomQuote.findUnique({
+    where: {
+      companyId_displayCode: {
+        companyId,
+        displayCode: normalizedCode
+      }
+    },
+    include: {
+      quote: {
+        include: {
+          analysis: true
+        }
+      }
+    }
+  });
+
+  if (!showroomQuote) return null;
+
+  const quoteId = showroomQuote.quoteId;
+
+  // Update Quote record
+  const quoteData: any = {};
+  if (updates.customerName !== undefined) quoteData.customerName = updates.customerName || null;
+  if (updates.customerEmail !== undefined) quoteData.customerEmail = updates.customerEmail || null;
+  if (updates.customerPhone !== undefined) quoteData.customerPhone = updates.customerPhone || null;
+  if (updates.metalType !== undefined) quoteData.metalType = updates.metalType;
+  if (updates.metalWeightGrams !== undefined) quoteData.metalWeightGrams = updates.metalWeightGrams;
+  if (updates.centerCarats !== undefined) quoteData.centerDiamondCarats = updates.centerCarats;
+  if (updates.sideCarats !== undefined) quoteData.sideDiamondCarats = updates.sideCarats;
+  if (updates.sideDiamondQuantity !== undefined) quoteData.sideDiamondQuantity = updates.sideDiamondQuantity;
+  if (updates.centerClarity !== undefined) quoteData.colorClarity = updates.centerClarity;
+  if (updates.estimatedPrice !== undefined) {
+    quoteData.estimatedPrice = updates.estimatedPrice;
+    quoteData.estimatedSellingPrice = updates.estimatedPrice;
+  }
+  if (updates.customerNotes !== undefined) quoteData.notes = updates.customerNotes || null;
+
+  await prisma.quote.update({
+    where: { id: quoteId },
+    data: quoteData
+  });
+
+  // Update Analysis if centerShape or settingType changed
+  if (showroomQuote.quote.analysisId && (updates.centerShape !== undefined || updates.settingType !== undefined)) {
+    await prisma.aiAnalysis.update({
+      where: { id: showroomQuote.quote.analysisId },
+      data: {
+        ...(updates.centerShape !== undefined ? { centerShape: updates.centerShape } : {}),
+        ...(updates.settingType !== undefined ? { settingType: updates.settingType } : {})
+      }
+    }).catch(() => null);
+  }
+
+  // Update ShowroomQuote record
+  const showroomData: any = {};
+  if (updates.customerNotes !== undefined) showroomData.customerNotes = updates.customerNotes || null;
+  if (updates.jewelerNotes !== undefined) showroomData.jewelerNotes = updates.jewelerNotes || null;
+  if (updates.status !== undefined) showroomData.status = updates.status;
+
+  await prisma.showroomQuote.update({
+    where: { id: showroomQuote.id },
+    data: showroomData
+  });
+
+  return getStaffQuoteDetail(companyId, normalizedCode);
 }

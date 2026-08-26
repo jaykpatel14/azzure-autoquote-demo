@@ -40,6 +40,77 @@ const KIOSK_ANALYSIS_STAGES = [
   "Calculating live metal spot pricing & 3D render…"
 ] as const;
 
+type JewelryFactItem = {
+  category: string;
+  icon: string;
+  headline: string;
+  fact: string;
+  trivia?: { question: string; answer: string };
+};
+
+const JEWELRY_FACTS_COLLECTION: JewelryFactItem[] = [
+  {
+    category: "Precious Metals",
+    icon: "award_star",
+    headline: "Platinum is 30x Rarer Than Gold",
+    fact: "If all the platinum ever mined in history were poured into an Olympic pool, it would barely cover your ankles. It is naturally hypoallergenic and develops a velvety patina that lasts generations.",
+    trivia: {
+      question: "Why does platinum feel so heavy in hand?",
+      answer: "Platinum is 60% denser than 14K gold, giving it that unmistakable luxury heirloom heft."
+    }
+  },
+  {
+    category: "Diamond Cuts",
+    icon: "diamond",
+    headline: "The Optical Fire of the Oval Cut",
+    fact: "Engineered with 57–58 precision facets, the Oval brilliant cut maximizes internal light return while creating an optical illusion that makes fingers appear longer and stones look up to 10% larger than round cuts.",
+    trivia: {
+      question: "Which cut reflects the most total light?",
+      answer: "The Round Brilliant cut, mathematically proportioned for 100% total internal reflection."
+    }
+  },
+  {
+    category: "Custom Craftsmanship",
+    icon: "engineering",
+    headline: "The Lost-Wax 3D Casting Secret",
+    fact: "Your ring is first sculpted in high-resolution 3D CAD, printed in castable wax resin, and cast under high vacuum. Master jewelers use 25% excess molten gold reservoir volume to prevent microscopic porosity.",
+    trivia: {
+      question: "What is porosity in fine jewelry?",
+      answer: "Microscopic air pockets. Vacuum casting ensures dense, glass-smooth metal integrity."
+    }
+  },
+  {
+    category: "Gold Metallurgy",
+    icon: "savings",
+    headline: "Why 14K vs 18K Gold Matters",
+    fact: "14K Gold contains 58.5% pure gold alloyed with copper and silver, creating the ultimate durability for daily active wear. 18K contains 75% pure gold for a richer European heirloom luster.",
+    trivia: {
+      question: "Why is 24K gold rarely used for rings?",
+      answer: "Pure 24K gold is too soft and can bend or lose diamonds with everyday wear."
+    }
+  },
+  {
+    category: "Anatomy of a Ring",
+    icon: "visibility",
+    headline: "The Secret of the Hidden Halo",
+    fact: "A hidden halo wraps microscopic pavé diamonds underneath the center stone's gallery prongs, providing 360° side fire and sparkle without changing the classic top silhouette.",
+    trivia: {
+      question: "How small are pavé side diamonds?",
+      answer: "Often under 1 millimeter, hand-beaded under high-power 80x gemological microscopes."
+    }
+  },
+  {
+    category: "Ancient Earth History",
+    icon: "auto_awesome",
+    headline: "Formed 100 Miles Inside the Earth",
+    fact: "Natural diamonds formed 1 to 3.5 billion years ago under colossal heat and pressure 100 miles below the earth's crust, carried upward by ancient volcanic magma pipes called kimberlites.",
+    trivia: {
+      question: "How old is a natural diamond?",
+      answer: "Most natural diamonds are older than dinosaurs and nearly a quarter the age of the universe!"
+    }
+  }
+];
+
 const METAL_OPTIONS = ["10K", "14K", "18K", "Platinum", "Silver"];
 
 const SHOWROOM_PRODUCTS = [
@@ -156,6 +227,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const [description, setDescription] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [stageIndex, setStageIndex] = useState(0);
+  const [factIndex, setFactIndex] = useState(0);
+  const [showTriviaAnswer, setShowTriviaAnswer] = useState(false);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [analysisIds, setAnalysisIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -412,6 +485,11 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       setStageIndex((current) => (current + 1) % KIOSK_ANALYSIS_STAGES.length);
     }, 900);
 
+    const factTimer = window.setInterval(() => {
+      setFactIndex((current) => (current + 1) % JEWELRY_FACTS_COLLECTION.length);
+      setShowTriviaAnswer(false);
+    }, 4200);
+
     try {
       const form = new FormData();
       form.set("token", token);
@@ -440,6 +518,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       }
     } finally {
       window.clearInterval(pulser);
+      window.clearInterval(factTimer);
       setAnalyzing(false);
       analysisAbortControllerRef.current = null;
     }
@@ -762,12 +841,12 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       ) : !started ? (
         /* ── 2. WELCOME / STANDBY SCREEN: Inspiration Product Catalog ── */
         <section className="showroomPanel">
-          <p className="showroomEyebrow">Instant Custom Jewelry Pricing</p>
+          <p className="showroomEyebrow">Bespoke Jewelry Studio &amp; Instant AI Estimator</p>
           <h1 className="showroomHeroTitle">
-            Bring Your Dream Ring to Life in <em>30 Seconds</em>
+            Design &amp; Price Your Custom Fine Jewelry <em>in Real Time</em>
           </h1>
           <p className="showroomSubtext">
-            Upload an inspiration photo or pick a recent handcrafted design below to see a photorealistic 3D visualization and an instant live price estimate.
+            Snap or upload an inspiration photo, or explore our signature showcase below. Get an instant gemological analysis, diamond grading breakdown, and transparent quote tailored to your exact specifications.
           </p>
 
           <button
@@ -776,8 +855,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
             onClick={() => setStarted(true)}
             style={{ marginBottom: 16 }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: 24 }}>auto_awesome</span>
-            Design Your Custom Ring
+            <span className="material-symbols-outlined" style={{ fontSize: 24 }}>diamond</span>
+            Create Your Custom Piece
           </button>
 
           <div style={{ textAlign: "center", marginBottom: 40, borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: 14 }}>
@@ -1267,6 +1346,153 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                 </div>
               ))}
             </div>
+
+            {/* Interactive Fine Jewelry Facts & Trivia Card */}
+            {(() => {
+              const currentFact = JEWELRY_FACTS_COLLECTION[factIndex] || JEWELRY_FACTS_COLLECTION[0];
+              return (
+                <div
+                  style={{
+                    marginTop: 20,
+                    background: "linear-gradient(145deg, rgba(201, 168, 76, 0.12), rgba(0, 0, 0, 0.5))",
+                    border: "1px solid rgba(201, 168, 76, 0.35)",
+                    borderRadius: 18,
+                    padding: "18px 20px",
+                    textAlign: "left",
+                    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4)",
+                    position: "relative",
+                    overflow: "hidden"
+                  }}
+                >
+                  {/* Top Bar: Category Pill, Counter, Prev/Next Arrows */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span
+                        style={{
+                          fontSize: "0.7rem",
+                          fontWeight: 800,
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          padding: "3px 9px",
+                          background: "rgba(201, 168, 76, 0.25)",
+                          color: "#f6e09e",
+                          borderRadius: 6,
+                          border: "1px solid rgba(201, 168, 76, 0.4)"
+                        }}
+                      >
+                        {currentFact.category}
+                      </span>
+                      <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: 600 }}>
+                        {factIndex + 1} of {JEWELRY_FACTS_COLLECTION.length}
+                      </span>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFactIndex((current) => (current - 1 + JEWELRY_FACTS_COLLECTION.length) % JEWELRY_FACTS_COLLECTION.length);
+                          setShowTriviaAnswer(false);
+                        }}
+                        style={{
+                          background: "rgba(255, 255, 255, 0.08)",
+                          border: "1px solid rgba(255, 255, 255, 0.15)",
+                          color: "#e2e8f0",
+                          borderRadius: "50%",
+                          width: 28,
+                          height: 28,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer"
+                        }}
+                        aria-label="Previous Fact"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>chevron_left</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFactIndex((current) => (current + 1) % JEWELRY_FACTS_COLLECTION.length);
+                          setShowTriviaAnswer(false);
+                        }}
+                        style={{
+                          background: "rgba(255, 255, 255, 0.08)",
+                          border: "1px solid rgba(255, 255, 255, 0.15)",
+                          color: "#e2e8f0",
+                          borderRadius: "50%",
+                          width: 28,
+                          height: 28,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer"
+                        }}
+                        aria-label="Next Fact"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>chevron_right</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Headline */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 20, color: "#e6cb78" }}>
+                      {currentFact.icon}
+                    </span>
+                    <strong style={{ fontSize: "0.95rem", color: "#ffffff" }}>
+                      {currentFact.headline}
+                    </strong>
+                  </div>
+
+                  {/* Fact Body */}
+                  <p style={{ margin: "0 0 12px", fontSize: "0.85rem", color: "#cbd5e1", lineHeight: 1.5 }}>
+                    {currentFact.fact}
+                  </p>
+
+                  {/* Interactive Trivia Question / Reveal Answer */}
+                  {currentFact.trivia ? (
+                    <div
+                      style={{
+                        background: "rgba(0, 0, 0, 0.35)",
+                        border: "1px dashed rgba(201, 168, 76, 0.3)",
+                        borderRadius: 12,
+                        padding: "10px 14px",
+                        marginTop: 8
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ fontSize: "0.8125rem", color: "#f8fafc", fontWeight: 600 }}>
+                          💡 <span style={{ color: "#e6cb78" }}>Quick Trivia:</span> {currentFact.trivia.question}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowTriviaAnswer(!showTriviaAnswer)}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "#e6cb78",
+                            fontSize: "0.75rem",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            textDecoration: "underline",
+                            padding: "2px 6px",
+                            flexShrink: 0
+                          }}
+                        >
+                          {showTriviaAnswer ? "Hide" : "Reveal Answer ▾"}
+                        </button>
+                      </div>
+                      {showTriviaAnswer ? (
+                        <p style={{ margin: "8px 0 0", fontSize: "0.8125rem", color: "#86efac", fontWeight: 500 }}>
+                          ✓ {currentFact.trivia.answer}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })()}
 
             <div style={{ marginTop: 24, textAlign: "center" }}>
               <button

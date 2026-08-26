@@ -15,24 +15,29 @@ type StaffQuoteItem = {
 
 type QuoteDetail = {
   id: string;
+  quoteId?: string;
   displayCode: string;
   status: string;
   createdAt: string;
+  customerName: string | null;
+  customerEmail: string | null;
+  customerPhone: string | null;
   customerNotes: string | null;
+  jewelerNotes: string | null;
   estimatedPrice: number;
   metalType: string;
   jewelryType: string;
+  uploadedImageUrl: string | null;
   renderingImageUrl: string | null;
   specs: {
     metalType: string;
     metalWeightGrams: number | null;
     centerCarats: number | null;
     centerShape: string | null;
+    centerClarity?: string | null;
     sideCarats: number | null;
     sideDiamondQuantity: number | null;
     settingType: string | null;
-    hasWeddingBand: boolean;
-    isTwoTone: boolean;
   };
 };
 
@@ -62,6 +67,10 @@ type KioskStaffViewProps = {
   onExit: () => void;
 };
 
+const METAL_CHOICES = ["10K", "14K", "18K", "Platinum", "Silver"];
+const SHAPE_CHOICES = ["Round", "Oval", "Emerald", "Cushion", "Radiant", "Pear", "Marquise", "Princess"];
+const SETTING_CHOICES = ["Prong", "Bezel", "Pavé", "Channel", "Tension", "Halo", "Cathedral"];
+
 export default function KioskStaffView({
   staffName,
   sessionToken,
@@ -74,6 +83,25 @@ export default function KioskStaffView({
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedQuote, setSelectedQuote] = useState<QuoteDetail | null>(null);
+
+  // Edit Mode States
+  const [isEditing, setIsEditing] = useState(false);
+  const [editCustomerName, setEditCustomerName] = useState("");
+  const [editCustomerEmail, setEditCustomerEmail] = useState("");
+  const [editCustomerPhone, setEditCustomerPhone] = useState("");
+  const [editMetalType, setEditMetalType] = useState("");
+  const [editMetalWeight, setEditMetalWeight] = useState("");
+  const [editCenterCarats, setEditCenterCarats] = useState("");
+  const [editCenterShape, setEditCenterShape] = useState("");
+  const [editSideCarats, setEditSideCarats] = useState("");
+  const [editSideCount, setEditSideCount] = useState("");
+  const [editSettingType, setEditSettingType] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editJewelerNotes, setEditJewelerNotes] = useState("");
+  const [editStatus, setEditStatus] = useState<"PENDING" | "CLAIMED" | "IN_REVIEW" | "COMPLETED" | "EXPIRED">("CLAIMED");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
 
   // Inactivity auto-exit timer (90 seconds)
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -136,6 +164,27 @@ export default function KioskStaffView({
     return () => clearTimeout(timer);
   }, [fetchRecentQuotes]);
 
+  // Initialize edit fields when a quote is opened
+  const initEditFields = (q: QuoteDetail) => {
+    setEditCustomerName(q.customerName || "");
+    setEditCustomerEmail(q.customerEmail || "");
+    setEditCustomerPhone(q.customerPhone || "");
+    setEditMetalType(q.specs.metalType || q.metalType || "14K");
+    setEditMetalWeight(q.specs.metalWeightGrams ? String(q.specs.metalWeightGrams) : "");
+    setEditCenterCarats(q.specs.centerCarats ? String(q.specs.centerCarats) : "");
+    setEditCenterShape(q.specs.centerShape || "Round");
+    setEditSideCarats(q.specs.sideCarats ? String(q.specs.sideCarats) : "");
+    setEditSideCount(q.specs.sideDiamondQuantity ? String(q.specs.sideDiamondQuantity) : "");
+    setEditSettingType(q.specs.settingType || "Prong");
+    setEditPrice(q.estimatedPrice ? String(q.estimatedPrice) : "");
+    setEditJewelerNotes(q.jewelerNotes || "");
+    const statusVal = q.status as "PENDING" | "CLAIMED" | "IN_REVIEW" | "COMPLETED" | "EXPIRED";
+    setEditStatus(["PENDING", "CLAIMED", "IN_REVIEW", "COMPLETED", "EXPIRED"].includes(statusVal) ? statusVal : "CLAIMED");
+    setIsEditing(false);
+    setSaveSuccessMessage(null);
+    setSaveErrorMessage(null);
+  };
+
   // Lookup quote by code
   const handleLookup = async (codeToLookup?: string) => {
     const target = (codeToLookup || searchCode).trim();
@@ -161,10 +210,62 @@ export default function KioskStaffView({
 
       const data = await res.json();
       setSelectedQuote(data.quote);
+      initEditFields(data.quote);
     } catch (err) {
       setSearchError(err instanceof Error ? err.message : "Quote not found.");
     } finally {
       setSearching(false);
+    }
+  };
+
+  // Save changes to the quote
+  const handleSaveQuoteChanges = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedQuote || savingEdit) return;
+
+    setSavingEdit(true);
+    setSaveSuccessMessage(null);
+    setSaveErrorMessage(null);
+
+    try {
+      const res = await fetch(`/api/showroom/staff/quotes/${encodeURIComponent(selectedQuote.displayCode)}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${sessionToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          customerName: editCustomerName.trim(),
+          customerEmail: editCustomerEmail.trim(),
+          customerPhone: editCustomerPhone.trim(),
+          metalType: editMetalType,
+          metalWeightGrams: editMetalWeight ? parseFloat(editMetalWeight) : undefined,
+          centerCarats: editCenterCarats ? parseFloat(editCenterCarats) : undefined,
+          centerShape: editCenterShape,
+          sideCarats: editSideCarats ? parseFloat(editSideCarats) : undefined,
+          sideDiamondQuantity: editSideCount ? parseInt(editSideCount, 10) : undefined,
+          settingType: editSettingType,
+          estimatedPrice: editPrice ? parseFloat(editPrice) : undefined,
+          jewelerNotes: editJewelerNotes.trim(),
+          status: editStatus
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update quote.");
+      }
+
+      const data = await res.json();
+      setSelectedQuote(data.quote);
+      initEditFields(data.quote);
+      setSaveSuccessMessage("Quote updated successfully!");
+      setIsEditing(false);
+      void fetchRecentQuotes();
+    } catch (err: any) {
+      setSaveErrorMessage(err.message || "Failed to save changes.");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -178,80 +279,87 @@ export default function KioskStaffView({
         color: "#f8fafc",
         display: "flex",
         flexDirection: "column",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        overflowY: "auto",
-        userSelect: "none"
+        overflowY: "auto"
       }}
     >
-      {/* Top Header */}
+      {/* Top Staff App Bar */}
       <header
         style={{
           display: "flex",
-          alignItems: "center",
           justifyContent: "space-between",
-          padding: "20px 32px",
-          background: "rgba(255, 255, 255, 0.03)",
+          alignItems: "center",
+          padding: "16px 24px",
+          background: "rgba(18, 20, 26, 0.9)",
           borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+          backdropFilter: "blur(12px)",
           position: "sticky",
           top: 0,
-          zIndex: 10,
-          backdropFilter: "blur(12px)"
+          zIndex: 10
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span
+          <div
             style={{
-              display: "inline-block",
-              width: 10,
-              height: 10,
+              width: 38,
+              height: 38,
               borderRadius: "50%",
-              background: brandColor
-            }}
-          />
-          <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "#ffffff" }}>
-            Welcome, {staffName}
-          </span>
-          <span
-            style={{
-              fontSize: "0.75rem",
-              background: "rgba(201, 168, 76, 0.15)",
-              color: brandColor,
-              padding: "4px 10px",
-              borderRadius: 999,
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em"
+              background: `linear-gradient(135deg, ${brandColor}, #dfc674)`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#0a0b0e",
+              fontWeight: 800,
+              fontSize: "1.1rem"
             }}
           >
-            Staff View
-          </span>
+            {staffName[0]?.toUpperCase() || "S"}
+          </div>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <strong style={{ fontSize: "1.05rem", color: "#ffffff" }}>{staffName}</strong>
+              <span
+                style={{
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  background: "rgba(201, 168, 76, 0.15)",
+                  color: brandColor,
+                  padding: "2px 8px",
+                  borderRadius: 6,
+                  border: `1px solid ${brandColor}40`
+                }}
+              >
+                STAFF MODE
+              </span>
+            </div>
+            <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Auto-locks after 90s idle</span>
+          </div>
         </div>
 
         <button
           type="button"
           onClick={exitSession}
           style={{
-            background: "rgba(255, 255, 255, 0.08)",
-            border: "1px solid rgba(255, 255, 255, 0.15)",
-            color: "#e2e8f0",
-            fontSize: "0.95rem",
-            fontWeight: 600,
-            padding: "10px 22px",
-            borderRadius: 12,
+            background: "rgba(239, 68, 68, 0.15)",
+            border: "1px solid rgba(239, 68, 68, 0.3)",
+            color: "#f87171",
+            padding: "8px 16px",
+            borderRadius: 10,
             cursor: "pointer",
+            fontWeight: 600,
             display: "flex",
             alignItems: "center",
-            gap: 8
+            gap: 6
           }}
         >
-          Exit staff mode
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>lock</span>
+          Exit Staff Mode
         </button>
       </header>
 
       {/* Main Content Area */}
-      <main style={{ flex: 1, maxWidth: 900, width: "100%", margin: "0 auto", padding: "32px 24px" }}>
+      <main style={{ flex: 1, maxWidth: 960, width: "100%", margin: "0 auto", padding: "32px 24px" }}>
         {selectedQuote ? (
-          /* ── Quote Detail View ── */
+          /* ── Quote Detail & Edit View ── */
           <div
             style={{
               background: "rgba(255, 255, 255, 0.03)",
@@ -261,7 +369,8 @@ export default function KioskStaffView({
               boxShadow: "0 20px 50px rgba(0,0,0,0.5)"
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+            {/* Top Bar inside Quote */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
               <button
                 type="button"
                 onClick={() => setSelectedQuote(null)}
@@ -273,62 +382,408 @@ export default function KioskStaffView({
                   borderRadius: 10,
                   cursor: "pointer",
                   fontSize: "0.95rem",
-                  fontWeight: 600
+                  fontWeight: 600,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6
                 }}
               >
-                ← Back to quote list
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
+                Back to Quote List
               </button>
-              <span
-                style={{
-                  fontFamily: "monospace",
-                  fontSize: "1.35rem",
-                  fontWeight: 700,
-                  color: brandColor,
-                  letterSpacing: "0.05em"
-                }}
-              >
-                {selectedQuote.displayCode}
-              </span>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span
+                  style={{
+                    fontFamily: "monospace",
+                    fontSize: "1.35rem",
+                    fontWeight: 700,
+                    color: brandColor,
+                    letterSpacing: "0.05em"
+                  }}
+                >
+                  {selectedQuote.displayCode}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(!isEditing)}
+                  style={{
+                    background: isEditing ? "rgba(255,255,255,0.1)" : `linear-gradient(135deg, ${brandColor}, #dfc674)`,
+                    color: isEditing ? "#ffffff" : "#0a0b0e",
+                    border: "none",
+                    padding: "8px 16px",
+                    borderRadius: 10,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                    {isEditing ? "close" : "edit"}
+                  </span>
+                  {isEditing ? "Cancel Edit" : "Edit Quote"}
+                </button>
+              </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 28 }}>
-              {/* Photo / Render */}
+            {/* Notification Banners */}
+            {saveSuccessMessage ? (
+              <div style={{ background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: 12, padding: "12px 16px", color: "#10b981", fontWeight: 600, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>check_circle</span>
+                {saveSuccessMessage}
+              </div>
+            ) : null}
+
+            {saveErrorMessage ? (
+              <div style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 12, padding: "12px 16px", color: "#f87171", fontWeight: 600, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>error</span>
+                {saveErrorMessage}
+              </div>
+            ) : null}
+
+            {/* Customer Details Hero Card */}
+            <div
+              style={{
+                background: "rgba(201, 168, 76, 0.08)",
+                border: "1px solid rgba(201, 168, 76, 0.25)",
+                borderRadius: 16,
+                padding: "18px 24px",
+                marginBottom: 24,
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: 16
+              }}
+            >
               <div>
-                {selectedQuote.renderingImageUrl ? (
-                  <img
-                    src={selectedQuote.renderingImageUrl}
-                    alt="Jewelry Design"
-                    style={{ width: "100%", maxHeight: 340, objectFit: "contain", borderRadius: 16, background: "#000" }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      height: 240,
-                      background: "rgba(255, 255, 255, 0.02)",
-                      border: "1px dashed rgba(255, 255, 255, 0.1)",
-                      borderRadius: 16,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#64748b"
-                    }}
-                  >
-                    No render available
-                  </div>
-                )}
+                <span style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "#e6cb78", fontWeight: 700 }}>Customer Name</span>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#f8fafc", marginTop: 2 }}>
+                  {selectedQuote.customerName || "In-Store Guest"}
+                </div>
               </div>
 
-              {/* Specs Breakdown */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <span style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "#e6cb78", fontWeight: 700 }}>Email Address</span>
+                <div style={{ fontSize: "0.95rem", color: "#cbd5e1", marginTop: 2 }}>
+                  {selectedQuote.customerEmail || "Not provided"}
+                </div>
+              </div>
+
+              <div>
+                <span style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "#e6cb78", fontWeight: 700 }}>Phone Number</span>
+                <div style={{ fontSize: "0.95rem", color: "#cbd5e1", marginTop: 2 }}>
+                  {selectedQuote.customerPhone || "Not provided"}
+                </div>
+              </div>
+            </div>
+
+            {/* Dual Images Section: Customer Uploaded Photo + AI 3D Render */}
+            <div style={{ marginBottom: 28 }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>
+                Design Visuals
+              </h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+                {/* 1. Uploaded Customer Photo */}
+                <div
+                  style={{
+                    background: "rgba(0, 0, 0, 0.4)",
+                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    borderRadius: 16,
+                    padding: 16,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center"
+                  }}
+                >
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#94a3b8", marginBottom: 8, textTransform: "uppercase" }}>
+                    📷 Uploaded Reference Photo
+                  </span>
+                  {selectedQuote.uploadedImageUrl ? (
+                    <img
+                      src={selectedQuote.uploadedImageUrl}
+                      alt="Customer Upload"
+                      style={{ width: "100%", height: 260, objectFit: "contain", borderRadius: 12, background: "#000" }}
+                    />
+                  ) : (
+                    <div style={{ height: 260, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", background: "rgba(255, 255, 255, 0.02)", borderRadius: 12 }}>
+                      No upload image
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Photorealistic AI 3D Render */}
+                <div
+                  style={{
+                    background: "rgba(0, 0, 0, 0.4)",
+                    border: "1px solid rgba(201, 168, 76, 0.25)",
+                    borderRadius: 16,
+                    padding: 16,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center"
+                  }}
+                >
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#e6cb78", marginBottom: 8, textTransform: "uppercase" }}>
+                    ✦ Photorealistic AI 3D Render
+                  </span>
+                  {selectedQuote.renderingImageUrl ? (
+                    <img
+                      src={selectedQuote.renderingImageUrl}
+                      alt="AI Render"
+                      style={{ width: "100%", height: 260, objectFit: "contain", borderRadius: 12, background: "#000" }}
+                    />
+                  ) : (
+                    <div style={{ height: 260, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", background: "rgba(255, 255, 255, 0.02)", borderRadius: 12 }}>
+                      Render not generated
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Toggle between Edit Form and View Mode */}
+            {isEditing ? (
+              /* ── INLINE QUOTE EDITOR FORM ── */
+              <form onSubmit={handleSaveQuoteChanges} style={{ background: "rgba(0, 0, 0, 0.4)", border: "1px solid rgba(201, 168, 76, 0.3)", borderRadius: 18, padding: 24 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                  <span className="material-symbols-outlined" style={{ color: brandColor, fontSize: 24 }}>tune</span>
+                  <h3 style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, color: "#ffffff" }}>
+                    Edit &amp; Adjust Quote Specifications
+                  </h3>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 20 }}>
+                  {/* Customer Name */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Customer Name</span>
+                    <input
+                      type="text"
+                      value={editCustomerName}
+                      onChange={(e) => setEditCustomerName(e.target.value)}
+                      placeholder="Customer name"
+                      style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
+                    />
+                  </label>
+
+                  {/* Customer Email */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Customer Email</span>
+                    <input
+                      type="email"
+                      value={editCustomerEmail}
+                      onChange={(e) => setEditCustomerEmail(e.target.value)}
+                      placeholder="email@example.com"
+                      style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
+                    />
+                  </label>
+
+                  {/* Customer Phone */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Customer Phone</span>
+                    <input
+                      type="tel"
+                      value={editCustomerPhone}
+                      onChange={(e) => setEditCustomerPhone(e.target.value)}
+                      placeholder="(555) 000-0000"
+                      style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
+                    />
+                  </label>
+
+                  {/* Metal Type */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Metal Alloy</span>
+                    <select
+                      value={editMetalType}
+                      onChange={(e) => setEditMetalType(e.target.value)}
+                      style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
+                    >
+                      {METAL_CHOICES.map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  {/* Metal Weight (grams) */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Metal Weight (grams)</span>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={editMetalWeight}
+                      onChange={(e) => setEditMetalWeight(e.target.value)}
+                      placeholder="e.g. 4.5"
+                      style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
+                    />
+                  </label>
+
+                  {/* Center Stone Carats */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Center Diamond (ct)</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editCenterCarats}
+                      onChange={(e) => setEditCenterCarats(e.target.value)}
+                      placeholder="e.g. 2.00"
+                      style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
+                    />
+                  </label>
+
+                  {/* Center Shape */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Center Shape</span>
+                    <select
+                      value={editCenterShape}
+                      onChange={(e) => setEditCenterShape(e.target.value)}
+                      style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
+                    >
+                      {SHAPE_CHOICES.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  {/* Side Stones Carats */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Side Diamonds (Total ct)</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editSideCarats}
+                      onChange={(e) => setEditSideCarats(e.target.value)}
+                      placeholder="e.g. 0.45"
+                      style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
+                    />
+                  </label>
+
+                  {/* Side Stones Quantity */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Side Stones Qty</span>
+                    <input
+                      type="number"
+                      step="1"
+                      value={editSideCount}
+                      onChange={(e) => setEditSideCount(e.target.value)}
+                      placeholder="e.g. 18"
+                      style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
+                    />
+                  </label>
+
+                  {/* Setting Type */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Setting Style</span>
+                    <select
+                      value={editSettingType}
+                      onChange={(e) => setEditSettingType(e.target.value)}
+                      style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
+                    >
+                      {SETTING_CHOICES.map((st) => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  {/* Selling Price Override */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#e6cb78", fontWeight: 700 }}>Selling Price ($ USD)</span>
+                    <input
+                      type="number"
+                      step="1"
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(e.target.value)}
+                      placeholder="e.g. 3450"
+                      style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #e6cb78", borderRadius: 8, color: "#e6cb78", fontWeight: 700, fontSize: "1.1rem" }}
+                    />
+                  </label>
+
+                  {/* Quote Status */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Status</span>
+                    <select
+                      value={editStatus}
+                      onChange={(e) => setEditStatus(e.target.value as any)}
+                      style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
+                    >
+                      <option value="PENDING">PENDING</option>
+                      <option value="CLAIMED">CLAIMED</option>
+                      <option value="IN_REVIEW">IN_REVIEW</option>
+                      <option value="COMPLETED">COMPLETED</option>
+                      <option value="EXPIRED">EXPIRED</option>
+                    </select>
+                  </label>
+                </div>
+
+                {/* Jeweler Notes */}
+                <label style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
+                  <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Internal Jeweler / Staff Notes</span>
+                  <textarea
+                    rows={3}
+                    value={editJewelerNotes}
+                    onChange={(e) => setEditJewelerNotes(e.target.value)}
+                    placeholder="Add custom modifications, finger sizing, or special customer requests…"
+                    style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
+                  />
+                </label>
+
+                {/* Submit / Cancel Buttons */}
+                <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      color: "#cbd5e1",
+                      padding: "10px 20px",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      fontWeight: 600
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingEdit}
+                    style={{
+                      background: `linear-gradient(135deg, ${brandColor}, #dfc674)`,
+                      border: "none",
+                      color: "#0a0b0e",
+                      padding: "10px 24px",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check</span>
+                    {savingEdit ? "Saving…" : "Save & Update Quote"}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* ── READ-ONLY SPECS DISPLAY ── */
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
+                {/* Price Display */}
                 <div>
                   <span style={{ fontSize: "0.8125rem", color: "#94a3b8", textTransform: "uppercase", fontWeight: 700 }}>
                     Estimated Selling Price
                   </span>
-                  <div style={{ fontSize: "2.25rem", fontWeight: 700, color: "#ffffff", marginTop: 4 }}>
+                  <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "#ffffff", marginTop: 4 }}>
                     {formatPrice(selectedQuote.estimatedPrice)}
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <span style={{ fontSize: "0.85rem", padding: "4px 10px", borderRadius: 6, background: "rgba(201, 168, 76, 0.15)", color: brandColor, fontWeight: 700 }}>
+                      STATUS: {selectedQuote.status}
+                    </span>
                   </div>
                 </div>
 
+                {/* Specs List */}
                 <div
                   style={{
                     background: "rgba(0, 0, 0, 0.3)",
@@ -371,12 +826,20 @@ export default function KioskStaffView({
                       <strong style={{ color: "#f8fafc" }}>{selectedQuote.specs.settingType}</strong>
                     </div>
                   ) : null}
+                  {selectedQuote.jewelerNotes ? (
+                    <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                      <span style={{ fontSize: "0.75rem", color: "#e6cb78", fontWeight: 700, textTransform: "uppercase" }}>Staff Notes:</span>
+                      <p style={{ margin: "4px 0 0", color: "#cbd5e1", fontSize: "0.875rem" }}>{selectedQuote.jewelerNotes}</p>
+                    </div>
+                  ) : null}
                 </div>
-
-                <p className="muted small" style={{ margin: 0, color: "#64748b" }}>
-                  Generated {formatRelativeTime(selectedQuote.createdAt)} · Status: {selectedQuote.status}
-                </p>
               </div>
+            )}
+
+            <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid rgba(255, 255, 255, 0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <p className="muted small" style={{ margin: 0, color: "#64748b" }}>
+                Created {formatRelativeTime(selectedQuote.createdAt)}
+              </p>
             </div>
           </div>
         ) : (

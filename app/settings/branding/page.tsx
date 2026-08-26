@@ -8,12 +8,17 @@ import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getSettingsProfileData } from "@/src/services/settings";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 
-export default async function BrandingSettingsPage() {
+export default async function BrandingSettingsPage({
+  searchParams
+}: {
+  searchParams: Promise<{ updated?: string; error?: string }>;
+}) {
   const context = await getAuthenticatedCompanyContext();
   if (!context) {
     redirect("/signin");
   }
 
+  const { updated, error } = await searchParams;
   const data = await getSettingsProfileData(context.company.id, context.user.id);
   if (!data.company) {
     redirect("/settings");
@@ -34,6 +39,20 @@ export default async function BrandingSettingsPage() {
       }
     >
       <SettingsTabs activeHref="/settings/branding" />
+
+      {updated ? (
+        <div style={{ background: "rgba(16, 185, 129, 0.12)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: 12, padding: "14px 18px", color: "#10b981", fontWeight: 600, display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 22 }}>check_circle</span>
+          Branding details saved successfully.
+        </div>
+      ) : null}
+
+      {error ? (
+        <div style={{ background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 12, padding: "14px 18px", color: "#ef4444", fontWeight: 600, display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 22 }}>error</span>
+          {error}
+        </div>
+      ) : null}
 
       <section className="card">
         <div className="sectionHeader">

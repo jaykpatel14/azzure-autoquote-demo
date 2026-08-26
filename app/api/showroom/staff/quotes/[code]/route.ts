@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { validateStaffSession, getStaffQuoteDetail } from "@/lib/showroom-staff";
+import { validateStaffSession, getStaffQuoteDetail, updateStaffQuote } from "@/lib/showroom-staff";
 
 export const runtime = "nodejs";
 
@@ -37,6 +37,39 @@ export async function GET(
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch quote details." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ code: string }> }
+) {
+  try {
+    const sessionToken = extractStaffToken(req);
+    if (!sessionToken) {
+      return NextResponse.json({ error: "Staff authentication required." }, { status: 401 });
+    }
+
+    const session = await validateStaffSession(sessionToken);
+    if (!session) {
+      return NextResponse.json({ error: "Staff session expired or invalid." }, { status: 401 });
+    }
+
+    const { code } = await params;
+    const body = await req.json();
+
+    const updated = await updateStaffQuote(session.companyId, code, body);
+
+    if (!updated) {
+      return NextResponse.json({ error: "Quote not found or could not be updated." }, { status: 404 });
+    }
+
+    return NextResponse.json({ quote: updated, success: true }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to update quote." },
       { status: 500 }
     );
   }
