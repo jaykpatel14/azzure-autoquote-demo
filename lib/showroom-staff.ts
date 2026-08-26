@@ -3,6 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { checkRateLimit, clearRateLimitState } from "@/lib/rate-limit";
 import { normalizeShowroomCode } from "@/lib/showroom";
+import {
+  loadAnalysisImageDataUrlFromS3,
+  loadQuoteRenderingDataUrlFromS3
+} from "@/lib/quote-pdf-s3";
 
 const WEAK_PINS = new Set([
   "0000", "1111", "2222", "3333", "4444", "5555", "6666", "7777", "8888", "9999",
@@ -32,6 +36,38 @@ export function hashKioskPin(pin: string): string {
 
 export function verifyKioskPin(pin: string, hash: string): boolean {
   return verifyPassword(pin, hash);
+}
+
+async function resolveAnalysisImageUrl(params: {
+  storageKey: string | null;
+  dataUrl: string | null;
+  mimeType?: string | null;
+}) {
+  if (params.storageKey) {
+    const url = await loadAnalysisImageDataUrlFromS3({
+      key: params.storageKey,
+      mimeType: params.mimeType || "image/jpeg"
+    });
+    if (url) {
+      return url;
+    }
+  }
+
+  return params.dataUrl || null;
+}
+
+async function resolveRenderingImageUrl(params: {
+  storageKey: string | null;
+  dataUrl: string | null;
+}) {
+  if (params.storageKey) {
+    const url = await loadQuoteRenderingDataUrlFromS3(params.storageKey);
+    if (url) {
+      return url;
+    }
+  }
+
+  return params.dataUrl || null;
 }
 
 export async function setUserKioskPin(userId: string, pin: string) {
@@ -173,11 +209,9 @@ export async function getStaffRecentQuotes(companyId: string) {
     }
   });
 
-  return showroomQuotes.map((sq) => {
+  return Promise.all(showroomQuotes.map(async (sq) => {
     const rawPrice = sq.quote.estimatedSellingPrice ?? sq.quote.estimatedPrice;
     const priceNum = rawPrice ? Number(rawPrice) : 0;
-    const renderUrl = sq.quote.renderingDataUrl || sq.quote.analysis?.renderingDataUrl || sq.quote.analysis?.imageDataUrl || null;
-
     return {
       id: sq.id,
       displayCode: sq.displayCode,
@@ -186,9 +220,12 @@ export async function getStaffRecentQuotes(companyId: string) {
       jewelryType: sq.quote.analysis?.jewelryType || "Ring",
       createdAt: sq.createdAt,
       status: sq.status,
-      renderingImageUrl: renderUrl
+      renderingImageUrl: await resolveRenderingImageUrl({
+        storageKey: sq.quote.renderingStorageKey || sq.quote.analysis?.renderingStorageKey || null,
+        dataUrl: sq.quote.renderingDataUrl || sq.quote.analysis?.renderingDataUrl || null
+      })
     };
-  });
+  }));
 }
 
 export async function getStaffQuoteDetail(companyId: string, codeInput: string) {
@@ -217,8 +254,15 @@ export async function getStaffQuoteDetail(companyId: string, codeInput: string) 
   const analysis = q.analysis;
   const rawPrice = q.estimatedSellingPrice ?? q.estimatedPrice;
   const priceNum = rawPrice ? Number(rawPrice) : 0;
-  const uploadedImageUrl = analysis?.imageDataUrl || null;
-  const renderingImageUrl = q.renderingDataUrl || analysis?.renderingDataUrl || null;
+  const uploadedImageUrl = await resolveAnalysisImageUrl({
+    storageKey: analysis?.sourceImageStorageKey || null,
+    dataUrl: analysis?.imageDataUrl || null,
+    mimeType: analysis?.sourceImageMimeType || null
+  });
+  const renderingImageUrl = await resolveRenderingImageUrl({
+    storageKey: q.renderingStorageKey || analysis?.renderingStorageKey || null,
+    dataUrl: q.renderingDataUrl || analysis?.renderingDataUrl || null
+  });
 
   return {
     id: showroomQuote.id,

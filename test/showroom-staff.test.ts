@@ -1,68 +1,27 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getStaffRecentQuotes,
   getStaffQuoteDetail
 } from "@/lib/showroom-staff";
 import { normalizeShowroomCode } from "@/lib/showroom";
 
+const prismaShowroomQuoteFindManyMock = vi.hoisted(() => vi.fn());
+const prismaShowroomQuoteFindUniqueMock = vi.hoisted(() => vi.fn());
+const loadAnalysisImageDataUrlFromS3Mock = vi.hoisted(() => vi.fn());
+const loadQuoteRenderingDataUrlFromS3Mock = vi.hoisted(() => vi.fn());
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     showroomQuote: {
-      findMany: vi.fn().mockImplementation(async ({ where }: { where: { companyId: string } }) => {
-        if (where.companyId === "comp_123") {
-          return [
-            {
-              id: "sq_1",
-              displayCode: "QT-4821",
-              status: "PENDING",
-              createdAt: new Date("2026-08-25T12:00:00Z"),
-              quote: {
-                estimatedSellingPrice: 1666,
-                estimatedPrice: 1666,
-                metalType: "18K Yellow Gold",
-                renderingDataUrl: "https://example.com/render.jpg",
-                analysis: {
-                  jewelryType: "Ring",
-                  renderingImageUrl: "https://example.com/render.jpg"
-                }
-              }
-            }
-          ];
-        }
-        return [];
-      }),
-      findUnique: vi.fn().mockImplementation(async ({ where }: { where: { companyId_displayCode: { companyId: string; displayCode: string } } }) => {
-        if (where.companyId_displayCode.companyId === "comp_123" && where.companyId_displayCode.displayCode === "QT-4821") {
-          return {
-            id: "sq_1",
-            displayCode: "QT-4821",
-            status: "PENDING",
-            createdAt: new Date("2026-08-25T12:00:00Z"),
-            customerNotes: "Engagement ring inquiry",
-            quote: {
-              metalType: "18K Yellow Gold",
-              metalWeightGrams: 4.5,
-              centerDiamondCarats: 1.5,
-              sideDiamondCarats: 0.35,
-              sideDiamondQuantity: 20,
-              estimatedSellingPrice: 1666,
-              estimatedPrice: 1666,
-              renderingDataUrl: "https://example.com/render.jpg",
-              analysis: {
-                jewelryType: "Ring",
-                centerShape: "Oval",
-                settingType: "Prong",
-                hasWeddingBand: false,
-                isTwoTone: false,
-                renderingImageUrl: "https://example.com/render.jpg"
-              }
-            }
-          };
-        }
-        return null;
-      })
+      findMany: prismaShowroomQuoteFindManyMock,
+      findUnique: prismaShowroomQuoteFindUniqueMock
     }
   }
+}));
+
+vi.mock("@/lib/quote-pdf-s3", () => ({
+  loadAnalysisImageDataUrlFromS3: loadAnalysisImageDataUrlFromS3Mock,
+  loadQuoteRenderingDataUrlFromS3: loadQuoteRenderingDataUrlFromS3Mock
 }));
 
 describe("Showroom Code Normalization", () => {
@@ -82,6 +41,108 @@ describe("Showroom Code Normalization", () => {
 });
 
 describe("Staff Quote Lookup & Data Sanitization", () => {
+  beforeEach(() => {
+    prismaShowroomQuoteFindManyMock.mockReset();
+    prismaShowroomQuoteFindUniqueMock.mockReset();
+    loadAnalysisImageDataUrlFromS3Mock.mockReset();
+    loadQuoteRenderingDataUrlFromS3Mock.mockReset();
+
+    prismaShowroomQuoteFindManyMock.mockImplementation(async ({ where }: { where: { companyId: string } }) => {
+      if (where.companyId === "comp_123") {
+        return [
+          {
+            id: "sq_1",
+            displayCode: "QT-4821",
+            status: "PENDING",
+            createdAt: new Date("2026-08-25T12:00:00Z"),
+            quote: {
+              estimatedSellingPrice: 1666,
+              estimatedPrice: 1666,
+              metalType: "18K Yellow Gold",
+              renderingDataUrl: "https://example.com/render.jpg",
+              analysis: {
+                jewelryType: "Ring",
+                renderingImageUrl: "https://example.com/render.jpg"
+              }
+            }
+          }
+        ];
+      }
+      return [];
+    });
+
+    prismaShowroomQuoteFindUniqueMock.mockImplementation(async ({ where }: { where: { companyId_displayCode: { companyId: string; displayCode: string } } }) => {
+      if (where.companyId_displayCode.companyId === "comp_123" && where.companyId_displayCode.displayCode === "QT-4821") {
+        return {
+          id: "sq_1",
+          displayCode: "QT-4821",
+          status: "PENDING",
+          createdAt: new Date("2026-08-25T12:00:00Z"),
+          customerNotes: "Engagement ring inquiry",
+          quote: {
+            metalType: "18K Yellow Gold",
+            metalWeightGrams: 4.5,
+            centerDiamondCarats: 1.5,
+            sideDiamondCarats: 0.35,
+            sideDiamondQuantity: 20,
+            estimatedSellingPrice: 1666,
+            estimatedPrice: 1666,
+            renderingDataUrl: "https://example.com/render.jpg",
+            analysis: {
+              jewelryType: "Ring",
+              centerShape: "Oval",
+              settingType: "Prong",
+              hasWeddingBand: false,
+              isTwoTone: false,
+              renderingImageUrl: "https://example.com/render.jpg"
+            }
+          }
+        };
+      }
+      return null;
+    });
+  });
+
+  it("loads staff images from S3 when only storage keys are present", async () => {
+    loadAnalysisImageDataUrlFromS3Mock.mockResolvedValue("data:image/png;base64,uploaded");
+    loadQuoteRenderingDataUrlFromS3Mock.mockResolvedValue("data:image/jpeg;base64,rendered");
+    prismaShowroomQuoteFindUniqueMock.mockResolvedValueOnce({
+      id: "sq_1",
+      displayCode: "QT-4821",
+      status: "PENDING",
+      createdAt: new Date("2026-08-25T12:00:00Z"),
+      customerNotes: "Engagement ring inquiry",
+      quote: {
+        metalType: "18K Yellow Gold",
+        metalWeightGrams: 4.5,
+        centerDiamondCarats: 1.5,
+        sideDiamondCarats: 0.35,
+        sideDiamondQuantity: 20,
+        estimatedSellingPrice: 1666,
+        estimatedPrice: 1666,
+        renderingStorageKey: "renderings/comp_123/sq_1.jpg",
+        renderingDataUrl: null,
+        analysis: {
+          jewelryType: "Ring",
+          centerShape: "Oval",
+          settingType: "Prong",
+          hasWeddingBand: false,
+          isTwoTone: false,
+          sourceImageStorageKey: "analysis/comp_123/analysis_1.png",
+          sourceImageMimeType: "image/png",
+          imageDataUrl: null,
+          renderingStorageKey: "renderings/comp_123/analysis-sq_1.jpg",
+          renderingDataUrl: null
+        }
+      }
+    } as never);
+
+    const quote = await getStaffQuoteDetail("comp_123", "QT-4821");
+
+    expect(quote?.uploadedImageUrl).toBe("data:image/png;base64,uploaded");
+    expect(quote?.renderingImageUrl).toBe("data:image/jpeg;base64,rendered");
+  });
+
   it("fetches recent showroom quotes without exposing internal cost fields", async () => {
     const quotes = await getStaffRecentQuotes("comp_123");
     expect(quotes.length).toBe(1);
