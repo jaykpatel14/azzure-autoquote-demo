@@ -16,7 +16,7 @@ import KioskStaffView from "@/components/kiosk-staff-view";
 import LiveCameraModal from "@/components/live-camera-modal";
 import { useShowroomDevice } from "@/components/showroom-device-provider";
 
-type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; backgroundColor: string | null; backgroundMediaUrl: string | null; backgroundMediaType: string | null; overlayColor: string | null; overlayOpacity: number | null; textColor: string | null; backgroundFit: string | null; backgroundPosition: string | null; panelOpacity: number | null; aboutUs: string | null };
+type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; backgroundColor: string | null; backgroundMediaUrl: string | null; backgroundMediaType: string | null; overlayColor: string | null; overlayOpacity: number | null; textColor: string | null; backgroundFit: string | null; backgroundPosition: string | null; panelOpacity: number | null; aboutUs: string | null; marketingImages: string[] };
 type Pricing = { cadCost: number; customerMarginPct: number; pricingTier: PricingTier | null; pricingProfile: PricingProfileInput };
 type Analysis = {
   analysisId: string;
@@ -214,6 +214,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   // Staff Mode States
   const [showStaffPinModal, setShowStaffPinModal] = useState(false);
   const [staffSession, setStaffSession] = useState<{ staffName: string; staffId: string; sessionToken: string } | null>(null);
+  const [marketingIndex, setMarketingIndex] = useState(0);
 
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
   const debouncedAnalysis = useDebouncedValue(analysis, 300);
@@ -318,6 +319,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   }, [reset, analyzing, saving, sharing, generatingConcept]);
 
   const totalFacts = jewelryFacts.length || JEWELRY_FACTS_COLLECTION.length;
+  const marketingImages = branding.marketingImages || [];
 
   const goToPreviousFact = useCallback(() => {
     setFactIndex((current) => (current - 1 + totalFacts) % totalFacts);
@@ -851,23 +853,93 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       ) : !started ? (
         /* ── 2. WELCOME / STANDBY SCREEN: Inspiration Product Catalog ── */
         <section className="showroomPanel">
-          <p className="showroomEyebrow">Bespoke Jewelry Studio &amp; Instant AI Estimator</p>
-          <h1 className="showroomHeroTitle">
-            Design &amp; Price Your Custom Fine Jewelry <em>in Real Time</em>
-          </h1>
-          <p className="showroomSubtext">
-            Snap or upload an inspiration photo, or explore our signature showcase below. Get an instant gemological analysis, diamond grading breakdown, and transparent quote tailored to your exact specifications.
-          </p>
+          <div style={{ display: "grid", gridTemplateColumns: marketingImages.length > 0 ? "minmax(0, 1.05fr) minmax(320px, 0.95fr)" : "1fr", gap: 24, alignItems: "center" }}>
+            <div>
+              <p className="showroomEyebrow">Bespoke Jewelry Studio &amp; Instant AI Estimator</p>
+              <h1 className="showroomHeroTitle">
+                Design &amp; Price Your Custom Fine Jewelry <em>in Real Time</em>
+              </h1>
+              <p className="showroomSubtext">
+                Snap or upload an inspiration photo, or explore our signature showcase below. Get an instant gemological analysis, diamond grading breakdown, and transparent quote tailored to your exact specifications.
+              </p>
 
-          <button
-            className="showroomButton"
-            type="button"
-            onClick={() => setStarted(true)}
-            style={{ marginBottom: 16 }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 24 }}>diamond</span>
-            Create Your Custom Piece
-          </button>
+              <button
+                className="showroomButton"
+                type="button"
+                onClick={() => setStarted(true)}
+                style={{ marginBottom: 16 }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>diamond</span>
+                Create Your Custom Piece
+              </button>
+            </div>
+
+            {marketingImages.length > 0 ? (
+              <div
+                style={{
+                  borderRadius: 24,
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "rgba(10, 11, 14, 0.55)",
+                  padding: 14,
+                  boxShadow: "0 18px 50px rgba(0,0,0,0.45)"
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <div>
+                    <span className="eyebrow" style={{ marginBottom: 4, display: "block" }}>Featured Pieces</span>
+                    <strong style={{ color: "#fff" }}>{marketingIndex + 1} of {marketingImages.length}</strong>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      className="button secondary button--sm"
+                      onClick={() => setMarketingIndex((current) => (current - 1 + marketingImages.length) % marketingImages.length)}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="button secondary button--sm"
+                      onClick={() => setMarketingIndex((current) => (current + 1) % marketingImages.length)}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <img
+                    src={marketingImages[marketingIndex]}
+                    alt={`Showroom marketing piece ${marketingIndex + 1}`}
+                    style={{ width: "100%", height: 320, objectFit: "cover", display: "block" }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                  {marketingImages.map((image, index) => (
+                    <button
+                      key={image}
+                      type="button"
+                      onClick={() => setMarketingIndex(index)}
+                      style={{
+                        width: 44,
+                        height: 44,
+                        padding: 0,
+                        borderRadius: 10,
+                        overflow: "hidden",
+                        border: index === marketingIndex ? "2px solid var(--color-brand)" : "1px solid rgba(255,255,255,0.12)",
+                        background: "transparent",
+                        cursor: "pointer"
+                      }}
+                      aria-label={`View marketing image ${index + 1}`}
+                    >
+                      <img src={image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
 
           <div style={{ textAlign: "center", marginBottom: 40, borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: 14 }}>
             <button

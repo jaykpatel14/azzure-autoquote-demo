@@ -89,6 +89,7 @@ model Company {
   showroomBackgroundColor     String?
   showroomBackgroundMediaKey  String?
   showroomBackgroundMediaType String?
+  showroomMarketingImages     Json?
   showroomOverlayColor        String?
   showroomOverlayOpacity      Int?
   showroomTextColor           String?

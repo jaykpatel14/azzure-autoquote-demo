@@ -10,6 +10,11 @@ import { hasAllowedShowroomMediaSignature } from "@/lib/security";
 
 export const runtime = "nodejs";
 
+type StoredShowroomImage = {
+  key: string;
+  contentType: string;
+};
+
 function normalizeWebsiteUrl(val: unknown): string | null {
   if (typeof val !== "string") return null;
   let trimmed = val.trim();
@@ -40,7 +45,14 @@ async function parseInput(request: Request) {
   const isJson = contentType.includes("application/json");
 
   if (isJson) {
-    return { input: schema.parse(await request.json()), backgroundMedia: null, removeBackgroundMedia: false, isJson };
+    return {
+      input: schema.parse(await request.json()),
+      backgroundMedia: null,
+      removeBackgroundMedia: false,
+      marketingMedia: [],
+      removeMarketingMedia: false,
+      isJson
+    };
   }
 
   const formData = await request.formData();
@@ -54,10 +66,15 @@ async function parseInput(request: Request) {
     showroomBackgroundColor: String(formData.get("showroomBackgroundColor") || "").trim()
   });
   const candidate = formData.get("backgroundMedia");
+  const marketingMedia = formData
+    .getAll("marketingMedia")
+    .filter((item): item is File => item instanceof File && item.size > 0);
   return {
     input,
     backgroundMedia: candidate instanceof File && candidate.size > 0 ? candidate : null,
     removeBackgroundMedia: formData.get("removeBackgroundMedia") === "true",
+    marketingMedia,
+    removeMarketingMedia: formData.get("removeMarketingMedia") === "true",
     isJson
   };
 }
@@ -77,7 +94,7 @@ export async function POST(request: Request) {
     }
 
     const parsed = await parseInput(request);
-    const { input, backgroundMedia, removeBackgroundMedia } = parsed;
+    const { input, backgroundMedia, removeBackgroundMedia, marketingMedia, removeMarketingMedia } = parsed;
     const { features } = await getCompanyPlanFeatures(context.company.id);
     const canUseLogo = features.pdfBranding !== "azzure_watermark";
 
@@ -99,8 +116,28 @@ export async function POST(request: Request) {
       return NextResponse.redirect(buildPublicUrl("/settings/branding?error=Background+media+must+be+JPG+PNG+WEBP+MP4+or+WEBM+under+50MB"), 303);
     }
 
+    const marketingAllowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+    if (marketingMedia.length > 6) {
+      if (isJson) {
+        return NextResponse.json({ error: "You can upload up to 6 marketing images." }, { status: 400 });
+      }
+      return NextResponse.redirect(buildPublicUrl("/settings/branding?error=You+can+upload+up+to+6+marketing+images"), 303);
+    }
+
+    for (const media of marketingMedia) {
+      if (!marketingAllowedTypes.has(media.type) || media.size > 8 * 1024 * 1024) {
+        if (isJson) {
+          return NextResponse.json({ error: "Marketing images must be JPG, PNG, or WEBP and under 8 MB each." }, { status: 400 });
+        }
+        return NextResponse.redirect(buildPublicUrl("/settings/branding?error=Marketing+images+must+be+JPG+PNG+or+WEBP+under+8MB+each"), 303);
+      }
+    }
+
     let mediaKey = context.company.showroomBackgroundMediaKey;
     let mediaType = context.company.showroomBackgroundMediaType;
+    let marketingImages = Array.isArray(context.company.showroomMarketingImages)
+      ? (context.company.showroomMarketingImages as StoredShowroomImage[])
+      : [];
     if (backgroundMedia) {
       const mediaBuffer = Buffer.from(await backgroundMedia.arrayBuffer());
       if (!hasAllowedShowroomMediaSignature(mediaBuffer, backgroundMedia.type)) {
@@ -119,6 +156,33 @@ export async function POST(request: Request) {
       mediaType = null;
     }
 
+    if (marketingMedia.length > 0) {
+      for (const existing of marketingImages) {
+        await deleteShowroomBackgroundFromS3(existing.key).catch(() => null);
+      }
+      marketingImages = [];
+
+      for (const media of marketingMedia) {
+        const mediaBuffer = Buffer.from(await media.arrayBuffer());
+        if (!hasAllowedShowroomMediaSignature(mediaBuffer, media.type)) {
+          if (isJson) {
+            return NextResponse.json({ error: "One of the marketing images does not match its file type." }, { status: 400 });
+          }
+          return NextResponse.redirect(buildPublicUrl("/settings/branding?error=Invalid+marketing+image+signature"), 303);
+        }
+
+        const extension = media.name.split(".").pop()?.replace(/[^a-z0-9]/gi, "").toLowerCase() || "bin";
+        const key = `showroom/${context.company.id}/marketing-${crypto.randomUUID()}.${extension}`;
+        const stored = await storeShowroomBackgroundInS3({ key, buffer: mediaBuffer, contentType: media.type });
+        marketingImages.push({ key: stored.key, contentType: media.type });
+      }
+    } else if (removeMarketingMedia) {
+      for (const existing of marketingImages) {
+        await deleteShowroomBackgroundFromS3(existing.key).catch(() => null);
+      }
+      marketingImages = [];
+    }
+
     await prisma.company.update({
       where: { id: context.company.id },
       data: {
@@ -129,7 +193,8 @@ export async function POST(request: Request) {
         primaryColor: input.primaryColor || null,
         showroomBackgroundColor: input.showroomBackgroundColor || null,
         showroomBackgroundMediaKey: mediaKey,
-        showroomBackgroundMediaType: mediaType
+        showroomBackgroundMediaType: mediaType,
+        showroomMarketingImages: marketingImages
       }
     });
 

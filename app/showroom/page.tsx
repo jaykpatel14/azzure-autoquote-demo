@@ -116,6 +116,11 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
       })
     : undefined;
   const livePricing = await resolveMetalPricing(features.canUseCustomPricingProfile ? baseProfile : null);
+  const marketingImages = Array.isArray(session.company.showroomMarketingImages)
+    ? (session.company.showroomMarketingImages as Array<{ key?: string; contentType?: string }>)
+        .map((_, index) => `/api/showroom/marketing?token=${encodeURIComponent(session.token)}&index=${index}`)
+        .slice(0, 6)
+    : [];
 
   const brandingData = {
     companyName: session.company.name,
@@ -130,7 +135,8 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
     backgroundFit: session.company.showroomBackgroundFit,
     backgroundPosition: session.company.showroomBackgroundPosition,
     panelOpacity: session.company.showroomPanelOpacity,
-    aboutUs: session.company.aboutUs
+    aboutUs: session.company.aboutUs,
+    marketingImages
   };
 
   return (

@@ -94,6 +94,7 @@ export default async function BrandingSettingsPage({
             canUseLogo={canUseLogo}
             initialShowroomBackgroundColor={data.company.showroomBackgroundColor}
             initialShowroomBackgroundMediaType={data.company.showroomBackgroundMediaType}
+            initialShowroomMarketingImagesCount={Array.isArray(data.company.showroomMarketingImages) ? data.company.showroomMarketingImages.length : 0}
           />
 
           <button className="button primary button--lg" type="submit" style={{ width: "fit-content", marginTop: "var(--space-3)" }}>

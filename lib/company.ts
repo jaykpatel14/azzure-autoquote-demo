@@ -79,6 +79,7 @@ const COMPANY_SELECT = {
   showroomBackgroundColor: true,
   showroomBackgroundMediaKey: true,
   showroomBackgroundMediaType: true,
+  showroomMarketingImages: true,
   showroomOverlayColor: true,
   showroomOverlayOpacity: true,
   showroomTextColor: true,

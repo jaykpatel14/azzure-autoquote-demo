@@ -8,6 +8,7 @@ type LogoDropzoneProps = {
   canUseLogo: boolean;
   initialShowroomBackgroundColor?: string | null;
   initialShowroomBackgroundMediaType?: string | null;
+  initialShowroomMarketingImagesCount?: number;
 };
 
 export default function LogoDropzone({
@@ -15,7 +16,8 @@ export default function LogoDropzone({
   companyName,
   canUseLogo,
   initialShowroomBackgroundColor,
-  initialShowroomBackgroundMediaType
+  initialShowroomBackgroundMediaType,
+  initialShowroomMarketingImagesCount = 0
 }: LogoDropzoneProps) {
   const [logoUrl, setLogoUrl] = useState<string>(initialLogoUrl ?? "");
   const [isDragging, setIsDragging] = useState(false);
@@ -23,8 +25,15 @@ export default function LogoDropzone({
   const [showroomBackgroundColor, setShowroomBackgroundColor] = useState(initialShowroomBackgroundColor ?? "#08090b");
   const [backgroundMedia, setBackgroundMedia] = useState<File | null>(null);
   const [removeBackgroundMedia, setRemoveBackgroundMedia] = useState(false);
+  const [marketingMedia, setMarketingMedia] = useState<File[]>([]);
+  const [removeMarketingMedia, setRemoveMarketingMedia] = useState(false);
   const backgroundPreviewUrl = useMemo(() => backgroundMedia ? URL.createObjectURL(backgroundMedia) : null, [backgroundMedia]);
+  const marketingPreviewUrls = useMemo(
+    () => marketingMedia.map((file) => URL.createObjectURL(file)),
+    [marketingMedia]
+  );
   useEffect(() => () => { if (backgroundPreviewUrl) URL.revokeObjectURL(backgroundPreviewUrl); }, [backgroundPreviewUrl]);
+  useEffect(() => () => { marketingPreviewUrls.forEach((url) => URL.revokeObjectURL(url)); }, [marketingPreviewUrls]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   function handleFile(file: File) {
@@ -84,6 +93,7 @@ export default function LogoDropzone({
     <div className="logoUploadContainer">
       <input type="hidden" name="logoUrl" value={logoUrl} />
       <input type="hidden" name="removeBackgroundMedia" value={removeBackgroundMedia ? "true" : "false"} />
+      <input type="hidden" name="removeMarketingMedia" value={removeMarketingMedia ? "true" : "false"} />
 
       <label className="field">
         <span>Showroom background color</span>
@@ -115,6 +125,52 @@ export default function LogoDropzone({
           <button className="button secondary button--sm" type="button" onClick={() => { setBackgroundMedia(null); setRemoveBackgroundMedia(true); }}>
             Remove Background Media
           </button>
+        ) : null}
+      </label>
+
+      <label className="field">
+        <span>Showroom marketing pictures</span>
+        <input
+          type="file"
+          name="marketingMedia"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          onChange={(event) => {
+            const selected = Array.from(event.target.files || []).slice(0, 6);
+            setMarketingMedia(selected);
+            setRemoveMarketingMedia(false);
+          }}
+        />
+        <span className="muted small">
+          Upload up to 6 JPG, PNG, or WEBP images. These appear on the showroom landing page while customers are waiting.
+        </span>
+        <div className="logoActionRow" style={{ alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <span className="muted small">
+            {marketingMedia.length > 0
+              ? `${marketingMedia.length} new image${marketingMedia.length === 1 ? "" : "s"} selected`
+              : `${initialShowroomMarketingImagesCount} published image${initialShowroomMarketingImagesCount === 1 ? "" : "s"}`}
+          </span>
+          {(initialShowroomMarketingImagesCount > 0 || marketingMedia.length > 0) && !removeMarketingMedia ? (
+            <button
+              className="button secondary button--sm"
+              type="button"
+              onClick={() => {
+                setMarketingMedia([]);
+                setRemoveMarketingMedia(true);
+              }}
+            >
+              Remove Marketing Pictures
+            </button>
+          ) : null}
+        </div>
+        {marketingPreviewUrls.length > 0 ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 12 }}>
+            {marketingPreviewUrls.map((src, index) => (
+              <div key={src} style={{ borderRadius: 12, overflow: "hidden", border: "1px solid var(--color-outline-variant)", background: "var(--color-surface)" }}>
+                <img src={src} alt={`Marketing preview ${index + 1}`} style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", display: "block" }} />
+              </div>
+            ))}
+          </div>
         ) : null}
       </label>
 
