@@ -4,7 +4,7 @@ import Link from "next/link";
 import React, { useEffect, useState } from "react";
 
 // ============================================================================
-// PRESET CONFIGURATIONS & CATALOG ASSETS
+// PRESET CONFIGURATIONS & ASSETS
 // ============================================================================
 const PRESETS = {
   "oval-solitaire": {
@@ -18,7 +18,7 @@ const PRESETS = {
     sideCarats: 0,
     demoPrice: 1666,
     renderImage: "/images/catalog/oval_solitaire.jpg",
-    promptText: "An elegant 1.5ct oval solitaire ring in 18k yellow gold with razor-thin band and hidden diamond halo..."
+    promptText: "An elegant 1.5ct oval solitaire engagement ring in 18k yellow gold with a slender shank and hidden halo..."
   },
   "pave-band": {
     label: "Pavé Cushion Band",
@@ -148,10 +148,8 @@ export function InteractiveLandingPage() {
   const [demoSideCount, setDemoSideCount] = useState<number>(PRESETS["oval-solitaire"].sideCount);
   const [currentPrice, setCurrentPrice] = useState<number>(PRESETS["oval-solitaire"].demoPrice);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [renderProgress, setRenderProgress] = useState<number>(100);
 
   // The Problem Chat Animation State
-  const [chatActive, setChatActive] = useState<boolean>(true);
   const [chatKey, setChatKey] = useState<number>(1);
 
   // How it works tabs
@@ -161,7 +159,9 @@ export function InteractiveLandingPage() {
   const [generatorStep, setGeneratorStep] = useState<number>(1);
   const [genGem, setGenGem] = useState<string>("Diamond");
   const [genMetal, setGenMetal] = useState<string>("Platinum");
-  const [genVision, setGenVision] = useState<string>("Classic round brilliant halo solitaire, platinum band, 2ct center stone");
+  const [genVision, setGenVision] = useState<string>(
+    "Classic round brilliant halo solitaire, platinum band, 2ct center stone"
+  );
   const [genProgress, setGenProgress] = useState<number>(0);
   const [genDepositPaid, setGenDepositPaid] = useState<boolean>(false);
 
@@ -169,9 +169,9 @@ export function InteractiveLandingPage() {
   const [kioskOpen, setKioskOpen] = useState<boolean>(false);
   const [kioskSlide, setKioskSlide] = useState<number>(1);
   const [kioskUploadLoaded, setKioskUploadLoaded] = useState<boolean>(false);
-  const [kioskLine1, setKioskLine1] = useState<string>("Identifying metal...");
-  const [kioskLine2, setKioskLine2] = useState<string>("Estimating diamonds...");
-  const [kioskLine3, setKioskLine3] = useState<string>("Calculating weight...");
+  const [kioskLine1, setKioskLine1] = useState<string>("Identifying precious alloy...");
+  const [kioskLine2, setKioskLine2] = useState<string>("Calculating diamond carat weight...");
+  const [kioskLine3, setKioskLine3] = useState<string>("Computing casting geometry...");
   const [jewelerResultShow, setJewelerResultShow] = useState<boolean>(false);
 
   // Pricing Switcher
@@ -214,8 +214,6 @@ export function InteractiveLandingPage() {
 
   const triggerPriceUpdate = (target: number) => {
     setIsGenerating(true);
-    setRenderProgress(30);
-
     const startVal = currentPrice;
     const diff = target - startVal;
     const duration = 400;
@@ -231,7 +229,6 @@ export function InteractiveLandingPage() {
         requestAnimationFrame(anim);
       } else {
         setCurrentPrice(target);
-        setRenderProgress(100);
         setTimeout(() => setIsGenerating(false), 200);
       }
     };
@@ -279,11 +276,7 @@ export function InteractiveLandingPage() {
   };
 
   const replayChat = () => {
-    setChatActive(false);
-    setTimeout(() => {
-      setChatKey((k) => k + 1);
-      setChatActive(true);
-    }, 100);
+    setChatKey((k) => k + 1);
   };
 
   const toggleFaq = (index: number) => {
@@ -294,7 +287,6 @@ export function InteractiveLandingPage() {
     setExpandedCards((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Showroom modal actions
   const openKioskModal = () => {
     setKioskOpen(true);
     setKioskSlide(1);
@@ -311,284 +303,217 @@ export function InteractiveLandingPage() {
 
   const runKioskAnalysis = () => {
     setKioskSlide(3);
-    setKioskLine1("Identifying metal...");
-    setKioskLine2("Estimating diamonds...");
-    setKioskLine3("Calculating weight...");
+    setKioskLine1("Identifying precious alloy...");
+    setKioskLine2("Calculating diamond carat weight...");
+    setKioskLine3("Computing casting geometry...");
 
-    setTimeout(() => setKioskLine1("→ 18k Yellow Gold ✓"), 800);
-    setTimeout(() => setKioskLine2("→ 1.5ct VS1 Oval Solitaire ✓"), 1600);
-    setTimeout(() => setKioskLine3("→ 4.8g Gold Geometry ✓"), 2300);
+    setTimeout(() => setKioskLine1("→ 18k Yellow Gold Verified ✓"), 800);
+    setTimeout(() => setKioskLine2("→ 1.5ct VS1 Oval Solitaire Spec'd ✓"), 1600);
+    setTimeout(() => setKioskLine3("→ 4.8g Gold Geometry Calculated ✓"), 2300);
     setTimeout(() => setKioskSlide(4), 3000);
   };
 
   return (
-    <div className="min-h-screen bg-obsidian text-ice overflow-x-hidden selection:bg-purple-500 selection:text-white">
+    <div className="js-landing">
       {/* ====================================================================
            1. NAVIGATION BAR (Frosted Floating Glass Pill)
            ==================================================================== */}
-      <header className="fixed top-0 inset-x-0 z-50 pointer-events-none transition-all duration-300">
-        <div
-          className="mx-auto pointer-events-auto px-4 sm:px-6 transition-all duration-300"
-          style={{ maxWidth: "80rem", paddingTop: scrolled ? "12px" : "20px" }}
-        >
+      <header className="js-header" style={{ paddingTop: scrolled ? "10px" : "18px" }}>
+        <div className="js-header-inner">
+          {/* Logo */}
+          <a href="#hero" className="js-logo">
+            <div className="js-logo-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <polygon points="6 3 18 3 22 9 12 22 2 9" />
+              </svg>
+            </div>
+            <span className="js-logo-text">Azzure</span>
+            <span className="js-logo-badge">AI Quote</span>
+          </a>
+
+          {/* Desktop Navigation Links */}
+          <nav className="js-nav">
+            <a href="#features">Features</a>
+            <a href="#design-studio">Live Studio</a>
+            <a href="#the-problem">The Problem</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="#dashboard">Dashboard</a>
+            <a href="#showroom">Showroom Kiosk</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#faq">FAQ</a>
+          </nav>
+
+          {/* Right CTAs */}
+          <div className="js-header-actions">
+            <Link
+              href="/signin"
+              style={{
+                fontSize: "14px",
+                fontWeight: 500,
+                color: "#94a3b8",
+                textDecoration: "none",
+                marginRight: "4px"
+              }}
+            >
+              Log in
+            </Link>
+            <Link href="/signup" className="js-btn-aurora" style={{ padding: "9px 20px", fontSize: "13px" }}>
+              Start Free Trial →
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="js-mobile-toggle"
+              aria-label="Toggle menu"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="4" y1="6" x2="20" y2="6" />
+                <line x1="4" y1="12" x2="20" y2="12" />
+                <line x1="4" y1="18" x2="20" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu Drawer */}
+        {mobileMenuOpen && (
           <div
-            className="relative flex items-center justify-between px-5 py-3 rounded-full transition-all duration-300"
             style={{
-              background: scrolled
-                ? "linear-gradient(180deg, rgba(10,11,20,0.85), rgba(8,9,13,0.85))"
-                : "linear-gradient(180deg, rgba(10,11,20,0.65), rgba(8,9,13,0.65))",
-              backdropFilter: "blur(18px) saturate(180%)",
-              WebkitBackdropFilter: "blur(18px) saturate(180%)",
-              border: "1px solid rgba(255, 255, 255, 0.12)",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18)"
+              maxWidth: "1240px",
+              margin: "10px auto 0",
+              padding: "20px",
+              borderRadius: "20px",
+              background: "rgba(8, 14, 34, 0.96)",
+              border: "1px solid rgba(56, 189, 248, 0.2)",
+              backdropFilter: "blur(20px)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              pointerEvents: "auto"
             }}
           >
-            {/* Logo */}
-            <a href="#hero" className="flex items-center gap-2.5 group shrink-0 text-decoration-none">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-cyan-400 via-indigo-400 to-purple-500 p-0.5 shadow-lg shadow-purple-500/20">
-                <div className="w-full h-full bg-[#08090D] rounded-[7px] flex items-center justify-center">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="text-cyan-300">
-                    <polygon points="6 3 18 3 22 9 12 22 2 9" />
-                  </svg>
-                </div>
-              </div>
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-display-luxury text-xl font-bold text-ice tracking-tight">Azzure</span>
-                <span className="font-mono text-[11px] font-bold text-aurora-violet uppercase tracking-widest px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">
-                  AI Quote
-                </span>
-              </div>
-            </a>
-
-            {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-7">
-              <a href="#features" className="text-[14px] font-medium text-smoke hover:text-ice transition-colors">
-                Features
-              </a>
-              <a href="#design-studio" className="text-[14px] font-medium text-smoke hover:text-ice transition-colors">
-                Live Studio
-              </a>
-              <a href="#the-problem" className="text-[14px] font-medium text-smoke hover:text-ice transition-colors">
-                The Problem
-              </a>
-              <a href="#how-it-works" className="text-[14px] font-medium text-smoke hover:text-ice transition-colors">
-                How It Works
-              </a>
-              <a href="#dashboard" className="text-[14px] font-medium text-smoke hover:text-ice transition-colors">
-                Dashboard
-              </a>
-              <a href="#showroom" className="text-[14px] font-medium text-smoke hover:text-ice transition-colors">
-                Showroom Kiosk
-              </a>
-              <a href="#pricing" className="text-[14px] font-medium text-smoke hover:text-ice transition-colors">
-                Pricing
-              </a>
-              <a href="#faq" className="text-[14px] font-medium text-smoke hover:text-ice transition-colors">
-                FAQ
-              </a>
-            </nav>
-
-            {/* Right CTAs */}
-            <div className="flex items-center gap-3">
-              <Link
-                href="/signin"
-                className="hidden sm:inline-block text-[13.5px] font-medium text-smoke hover:text-ice px-3 py-1.5 transition-colors"
-              >
-                Log in
-              </Link>
-              <Link href="/signup" className="btn-aurora text-[13.5px] px-5 py-2">
-                Start Free Trial
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14" />
-                  <path d="m12 5 7 7-7 7" />
-                </svg>
-              </Link>
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 text-smoke hover:text-ice focus:outline-none"
-                aria-label="Toggle Navigation"
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="4" y1="6" x2="20" y2="6" />
-                  <line x1="4" y1="12" x2="20" y2="12" />
-                  <line x1="4" y1="18" x2="20" y2="18" />
-                </svg>
-              </button>
+            <a onClick={() => setMobileMenuOpen(false)} href="#features" style={{ color: "#f8fafc", textDecoration: "none" }}>Features</a>
+            <a onClick={() => setMobileMenuOpen(false)} href="#design-studio" style={{ color: "#f8fafc", textDecoration: "none" }}>Live Studio</a>
+            <a onClick={() => setMobileMenuOpen(false)} href="#the-problem" style={{ color: "#f8fafc", textDecoration: "none" }}>The Problem</a>
+            <a onClick={() => setMobileMenuOpen(false)} href="#how-it-works" style={{ color: "#f8fafc", textDecoration: "none" }}>How It Works</a>
+            <a onClick={() => setMobileMenuOpen(false)} href="#dashboard" style={{ color: "#f8fafc", textDecoration: "none" }}>Dashboard</a>
+            <a onClick={() => setMobileMenuOpen(false)} href="#showroom" style={{ color: "#f8fafc", textDecoration: "none" }}>Showroom Kiosk</a>
+            <a onClick={() => setMobileMenuOpen(false)} href="#pricing" style={{ color: "#f8fafc", textDecoration: "none" }}>Pricing</a>
+            <a onClick={() => setMobileMenuOpen(false)} href="#faq" style={{ color: "#f8fafc", textDecoration: "none" }}>FAQ</a>
+            <div style={{ paddingTop: "12px", borderTop: "1px solid rgba(255, 255, 255, 0.1)", display: "flex", gap: "10px" }}>
+              <Link href="/signin" className="js-btn-ghost" style={{ flex: 1, textAlign: "center" }}>Log in</Link>
+              <Link href="/signup" className="js-btn-aurora" style={{ flex: 1, textAlign: "center" }}>Start Free Trial</Link>
             </div>
           </div>
-
-          {/* Mobile Drawer */}
-          {mobileMenuOpen && (
-            <div className="lg:hidden mt-2 p-5 rounded-2xl glass-panel-dark flex flex-col gap-3 text-left animate-rise">
-              <a onClick={() => setMobileMenuOpen(false)} href="#features" className="text-sm font-medium py-1.5 text-smoke hover:text-ice">Features</a>
-              <a onClick={() => setMobileMenuOpen(false)} href="#design-studio" className="text-sm font-medium py-1.5 text-smoke hover:text-ice">Live Studio</a>
-              <a onClick={() => setMobileMenuOpen(false)} href="#the-problem" className="text-sm font-medium py-1.5 text-smoke hover:text-ice">The Problem</a>
-              <a onClick={() => setMobileMenuOpen(false)} href="#how-it-works" className="text-sm font-medium py-1.5 text-smoke hover:text-ice">How It Works</a>
-              <a onClick={() => setMobileMenuOpen(false)} href="#showroom" className="text-sm font-medium py-1.5 text-smoke hover:text-ice">Showroom Kiosk</a>
-              <a onClick={() => setMobileMenuOpen(false)} href="#pricing" className="text-sm font-medium py-1.5 text-smoke hover:text-ice">Pricing</a>
-              <a onClick={() => setMobileMenuOpen(false)} href="#faq" className="text-sm font-medium py-1.5 text-smoke hover:text-ice">FAQ</a>
-              <div className="pt-2 border-t border-white/10 flex flex-col gap-2">
-                <Link href="/signin" className="text-sm font-semibold text-center py-2 text-ice">Log in</Link>
-                <Link href="/signup" className="btn-aurora text-center py-2.5">Start 14-Day Free Trial</Link>
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </header>
 
       {/* ====================================================================
-           2. HERO SECTION (Dark Obsidian + Dynamic Aurora Mesh Background)
+           2. HERO SECTION (Royal Sapphire & Champagne Gold)
            ==================================================================== */}
-      <section id="hero" className="relative min-h-[100svh] flex items-center pt-28 pb-20 px-6 overflow-hidden bg-obsidian">
-        {/* Background Glowing Aurora Lights */}
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0B0D14] via-[#08090D] to-[#0A0B12]" />
-          <div
-            className="absolute -top-[35%] -left-[15%] w-[130%] h-[130%] animate-sweep opacity-75"
-            style={{
-              background:
-                "conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(168,100,255,0.25) 60deg, rgba(100,200,255,0.18) 120deg, transparent 200deg, rgba(168,100,255,0.14) 280deg, transparent 360deg)",
-              filter: "blur(70px)"
-            }}
-          />
-          <div
-            className="absolute -bottom-[30%] -right-[20%] w-[120%] h-[120%] animate-sweep-2 opacity-70"
-            style={{
-              background:
-                "conic-gradient(from 180deg at 50% 50%, transparent 0deg, rgba(80,220,255,0.28) 80deg, rgba(168,100,255,0.22) 140deg, transparent 220deg, rgba(200,230,255,0.10) 300deg, transparent 360deg)",
-              filter: "blur(80px)"
-            }}
-          />
-          <div
-            className="absolute top-[10%] right-[10%] w-[600px] h-[600px] rounded-full animate-ambient"
-            style={{
-              background: "radial-gradient(circle, rgba(178,152,255,0.35) 0%, transparent 65%)",
-              filter: "blur(80px)"
-            }}
-          />
-          <div
-            className="absolute bottom-[10%] left-[5%] w-[600px] h-[600px] rounded-full animate-ambient"
-            style={{
-              background: "radial-gradient(circle, rgba(109,213,250,0.32) 0%, transparent 65%)",
-              filter: "blur(80px)",
-              animationDelay: "-6s"
-            }}
-          />
-          {/* Subtle noise texture */}
-          <div
-            className="absolute inset-0 opacity-[0.035] mix-blend-overlay pointer-events-none"
-            style={{
-              backgroundImage:
-                "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")"
-            }}
-          />
+      <section id="hero" className="js-hero-section">
+        {/* Dynamic Glows */}
+        <div className="js-aurora-bg">
+          <div className="js-aurora-glow-1" />
+          <div className="js-aurora-glow-2" />
         </div>
 
-        {/* Hero Grid Container */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-14 items-center">
-          
-          {/* Left Column: Headlines & High-Impact Copy */}
-          <div className="flex flex-col items-center text-center lg:items-start lg:text-left justify-center gap-6">
-            {/* Eyebrow Pill */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/25 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-aurora-cyan animate-ping" />
-              <span className="eyebrow-accent">Built By Jewelers · For Luxury Retailers</span>
-            </div>
-
-            {/* Display Headline */}
-            <h1 className="display text-4xl sm:text-5xl lg:text-[56px] xl:text-[62px] leading-[1.06] text-balance">
-              The world&apos;s <span className="text-aurora-cyan underline decoration-purple-400 decoration-wavy decoration-1 underline-offset-4">first</span>
-              <br />
-              <em className="accent-italic">AI custom jewelry</em>
-              <br />
-              <span className="inline-flex items-baseline">
-                <span>quotation studio</span>
-                <span className="ml-1.5 inline-block w-[3px] h-[0.9em] bg-gradient-to-b from-purple-400 to-cyan-400 animate-blink rounded-sm" />
-              </span>
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-smoke text-lg sm:text-xl max-w-lg leading-relaxed font-normal">
-              Instant 3D visuals. <span className="text-ice font-medium whitespace-nowrap">20x more leads.</span>{" "}
-              <span className="text-ice font-medium whitespace-nowrap">Mathematically perfect quotes.</span>
-              <br />
-              <span className="text-aurora-violet font-semibold">In under 60 seconds. Effortlessly.</span>
-            </p>
-
-            {/* CTAs */}
-            <div className="flex flex-row items-center gap-4 pt-2 flex-wrap justify-center lg:justify-start">
-              <Link href="/signup" className="btn-aurora text-[15px] px-8 py-3.5">
-                Start Free Trial
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14" />
-                  <path d="m12 5 7 7-7 7" />
-                </svg>
-              </Link>
-              <a href="#design-studio" className="btn-ghost text-[15px] px-7 py-3.5">
-                Try Live Demo ↓
-              </a>
-            </div>
-
-            {/* Trust badge */}
-            <div className="flex items-center gap-3 pt-4 text-xs font-medium text-smoke-2 border-t border-white/10 w-full justify-center lg:justify-start">
-              <span className="flex items-center gap-1 text-emerald-400">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
-                14-Day Free Trial
-              </span>
-              <span>·</span>
-              <span>No Credit Card Required</span>
-              <span>·</span>
-              <span>Live Metal Feeds</span>
-            </div>
-          </div>
-
-          {/* Right Column: Hero Live Interactive Studio Card */}
-          <div id="design-studio" className="w-full max-w-xl mx-auto lg:max-w-none">
-            <div className="glass-panel-dark rounded-3xl p-6 sm:p-7 shadow-2xl relative overflow-hidden">
-              <div className="accent-line" />
-
-              {/* Studio Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-aurora-violet font-bold">
-                  <span className="w-2 h-2 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400" />
-                  Interactive Studio AI
-                </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] font-bold uppercase tracking-wider">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Live Engine
-                </div>
+        <div className="js-container">
+          <div className="js-hero-grid">
+            
+            {/* Left Hero Copy */}
+            <div style={{ textAlign: "left" }}>
+              <div className="js-hero-badge">
+                <span className="js-hero-badge-dot" />
+                <span className="js-eyebrow">Built By Jewelers · For Luxury Retailers</span>
               </div>
 
-              <h2 className="display text-2xl sm:text-3xl text-ice mb-1.5">
-                Describe <em className="accent-italic">any custom piece</em>
+              <h1 className="js-display js-hero-title">
+                The world&apos;s <span className="js-aurora-text" style={{ textDecoration: "underline" }}>first</span>
+                <br />
+                <em className="js-accent-italic">AI custom jewelry</em>
+                <br />
+                <span>quotation studio</span>
+                <span className="js-cursor-blink" />
+              </h1>
+
+              <p className="js-hero-desc">
+                Instant 3D visuals. <span style={{ color: "#f8fafc", fontWeight: 600 }}>20x more leads.</span>{" "}
+                <span style={{ color: "#f8fafc", fontWeight: 600 }}>Mathematically perfect quotes.</span>
+                <br />
+                <span style={{ color: "#38bdf8", fontWeight: 600 }}>In under 60 seconds. Effortlessly.</span>
+              </p>
+
+              <div className="js-hero-ctas">
+                <Link href="/signup" className="js-btn-aurora" style={{ fontSize: "15px", padding: "14px 32px" }}>
+                  Start 14-Day Free Trial →
+                </Link>
+                <a href="#design-studio" className="js-btn-ghost" style={{ fontSize: "15px", padding: "14px 28px" }}>
+                  Try Live Sandbox ↓
+                </a>
+              </div>
+
+              <div className="js-hero-trust">
+                <span style={{ color: "#34d399", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  ✓ 14-Day Free Trial
+                </span>
+                <span>·</span>
+                <span>No Credit Card Required</span>
+                <span>·</span>
+                <span style={{ color: "#f5d061" }}>Live Bullion Spot Rates</span>
+              </div>
+            </div>
+
+            {/* Right Hero Live Studio Card */}
+            <div id="design-studio" className="js-glass-card js-studio-card">
+              <div className="js-accent-line" />
+
+              <div className="js-studio-header">
+                <span className="js-eyebrow">Interactive Studio AI</span>
+                <span className="js-live-pill">
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#34d399" }} />
+                  Live Engine
+                </span>
+              </div>
+
+              <h2 className="js-display" style={{ fontSize: "28px", margin: "0 0 4px" }}>
+                Describe <em className="js-accent-italic">any piece</em>
               </h2>
-              <p className="text-smoke text-[13px] mb-4">
+              <p style={{ fontSize: "13px", color: "#94a3b8", margin: "0 0 16px" }}>
                 Type what a customer envisions or select presets below:
               </p>
 
-              {/* Interactive Prompt Box */}
-              <div className="rounded-2xl p-3 text-left bg-black/40 border border-white/15 focus-within:border-purple-400 transition-colors">
+              {/* Prompt Textarea */}
+              <div className="js-prompt-box">
                 <textarea
                   rows={2}
                   value={userPrompt}
                   onChange={(e) => setUserPrompt(e.target.value)}
-                  placeholder="e.g. 2.0ct oval diamond in 18k yellow gold with hidden halo and pavé band..."
-                  className="w-full bg-transparent outline-none resize-none px-2 text-[14px] leading-relaxed text-ice placeholder:text-smoke-2 font-sans"
+                  placeholder="e.g. 2.0ct oval diamond in 18k yellow gold with hidden halo..."
+                  className="js-prompt-textarea"
                 />
 
-                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-white/10">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono uppercase text-smoke-2">Preset:</span>
+                <div className="js-prompt-bottom">
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "11px", color: "#64748b", fontFamily: "var(--font-mono-loaded, monospace)" }}>
+                      PRESET:
+                    </span>
                     <select
                       value={activePreset}
                       onChange={(e) => handleSelectPreset(e.target.value as PresetKey)}
-                      className="bg-white/5 border border-white/15 rounded-lg px-2 py-1 text-xs text-ice outline-none cursor-pointer hover:bg-white/10"
+                      style={{
+                        background: "rgba(255, 255, 255, 0.08)",
+                        border: "1px solid rgba(56, 189, 248, 0.25)",
+                        borderRadius: "6px",
+                        padding: "4px 8px",
+                        color: "#f8fafc",
+                        fontSize: "12px",
+                        outline: "none",
+                        cursor: "pointer"
+                      }}
                     >
                       {(Object.keys(PRESETS) as PresetKey[]).map((k) => (
-                        <option key={k} value={k} className="bg-neutral-900 text-ice">
+                        <option key={k} value={k} style={{ background: "#080e22", color: "#f8fafc" }}>
                           {PRESETS[k].label}
                         </option>
                       ))}
@@ -597,20 +522,40 @@ export function InteractiveLandingPage() {
 
                   <button
                     type="button"
-                    onClick={() => triggerPriceUpdate(calculateLivePrice({ metal: demoMetal, centerShape: demoCenterShape, centerCarats: demoCenterCarats, sideShape: demoSideShape, sideCount: demoSideCount }))}
-                    className="w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-r from-cyan-400 to-purple-400 text-neutral-950 font-bold shadow-lg shadow-purple-500/40 hover:scale-105 active:scale-95 transition-all"
-                    title="Recalculate Estimate"
+                    onClick={() =>
+                      triggerPriceUpdate(
+                        calculateLivePrice({
+                          metal: demoMetal,
+                          centerShape: demoCenterShape,
+                          centerCarats: demoCenterCarats,
+                          sideShape: demoSideShape,
+                          sideCount: demoSideCount
+                        })
+                      )
+                    }
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #38bdf8, #2563eb)",
+                      border: "none",
+                      color: "#ffffff",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: "bold",
+                      boxShadow: "0 0 12px rgba(56, 189, 248, 0.5)"
+                    }}
+                    title="Calculate Live Price"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="m5 12 7-7 7 7" />
-                      <path d="M12 19V5" />
-                    </svg>
+                    ↑
                   </button>
                 </div>
               </div>
 
-              {/* Jewelry Category Tiles */}
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4">
+              {/* Category Buttons */}
+              <div className="js-category-grid">
                 {[
                   { name: "Ring", icon: "💍" },
                   { name: "Pendant", icon: "✨" },
@@ -625,143 +570,119 @@ export function InteractiveLandingPage() {
                       key={item.name}
                       type="button"
                       onClick={() => handleCategoryClick(item.name)}
-                      className={`flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all ${
-                        isSelected
-                          ? "bg-purple-500/20 border-purple-400 text-white shadow-md shadow-purple-500/25 scale-[1.03]"
-                          : "bg-white/[0.04] border-white/10 text-smoke hover:bg-white/[0.08] hover:text-ice"
-                      }`}
+                      className={`js-cat-btn ${isSelected ? "is-active" : ""}`}
                     >
-                      <span className="text-lg">{item.icon}</span>
+                      <span style={{ fontSize: "16px" }}>{item.icon}</span>
                       <span>{item.name}</span>
                     </button>
                   );
                 })}
               </div>
 
-              {/* Live Preview Card & Dynamic Specs */}
-              <div className="mt-5 p-4 rounded-2xl bg-black/40 border border-white/10 grid sm:grid-cols-2 gap-4 items-center">
-                {/* Left: Render Frame */}
-                <div className="relative aspect-square sm:aspect-auto sm:h-44 rounded-xl overflow-hidden bg-neutral-900 border border-white/10 flex items-center justify-center group">
+              {/* Render Preview & Live Price Adjuster */}
+              <div className="js-preview-row">
+                <div className="js-preview-thumb">
                   <img
                     src={PRESETS[activePreset]?.renderImage || "/images/catalog/oval_solitaire.jpg"}
-                    alt={PRESETS[activePreset]?.label || "3D Render"}
-                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
+                    alt={PRESETS[activePreset]?.label || "Render"}
                   />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-[10px] font-mono uppercase text-aurora-cyan font-bold">
-                    3D Render
-                  </div>
                   {isGenerating && (
-                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-2">
-                      <div className="w-6 h-6 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-                      <span className="text-[11px] font-mono uppercase text-purple-300">Rendering geometry...</span>
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        background: "rgba(4, 7, 17, 0.8)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#38bdf8",
+                        fontSize: "11px",
+                        fontFamily: "var(--font-mono-loaded, monospace)"
+                      }}
+                    >
+                      Rendering...
                     </div>
                   )}
                 </div>
 
-                {/* Right: Specs & Live Quote Price */}
-                <div className="flex flex-col justify-between gap-3 text-left">
-                  <div>
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-smoke-2 block mb-1">
-                      Live Quote Estimate
-                    </span>
-                    <div className="font-display-luxury text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-purple-300 to-purple-400 leading-none">
-                      ${currentPrice.toLocaleString()}
-                    </div>
-                    <span className="text-[11px] text-smoke-2 block mt-1">
-                      Includes 18k alloy weight + diamond appraisal
-                    </span>
-                  </div>
-
-                  {/* Micro Specs Adjusters */}
-                  <div className="space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between text-smoke bg-white/5 px-2 py-1 rounded-md">
-                      <span>Metal:</span>
+                <div style={{ textAlign: "left" }}>
+                  <span style={{ fontSize: "10px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    Approved Quote Estimate
+                  </span>
+                  <div className="js-preview-price">${currentPrice.toLocaleString()}</div>
+                  
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", marginBottom: "10px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#94a3b8" }}>
+                      <span>Alloy:</span>
                       <select
                         value={demoMetal}
                         onChange={(e) => onSpecsChange({ metal: e.target.value })}
-                        className="bg-transparent text-ice text-right font-medium outline-none cursor-pointer"
+                        style={{ background: "transparent", border: "none", color: "#f8fafc", fontWeight: 600, outline: "none", cursor: "pointer" }}
                       >
-                        <option value="18k Yellow Gold" className="bg-neutral-900">18k Yellow Gold</option>
-                        <option value="18k White Gold" className="bg-neutral-900">18k White Gold</option>
-                        <option value="18k Rose Gold" className="bg-neutral-900">18k Rose Gold</option>
-                        <option value="Platinum" className="bg-neutral-900">Platinum</option>
-                        <option value="14k Yellow Gold" className="bg-neutral-900">14k Yellow Gold</option>
+                        <option value="18k Yellow Gold" style={{ background: "#080e22" }}>18k Yellow Gold</option>
+                        <option value="18k White Gold" style={{ background: "#080e22" }}>18k White Gold</option>
+                        <option value="18k Rose Gold" style={{ background: "#080e22" }}>18k Rose Gold</option>
+                        <option value="Platinum" style={{ background: "#080e22" }}>Platinum 950</option>
+                        <option value="14k Yellow Gold" style={{ background: "#080e22" }}>14k Yellow Gold</option>
                       </select>
                     </div>
 
-                    <div className="flex items-center justify-between text-smoke bg-white/5 px-2 py-1 rounded-md">
-                      <span>Center Stone:</span>
-                      <span className="font-medium text-ice">{demoCenterCarats}ct {demoCenterShape}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#94a3b8" }}>
+                      <span>Diamond:</span>
+                      <span style={{ color: "#f8fafc", fontWeight: 600 }}>
+                        {demoCenterCarats}ct {demoCenterShape}
+                      </span>
                     </div>
                   </div>
 
-                  <Link
-                    href="/signup"
-                    className="btn-aurora w-full py-2 text-xs font-bold text-center justify-center mt-1"
-                  >
-                    Save &amp; Generate Branded Quote →
+                  <Link href="/signup" className="js-btn-aurora" style={{ width: "100%", padding: "10px", fontSize: "12px" }}>
+                    Save &amp; Generate Quote PDF →
                   </Link>
                 </div>
               </div>
+
             </div>
           </div>
-
         </div>
       </section>
 
       {/* ====================================================================
            3. 3D TILT SHOWCASE & EXPLAINER CARD
            ==================================================================== */}
-      <section className="py-24 sm:py-32 px-6 bg-obsidian relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-purple-600/10 rounded-full blur-[100px]" />
-        </div>
-
-        <div className="relative max-w-5xl mx-auto text-center">
-          <div className="mb-10">
-            <span className="eyebrow-accent">Hyper-Realistic Visual Engine</span>
-            <h2 className="display text-3xl sm:text-5xl mt-3 mb-4">
-              Ideas to photoreal 3D renders. <em className="accent-italic">Zero CAD wait time.</em>
+      <section className="js-showcase-section">
+        <div className="js-container">
+          <div style={{ marginBottom: "40px" }}>
+            <span className="js-eyebrow" style={{ color: "#f5d061" }}>Museum-Grade Specular Lighting</span>
+            <h2 className="js-display" style={{ fontSize: "42px", margin: "10px 0 14px" }}>
+              Ideas to photoreal 3D renders. <em className="js-accent-gold">Zero CAD wait time.</em>
             </h2>
-            <p className="text-smoke max-w-2xl mx-auto text-base sm:text-lg">
-              Deliver museum-grade, light-accurate 3D jewelry renderings before your competitor can even boot their CAD workstation.
+            <p style={{ color: "#94a3b8", fontSize: "17px", maxWidth: "600px", margin: "0 auto" }}>
+              Generate studio-quality, light-accurate 3D jewelry renderings before your competitors can even open a CAD file.
             </p>
           </div>
 
-          {/* 3D Tilted Card Preview */}
-          <div
-            className="mx-auto rounded-2xl p-2 sm:p-3 relative group transition-transform duration-500 hover:scale-[1.01]"
-            style={{
-              perspective: "1200px",
-              background: "linear-gradient(135deg, rgba(212,184,122,0.4), rgba(178,152,255,0.4), rgba(109,213,250,0.3))",
-              boxShadow: "0 30px 80px -20px rgba(178,152,255,0.35), 0 0 0 1px rgba(255,255,255,0.1) inset"
-            }}
-          >
-            <div className="relative rounded-xl overflow-hidden bg-[#0A0B14] aspect-[16/9] flex items-center justify-center">
-              <img
-                src="/images/catalog/cushion_pave.jpg"
-                alt="Photorealistic 3D jewelry render"
-                className="w-full h-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
-              />
+          <div className="js-tilt-wrapper">
+            <div className="js-tilt-inner">
+              <img src="/images/catalog/cushion_pave.jpg" alt="Photorealistic 3D ring render" />
               
-              {/* Overlay Glass Elements */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B14] via-transparent to-black/30" />
-              
-              <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between p-4 rounded-xl glass-panel-dark">
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-10 h-10 rounded-lg bg-purple-500/20 border border-purple-400 flex items-center justify-center text-xl">
-                    💍
-                  </div>
+              <div className="js-tilt-floating-meta">
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <span style={{ fontSize: "24px" }}>💍</span>
                   <div>
-                    <p className="text-sm font-bold text-ice">2.0ct Cushion Pavé Engagement Ring</p>
-                    <p className="text-xs text-smoke">Multi-pass AI raytraced specular reflection · 18k White Gold</p>
+                    <strong style={{ fontSize: "14px", color: "#f8fafc", display: "block" }}>
+                      2.0ct Cushion Pavé Engagement Ring
+                    </strong>
+                    <span style={{ fontSize: "12px", color: "#94a3b8" }}>
+                      Multi-pass AI raytracing · 18k White Gold
+                    </span>
                   </div>
                 </div>
-                <div className="text-right hidden sm:block">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 font-bold block">
+                <div>
+                  <span style={{ fontSize: "10px", color: "#34d399", fontWeight: 700, textTransform: "uppercase", display: "block" }}>
                     Render Time: 12.4s
                   </span>
-                  <span className="font-display-luxury text-xl font-bold text-cyan-300">$2,840</span>
+                  <span className="js-display" style={{ fontSize: "20px", color: "#38bdf8" }}>$2,840</span>
                 </div>
               </div>
             </div>
@@ -772,207 +693,156 @@ export function InteractiveLandingPage() {
       {/* ====================================================================
            4. MARQUEE BRAND STRIP
            ==================================================================== */}
-      <section className="py-14 px-6 border-y border-white/10 bg-[#06070A] overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <p className="text-center font-mono text-[11px] tracking-widest uppercase text-smoke-2 mb-8">
-            Trusted by premier custom ateliers &amp; retail jewelers nationwide
-          </p>
+      <section className="js-marquee-section">
+        <p style={{ textAlign: "center", fontSize: "11px", color: "#64748b", fontFamily: "var(--font-mono-loaded, monospace)", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: "20px" }}>
+          Trusted by premier custom ateliers &amp; retail jewelers nationwide
+        </p>
 
-          <div className="relative overflow-hidden w-full">
-            {/* Edge Gradients */}
-            <div className="absolute inset-y-0 left-0 w-24 sm:w-40 z-10 pointer-events-none bg-gradient-to-r from-[#06070A] to-transparent" />
-            <div className="absolute inset-y-0 right-0 w-24 sm:w-40 z-10 pointer-events-none bg-gradient-to-l from-[#06070A] to-transparent" />
-
-            {/* Marquee Track */}
-            <div className="marquee-track-left flex items-center gap-12 sm:gap-20 whitespace-nowrap" style={{ width: "max-content" }}>
-              {[...BRAND_LOGOS, ...BRAND_LOGOS].map((brand, i) => (
-                <span
-                  key={i}
-                  className="font-sans text-lg sm:text-2xl font-light tracking-tight text-smoke hover:text-ice transition-colors cursor-default select-none"
-                >
-                  {brand}
-                </span>
-              ))}
-            </div>
-          </div>
+        <div className="js-marquee-track">
+          {[...BRAND_LOGOS, ...BRAND_LOGOS].map((brand, i) => (
+            <span key={i} className="js-marquee-item">
+              {brand}
+            </span>
+          ))}
         </div>
       </section>
 
       {/* ====================================================================
            5. THE PROBLEM SECTION & ANIMATED LOST-SALE CHAT SIMULATOR
            ==================================================================== */}
-      <section id="the-problem" className="py-28 sm:py-36 px-6 bg-[#090A10] border-b border-white/10 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-[1.1fr_0.9fr] gap-16 items-center">
-          
-          {/* Left Narrative */}
-          <div className="text-left">
-            <div className="eyebrow-accent mb-4">The Custom Order Dilemma</div>
-            <h2 className="display text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.04] mb-6">
-              Stop doing free CAD work.
-              <br />
-              <span className="text-aurora-rose font-semibold">1 out of 10</span> custom orders die for one reason.
-            </h2>
+      <section id="the-problem" className="js-problem-section">
+        <div className="js-container">
+          <div className="js-problem-grid">
+            
+            {/* Left Narrative */}
+            <div style={{ textAlign: "left" }}>
+              <div className="js-eyebrow" style={{ marginBottom: "14px" }}>The Custom Order Dilemma</div>
+              <h2 className="js-display" style={{ fontSize: "48px", lineHeight: "1.06", margin: "0 0 20px" }}>
+                Stop doing free CAD sketches.
+                <br />
+                <span style={{ color: "#f43f5e" }}>1 out of 10</span> custom orders die for one reason.
+              </h2>
 
-            <p className="font-display-luxury text-2xl sm:text-3xl text-ice leading-snug mb-6">
-              If they can&apos;t see it instantly,{" "}
-              <span className="underline decoration-aurora-violet decoration-2 underline-offset-8 text-aurora-violet">
-                they will not buy it.
-              </span>
-            </p>
+              <p className="js-display" style={{ fontSize: "26px", lineHeight: "1.3", margin: "0 0 24px", color: "#f8fafc" }}>
+                If they can&apos;t see it instantly,{" "}
+                <span style={{ color: "#38bdf8", textDecoration: "underline" }}>
+                  they will not buy it.
+                </span>
+              </p>
 
-            <p className="text-smoke text-base sm:text-lg leading-relaxed mb-8 max-w-xl">
-              Customers walk into your boutique or message your Instagram with a dream photo. When you make them wait 3 days for CAD sketches and quotes, enthusiasm evaporates and they buy elsewhere.
-              <br /><br />
-              <strong className="text-ice">Azzure AI Quote flips the script.</strong> Instant 3D renders and mathematically precise quotes on the spot lock in deposits while interest is at its absolute peak.
-            </p>
+              <p style={{ color: "#94a3b8", fontSize: "16px", lineHeight: "1.7", marginBottom: "32px" }}>
+                Customers walk into your showroom or message your Instagram with an inspiration photo. When you make them wait days for CAD sketches and estimates, their excitement cools off and they buy next door.
+                <br /><br />
+                <strong style={{ color: "#f8fafc" }}>Azzure AI Quote flips the script.</strong> Instant 3D renders and mathematically precise quotes on the spot lock in deposits while interest is at its peak.
+              </p>
 
-            <div className="flex items-center gap-6">
-              <Link href="/signup" className="btn-aurora text-sm px-7 py-3">
-                Stop Losing Custom Sales →
-              </Link>
-              <button onClick={replayChat} className="btn-ghost text-xs px-4 py-3 text-smoke">
-                ↻ Replay Simulation
-              </button>
+              <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                <Link href="/signup" className="js-btn-aurora">
+                  Stop Losing Custom Sales →
+                </Link>
+                <button onClick={replayChat} className="js-btn-ghost" style={{ fontSize: "13px" }}>
+                  ↻ Replay Simulation
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Right: Interactive Animated iMessage Chat Simulator */}
-          <div className="w-full max-w-md mx-auto">
-            <div className="rounded-3xl glass-panel-dark p-5 sm:p-6 shadow-2xl relative border border-white/15">
-              
-              {/* iPhone Header Bar */}
-              <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-300 font-bold text-xs flex items-center justify-center">
+            {/* Right: iOS Chat Simulator */}
+            <div className="js-glass-card js-chat-card">
+              <div className="js-chat-header">
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "rgba(245, 208, 97, 0.2)", color: "#f5d061", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "12px" }}>
                     JD
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-ice leading-tight">Jessica Davies</p>
-                    <p className="text-[10px] text-smoke">Custom Solitaire Inquiry</p>
+                    <strong style={{ fontSize: "13px", color: "#f8fafc", display: "block" }}>Jessica Davies</strong>
+                    <span style={{ fontSize: "11px", color: "#94a3b8" }}>Custom Solitaire Inquiry</span>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-red-500/10 text-red-400 border border-red-500/20 font-bold">
-                  Ghosted Client
+                <span style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "4px", background: "rgba(244, 63, 94, 0.15)", color: "#f43f5e", fontWeight: "bold" }}>
+                  GHOSTED
                 </span>
               </div>
 
-              {/* Chat Thread Simulator */}
-              <div key={chatKey} className="space-y-3 min-h-[310px] text-left text-xs font-sans">
-                {/* Message 1 */}
-                <div className="flex justify-start">
-                  <div className="bg-neutral-800 text-ice px-3.5 py-2.5 rounded-2xl rounded-bl-sm max-w-[82%] leading-relaxed">
-                    Hi! I love this 2ct oval ring on Pinterest. Can you make this and how much would it be? 💍
-                  </div>
+              <div key={chatKey} className="js-chat-messages">
+                <div className="js-msg-bubble-left">
+                  Hi! I love this 2ct oval ring on Pinterest. Can you make this and how much would it be? 💍
                 </div>
 
-                {/* Message 2 */}
-                <div className="flex justify-end">
-                  <div className="bg-blue-600 text-white px-3.5 py-2.5 rounded-2xl rounded-br-sm max-w-[82%] leading-relaxed shadow-md shadow-blue-500/20">
-                    Hi Jessica! Sure thing! Let me talk to my CAD designer. Give us 3–4 business days to sketch specs and quote.
-                  </div>
+                <div className="js-msg-bubble-right">
+                  Hi Jessica! Sure thing! Let me talk to my CAD bench. Give us 3–4 business days to sketch specs and quote.
                 </div>
 
-                {/* Message 3 */}
-                <div className="flex justify-end">
-                  <div className="bg-blue-600 text-white px-3.5 py-2 rounded-2xl rounded-br-sm max-w-[82%] leading-relaxed">
-                    Does that work for you?
-                  </div>
+                <div className="js-msg-bubble-right">
+                  Does that work for you?
                 </div>
 
-                {/* Message 4 */}
-                <div className="flex justify-end pt-1">
-                  <div className="bg-blue-600 text-white px-3.5 py-2.5 rounded-2xl rounded-br-sm max-w-[82%] leading-relaxed opacity-80">
-                    Hey Jessica, still interested? Just following up!
-                    <span className="block text-[9px] text-blue-200 mt-1">Read · 4 days ago</span>
-                  </div>
+                <div className="js-msg-bubble-right" style={{ opacity: 0.85 }}>
+                  Hey Jessica, still interested? Just following up!
+                  <span style={{ display: "block", fontSize: "9px", color: "rgba(255,255,255,0.7)", marginTop: "2px" }}>Read · 4 days ago</span>
                 </div>
 
-                {/* Typing indicator ghost */}
-                <div className="flex items-center gap-2 pt-2 text-smoke-2 italic text-[11px]">
-                  <span>No response. Customer purchased from competitor with instant 3D visual.</span>
+                <div style={{ fontSize: "11px", fontStyle: "italic", color: "#64748b", textAlign: "center", paddingTop: "8px" }}>
+                  No reply. Customer purchased from competitor with instant 3D visual.
                 </div>
 
-                {/* Stamp of Lost Sale */}
-                <div className="pt-4 flex justify-center">
-                  <div className="px-6 py-2 rounded-lg border-2 border-red-500 bg-red-500/10 text-red-400 font-mono font-black text-sm tracking-widest uppercase rotate-[-2deg] shadow-lg shadow-red-500/20 animate-pulse">
-                    $6,400 SALE LOST
-                  </div>
+                <div className="js-lost-sale-stamp">
+                  $6,400 SALE LOST
                 </div>
               </div>
             </div>
-          </div>
 
+          </div>
         </div>
       </section>
 
       {/* ====================================================================
            6. PRODUCT DEEP-DIVE: INTERACTIVE 3-STEP STUDIO GENERATOR
            ==================================================================== */}
-      <section id="features" className="py-28 sm:py-36 px-6 bg-obsidian border-b border-white/10 relative overflow-hidden">
-        <div className="max-w-6xl mx-auto text-center">
-          
-          <div className="mb-14">
-            <span className="eyebrow-accent">Interactive Demonstration</span>
-            <h2 className="display text-4xl sm:text-5xl mt-3 mb-4">
-              Turn any inspiration into a <em className="accent-italic">closed sale</em>.
+      <section id="features" className="js-generator-section">
+        <div className="js-container">
+          <div style={{ marginBottom: "48px" }}>
+            <span className="js-eyebrow">Interactive Demonstration</span>
+            <h2 className="js-display" style={{ fontSize: "44px", margin: "10px 0 14px" }}>
+              Turn any inspiration into a <em className="js-accent-italic">closed sale</em>.
             </h2>
-            <p className="text-smoke max-w-xl mx-auto text-base sm:text-lg">
+            <p style={{ color: "#94a3b8", fontSize: "17px", maxWidth: "560px", margin: "0 auto" }}>
               Test how quick and effortless your customer quoting experience will be:
             </p>
           </div>
 
-          {/* Interactive 3-Step Container */}
-          <div className="glass-panel-dark rounded-3xl p-6 sm:p-10 text-left border border-white/15 max-w-4xl mx-auto relative overflow-hidden shadow-2xl">
-            <div className="accent-line" />
+          <div className="js-glass-card js-generator-card">
+            <div className="js-accent-line" />
 
-            {/* Stepper Progress Bar */}
-            <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <span
-                  className={`w-7 h-7 rounded-full flex items-center justify-center font-mono text-xs font-bold ${
-                    generatorStep >= 1 ? "bg-purple-500 text-white" : "bg-neutral-800 text-smoke"
-                  }`}
-                >
-                  1
-                </span>
-                <span className="text-xs font-bold text-ice">Configure Design</span>
+            {/* Stepper Node Bar */}
+            <div className="js-stepper-bar">
+              <div className="js-step-node">
+                <span className={`js-step-circle ${generatorStep >= 1 ? "is-active" : ""}`}>1</span>
+                <span style={{ color: "#f8fafc" }}>Configure Piece</span>
               </div>
-              <div className="h-px bg-white/20 flex-1 mx-4" />
-              <div className="flex items-center gap-3">
-                <span
-                  className={`w-7 h-7 rounded-full flex items-center justify-center font-mono text-xs font-bold ${
-                    generatorStep >= 2 ? "bg-purple-500 text-white" : "bg-neutral-800 text-smoke"
-                  }`}
-                >
-                  2
-                </span>
-                <span className="text-xs font-bold text-ice">AI 3D Synthesis</span>
+              <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.15)", margin: "0 16px" }} />
+              <div className="js-step-node">
+                <span className={`js-step-circle ${generatorStep >= 2 ? "is-active" : ""}`}>2</span>
+                <span style={{ color: "#f8fafc" }}>AI 3D Synthesis</span>
               </div>
-              <div className="h-px bg-white/20 flex-1 mx-4" />
-              <div className="flex items-center gap-3">
-                <span
-                  className={`w-7 h-7 rounded-full flex items-center justify-center font-mono text-xs font-bold ${
-                    generatorStep >= 3 ? "bg-purple-500 text-white" : "bg-neutral-800 text-smoke"
-                  }`}
-                >
-                  3
-                </span>
-                <span className="text-xs font-bold text-ice">Deposit &amp; Order</span>
+              <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.15)", margin: "0 16px" }} />
+              <div className="js-step-node">
+                <span className={`js-step-circle ${generatorStep >= 3 ? "is-active" : ""}`}>3</span>
+                <span style={{ color: "#f8fafc" }}>Deposit &amp; Order</span>
               </div>
             </div>
 
-            {/* Step 1: Design Input */}
+            {/* Step 1: Configuration Form */}
             {generatorStep === 1 && (
-              <div className="space-y-6">
-                <div className="grid sm:grid-cols-2 gap-4">
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   <div>
-                    <label className="block text-xs font-mono uppercase text-smoke-2 mb-2 font-bold">
+                    <label style={{ display: "block", fontSize: "11px", color: "#64748b", fontFamily: "var(--font-mono-loaded, monospace)", textTransform: "uppercase", marginBottom: "6px" }}>
                       Center Gemstone
                     </label>
                     <select
                       value={genGem}
                       onChange={(e) => setGenGem(e.target.value)}
-                      className="w-full bg-black/50 border border-white/15 rounded-xl p-3 text-sm text-ice outline-none focus:border-purple-400"
+                      style={{ width: "100%", padding: "12px", background: "rgba(4, 7, 17, 0.7)", border: "1px solid rgba(56, 189, 248, 0.25)", borderRadius: "10px", color: "#f8fafc", fontSize: "14px" }}
                     >
                       <option value="Diamond">Natural Diamond (VS1 / F Color)</option>
                       <option value="Lab Diamond">Lab Grown Diamond (VVS / E Color)</option>
@@ -982,13 +852,13 @@ export function InteractiveLandingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono uppercase text-smoke-2 mb-2 font-bold">
+                    <label style={{ display: "block", fontSize: "11px", color: "#64748b", fontFamily: "var(--font-mono-loaded, monospace)", textTransform: "uppercase", marginBottom: "6px" }}>
                       Precious Metal
                     </label>
                     <select
                       value={genMetal}
                       onChange={(e) => setGenMetal(e.target.value)}
-                      className="w-full bg-black/50 border border-white/15 rounded-xl p-3 text-sm text-ice outline-none focus:border-purple-400"
+                      style={{ width: "100%", padding: "12px", background: "rgba(4, 7, 17, 0.7)", border: "1px solid rgba(56, 189, 248, 0.25)", borderRadius: "10px", color: "#f8fafc", fontSize: "14px" }}
                     >
                       <option value="Platinum">Platinum 950 High-Polish</option>
                       <option value="18k Yellow Gold">18k Yellow Gold</option>
@@ -999,96 +869,78 @@ export function InteractiveLandingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono uppercase text-smoke-2 mb-2 font-bold">
-                    Vision Description &amp; Details
+                  <label style={{ display: "block", fontSize: "11px", color: "#64748b", fontFamily: "var(--font-mono-loaded, monospace)", textTransform: "uppercase", marginBottom: "6px" }}>
+                    Vision Description
                   </label>
                   <textarea
                     rows={2}
                     value={genVision}
                     onChange={(e) => setGenVision(e.target.value)}
-                    className="w-full bg-black/50 border border-white/15 rounded-xl p-3 text-sm text-ice outline-none focus:border-purple-400 resize-none font-sans"
+                    style={{ width: "100%", padding: "12px", background: "rgba(4, 7, 17, 0.7)", border: "1px solid rgba(56, 189, 248, 0.25)", borderRadius: "10px", color: "#f8fafc", fontSize: "14px", resize: "none" }}
                   />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={runGeneratorFlow}
-                  className="btn-aurora w-full py-3.5 font-bold text-sm justify-center"
-                >
+                <button type="button" onClick={runGeneratorFlow} className="js-btn-aurora" style={{ width: "100%", padding: "14px" }}>
                   ⚡ Generate 3D Concept &amp; Live Quote
                 </button>
               </div>
             )}
 
-            {/* Step 2: AI Processing Simulation */}
+            {/* Step 2: Processing */}
             {generatorStep === 2 && (
-              <div className="py-12 flex flex-col items-center text-center space-y-6">
-                <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin shadow-lg shadow-purple-500/30" />
+              <div style={{ padding: "40px 0", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+                <div style={{ width: "48px", height: "48px", border: "4px solid #38bdf8", borderTopColor: "transparent", borderRadius: "50%", animation: "sweepRotation 1s linear infinite" }} />
                 <div>
-                  <h3 className="text-xl font-bold text-ice mb-1">Synthesizing 3D Render &amp; Spot Prices</h3>
-                  <p className="text-xs text-smoke">
-                    Connecting to live bullion metal feeds &amp; calculating labor margins...
-                  </p>
+                  <strong style={{ fontSize: "18px", color: "#f8fafc", display: "block" }}>Synthesizing 3D Render &amp; Spot Prices</strong>
+                  <span style={{ fontSize: "12px", color: "#94a3b8" }}>Connecting to live bullion feeds &amp; calculating labor margins...</span>
                 </div>
-                <div className="w-full max-w-md h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-cyan-400 to-purple-400 transition-all duration-200"
-                    style={{ width: `${genProgress}%` }}
-                  />
+                <div style={{ width: "100%", maxWidth: "400px", height: "8px", background: "rgba(255,255,255,0.1)", borderRadius: "4px", overflow: "hidden" }}>
+                  <div style={{ width: `${genProgress}%`, height: "100%", background: "linear-gradient(90deg, #38bdf8, #2563eb, #f5d061)", transition: "width 0.2s" }} />
                 </div>
               </div>
             )}
 
-            {/* Step 3: Finished Render & Deposit */}
+            {/* Step 3: Complete & Deposit */}
             {generatorStep === 3 && (
-              <div className="grid sm:grid-cols-2 gap-8 items-center">
-                <div className="rounded-2xl overflow-hidden aspect-square bg-neutral-900 border border-white/15 shadow-inner">
-                  <img
-                    src="/images/catalog/oval_solitaire.jpg"
-                    alt="Rendered jewelry piece"
-                    className="w-full h-full object-cover"
-                  />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "28px", alignItems: "center" }}>
+                <div style={{ borderRadius: "16px", overflow: "hidden", aspectRatio: "1", background: "#080e22" }}>
+                  <img src="/images/catalog/oval_solitaire.jpg" alt="Generated Ring" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
 
-                <div className="space-y-4">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] font-bold uppercase">
-                    ✓ Quote Ready · 30-Day Guarantee
-                  </div>
-                  
-                  <h3 className="display text-2xl text-ice">
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  <span style={{ fontSize: "10px", padding: "3px 8px", borderRadius: "9999px", background: "rgba(52, 211, 153, 0.15)", color: "#34d399", fontWeight: "bold", width: "max-content" }}>
+                    ✓ 30-Day Guaranteed Price
+                  </span>
+                  <h3 className="js-display" style={{ fontSize: "24px", margin: 0 }}>
                     {genMetal} {genGem} Solitaire
                   </h3>
 
-                  <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-1.5 text-xs text-smoke">
-                    <div className="flex justify-between">
-                      <span>Live Precious Metal (Pt 950):</span>
-                      <strong className="text-ice">$1,280</strong>
+                  <div style={{ background: "rgba(4, 7, 17, 0.6)", border: "1px solid rgba(56, 189, 248, 0.15)", borderRadius: "12px", padding: "14px", fontSize: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#94a3b8" }}>
+                      <span>Precious Metal (Pt 950):</span>
+                      <strong style={{ color: "#f8fafc" }}>$1,280</strong>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Diamond Weight (2.0ct F/VS1):</span>
-                      <strong className="text-ice">$4,850</strong>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#94a3b8" }}>
+                      <span>Diamond (2.0ct F/VS1):</span>
+                      <strong style={{ color: "#f8fafc" }}>$4,850</strong>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Setting &amp; Finishing Labor:</span>
-                      <strong className="text-ice">$670</strong>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#94a3b8" }}>
+                      <span>Labor &amp; Setting:</span>
+                      <strong style={{ color: "#f8fafc" }}>$670</strong>
                     </div>
-                    <div className="border-t border-white/10 pt-2 flex justify-between text-sm font-bold text-ice">
-                      <span>Approved Client Price:</span>
-                      <span className="font-display-luxury text-xl text-cyan-300">$6,800</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "8px", fontSize: "14px", fontWeight: "bold", color: "#f8fafc" }}>
+                      <span>Approved Retail Price:</span>
+                      <span className="js-display" style={{ fontSize: "22px", color: "#38bdf8" }}>$6,800</span>
                     </div>
                   </div>
 
                   {!genDepositPaid ? (
-                    <button
-                      type="button"
-                      onClick={() => setGenDepositPaid(true)}
-                      className="btn-aurora w-full py-3 text-sm font-bold justify-center"
-                    >
-                      💳 Capture $500 Deposit &amp; Send to Production
+                    <button type="button" onClick={() => setGenDepositPaid(true)} className="js-btn-aurora" style={{ width: "100%", padding: "12px" }}>
+                      💳 Capture $500 Deposit &amp; Dispatch
                     </button>
                   ) : (
-                    <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-center font-bold text-xs">
-                      ✓ $500 Deposit Captured! Order dispatched to Jeweler CRM.
+                    <div style={{ padding: "12px", borderRadius: "10px", background: "rgba(52, 211, 153, 0.2)", border: "1px solid #34d399", color: "#34d399", textAlign: "center", fontSize: "13px", fontWeight: "bold" }}>
+                      ✓ $500 Deposit Captured! Dispatched to Jeweler CRM.
                     </div>
                   )}
 
@@ -1098,193 +950,153 @@ export function InteractiveLandingPage() {
                       setGeneratorStep(1);
                       setGenDepositPaid(false);
                     }}
-                    className="text-xs text-smoke hover:text-ice underline text-center block w-full"
+                    style={{ background: "transparent", border: "none", color: "#94a3b8", fontSize: "12px", textDecoration: "underline", cursor: "pointer" }}
                   >
-                    ← Configure another custom piece
+                    ← Configure another custom design
                   </button>
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Stats Bar */}
-          <div className="grid grid-cols-3 gap-6 max-w-4xl mx-auto mt-12 pt-8 border-t border-white/10 text-center">
-            <div>
-              <div className="font-display-luxury text-3xl sm:text-5xl font-bold text-aurora-cyan">20x</div>
-              <div className="text-xs sm:text-sm font-mono uppercase tracking-widest text-smoke mt-1">More Leads Captured</div>
-            </div>
-            <div>
-              <div className="font-display-luxury text-3xl sm:text-5xl font-bold text-aurora-violet">60%</div>
-              <div className="text-xs sm:text-sm font-mono uppercase tracking-widest text-smoke mt-1">Higher Conversion</div>
-            </div>
-            <div>
-              <div className="font-display-luxury text-3xl sm:text-5xl font-bold text-aurora-gold">&lt;15s</div>
-              <div className="text-xs sm:text-sm font-mono uppercase tracking-widest text-smoke mt-1">Idea to Approved Quote</div>
-            </div>
           </div>
-
         </div>
       </section>
 
       {/* ====================================================================
            7. WORKFLOW: "LIVE IN 1 MINUTE. CLOSING IN SECONDS."
            ==================================================================== */}
-      <section id="how-it-works" className="py-28 sm:py-36 px-6 bg-[#08090D] border-b border-white/10">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <span className="eyebrow-accent">Effortless Integration</span>
-            <h2 className="display text-4xl sm:text-6xl mt-3 mb-4">
-              Live in 1 minute. <em className="accent-italic">Closing in seconds.</em>
+      <section id="how-it-works" className="js-workflow-section">
+        <div className="js-container">
+          <div style={{ textAlign: "center", marginBottom: "48px" }}>
+            <span className="js-eyebrow">Effortless Integration</span>
+            <h2 className="js-display" style={{ fontSize: "44px", margin: "10px 0 14px" }}>
+              Live in 1 minute. <em className="js-accent-italic">Closing in seconds.</em>
             </h2>
-            <p className="text-smoke max-w-xl mx-auto text-base sm:text-lg">
+            <p style={{ color: "#94a3b8", fontSize: "17px", maxWidth: "560px", margin: "0 auto" }}>
               No software developers required. Embeds on any site or showroom iPad with one line of code.
             </p>
           </div>
 
-          {/* 4 Tabs Layout */}
-          <div className="grid lg:grid-cols-[1fr_420px] gap-8 items-stretch">
+          <div className="js-workflow-grid">
             
-            {/* Visual Display Left */}
-            <div className="glass-panel-dark rounded-3xl p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden min-h-[380px]">
-              <div className="accent-line" />
+            {/* Display Panel Left */}
+            <div className="js-glass-card" style={{ padding: "32px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div className="js-accent-line" />
 
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                  <span className="font-mono text-xs uppercase tracking-widest text-ice font-bold">
-                    Azzure Studio Engine · Step 0{workflowTab + 1}
-                  </span>
-                </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/20 text-purple-300 font-bold">
-                  Active
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className="js-eyebrow">Step 0{workflowTab + 1} Architecture</span>
+                <span style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "4px", background: "rgba(56, 189, 248, 0.2)", color: "#38bdf8", fontWeight: "bold" }}>
+                  ACTIVE
                 </span>
               </div>
 
-              {/* Dynamic Step Previews */}
-              <div className="my-auto py-6">
+              <div style={{ margin: "auto 0", padding: "24px 0", textAlign: "left" }}>
                 {workflowTab === 0 && (
-                  <div className="text-left space-y-4">
-                    <h3 className="display text-2xl text-ice">Connect to Shopify, WooCommerce, Wix, or Custom Website</h3>
-                    <p className="text-smoke text-sm leading-relaxed">
+                  <div>
+                    <h3 className="js-display" style={{ fontSize: "28px", margin: "0 0 12px" }}>
+                      Connect to Shopify, WooCommerce, Wix, or Custom Website
+                    </h3>
+                    <p style={{ color: "#94a3b8", fontSize: "15px", lineHeight: "1.6", marginBottom: "18px" }}>
                       Embed our lightning-fast 3D quotation widget onto your website with a single copy-paste script tag. Integrates seamlessly with your existing luxury brand theme.
                     </p>
-                    <div className="p-3 rounded-xl bg-black/60 font-mono text-xs text-cyan-300 border border-white/10">
+                    <div style={{ padding: "14px", borderRadius: "10px", background: "#040711", border: "1px solid rgba(56, 189, 248, 0.2)", fontFamily: "var(--font-mono-loaded, monospace)", fontSize: "12px", color: "#38bdf8" }}>
                       &lt;script src=&quot;https://cdn.azzureaiquote.com/embed.js&quot; data-store=&quot;your-store&quot;&gt;&lt;/script&gt;
                     </div>
                   </div>
                 )}
 
                 {workflowTab === 1 && (
-                  <div className="text-left space-y-4">
-                    <h3 className="display text-2xl text-ice">Set Your Metal Formulas &amp; Retail Markups</h3>
-                    <p className="text-smoke text-sm leading-relaxed">
+                  <div>
+                    <h3 className="js-display" style={{ fontSize: "28px", margin: "0 0 12px" }}>
+                      Set Your Precious Metal Formulas &amp; Retail Markups
+                    </h3>
+                    <p style={{ color: "#94a3b8", fontSize: "15px", lineHeight: "1.6", marginBottom: "18px" }}>
                       Control your margins down to the dollar. Set custom multipliers on precious metal spot prices, diamond carat weight tiers, and labor setting costs.
                     </p>
-                    <div className="grid grid-cols-2 gap-3 font-mono text-xs">
-                      <div className="p-3 bg-black/50 rounded-lg border border-white/10">
-                        <span className="text-smoke block">Gold Spot Markup</span>
-                        <strong className="text-emerald-400 text-base">+35% Retail</strong>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                      <div style={{ padding: "14px", borderRadius: "10px", background: "#040711", border: "1px solid rgba(56, 189, 248, 0.2)" }}>
+                        <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>Gold Spot Markup</span>
+                        <strong style={{ fontSize: "18px", color: "#34d399" }}>+35% Retail</strong>
                       </div>
-                      <div className="p-3 bg-black/50 rounded-lg border border-white/10">
-                        <span className="text-smoke block">Deposit Requirement</span>
-                        <strong className="text-purple-300 text-base">20% or $500 Min</strong>
+                      <div style={{ padding: "14px", borderRadius: "10px", background: "#040711", border: "1px solid rgba(56, 189, 248, 0.2)" }}>
+                        <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>Deposit Requirement</span>
+                        <strong style={{ fontSize: "18px", color: "#f5d061" }}>20% or $500 Min</strong>
                       </div>
                     </div>
                   </div>
                 )}
 
                 {workflowTab === 2 && (
-                  <div className="text-left space-y-4">
-                    <h3 className="display text-2xl text-ice">Shoppers Describe Dreams &amp; Get Photoreal Visuals</h3>
-                    <p className="text-smoke text-sm leading-relaxed">
+                  <div>
+                    <h3 className="js-display" style={{ fontSize: "28px", margin: "0 0 12px" }}>
+                      Shoppers Describe Dreams &amp; Get Photoreal Visuals
+                    </h3>
+                    <p style={{ color: "#94a3b8", fontSize: "15px", lineHeight: "1.6", marginBottom: "18px" }}>
                       Clients upload photos from Instagram, Pinterest, or camera roll. Azzure generates hyper-realistic 3D images and quotes immediately.
                     </p>
-                    <div className="flex items-center gap-3 p-3 bg-black/50 rounded-xl border border-white/10">
-                      <span className="text-2xl">📸</span>
-                      <span className="text-xs text-smoke">
-                        Photo merged with live pricing matrix in &lt; 15 seconds.
-                      </span>
+                    <div style={{ padding: "14px", borderRadius: "10px", background: "#040711", border: "1px solid rgba(56, 189, 248, 0.2)", display: "flex", alignItems: "center", gap: "12px" }}>
+                      <span style={{ fontSize: "22px" }}>📸</span>
+                      <span style={{ fontSize: "13px", color: "#94a3b8" }}>Photo merged with live pricing matrix in &lt; 15 seconds.</span>
                     </div>
                   </div>
                 )}
 
                 {workflowTab === 3 && (
-                  <div className="text-left space-y-4">
-                    <h3 className="display text-2xl text-ice">Automated Lead Capture &amp; Direct Manufacturing Queue</h3>
-                    <p className="text-smoke text-sm leading-relaxed">
+                  <div>
+                    <h3 className="js-display" style={{ fontSize: "28px", margin: "0 0 12px" }}>
+                      Automated Lead Capture &amp; Direct Manufacturing Queue
+                    </h3>
+                    <p style={{ color: "#94a3b8", fontSize: "15px", lineHeight: "1.6", marginBottom: "18px" }}>
                       Customer deposits are securely processed before they leave your site. Quote specs automatically export to PDF and push directly to CAD/CAM casting.
                     </p>
-                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-400 font-bold">
-                      ✓ Instant Stripe checkout deposit + PDF quote reference link generated.
+                    <div style={{ padding: "14px", borderRadius: "10px", background: "rgba(52, 211, 153, 0.15)", border: "1px solid #34d399", color: "#34d399", fontSize: "13px", fontWeight: "bold" }}>
+                      ✓ Instant Stripe deposit checkout + PDF quote reference link generated.
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Progress Indicator */}
-              <div className="flex items-center gap-2 pt-4 border-t border-white/10">
+              <div style={{ display: "flex", gap: "8px" }}>
                 {[0, 1, 2, 3].map((idx) => (
                   <div
                     key={idx}
                     onClick={() => setWorkflowTab(idx)}
-                    className={`h-1.5 rounded-full flex-1 cursor-pointer transition-all ${
-                      workflowTab === idx ? "bg-gradient-to-r from-cyan-400 to-purple-400" : "bg-white/10"
-                    }`}
+                    style={{
+                      flex: 1,
+                      height: "4px",
+                      borderRadius: "2px",
+                      background: workflowTab === idx ? "linear-gradient(90deg, #38bdf8, #2563eb, #f5d061)" : "rgba(255,255,255,0.15)",
+                      cursor: "pointer",
+                      transition: "all 0.2s"
+                    }}
                   />
                 ))}
               </div>
             </div>
 
-            {/* Selector Buttons Right */}
-            <div className="flex flex-col gap-3">
+            {/* Selectors Right */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {[
-                {
-                  step: "01",
-                  title: "Connect to your website",
-                  desc: "One snippet, one minute, any platform."
-                },
-                {
-                  step: "02",
-                  title: "Set up pricing & formulas",
-                  desc: "Match your colors, logo, markups, and catalog."
-                },
-                {
-                  step: "03",
-                  title: "Customers design live",
-                  desc: "AI visual builder with instant 3D renders."
-                },
-                {
-                  step: "04",
-                  title: "Lead capture & deposit secured",
-                  desc: "Hot buyers land in your CRM with deposits attached."
-                }
-              ].map((item, idx) => {
-                const isActive = workflowTab === idx;
-                return (
-                  <button
-                    key={item.step}
-                    type="button"
-                    onClick={() => setWorkflowTab(idx)}
-                    className={`text-left p-5 rounded-2xl border transition-all flex items-start gap-4 ${
-                      isActive
-                        ? "bg-purple-500/10 border-purple-400 text-white shadow-lg shadow-purple-500/15"
-                        : "bg-white/[0.03] border-white/10 text-smoke hover:bg-white/[0.06] hover:text-ice"
-                    }`}
-                  >
-                    <span
-                      className={`font-mono text-sm font-bold pt-0.5 ${
-                        isActive ? "text-purple-400" : "text-smoke-2"
-                      }`}
-                    >
-                      {item.step}
-                    </span>
-                    <div>
-                      <h4 className="font-bold text-sm text-ice mb-1">{item.title}</h4>
-                      <p className="text-xs text-smoke">{item.desc}</p>
-                    </div>
-                  </button>
-                );
-              })}
+                { step: "01", title: "Connect to your website", desc: "One snippet, one minute, any platform." },
+                { step: "02", title: "Set up pricing & formulas", desc: "Match your colors, logo, markups, and catalog." },
+                { step: "03", title: "Customers design live", desc: "AI visual builder with instant 3D renders." },
+                { step: "04", title: "Lead capture & deposit secured", desc: "Hot buyers land in your CRM with deposits attached." }
+              ].map((item, idx) => (
+                <button
+                  key={item.step}
+                  type="button"
+                  onClick={() => setWorkflowTab(idx)}
+                  className={`js-tab-btn ${workflowTab === idx ? "is-active" : ""}`}
+                >
+                  <span className="js-eyebrow" style={{ fontSize: "14px" }}>{item.step}</span>
+                  <div>
+                    <strong style={{ fontSize: "15px", color: "#f8fafc", display: "block", marginBottom: "4px" }}>
+                      {item.title}
+                    </strong>
+                    <span style={{ fontSize: "13px", color: "#94a3b8" }}>{item.desc}</span>
+                  </div>
+                </button>
+              ))}
             </div>
 
           </div>
@@ -1294,106 +1106,88 @@ export function InteractiveLandingPage() {
       {/* ====================================================================
            8. JEWELER DASHBOARD SPOTLIGHT ("Zero Guesswork. Total Visibility.")
            ==================================================================== */}
-      <section id="dashboard" className="py-28 sm:py-36 px-6 bg-obsidian border-b border-white/10">
-        <div className="max-w-6xl mx-auto">
-          
-          <div className="text-left mb-12 max-w-2xl">
-            <span className="eyebrow-accent">Jeweler Back-Office Portal</span>
-            <h2 className="display text-4xl sm:text-5xl mt-3 mb-4">
+      <section id="dashboard" className="js-dashboard-section">
+        <div className="js-container">
+          <div style={{ textAlign: "left", marginBottom: "40px", maxWidth: "600px" }}>
+            <span className="js-eyebrow">Jeweler Back-Office Portal</span>
+            <h2 className="js-display" style={{ fontSize: "44px", margin: "10px 0 14px" }}>
               Zero guesswork.<br />
-              <em className="accent-italic">Total pipeline visibility.</em>
+              <em className="js-accent-italic">Total pipeline visibility.</em>
             </h2>
-            <p className="text-smoke text-base sm:text-lg">
-              Every lead, custom design, metal spot rate, and deposit tracked in real time. One unified dashboard for your sales staff and bench jewelers.
+            <p style={{ color: "#94a3b8", fontSize: "16px" }}>
+              Every lead, custom design, metal spot rate, and deposit tracked in real time.
             </p>
           </div>
 
-          {/* Dashboard Glass Mockup */}
-          <div className="glass-panel-dark rounded-3xl p-6 sm:p-8 border border-white/15 shadow-2xl relative overflow-hidden">
-            <div className="accent-line" />
+          <div className="js-glass-card" style={{ padding: "32px" }}>
+            <div className="js-accent-line" />
 
-            {/* Top Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-left">
-              
-              <div className="p-5 rounded-2xl bg-black/40 border border-white/10">
-                <div className="flex justify-between items-start mb-3">
-                  <span className="text-[11px] font-mono uppercase text-smoke font-bold">Designs Generated</span>
-                  <span className="text-xs text-emerald-400 font-mono font-bold">+24%</span>
+            <div className="js-kpi-grid">
+              <div className="js-kpi-card">
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <span className="js-eyebrow" style={{ color: "#94a3b8" }}>Designs Generated</span>
+                  <span style={{ color: "#34d399", fontWeight: "bold", fontSize: "12px" }}>+24%</span>
                 </div>
-                <div className="font-display-luxury text-3xl sm:text-4xl font-bold text-ice">245</div>
-                <span className="text-[11px] text-smoke-2 mt-1 block">This month across all devices</span>
+                <div className="js-display" style={{ fontSize: "36px" }}>245</div>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>This month across all devices</span>
               </div>
 
-              <div className="p-5 rounded-2xl bg-black/40 border border-white/10">
-                <div className="flex justify-between items-start mb-3">
-                  <span className="text-[11px] font-mono uppercase text-smoke font-bold">Qualified Leads</span>
-                  <span className="text-xs text-emerald-400 font-mono font-bold">+18%</span>
+              <div className="js-kpi-card">
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <span className="js-eyebrow" style={{ color: "#94a3b8" }}>Qualified Leads</span>
+                  <span style={{ color: "#34d399", fontWeight: "bold", fontSize: "12px" }}>+18%</span>
                 </div>
-                <div className="font-display-luxury text-3xl sm:text-4xl font-bold text-cyan-300">84</div>
-                <span className="text-[11px] text-smoke-2 mt-1 block">With customer inspiration photos</span>
+                <div className="js-display" style={{ fontSize: "36px", color: "#38bdf8" }}>84</div>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>With customer inspiration photos</span>
               </div>
 
-              <div className="p-5 rounded-2xl bg-black/40 border border-white/10">
-                <div className="flex justify-between items-start mb-3">
-                  <span className="text-[11px] font-mono uppercase text-smoke font-bold">Deposits Secured</span>
-                  <span className="text-xs text-emerald-400 font-mono font-bold">+31%</span>
+              <div className="js-kpi-card">
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <span className="js-eyebrow" style={{ color: "#94a3b8" }}>Deposits Secured</span>
+                  <span style={{ color: "#34d399", fontWeight: "bold", fontSize: "12px" }}>+31%</span>
                 </div>
-                <div className="font-display-luxury text-3xl sm:text-4xl font-bold text-purple-300">$34,800</div>
-                <span className="text-[11px] text-smoke-2 mt-1 block">Collected directly before CAD</span>
+                <div className="js-display" style={{ fontSize: "36px", color: "#f5d061" }}>$34,800</div>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>Collected directly before CAD</span>
               </div>
-
             </div>
 
-            {/* Recent Live Activity Stream */}
-            <div className="text-left">
-              <div className="flex items-center justify-between mb-4">
-                <span className="font-mono text-xs uppercase tracking-widest text-smoke font-bold">
-                  Recent Quotation Activity
-                </span>
-                <span className="text-xs text-purple-400 font-medium">Real-Time Sync</span>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px" }}>
+                <span className="js-eyebrow">Recent Quotation Stream</span>
+                <span style={{ fontSize: "12px", color: "#38bdf8" }}>● Real-Time Sync</span>
               </div>
 
-              <div className="space-y-2.5">
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {[
-                  {
-                    client: "Sarah M.",
-                    item: "1.8ct Pear Halo Engagement Ring",
-                    amount: "$4,500",
-                    status: "Deposit Secured",
-                    color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
-                  },
-                  {
-                    client: "Marcus T.",
-                    item: "Platinum 3-Stone Emerald Diamond Band",
-                    amount: "$8,450",
-                    status: "Quote Sent",
-                    color: "text-cyan-300 bg-cyan-500/10 border-cyan-500/30"
-                  },
-                  {
-                    client: "Jenna L.",
-                    item: "14k Gold Custom Monogram Iced Pendant",
-                    amount: "$3,200",
-                    status: "In Production",
-                    color: "text-purple-300 bg-purple-500/10 border-purple-500/30"
-                  }
-                ].map((row, i) => (
+                  { client: "Sarah M.", item: "1.8ct Pear Halo Engagement Ring", amount: "$4,500", status: "Deposit Secured", color: "#34d399" },
+                  { client: "Marcus T.", item: "Platinum 3-Stone Emerald Diamond Band", amount: "$8,450", status: "Quote Sent", color: "#38bdf8" },
+                  { client: "Jenna L.", item: "14k Gold Custom Monogram Iced Pendant", amount: "$3,200", status: "In Production", color: "#f5d061" }
+                ].map((row, idx) => (
                   <div
-                    key={i}
-                    className="p-4 rounded-xl bg-black/30 border border-white/10 flex items-center justify-between gap-4 flex-wrap"
+                    key={idx}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "14px 18px",
+                      borderRadius: "12px",
+                      background: "rgba(4, 7, 17, 0.5)",
+                      border: "1px solid rgba(56, 189, 248, 0.12)"
+                    }}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-purple-500/20 text-purple-300 font-bold text-xs flex items-center justify-center">
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "rgba(56, 189, 248, 0.2)", color: "#38bdf8", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "12px" }}>
                         {row.client.split(" ").map((n) => n[0]).join("")}
                       </div>
                       <div>
-                        <strong className="text-sm text-ice block">{row.client}</strong>
-                        <span className="text-xs text-smoke">{row.item}</span>
+                        <strong style={{ fontSize: "14px", color: "#f8fafc", display: "block" }}>{row.client}</strong>
+                        <span style={{ fontSize: "12px", color: "#94a3b8" }}>{row.item}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                      <span className="font-display-luxury text-base font-bold text-ice">{row.amount}</span>
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold border ${row.color}`}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                      <span className="js-display" style={{ fontSize: "17px", color: "#f8fafc" }}>{row.amount}</span>
+                      <span style={{ fontSize: "10px", padding: "3px 8px", borderRadius: "9999px", border: `1px solid ${row.color}`, color: row.color, fontWeight: "bold", fontFamily: "var(--font-mono-loaded, monospace)" }}>
                         {row.status}
                       </span>
                     </div>
@@ -1407,231 +1201,210 @@ export function InteractiveLandingPage() {
       </section>
 
       {/* ====================================================================
-           9. SHOWROOM KIOSK MODE (Ultra In-Store iPad WOW Feature)
+           9. SHOWROOM KIOSK MODE (In-Store iPad Flagship)
            ==================================================================== */}
-      <section id="showroom" className="py-28 sm:py-36 px-6 bg-[#06070A] border-b border-white/10 relative overflow-hidden">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-14 items-center">
-          
-          <div className="text-left">
-            <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-[11px] uppercase font-bold tracking-widest inline-block mb-4">
-              ★ Enterprise Flagship Studio
-            </span>
-            <h2 className="display text-4xl sm:text-5xl font-bold mb-6 leading-tight">
-              Turn your showroom floor into a <em className="accent-italic-gold">self-service quote studio</em>.
-            </h2>
-            <p className="text-smoke text-base sm:text-lg leading-relaxed mb-8">
-              Place an iPad or touchscreen kiosk in your store. Walk-in shoppers upload inspiration images, adjust diamond specs, and receive an instant private quote code (<strong className="text-ice">QT-4821</strong>).
-              <br /><br />
-              Your sales reps pull up the exact specifications in the jeweler portal, confirm metal weight, and dispatch to manufacturing instantly.
-            </p>
-            <button onClick={openKioskModal} className="btn-aurora text-sm px-8 py-3.5">
-              Launch Showroom Kiosk Simulation →
-            </button>
-          </div>
+      <section id="showroom" className="js-showroom-section">
+        <div className="js-container">
+          <div className="js-showroom-grid">
+            
+            <div style={{ textAlign: "left" }}>
+              <span className="js-eyebrow" style={{ color: "#f5d061", display: "block", marginBottom: "12px" }}>
+                ★ Enterprise Flagship Feature
+              </span>
+              <h2 className="js-display" style={{ fontSize: "44px", margin: "0 0 20px", lineHeight: "1.1" }}>
+                Turn your showroom floor into a <em className="js-accent-gold">self-service quote studio</em>.
+              </h2>
+              <p style={{ color: "#94a3b8", fontSize: "16px", lineHeight: "1.7", marginBottom: "32px" }}>
+                Place an iPad or touchscreen kiosk on your showroom counter. Walk-in shoppers upload inspiration images, adjust diamond specs, and receive an instant private quote code (<strong style={{ color: "#f8fafc" }}>QT-4821</strong>).
+                <br /><br />
+                Your sales reps pull up the exact specifications in the jeweler portal, confirm metal weight, and dispatch to manufacturing instantly.
+              </p>
+              <button onClick={openKioskModal} className="js-btn-aurora">
+                Launch Showroom Kiosk Simulation →
+              </button>
+            </div>
 
-          {/* Showroom Kiosk Preview Card */}
-          <div className="w-full max-w-md mx-auto">
-            <div className="glass-panel-dark rounded-3xl p-6 border border-amber-500/30 shadow-2xl relative text-center">
-              <p className="font-display-luxury text-2xl font-bold text-amber-300 mb-1">Crown Jewellers</p>
-              <p className="text-xs font-mono uppercase text-smoke tracking-widest mb-6">In-Store Interactive Kiosk</p>
-              
-              <div className="p-6 rounded-2xl bg-black/60 border border-white/10 mb-4">
-                <div className="w-20 h-20 mx-auto mb-3 rounded-xl overflow-hidden bg-neutral-900">
-                  <img src="/images/catalog/oval_solitaire.jpg" alt="Showroom ring" className="w-full h-full object-cover" />
+            <div className="js-glass-card" style={{ padding: "32px", textAlign: "center", border: "1px solid rgba(245, 208, 97, 0.35)" }}>
+              <strong className="js-display" style={{ fontSize: "22px", color: "#f5d061", display: "block", marginBottom: "4px" }}>
+                Crown Jewellers
+              </strong>
+              <span style={{ fontSize: "11px", color: "#94a3b8", fontFamily: "var(--font-mono-loaded, monospace)", textTransform: "uppercase", letterSpacing: "0.1em", display: "block", marginBottom: "20px" }}>
+                In-Store Interactive Kiosk
+              </span>
+
+              <div style={{ padding: "20px", borderRadius: "16px", background: "#040711", border: "1px solid rgba(56, 189, 248, 0.2)", marginBottom: "16px" }}>
+                <div style={{ width: "80px", height: "80px", margin: "0 auto 12px", borderRadius: "12px", overflow: "hidden", background: "#080e22" }}>
+                  <img src="/images/catalog/oval_solitaire.jpg" alt="Showroom piece" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
-                <span className="text-xs text-smoke block">Private Quote Reference</span>
-                <span className="font-mono text-2xl font-bold text-amber-400 tracking-widest block my-1">QT-4821</span>
-                <span className="font-display-luxury text-3xl font-bold text-ice">$2,380</span>
+                <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>Private Quote Reference</span>
+                <span style={{ fontFamily: "var(--font-mono-loaded, monospace)", fontSize: "26px", fontWeight: "bold", color: "#f5d061", letterSpacing: "0.1em", display: "block", margin: "4px 0" }}>
+                  QT-4821
+                </span>
+                <span className="js-display" style={{ fontSize: "30px", color: "#f8fafc" }}>$2,380</span>
               </div>
 
-              <span className="text-xs text-smoke-2">
-                Customer takes photo of code · Sales rep looks up in dashboard
+              <span style={{ fontSize: "12px", color: "#64748b" }}>
+                Customer presents quote reference · Sales staff pulls CAD in 5 seconds
               </span>
             </div>
-          </div>
 
+          </div>
         </div>
       </section>
 
       {/* ====================================================================
            10. PRICING SECTION (Built for Scale)
            ==================================================================== */}
-      <section id="pricing" className="py-28 sm:py-36 px-6 bg-obsidian border-b border-white/10 relative overflow-hidden">
-        <div className="max-w-6xl mx-auto text-center">
-          
-          <div className="mb-12">
-            <span className="eyebrow-accent">Transparent Pricing</span>
-            <h2 className="display text-4xl sm:text-6xl mt-3 mb-4">
-              Simple pricing. <em className="accent-italic">Built for Scale.</em>
+      <section id="pricing" className="js-pricing-section">
+        <div className="js-container">
+          <div style={{ marginBottom: "40px" }}>
+            <span className="js-eyebrow">Transparent Pricing</span>
+            <h2 className="js-display" style={{ fontSize: "44px", margin: "10px 0 14px" }}>
+              Simple pricing. <em className="js-accent-italic">Built for Scale.</em>
             </h2>
-            <p className="text-smoke max-w-lg mx-auto text-base sm:text-lg">
+            <p style={{ color: "#94a3b8", fontSize: "17px", maxWidth: "520px", margin: "0 auto" }}>
               14-day free trial on all plans. No setup fee. Cancel anytime.
             </p>
           </div>
 
-          {/* Monthly / Annual Toggle Switch */}
-          <div className="flex justify-center mb-12">
-            <div className="inline-flex items-center p-1.5 rounded-full bg-neutral-900 border border-white/15 shadow-inner">
-              <button
-                type="button"
-                onClick={() => setIsAnnual(false)}
-                className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${
-                  !isAnnual ? "bg-gradient-to-r from-cyan-400 to-purple-400 text-neutral-950 shadow-md" : "text-smoke hover:text-ice"
-                }`}
-              >
-                Monthly Billing
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsAnnual(true)}
-                className={`px-6 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  isAnnual ? "bg-gradient-to-r from-cyan-400 to-purple-400 text-neutral-950 shadow-md" : "text-smoke hover:text-ice"
-                }`}
-              >
-                Annual Billing
-                <span className="px-1.5 py-0.5 rounded-full bg-emerald-400 text-neutral-950 text-[10px] font-black">
-                  Save 20%
-                </span>
-              </button>
-            </div>
+          {/* Toggle Monthly / Annual */}
+          <div className="js-pricing-toggle">
+            <button
+              type="button"
+              onClick={() => setIsAnnual(false)}
+              className={`js-toggle-btn ${!isAnnual ? "is-active" : ""}`}
+            >
+              Monthly Billing
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAnnual(true)}
+              className={`js-toggle-btn ${isAnnual ? "is-active" : ""}`}
+            >
+              Annual Billing (Save 20%)
+            </button>
           </div>
 
-          {/* 3 Luxury Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-6 text-left items-stretch">
+          <div className="js-pricing-grid">
             
-            {/* Starter Plan */}
-            <div className="glass-panel-dark rounded-3xl p-7 flex flex-col justify-between border border-white/10 hover:border-white/25 transition-all">
+            {/* Starter */}
+            <div className="js-glass-card js-price-card">
               <div>
-                <div className="mb-6">
-                  <h3 className="font-display-luxury text-2xl font-bold text-ice mb-1">Starter</h3>
-                  <p className="text-xs text-smoke mb-4">For solo jewelers &amp; boutique ateliers</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-display-luxury text-4xl sm:text-5xl font-bold text-ice">
-                      ${isAnnual ? 79 : 99}
-                    </span>
-                    <span className="text-xs text-smoke">/ month</span>
-                  </div>
+                <h3 className="js-display" style={{ fontSize: "24px", margin: "0 0 6px" }}>Starter</h3>
+                <p style={{ fontSize: "12px", color: "#94a3b8", margin: "0 0 20px" }}>For solo jewelers &amp; boutique studios</p>
+                <div className="js-display" style={{ fontSize: "44px", marginBottom: "20px" }}>
+                  ${isAnnual ? 79 : 99}
+                  <span style={{ fontSize: "14px", color: "#94a3b8", fontWeight: "normal" }}>/ mo</span>
                 </div>
 
-                <ul className="space-y-3 text-xs text-smoke pt-4 border-t border-white/10">
-                  <li className="flex items-center gap-2 text-ice">✓ <strong>300 quotes / month</strong></li>
-                  <li className="flex items-center gap-2">✓ Full 3-pass AI + manual override</li>
-                  <li className="flex items-center gap-2">✓ Branded PDFs (Logo + brand name)</li>
-                  <li className="flex items-center gap-2">✓ Complete quote history &amp; CRM</li>
-                  <li className="flex items-center gap-2">✓ Up to 3 staff seats</li>
-                  <li className="flex items-center gap-2">✓ Live precious metal spot rates</li>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#94a3b8", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "18px" }}>
+                  <li style={{ color: "#f8fafc" }}>✓ <strong>300 quotes / month</strong></li>
+                  <li>✓ Full 3-pass AI + manual override</li>
+                  <li>✓ Branded PDFs (Logo + brand name)</li>
+                  <li>✓ Complete quote history &amp; CRM</li>
+                  <li>✓ Up to 3 staff seats</li>
+                  <li>✓ Live precious metal spot rates</li>
                 </ul>
 
                 {expandedCards["starter"] && (
-                  <ul className="space-y-3 text-xs text-smoke pt-3 mt-3 border-t border-white/10 animate-rise">
-                    <li>✓ Standard email &amp; chat support</li>
-                    <li>✓ Alloy weight density conversions</li>
+                  <ul style={{ listStyle: "none", padding: 0, marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#94a3b8" }}>
+                    <li>✓ Email &amp; chat support</li>
+                    <li>✓ Alloy density weight conversions</li>
                   </ul>
                 )}
+
                 <button
                   type="button"
                   onClick={() => toggleExpand("starter")}
-                  className="text-[11px] text-aurora-violet mt-3 font-semibold hover:underline block"
+                  style={{ background: "transparent", border: "none", color: "#38bdf8", fontSize: "12px", cursor: "pointer", padding: "10px 0 0", textAlign: "left" }}
                 >
                   {expandedCards["starter"] ? "Hide features ↑" : "View all features ↓"}
                 </button>
               </div>
 
-              <Link href="/signup?plan=starter" className="btn-ghost w-full py-3 text-xs font-bold text-center justify-center mt-8">
-                Start 14-Day Free Trial
+              <Link href="/signup?plan=starter" className="js-btn-ghost" style={{ width: "100%", marginTop: "24px" }}>
+                Start Free Trial
               </Link>
             </div>
 
-            {/* Professional Plan (Most Popular with Aurora Glow) */}
-            <div className="glass-panel-dark rounded-3xl p-7 flex flex-col justify-between border-2 border-purple-400 relative shadow-2xl shadow-purple-500/20 scale-[1.02]">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 text-neutral-950 font-bold font-mono text-[10px] uppercase tracking-wider whitespace-nowrap shadow-md">
-                ★ Most Popular · 14-Day Trial
-              </div>
+            {/* Professional */}
+            <div className="js-glass-card js-price-card is-popular">
+              <span className="js-price-popular-badge">★ Most Popular · 14-Day Trial</span>
 
               <div>
-                <div className="mb-6">
-                  <h3 className="font-display-luxury text-2xl font-bold text-ice mb-1">Professional</h3>
-                  <p className="text-xs text-smoke mb-4">For growing jewelry stores quoting daily</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-display-luxury text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-purple-300 to-purple-400">
-                      ${isAnnual ? 159 : 199}
-                    </span>
-                    <span className="text-xs text-smoke">/ month</span>
-                  </div>
+                <h3 className="js-display" style={{ fontSize: "24px", margin: "0 0 6px" }}>Professional</h3>
+                <p style={{ fontSize: "12px", color: "#94a3b8", margin: "0 0 20px" }}>For growing shops quoting every day</p>
+                <div className="js-display js-aurora-text" style={{ fontSize: "44px", marginBottom: "20px" }}>
+                  ${isAnnual ? 159 : 199}
+                  <span style={{ fontSize: "14px", color: "#94a3b8", fontWeight: "normal" }}>/ mo</span>
                 </div>
 
-                <ul className="space-y-3 text-xs text-smoke pt-4 border-t border-white/10">
-                  <li className="flex items-center gap-2 text-ice">✓ <strong>1,200 quotes / month</strong></li>
-                  <li className="flex items-center gap-2 text-ice">✓ Everything in Starter</li>
-                  <li className="flex items-center gap-2">✓ Unlimited staff seats + role access</li>
-                  <li className="flex items-center gap-2">✓ Shareable branded quote links</li>
-                  <li className="flex items-center gap-2">✓ Custom pricing markups &amp; formulas</li>
-                  <li className="flex items-center gap-2">✓ Embed on unlimited website domains</li>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#94a3b8", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "18px" }}>
+                  <li style={{ color: "#f8fafc" }}>✓ <strong>1,200 quotes / month</strong></li>
+                  <li style={{ color: "#f8fafc" }}>✓ Everything in Starter</li>
+                  <li>✓ Unlimited staff seats + role access</li>
+                  <li>✓ Shareable branded quote links</li>
+                  <li>✓ Custom pricing markups &amp; formulas</li>
+                  <li>✓ Embed on unlimited website domains</li>
                 </ul>
 
                 {expandedCards["pro"] && (
-                  <ul className="space-y-3 text-xs text-smoke pt-3 mt-3 border-t border-white/10 animate-rise">
+                  <ul style={{ listStyle: "none", padding: 0, marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#94a3b8" }}>
                     <li>✓ Priority 24/7 support response</li>
                     <li>✓ Multi-photo merge analysis</li>
-                    <li>✓ Direct Zapier &amp; webhook integrations</li>
                   </ul>
                 )}
+
                 <button
                   type="button"
                   onClick={() => toggleExpand("pro")}
-                  className="text-[11px] text-aurora-violet mt-3 font-semibold hover:underline block"
+                  style={{ background: "transparent", border: "none", color: "#38bdf8", fontSize: "12px", cursor: "pointer", padding: "10px 0 0", textAlign: "left" }}
                 >
                   {expandedCards["pro"] ? "Hide features ↑" : "View all features ↓"}
                 </button>
               </div>
 
-              <Link href="/signup?plan=professional" className="btn-aurora w-full py-3.5 text-xs font-bold text-center justify-center mt-8">
-                Start 14-Day Free Trial
+              <Link href="/signup?plan=professional" className="js-btn-aurora" style={{ width: "100%", marginTop: "24px" }}>
+                Start Free Trial
               </Link>
             </div>
 
-            {/* Enterprise Plan (Showroom Kiosk + 3D Renders) */}
-            <div className="glass-panel-dark rounded-3xl p-7 flex flex-col justify-between border border-amber-500/40 hover:border-amber-400 transition-all">
+            {/* Enterprise */}
+            <div className="js-glass-card js-price-card" style={{ border: "1px solid rgba(245, 208, 97, 0.45)" }}>
               <div>
-                <div className="mb-6">
-                  <h3 className="font-display-luxury text-2xl font-bold text-amber-300 mb-1">Enterprise</h3>
-                  <p className="text-xs text-smoke mb-4">Showrooms, tablet kiosks &amp; high volume</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-display-luxury text-4xl sm:text-5xl font-bold text-amber-300">
-                      ${isAnnual ? 239 : 299}
-                    </span>
-                    <span className="text-xs text-smoke">/ month</span>
-                  </div>
+                <h3 className="js-display" style={{ fontSize: "24px", margin: "0 0 6px", color: "#f5d061" }}>Enterprise</h3>
+                <p style={{ fontSize: "12px", color: "#94a3b8", margin: "0 0 20px" }}>Showrooms, kiosks &amp; high volume</p>
+                <div className="js-display" style={{ fontSize: "44px", marginBottom: "20px", color: "#f5d061" }}>
+                  ${isAnnual ? 239 : 299}
+                  <span style={{ fontSize: "14px", color: "#94a3b8", fontWeight: "normal" }}>/ mo</span>
                 </div>
 
-                <ul className="space-y-3 text-xs text-smoke pt-4 border-t border-white/10">
-                  <li className="flex items-center gap-2 text-ice">✓ <strong>2,500 quotes / month</strong></li>
-                  <li className="flex items-center gap-2 text-ice">✓ Everything in Professional</li>
-                  <li className="flex items-center gap-2 text-amber-300 font-bold">★ Photorealistic 3D Concept Renders</li>
-                  <li className="flex items-center gap-2 text-amber-300 font-bold">★ In-Store Tablet (Kiosk Mode)</li>
-                  <li className="flex items-center gap-2">✓ Full Auto-Push to Custom King / CAD</li>
-                  <li className="flex items-center gap-2">✓ Dedicated account manager &amp; VIP queue</li>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#94a3b8", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "18px" }}>
+                  <li style={{ color: "#f8fafc" }}>✓ <strong>2,500 quotes / month</strong></li>
+                  <li style={{ color: "#f8fafc" }}>✓ Everything in Professional</li>
+                  <li style={{ color: "#f5d061", fontWeight: "bold" }}>★ Photorealistic 3D Concept Renders</li>
+                  <li style={{ color: "#f5d061", fontWeight: "bold" }}>★ In-Store Tablet (Kiosk Mode)</li>
+                  <li>✓ Full Auto-Push to Custom King / CAD</li>
+                  <li>✓ Dedicated account manager &amp; VIP queue</li>
                 </ul>
 
                 {expandedCards["ent"] && (
-                  <ul className="space-y-3 text-xs text-smoke pt-3 mt-3 border-t border-white/10 animate-rise">
-                    <li>✓ Custom showroom branding &amp; logo lockup</li>
-                    <li>✓ SLA &amp; 1-on-1 staff onboarding session</li>
+                  <ul style={{ listStyle: "none", padding: 0, marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#94a3b8" }}>
+                    <li>✓ Custom showroom branding lockup</li>
+                    <li>✓ 1-on-1 staff onboarding session</li>
                   </ul>
                 )}
+
                 <button
                   type="button"
                   onClick={() => toggleExpand("ent")}
-                  className="text-[11px] text-amber-300 mt-3 font-semibold hover:underline block"
+                  style={{ background: "transparent", border: "none", color: "#f5d061", fontSize: "12px", cursor: "pointer", padding: "10px 0 0", textAlign: "left" }}
                 >
                   {expandedCards["ent"] ? "Hide features ↑" : "View all features ↓"}
                 </button>
               </div>
 
-              <Link
-                href="/signup?plan=enterprise"
-                className="btn-ghost w-full py-3 text-xs font-bold text-center justify-center mt-8 border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
-              >
+              <Link href="/signup?plan=enterprise" className="js-btn-ghost" style={{ width: "100%", marginTop: "24px", borderColor: "rgba(245, 208, 97, 0.4)", color: "#f5d061" }}>
                 Start Enterprise Trial
               </Link>
             </div>
@@ -1641,20 +1414,18 @@ export function InteractiveLandingPage() {
       </section>
 
       {/* ====================================================================
-           11. FREQUENTLY ASKED QUESTIONS (Accordion)
+           11. FAQ ACCORDION
            ==================================================================== */}
-      <section id="faq" className="py-28 sm:py-36 px-6 bg-obsidian border-b border-white/10">
-        <div className="max-w-3xl mx-auto text-left">
-          
-          <div className="mb-14 text-center">
-            <span className="eyebrow-accent">FAQ</span>
-            <h2 className="display text-4xl sm:text-5xl mt-3 mb-4">
-              Got a <em className="accent-italic">question?</em>
+      <section id="faq" className="js-faq-section">
+        <div className="js-container-xs">
+          <div style={{ textAlign: "center", marginBottom: "40px" }}>
+            <span className="js-eyebrow">FAQ</span>
+            <h2 className="js-display" style={{ fontSize: "42px", margin: "10px 0" }}>
+              Got a <em className="js-accent-italic">question?</em>
             </h2>
-            <p className="text-smoke text-sm sm:text-base">Everything you need to know about Azzure AI Quote.</p>
           </div>
 
-          <div className="space-y-3">
+          <div>
             {[
               {
                 q: "What is Azzure AI Quote?",
@@ -1683,60 +1454,40 @@ export function InteractiveLandingPage() {
             ].map((item, idx) => {
               const isOpen = openFaq === idx;
               return (
-                <div
-                  key={idx}
-                  className="rounded-2xl glass-panel-dark border border-white/10 transition-all overflow-hidden"
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleFaq(idx)}
-                    className="w-full px-6 py-5 flex items-center justify-between text-left gap-4 hover:text-white"
-                  >
-                    <span className="text-sm sm:text-base font-semibold text-ice">{item.q}</span>
-                    <span className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center shrink-0 text-sm text-purple-300">
-                      {isOpen ? "−" : "+"}
-                    </span>
+                <div key={idx} className="js-faq-item">
+                  <button type="button" onClick={() => toggleFaq(idx)} className="js-faq-question">
+                    <span>{item.q}</span>
+                    <span style={{ color: "#38bdf8", fontWeight: "bold" }}>{isOpen ? "−" : "+"}</span>
                   </button>
-
-                  {isOpen && (
-                    <div className="px-6 pb-5 pt-1 text-xs sm:text-sm text-smoke leading-relaxed border-t border-white/10 animate-rise">
-                      {item.a}
-                    </div>
-                  )}
+                  {isOpen && <div className="js-faq-answer">{item.a}</div>}
                 </div>
               );
             })}
           </div>
-
         </div>
       </section>
 
       {/* ====================================================================
            12. FINAL AURORA CALL TO ACTION
            ==================================================================== */}
-      <section className="py-32 sm:py-44 px-6 bg-obsidian relative overflow-hidden text-center">
-        {/* Background Beams */}
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-[40%] left-[10%] w-[80%] h-[120%] bg-gradient-to-b from-purple-600/20 via-cyan-500/15 to-transparent blur-[120px]" />
-        </div>
-
-        <div className="relative z-10 max-w-3xl mx-auto">
-          <span className="eyebrow-accent">Get Started Today</span>
+      <section className="js-cta-section">
+        <div className="js-container-xs">
+          <span className="js-eyebrow">Get Started Today</span>
           
-          <h2 className="display text-4xl sm:text-6xl font-bold mt-4 mb-6 leading-tight">
+          <h2 className="js-display" style={{ fontSize: "52px", lineHeight: "1.1", margin: "14px 0 20px" }}>
             Your next customer is already<br />
-            looking for this <span className="aurora-text">ring</span>.
+            looking for this <span className="js-aurora-text">ring</span>.
           </h2>
 
-          <p className="text-smoke text-base sm:text-lg mb-8 max-w-lg mx-auto">
+          <p style={{ color: "#94a3b8", fontSize: "18px", lineHeight: "1.6", marginBottom: "32px" }}>
             Stop losing custom orders to slow sketches. Deliver instant 3D quotes that turn casual browsers into paying clients.
           </p>
 
-          <Link href="/signup" className="btn-aurora text-base px-10 py-4 shadow-xl">
+          <Link href="/signup" className="js-btn-aurora" style={{ fontSize: "16px", padding: "16px 40px" }}>
             Start 14-Day Free Trial →
           </Link>
 
-          <div className="flex items-center justify-center gap-6 mt-8 text-xs font-medium text-smoke-2">
+          <div style={{ display: "flex", justifyContent: "center", gap: "20px", marginTop: "32px", fontSize: "12px", color: "#64748b" }}>
             <span>🔒 Isolated Tenant Database</span>
             <span>•</span>
             <span>⭐ Cancel Anytime</span>
@@ -1749,21 +1500,21 @@ export function InteractiveLandingPage() {
       {/* ====================================================================
            13. LUXURY FOOTER
            ==================================================================== */}
-      <footer className="border-t border-white/10 py-12 px-6 bg-[#050608] text-xs text-smoke-2">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center text-xs text-neutral-950 font-bold">
+      <footer className="js-footer">
+        <div className="js-container" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ width: "24px", height: "24px", borderRadius: "6px", background: "linear-gradient(135deg, #38bdf8, #2563eb)", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "12px" }}>
               A
             </div>
-            <span className="font-display-luxury text-sm font-bold text-ice">Azzure AI Quote</span>
+            <strong className="js-display" style={{ fontSize: "16px", color: "#f8fafc" }}>Azzure AI Quote</strong>
             <span>· Built by azzuresolutions.com</span>
           </div>
 
-          <div className="flex items-center gap-6">
-            <a href="#features" className="hover:text-ice transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-ice transition-colors">Pricing</a>
-            <a href="#faq" className="hover:text-ice transition-colors">FAQ</a>
-            <Link href="/signin" className="text-aurora-violet font-semibold hover:underline">
+          <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
+            <a href="#features" style={{ color: "#94a3b8", textDecoration: "none" }}>Features</a>
+            <a href="#pricing" style={{ color: "#94a3b8", textDecoration: "none" }}>Pricing</a>
+            <a href="#faq" style={{ color: "#94a3b8", textDecoration: "none" }}>FAQ</a>
+            <Link href="/signin" style={{ color: "#38bdf8", textDecoration: "none", fontWeight: "bold" }}>
               Jeweler Log in →
             </Link>
           </div>
@@ -1775,60 +1526,72 @@ export function InteractiveLandingPage() {
            ==================================================================== */}
       {kioskOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            background: "rgba(2, 4, 10, 0.88)",
+            backdropFilter: "blur(14px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px"
+          }}
           role="dialog"
           aria-modal="true"
         >
-          <div className="glass-panel-dark rounded-3xl p-6 sm:p-8 max-w-lg w-full text-center relative border border-white/20 shadow-2xl">
+          <div className="js-glass-card" style={{ maxWidth: "520px", width: "100%", padding: "32px", textAlign: "center", position: "relative", border: "1px solid rgba(245, 208, 97, 0.4)" }}>
             <button
               onClick={() => setKioskOpen(false)}
-              className="absolute top-4 right-4 text-smoke hover:text-white p-2 text-xl"
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "16px",
+                background: "transparent",
+                border: "none",
+                color: "#94a3b8",
+                fontSize: "20px",
+                cursor: "pointer"
+              }}
             >
               ✕
             </button>
 
-            {/* Kiosk Slide 1 */}
             {kioskSlide === 1 && (
-              <div className="space-y-6 py-4">
-                <span className="font-display-luxury text-xl font-bold text-amber-300 block">Crown Jewellers</span>
-                <h3 className="display text-2xl text-ice">Design Your Dream Piece</h3>
-                <p className="text-xs text-smoke leading-relaxed max-w-sm mx-auto">
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <span className="js-display" style={{ fontSize: "22px", color: "#f5d061" }}>Crown Jewellers</span>
+                <h3 className="js-display" style={{ fontSize: "26px", margin: 0 }}>Design Your Dream Piece</h3>
+                <p style={{ fontSize: "13px", color: "#94a3b8", lineHeight: "1.6" }}>
                   Showroom floor touchscreen mode: customer taps to upload their inspiration photo and receive instant quote specs.
                 </p>
-                <button onClick={startKioskUpload} className="btn-aurora text-xs px-8 py-3">
+                <button onClick={startKioskUpload} className="js-btn-aurora" style={{ width: "100%" }}>
                   Start Kiosk Simulation →
                 </button>
               </div>
             )}
 
-            {/* Kiosk Slide 2 */}
             {kioskSlide === 2 && (
-              <div className="space-y-6 py-4">
-                <span className="font-display-luxury text-xl font-bold text-amber-300 block">Crown Jewellers</span>
-                <h3 className="text-lg font-bold text-ice">Customer Inspiration Upload</h3>
-                <div className="p-8 border-2 border-dashed border-purple-400/50 bg-purple-500/10 rounded-2xl">
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <span className="js-display" style={{ fontSize: "22px", color: "#f5d061" }}>Crown Jewellers</span>
+                <h3 style={{ fontSize: "18px", color: "#f8fafc", margin: 0 }}>Customer Inspiration Upload</h3>
+                <div style={{ padding: "32px", border: "2px dashed rgba(56, 189, 248, 0.4)", borderRadius: "16px", background: "rgba(56, 189, 248, 0.08)" }}>
                   {kioskUploadLoaded ? (
-                    <p className="text-xs text-emerald-400 font-bold">✓ client_ring_photo.jpg (Uploaded)</p>
+                    <span style={{ color: "#34d399", fontWeight: "bold", fontSize: "13px" }}>✓ client_ring_photo.jpg (Uploaded)</span>
                   ) : (
-                    <p className="text-xs text-smoke">Simulating customer photo tap...</p>
+                    <span style={{ color: "#94a3b8", fontSize: "13px" }}>Simulating customer photo tap...</span>
                   )}
                 </div>
-                <button
-                  onClick={runKioskAnalysis}
-                  disabled={!kioskUploadLoaded}
-                  className="btn-aurora text-xs px-8 py-3 disabled:opacity-50"
-                >
+                <button onClick={runKioskAnalysis} disabled={!kioskUploadLoaded} className="js-btn-aurora" style={{ width: "100%", opacity: kioskUploadLoaded ? 1 : 0.5 }}>
                   Analyze &amp; Generate Quote →
                 </button>
               </div>
             )}
 
-            {/* Kiosk Slide 3 */}
             {kioskSlide === 3 && (
-              <div className="space-y-6 py-4">
-                <span className="font-display-luxury text-xl font-bold text-amber-300 block">Crown Jewellers</span>
-                <h3 className="text-lg font-bold text-ice">Multi-Pass Geometry Analysis</h3>
-                <div className="p-4 bg-black/40 rounded-xl space-y-2 text-left font-mono text-xs text-smoke">
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <span className="js-display" style={{ fontSize: "22px", color: "#f5d061" }}>Crown Jewellers</span>
+                <h3 style={{ fontSize: "18px", color: "#f8fafc", margin: 0 }}>Multi-Pass Geometry Analysis</h3>
+                <div style={{ padding: "16px", background: "rgba(4, 7, 17, 0.7)", borderRadius: "12px", textAlign: "left", fontFamily: "var(--font-mono-loaded, monospace)", fontSize: "13px", color: "#94a3b8", display: "flex", flexDirection: "column", gap: "8px" }}>
                   <div>{kioskLine1}</div>
                   <div>{kioskLine2}</div>
                   <div>{kioskLine3}</div>
@@ -1836,56 +1599,54 @@ export function InteractiveLandingPage() {
               </div>
             )}
 
-            {/* Kiosk Slide 4 */}
             {kioskSlide === 4 && (
-              <div className="space-y-5 py-2">
-                <span className="font-display-luxury text-xl font-bold text-amber-300 block">Crown Jewellers</span>
-                <div className="p-4 bg-black/50 rounded-2xl border border-white/10 text-center">
-                  <span className="text-[10px] font-mono uppercase text-smoke">Quote Reference Code</span>
-                  <span className="font-mono text-3xl font-bold text-amber-400 tracking-widest block my-1">QT-4821</span>
-                  <span className="font-display-luxury text-3xl font-bold text-ice">$2,380</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <span className="js-display" style={{ fontSize: "22px", color: "#f5d061" }}>Crown Jewellers</span>
+                <div style={{ padding: "18px", background: "rgba(4, 7, 17, 0.7)", borderRadius: "16px", border: "1px solid rgba(245, 208, 97, 0.3)" }}>
+                  <span style={{ fontSize: "11px", color: "#94a3b8", display: "block" }}>Quote Reference Code</span>
+                  <span style={{ fontFamily: "var(--font-mono-loaded, monospace)", fontSize: "32px", fontWeight: "bold", color: "#f5d061", letterSpacing: "0.1em", display: "block", margin: "4px 0" }}>
+                    QT-4821
+                  </span>
+                  <span className="js-display" style={{ fontSize: "32px", color: "#f8fafc" }}>$2,380</span>
                 </div>
-                <p className="text-xs text-smoke">
-                  Customer tells this code to sales rep or takes a photo.
+                <p style={{ fontSize: "13px", color: "#94a3b8" }}>
+                  Customer presents this code at the showroom counter.
                 </p>
-                <button onClick={() => setKioskSlide(5)} className="btn-aurora text-xs px-8 py-3 w-full justify-center">
+                <button onClick={() => setKioskSlide(5)} className="js-btn-aurora" style={{ width: "100%" }}>
                   Open Jeweler Counter Lookup View →
                 </button>
               </div>
             )}
 
-            {/* Kiosk Slide 5 */}
             {kioskSlide === 5 && (
-              <div className="space-y-4 text-left py-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-mono text-xs text-purple-400 font-bold uppercase">Jeweler Sales Portal</span>
-                  <span className="text-xs text-emerald-400">● Live Connection</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", textAlign: "left" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span className="js-eyebrow">Jeweler Sales Portal</span>
+                  <span style={{ color: "#34d399", fontSize: "12px" }}>● Live Sync</span>
                 </div>
-                <div className="flex gap-2">
+                <div style={{ display: "flex", gap: "8px" }}>
                   <input
                     type="text"
                     value="QT-4821"
                     readOnly
-                    className="bg-black/50 border border-white/15 rounded-xl px-3 py-2 text-sm font-mono font-bold text-amber-400 flex-1 outline-none"
+                    style={{ flex: 1, padding: "10px 14px", background: "rgba(4, 7, 17, 0.7)", border: "1px solid rgba(245, 208, 97, 0.3)", borderRadius: "10px", color: "#f5d061", fontFamily: "var(--font-mono-loaded, monospace)", fontSize: "16px", fontWeight: "bold" }}
                   />
-                  <button
-                    onClick={() => setJewelerResultShow(true)}
-                    className="btn-aurora text-xs px-4 py-2 font-bold"
-                  >
+                  <button onClick={() => setJewelerResultShow(true)} className="js-btn-aurora" style={{ padding: "10px 18px", fontSize: "13px" }}>
                     Fetch Specs
                   </button>
                 </div>
 
                 {jewelerResultShow && (
-                  <div className="p-4 bg-black/60 rounded-xl border border-purple-500/30 text-xs space-y-1.5 animate-rise">
-                    <strong className="text-ice block">18k Yellow Gold · 1.5ct Oval VS1</strong>
-                    <p className="text-smoke">Instant margin calculated at +40% retail markup ($2,380 approved price).</p>
+                  <div style={{ padding: "16px", background: "rgba(56, 189, 248, 0.1)", border: "1px solid rgba(56, 189, 248, 0.3)", borderRadius: "12px", fontSize: "13px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <strong style={{ color: "#f8fafc" }}>18k Yellow Gold · 1.5ct Oval VS1</strong>
+                    <span style={{ color: "#94a3b8" }}>Instant margin calculated at +40% retail markup ($2,380 approved price).</span>
                     <button
                       onClick={() => {
-                        alert("Quote sent directly to CAD casting queue!");
+                        alert("Quote sent directly to CAD manufacturing queue!");
                         setKioskOpen(false);
                       }}
-                      className="btn-aurora w-full py-2 text-xs font-bold justify-center mt-2"
+                      className="js-btn-aurora"
+                      style={{ marginTop: "8px", width: "100%" }}
                     >
                       🚀 Send to CAD Manufacturing
                     </button>
@@ -1893,6 +1654,7 @@ export function InteractiveLandingPage() {
                 )}
               </div>
             )}
+
           </div>
         </div>
       )}

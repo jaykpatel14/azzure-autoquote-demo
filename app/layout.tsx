@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Inter, JetBrains_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/toast-provider";
 import "@/src/styles/design-tokens.css";
+import "@/src/styles/landing-luxury.css";
 import "./globals.css";
 
 const displayFont = Playfair_Display({
