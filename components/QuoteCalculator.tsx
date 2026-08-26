@@ -14,6 +14,7 @@ import {
 } from "@/src/services/pricing";
 import { getCenterStonePricePerCarat } from "@/src/services/diamond-pricing";
 import type { PricingTier } from "@prisma/client";
+import LiveCameraModal from "@/components/live-camera-modal";
 
 type QuoteMode = "normal" | "without-center" | "without-center-and-side";
 type FacetStatus = "pending" | "processing" | "done" | "error";
@@ -394,11 +395,17 @@ export default function QuoteCalculator({
   const [mobileUploadSessionId, setMobileUploadSessionId] = useState<string>("");
   const [mobileUploadQrDataUrl, setMobileUploadQrDataUrl] = useState<string | null>(null);
 
+  // Live Camera Viewfinder State
+  const [showLiveCamera, setShowLiveCamera] = useState(false);
+
   const { showToast } = useToast();
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
 
   const facetsRef = useRef<FacetDraft[]>([]);
   const showroomFileInputRef = useRef<HTMLInputElement | null>(null);
   const lastAnalysedDescriptionRef = useRef("");
+  const handleFilesRef = useRef<(files: File[]) => void>(() => {});
 
   async function openMobileUploadQr() {
     const sessionId = `jeweler_up_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -430,9 +437,9 @@ export default function QuoteCalculator({
               return new File([blob], f.name || `phone_photo_${idx + 1}.jpg`, { type: f.type || "image/jpeg" });
             })
           );
-          handleFiles(convertedFiles);
+          handleFilesRef.current(convertedFiles);
           setShowMobileUploadModal(false);
-          showToast({ message: `Received ${convertedFiles.length} photo(s) from phone!`, variant: "success" });
+          showToastRef.current({ message: `Received ${convertedFiles.length} photo(s) from phone!`, variant: "success" });
         }
       } catch {
         // ignore polling errors
@@ -613,8 +620,6 @@ export default function QuoteCalculator({
     manualSettingType,
     manualMetalWeight,
     manualCenterCarats,
-    manualSideCarats,
-    manualSideCount,
     manualRoundSideCarats,
     manualRoundSideCount,
     manualFancySideCarats,
@@ -752,6 +757,7 @@ export default function QuoteCalculator({
       autoDismiss: true
     });
   }
+  handleFilesRef.current = handleFiles;
 
   async function handleShowroomPhotoSelect(fileList: FileList | File[] | null) {
     if (!fileList || !fileList.length) return;
@@ -1888,13 +1894,18 @@ export default function QuoteCalculator({
                 <span className="muted small">JPG, PNG, or WEBP · 1 image max (up to 10 MB)</span>
               </div>
               <div className="dropzoneActions" style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
-                <label className="button primary button--sm">
-                  <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} />
+                <button
+                  type="button"
+                  className="button primary button--sm"
+                  onClick={() => setShowLiveCamera(true)}
+                  disabled={!canEdit}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                >
                   <span className="material-symbols-outlined" style={{ fontSize: 16 }}>photo_camera</span>
                   Take photo
-                </label>
-                <label className="button secondary button--sm">
-                  <input type="file" accept="image/jpeg,image/png,image/webp" disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} />
+                </button>
+                <label className="button secondary button--sm" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <input type="file" accept="image/*" disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} style={{ display: "none" }} />
                   <span className="material-symbols-outlined" style={{ fontSize: 16 }}>folder_open</span>
                   Choose file
                 </label>
@@ -2476,6 +2487,13 @@ export default function QuoteCalculator({
           </div>
         </div>
       ) : null}
+
+      <LiveCameraModal
+        isOpen={showLiveCamera}
+        onClose={() => setShowLiveCamera(false)}
+        title="Snap Jewelry Reference Photo"
+        onCapture={(file) => handleFiles([file])}
+      />
     </div>
   );
 }

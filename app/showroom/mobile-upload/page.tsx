@@ -146,7 +146,7 @@ function MobileUploadInner() {
               }}>
                 <input
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="image/*"
                   capture="environment"
                   style={{ display: "none" }}
                   onChange={(e) => {
@@ -175,7 +175,7 @@ function MobileUploadInner() {
               }}>
                 <input
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="image/*"
                   style={{ display: "none" }}
                   onChange={(e) => {
                     const selected = Array.from(e.target.files || []);

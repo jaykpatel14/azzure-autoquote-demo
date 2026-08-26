@@ -13,6 +13,7 @@ import { validateEmail } from "@/lib/email-validation";
 import type { PricingTier } from "@prisma/client";
 import KioskStaffPinModal from "@/components/kiosk-staff-pin-modal";
 import KioskStaffView from "@/components/kiosk-staff-view";
+import LiveCameraModal from "@/components/live-camera-modal";
 
 type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; backgroundColor: string | null; backgroundMediaUrl: string | null; backgroundMediaType: string | null; overlayColor: string | null; overlayOpacity: number | null; textColor: string | null; backgroundFit: string | null; backgroundPosition: string | null; panelOpacity: number | null; aboutUs: string | null };
 type Pricing = { cadCost: number; customerMarginPct: number; pricingTier: PricingTier | null; pricingProfile: PricingProfileInput };
@@ -185,6 +186,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const [showMobileUploadModal, setShowMobileUploadModal] = useState(false);
   const [mobileUploadSessionId, setMobileUploadSessionId] = useState<string>("");
   const [mobileUploadQrDataUrl, setMobileUploadQrDataUrl] = useState<string | null>(null);
+
+  // Live In-App Camera Modal State
+  const [showLiveCamera, setShowLiveCamera] = useState(false);
 
   // Staff Mode States
   const [showStaffPinModal, setShowStaffPinModal] = useState(false);
@@ -975,11 +979,24 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                         Upload from Phone (Scan QR)
                       </button>
 
-                      <label className="button secondary button--sm">
+                      <button
+                        type="button"
+                        className="button secondary button--sm"
+                        onClick={() => setShowLiveCamera(true)}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>photo_camera</span>
+                        Take Photo
+                      </button>
+
+                      <label className="button secondary button--sm" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
                         <input
                           type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          capture="environment"
+                          accept="image/*"
                           onChange={(event) => {
                             const selected = Array.from(event.target.files || []);
                             if (selected.length) {
@@ -989,9 +1006,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                               setError("");
                             }
                           }}
+                          style={{ display: "none" }}
                         />
-                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>photo_camera</span>
-                        Take Photo
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>folder_open</span>
+                        Choose File
                       </label>
                     </div>
                   </div>
@@ -1368,6 +1386,18 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
           }}
         />
       ) : null}
+
+      <LiveCameraModal
+        isOpen={showLiveCamera}
+        onClose={() => setShowLiveCamera(false)}
+        title="Snap Jewelry Reference Photo"
+        onCapture={(capturedFile) => {
+          setFiles([capturedFile]);
+          setAnalysis(null);
+          setRenderingImageUrl(null);
+          setError("");
+        }}
+      />
 
       <footer style={{ marginTop: "auto", textAlign: "center", color: "var(--color-on-surface-variant)", fontSize: 12, padding: "24px 0" }}>
         Azzure AI Quote · Built by azzuresolutions.com

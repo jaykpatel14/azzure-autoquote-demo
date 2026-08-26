@@ -14,24 +14,27 @@ function VerifyEmailContent() {
 
   const [email, setEmail] = useState(emailParam);
   const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(tokenParam));
   const [resending, setResending] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
-  const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
+  const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(
+    () => (errorParam ? { type: "error", text: "That verification link was invalid or has expired. Please enter your code." } : null)
+  );
   const [isVerified, setIsVerified] = useState(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // If token is in URL (magic link), attempt instant verification
   useEffect(() => {
+    let isMounted = true;
     if (tokenParam) {
-      setLoading(true);
       fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: tokenParam })
       })
         .then(async (res) => {
+          if (!isMounted) return;
           const data = await res.json();
           if (res.ok) {
             setIsVerified(true);
@@ -44,13 +47,19 @@ function VerifyEmailContent() {
           }
         })
         .catch(() => {
-          setStatusMessage({ type: "error", text: "Failed to verify token. Please try entering your 6-digit code below." });
+          if (isMounted) {
+            setStatusMessage({ type: "error", text: "Failed to verify token. Please try entering your 6-digit code below." });
+          }
         })
-        .finally(() => setLoading(false));
-    } else if (errorParam) {
-      setStatusMessage({ type: "error", text: "That verification link was invalid or has expired. Please enter your code." });
+        .finally(() => {
+          if (isMounted) setLoading(false);
+        });
     }
-  }, [tokenParam, errorParam, email, router]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [tokenParam, email, router]);
 
   // Resend countdown timer
   useEffect(() => {
