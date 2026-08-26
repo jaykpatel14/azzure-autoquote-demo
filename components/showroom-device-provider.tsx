@@ -24,6 +24,7 @@ export function useShowroomDevice() {
 type ShowroomDeviceProviderProps = {
   children: ReactNode;
   showroomToken: string;
+  defaultDeviceName?: string;
   branding?: {
     companyName?: string | null;
     logoUrl?: string | null;
@@ -34,6 +35,7 @@ type ShowroomDeviceProviderProps = {
 export default function ShowroomDeviceProvider({
   children,
   showroomToken,
+  defaultDeviceName,
   branding
 }: ShowroomDeviceProviderProps) {
   const [status, setStatus] = useState<"checking" | "registering" | "ready">("checking");
@@ -144,6 +146,7 @@ export default function ShowroomDeviceProvider({
     return (
       <DeviceRegistrationScreen
         showroomToken={showroomToken}
+        defaultDeviceName={defaultDeviceName}
         branding={branding}
         onRegistered={(token) => {
           try {

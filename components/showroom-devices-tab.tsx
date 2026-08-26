@@ -6,6 +6,7 @@ type ShowroomDeviceItem = {
   id: string;
   deviceName: string;
   platform: string;
+  azzureSerial?: string | null;
   lastSeenAt: string;
   isActive: boolean;
   registeredAt: string;
@@ -218,6 +219,11 @@ export default function ShowroomDevicesTab({
                     <p className="muted small" style={{ margin: 0 }}>
                       {device.platform.toUpperCase()} · Registered {formatDate(device.registeredAt)}
                     </p>
+                    {device.azzureSerial ? (
+                      <p className="muted small" style={{ margin: "4px 0 0" }}>
+                        Serial: {device.azzureSerial}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div style={{ display: "flex", gap: 8 }}>

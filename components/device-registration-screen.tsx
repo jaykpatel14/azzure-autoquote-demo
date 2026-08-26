@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 
 type DeviceRegistrationScreenProps = {
   showroomToken: string;
+  defaultDeviceName?: string;
   branding?: {
     companyName?: string | null;
     logoUrl?: string | null;
@@ -14,10 +15,11 @@ type DeviceRegistrationScreenProps = {
 
 export default function DeviceRegistrationScreen({
   showroomToken,
+  defaultDeviceName,
   branding,
   onRegistered
 }: DeviceRegistrationScreenProps) {
-  const [deviceName, setDeviceName] = useState("Kiosk 1");
+  const [deviceName, setDeviceName] = useState(defaultDeviceName || "Kiosk 1");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

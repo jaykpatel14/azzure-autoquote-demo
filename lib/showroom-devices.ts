@@ -159,6 +159,7 @@ export async function getShowroomDevicesForCompany(companyId: string) {
       id: true,
       deviceName: true,
       platform: true,
+      azzureSerial: true,
       lastSeenAt: true,
       isActive: true,
       registeredAt: true
@@ -185,13 +186,25 @@ export async function renameShowroomDevice(companyId: string, deviceId: string, 
 }
 
 export async function deactivateShowroomDevice(companyId: string, deviceId: string) {
-  const result = await prisma.showroomDevice.updateMany({
+  const device = await prisma.showroomDevice.findFirst({
     where: { id: deviceId, companyId },
+    select: { id: true, azzureSerial: true }
+  });
+
+  if (!device) {
+    throw new Error("Device not found or access denied.");
+  }
+
+  await prisma.showroomDevice.update({
+    where: { id: device.id },
     data: { isActive: false }
   });
 
-  if (result.count === 0) {
-    throw new Error("Device not found or access denied.");
+  if (device.azzureSerial) {
+    await prisma.azzureDevice.updateMany({
+      where: { serialNumber: device.azzureSerial },
+      data: { status: "DEACTIVATED", deactivatedAt: new Date() }
+    });
   }
 
   return { ok: true };

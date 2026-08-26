@@ -100,6 +100,9 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
   }
 
   const cadCost = (await getSettingValue("cad_cost_per_quote")) ?? 0;
+  const registeredDeviceCount = await prisma.showroomDevice.count({
+    where: { companyId: session.company.id }
+  });
   const baseProfile = session.company.pricingProfile
     ? normalizePricingProfile({
         goldSpotPerOz: Number(session.company.pricingProfile.goldSpotPerOz),
@@ -133,6 +136,7 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
   return (
     <ShowroomDeviceProvider
       showroomToken={session.token}
+      defaultDeviceName={`Kiosk ${registeredDeviceCount + 1}`}
       branding={{
         companyName: session.company.name,
         logoUrl: session.company.logoUrl,

@@ -67,6 +67,17 @@ enum PricingTier {
   TIER_3
 }
 
+enum DeviceStatus {
+  PRE_PROVISIONED
+  ACTIVATED
+  DEACTIVATED
+}
+
+enum DeviceType {
+  KIOSK
+  PRINTER
+}
+
 model Company {
   id                          String           @id @default(cuid())
   name                        String
@@ -114,6 +125,7 @@ model Company {
   showroomSession             ShowroomSession?
   showroomQuotes              ShowroomQuote[]
   showroomDevices             ShowroomDevice[]
+  azzureDevices               AzzureDevice[]
 }
 
 model AppSetting {
@@ -368,12 +380,36 @@ model ShowroomDevice {
   lastSeenIp   String?
   isActive     Boolean         @default(true)
   registeredAt DateTime        @default(now())
+  azzureSerial String?
 
   session      ShowroomSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   company      Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  azzureDevice AzzureDevice?
 
   @@index([companyId])
   @@index([sessionId])
+}
+
+model AzzureDevice {
+  id               String       @id @default(cuid())
+  serialNumber     String       @unique
+  deviceType       DeviceType
+  status           DeviceStatus @default(PRE_PROVISIONED)
+  companyId        String?
+  showroomDeviceId String?      @unique
+  orderId          String?
+  notes            String?
+  kioskDestination String       @default("AI_QUOTE")
+  shippedAt        DateTime?
+  activatedAt      DateTime?
+  deactivatedAt    DateTime?
+  createdAt        DateTime     @default(now())
+
+  company         Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  showroomDevice  ShowroomDevice?   @relation(fields: [showroomDeviceId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([status])
 }
 
 model KioskStaffSession {

@@ -14,6 +14,7 @@ import type { PricingTier } from "@prisma/client";
 import KioskStaffPinModal from "@/components/kiosk-staff-pin-modal";
 import KioskStaffView from "@/components/kiosk-staff-view";
 import LiveCameraModal from "@/components/live-camera-modal";
+import { useShowroomDevice } from "@/components/showroom-device-provider";
 
 type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; backgroundColor: string | null; backgroundMediaUrl: string | null; backgroundMediaType: string | null; overlayColor: string | null; overlayOpacity: number | null; textColor: string | null; backgroundFit: string | null; backgroundPosition: string | null; panelOpacity: number | null; aboutUs: string | null };
 type Pricing = { cadCost: number; customerMarginPct: number; pricingTier: PricingTier | null; pricingProfile: PricingProfileInput };
@@ -114,65 +115,6 @@ const JEWELRY_FACTS_COLLECTION: JewelryFactItem[] = [
 
 const METAL_OPTIONS = ["10K", "14K", "18K", "Platinum", "Silver"];
 
-const SHOWROOM_PRODUCTS = [
-  {
-    id: "prod-1",
-    title: "3.0ct Oval Hidden Halo Solitaire",
-    description: "14K White Gold with hidden pavé halo & 1.8mm delicate shank.",
-    prompt: "3.0ct Oval solitaire engagement ring in 14K White Gold with hidden diamond halo and delicate plain band",
-    metal: "14K",
-    metalWeight: 4.5,
-    centerCarat: 3.0,
-    sideCarat: 0.15,
-    sideQty: 16,
-    shape: "Oval",
-    image: "/images/catalog/oval_solitaire.jpg",
-    basePrice: "$2,385"
-  },
-  {
-    id: "prod-2",
-    title: "2.5ct Emerald Cut 3-Stone Ring",
-    description: "Platinum with tapered trapezoid side diamonds & cathedral prongs.",
-    prompt: "2.5ct Emerald cut diamond ring with tapered trapezoid side stones in solid Platinum",
-    metal: "Platinum",
-    metalWeight: 7.2,
-    centerCarat: 2.5,
-    sideCarat: 0.6,
-    sideQty: 2,
-    shape: "Emerald",
-    image: "/images/catalog/emerald_3stone.jpg",
-    basePrice: "$3,450"
-  },
-  {
-    id: "prod-3",
-    title: "2.0ct Pear Cut Micro-Pavé Halo",
-    description: "18K Yellow Gold with micro-prong diamond halo & French pavé band.",
-    prompt: "2.0ct Pear cut diamond ring in 18K Yellow Gold with micro-prong halo and French pavé band",
-    metal: "18K",
-    metalWeight: 5.2,
-    centerCarat: 2.0,
-    sideCarat: 0.35,
-    sideQty: 28,
-    shape: "Pear",
-    image: "/images/catalog/pear_halo.jpg",
-    basePrice: "$2,190"
-  },
-  {
-    id: "prod-4",
-    title: "2.0ct Cushion Cut Double Split Pavé",
-    description: "14K Rose Gold with double split diamond band & hidden under-halo.",
-    prompt: "2.0ct Cushion cut solitaire with double split diamond pavé shank in 14K Rose Gold",
-    metal: "14K",
-    metalWeight: 6.0,
-    centerCarat: 2.0,
-    sideCarat: 0.5,
-    sideQty: 40,
-    shape: "Cushion",
-    image: "/images/catalog/cushion_pave.jpg",
-    basePrice: "$2,280"
-  }
-];
-
 function getRingSpecTitle(analysis: Analysis | null): string {
   if (!analysis) return "Custom Jewelry Design";
   const metal = analysis.selectedMetal || "14K";
@@ -201,6 +143,7 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 export default function ShowroomKiosk({ token, branding, pricing }: { token: string; branding: Branding; pricing: Pricing }) {
+  const { deviceToken } = useShowroomDevice();
   const brandStyle = useMemo(() => {
     const brandColor = branding.primaryColor || "#c9a84c";
     const backgroundColor = branding.backgroundColor || "#08090b";
@@ -229,9 +172,11 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const [analyzing, setAnalyzing] = useState(false);
   const [stageIndex, setStageIndex] = useState(0);
   const [jewelryFacts, setJewelryFacts] = useState<JewelryFactItem[]>(JEWELRY_FACTS_COLLECTION);
+  const [factOrder, setFactOrder] = useState<number[]>(JEWELRY_FACTS_COLLECTION.map((_, index) => index));
   const [factIndex, setFactIndex] = useState(0);
   const [showTriviaAnswer, setShowTriviaAnswer] = useState(false);
   const factSwipeStartXRef = useRef<number | null>(null);
+  const factOrderSeedRef = useRef(0);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [analysisIds, setAnalysisIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -272,6 +217,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
   const debouncedAnalysis = useDebouncedValue(analysis, 300);
+  const showroomHeaders = deviceToken ? { "X-Device-Token": deviceToken } : undefined;
 
   const reset = useCallback(() => {
     setStarted(false);
@@ -305,7 +251,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   // Fetch dynamic AI web-searched fine jewelry facts
   const refreshAIJewelryFacts = useCallback(async () => {
     try {
-      const res = await fetch("/api/showroom/facts");
+      const res = await fetch("/api/showroom/facts", {
+        headers: showroomHeaders
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.facts && Array.isArray(data.facts) && data.facts.length > 0) {
@@ -317,12 +265,28 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     }
   }, []);
 
+  const buildFactOrder = useCallback((total: number, seed: number) => {
+    if (total <= 1) {
+      return Array.from({ length: total }, (_, index) => index);
+    }
+
+    const indices = Array.from({ length: total }, (_, index) => index);
+    const offset = Math.abs(seed) % total;
+    return [...indices.slice(offset), ...indices.slice(0, offset)];
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       void refreshAIJewelryFacts();
     }, 0);
     return () => clearTimeout(timer);
   }, [refreshAIJewelryFacts]);
+
+  useEffect(() => {
+    const total = jewelryFacts.length || JEWELRY_FACTS_COLLECTION.length;
+    setFactOrder(buildFactOrder(total, factOrderSeedRef.current));
+    setFactIndex(0);
+  }, [buildFactOrder, jewelryFacts.length]);
 
   useEffect(() => {
     // The idle clock only used to reset on touch/pointer activity, so it kept
@@ -407,7 +371,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/showroom/mobile-upload?sessionId=${mobileUploadSessionId}&token=${encodeURIComponent(token)}`);
+        const res = await fetch(`/api/showroom/mobile-upload?sessionId=${mobileUploadSessionId}&token=${encodeURIComponent(token)}`, {
+          headers: showroomHeaders
+        });
         const data = await res.json();
         if (data.files && data.files.length > 0) {
           const convertedFiles: File[] = await Promise.all(
@@ -488,25 +454,6 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     });
   }
 
-  function selectProduct(product: (typeof SHOWROOM_PRODUCTS)[number]) {
-    setDescription(product.prompt);
-    setRenderingImageUrl(product.image);
-    setAnalysis({
-      analysisId: `product-${crypto.randomUUID()}`,
-      jewelryType: "Ring",
-      selectedMetal: product.metal,
-      metalWeightGrams: product.metalWeight,
-      centerDiamondCarats: product.centerCarat,
-      sideDiamondCarats: product.sideCarat,
-      sideDiamondQuantity: product.sideQty,
-      centerShape: product.shape,
-      settingType: "prong",
-      hasWeddingBand: false,
-      isTwoTone: false
-    });
-    setStarted(true);
-  }
-
   const analysisAbortControllerRef = useRef<AbortController | null>(null);
 
   function stopAnalysis() {
@@ -542,8 +489,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       setStageIndex((current) => (current + 1) % KIOSK_ANALYSIS_STAGES.length);
     }, 900);
 
-    // Trigger background refresh of fresh AI web-searched jewelry facts
-    void refreshAIJewelryFacts();
+    factOrderSeedRef.current += 1;
+    setFactOrder(buildFactOrder(jewelryFacts.length || JEWELRY_FACTS_COLLECTION.length, factOrderSeedRef.current));
     setFactIndex(0);
     setShowTriviaAnswer(false);
 
@@ -556,6 +503,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       }
       const response = await fetch("/api/showroom/analyze", {
         method: "POST",
+        headers: showroomHeaders,
         body: form,
         signal: controller.signal
       });
@@ -660,7 +608,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     try {
       const response = await fetch("/api/showroom/quotes", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(showroomHeaders || {})
+        },
         body: JSON.stringify({
           token,
           description,
@@ -732,7 +683,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
         const response = await fetch("/api/showroom/quotes", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(showroomHeaders || {})
+          },
           body: JSON.stringify({
             token,
             description,
@@ -937,43 +891,6 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
             </button>
           </div>
 
-          {/* Curated Recent Customer Designs / Products Gallery */}
-          <div className="showroomCatalogSection">
-            <div className="showroomCatalogHeader">
-              <div>
-                <h2>Recent Customer Designs</h2>
-                <p className="muted small" style={{ color: "#9ca3af", margin: "4px 0 0" }}>Tap any design to inspect details or customize your own.</p>
-              </div>
-            </div>
-
-            <div className="showroomCatalogGrid">
-              {SHOWROOM_PRODUCTS.map((prod) => (
-                <div
-                  key={prod.id}
-                  className="showroomProductCard"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => selectProduct(prod)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") selectProduct(prod);
-                  }}
-                >
-                  <div className="showroomProductImageWrap">
-                    <img src={prod.image} alt={prod.title} className="showroomProductImage" />
-                    <div className="showroomProductPriceBadge">{prod.basePrice}</div>
-                  </div>
-                  <div className="showroomProductContent">
-                    <strong>{prod.title}</strong>
-                    <p>{prod.description}</p>
-                    <div className="showroomProductCta">
-                      <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
-                      Customize this ring
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </section>
       ) : (
         /* ── 3. WORKSPACE SCREEN: 3-Step Layout + Photorealistic AI Render ── */
@@ -1405,7 +1322,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
             {/* Interactive Fine Jewelry Facts & Trivia Card */}
             {(() => {
-              const currentFact = jewelryFacts[factIndex] || jewelryFacts[0] || JEWELRY_FACTS_COLLECTION[0];
+              const factsSource = jewelryFacts.length > 0 ? jewelryFacts : JEWELRY_FACTS_COLLECTION;
+              const currentFact = factsSource[factOrder[factIndex] ?? 0] || factsSource[0] || JEWELRY_FACTS_COLLECTION[0];
+              const totalFacts = factOrder.length || factsSource.length;
               return (
                 <div
                   className="showroomFactsCard"
@@ -1490,7 +1409,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                         </span>
                       ) : null}
                       <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: 600 }}>
-                        {factIndex + 1} of {totalFacts}
+                        {Math.min(factIndex + 1, totalFacts)} of {totalFacts}
                       </span>
                     </div>
 
