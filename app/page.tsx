@@ -431,6 +431,9 @@ export default async function HomePage() {
                         <Link className="textLink" href={`/quotes/${quote.id}`}>
                           View
                         </Link>
+                        <Link className="textLink" href={`/q/${quote.id}`} target="_blank" rel="noopener noreferrer" title="Customer View">
+                          Customer View ↗
+                        </Link>
                         <Link className="textLink" href={`/api/quotes/${quote.id}/pdf`} target="_blank">
                           PDF
                         </Link>

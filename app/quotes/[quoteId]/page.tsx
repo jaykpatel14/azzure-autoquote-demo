@@ -84,9 +84,18 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
       description="Review the approved quote details, download the PDF, or open the public customer view."
       navItems={getWorkspaceNav("/quotes")}
       actions={
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <Link className="button secondary" href="/quotes">
             Back to quotes
+          </Link>
+          <Link
+            className="button secondary"
+            href={publicUrl(quote.publicShareToken ?? quote.id)}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open customer-facing quotation presentation"
+          >
+            Customer View ↗
           </Link>
           {status !== "ordered" && status !== "expired" ? (
             <PlanGate feature="canPlaceManufacturingOrder" fallbackHref="/settings/billing?upgrade=1">

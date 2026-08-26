@@ -96,6 +96,11 @@ export default function QuoteRowActions({
           View
         </Link>
       ) : null}
+      {publicHref ? (
+        <Link className="textLink" href={publicHref} target="_blank" rel="noopener noreferrer" title="Preview Customer View">
+          Customer View ↗
+        </Link>
+      ) : null}
       {showPdf ? (
         <Link className="textLink" href={pdfHref} target="_blank">
           PDF

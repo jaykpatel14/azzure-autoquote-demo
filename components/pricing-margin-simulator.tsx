@@ -6,6 +6,8 @@ import { useToast } from "@/components/toast-provider";
 interface PricingMarginSimulatorProps {
   initialMarginPct: number;
   goldSpotPerOz: number;
+  platinumSpotPerOz?: number;
+  silverSpotPerOz?: number;
   canEdit: boolean;
 }
 
@@ -27,18 +29,28 @@ function formatUsdExact(amount: number) {
 }
 
 const PRESET_MARGINS = [
-  { label: "50% (Luxury Boutique)", value: 50 },
-  { label: "75% (High Margin)", value: 75 },
-  { label: "100% (Keystone)", value: 100 }
+  { label: "50% (Default)", value: 50 },
+  { label: "75%", value: 75 },
+  { label: "100%", value: 100 },
+  { label: "200%", value: 200 },
+  { label: "300%", value: 300 },
+  { label: "400%", value: 400 },
+  { label: "500%", value: 500 }
 ];
 
 export default function PricingMarginSimulator({
   initialMarginPct,
   goldSpotPerOz,
+  platinumSpotPerOz = 985.2,
+  silverSpotPerOz = 31.4,
   canEdit
 }: PricingMarginSimulatorProps) {
   const [marginPct, setMarginPct] = useState(Math.max(50, initialMarginPct));
+  const [customGoldSpot, setCustomGoldSpot] = useState(goldSpotPerOz);
+  const [customPlatSpot, setCustomPlatSpot] = useState(platinumSpotPerOz);
+  const [customSilverSpot, setCustomSilverSpot] = useState(silverSpotPerOz);
   const [saving, setSaving] = useState(false);
+  const [savingSpots, setSavingSpots] = useState(false);
   const { showToast } = useToast();
 
   // Sample Ring Specifications: 14K White Gold 2.0ct Oval Solitaire (6.5g metal)
@@ -46,7 +58,7 @@ export default function PricingMarginSimulator({
     const metalWeightGrams = 6.5;
     const goldPurityMultiplier = 14 / 24; // 14K
     const castingLossMultiplier = 1.25; // 25% casting wastage
-    const goldPerGram = (goldSpotPerOz / 31.1034768) * goldPurityMultiplier;
+    const goldPerGram = (customGoldSpot / 31.1034768) * goldPurityMultiplier;
     const metalCost = metalWeightGrams * goldPerGram * castingLossMultiplier;
     const centerStoneCost = 520; // 2.0ct Lab Grown Oval E VS1
     const settingLaborCost = 75; // 4-prong diamond setting
@@ -68,7 +80,7 @@ export default function PricingMarginSimulator({
       retailSellingPrice,
       netProfit
     };
-  }, [marginPct, goldSpotPerOz]);
+  }, [marginPct, customGoldSpot]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -103,8 +115,132 @@ export default function PricingMarginSimulator({
     }
   }
 
+  async function handleSaveManualSpotRates(e: React.FormEvent) {
+    e.preventDefault();
+    if (!canEdit || savingSpots) return;
+
+    setSavingSpots(true);
+    try {
+      const response = await fetch("/api/settings/pricing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goldSpotPerOz: customGoldSpot,
+          platinumSpotPerOz: customPlatSpot,
+          silverSpotPerOz: customSilverSpot
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to update manual spot rates.");
+      }
+
+      showToast({
+        message: "Manual metal spot prices saved successfully!",
+        variant: "success",
+        autoDismiss: true
+      });
+    } catch (err) {
+      showToast({
+        message: err instanceof Error ? err.message : "Error saving spot rates.",
+        variant: "error",
+        autoDismiss: false
+      });
+    } finally {
+      setSavingSpots(false);
+    }
+  }
+
   return (
     <div className="stack" style={{ gap: "var(--space-6)" }}>
+      {/* ── Manual Spot Prices Override Card ── */}
+      <section className="card">
+        <div className="sectionHeader">
+          <div>
+            <span className="eyebrow" style={{ color: "#b45309" }}>Manual Spot Rates Fallback</span>
+            <h2>Custom Metal Spot Pricing</h2>
+            <p className="muted">
+              If live market APIs are unavailable or you prefer custom spot rates with your casting supplier, enter manual spot rates per troy ounce below.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSaveManualSpotRates} className="stack" style={{ gap: "var(--space-4)" }}>
+          <div className="grid threeUp" style={{ gap: 16 }}>
+            <div className="field">
+              <label htmlFor="goldSpotInput" style={{ fontWeight: 600 }}>
+                Gold Spot ($ / troy oz)
+              </label>
+              <div className="inputUnitRow">
+                <span className="unitBadge">$</span>
+                <input
+                  id="goldSpotInput"
+                  type="number"
+                  step="0.01"
+                  min="100"
+                  value={customGoldSpot}
+                  onChange={(e) => setCustomGoldSpot(Number(e.target.value) || 0)}
+                  disabled={!canEdit}
+                  style={{ fontWeight: 600 }}
+                />
+              </div>
+              <span className="muted small">14K: ~{formatUsdExact((customGoldSpot / 31.1034768) * (14 / 24))}/g</span>
+            </div>
+
+            <div className="field">
+              <label htmlFor="platSpotInput" style={{ fontWeight: 600 }}>
+                Platinum Spot ($ / troy oz)
+              </label>
+              <div className="inputUnitRow">
+                <span className="unitBadge">$</span>
+                <input
+                  id="platSpotInput"
+                  type="number"
+                  step="0.01"
+                  min="100"
+                  value={customPlatSpot}
+                  onChange={(e) => setCustomPlatSpot(Number(e.target.value) || 0)}
+                  disabled={!canEdit}
+                  style={{ fontWeight: 600 }}
+                />
+              </div>
+              <span className="muted small">950 Plat: ~{formatUsdExact((customPlatSpot / 31.1034768) * 0.95)}/g</span>
+            </div>
+
+            <div className="field">
+              <label htmlFor="silverSpotInput" style={{ fontWeight: 600 }}>
+                Silver Spot ($ / troy oz)
+              </label>
+              <div className="inputUnitRow">
+                <span className="unitBadge">$</span>
+                <input
+                  id="silverSpotInput"
+                  type="number"
+                  step="0.01"
+                  min="1"
+                  value={customSilverSpot}
+                  onChange={(e) => setCustomSilverSpot(Number(e.target.value) || 0)}
+                  disabled={!canEdit}
+                  style={{ fontWeight: 600 }}
+                />
+              </div>
+              <span className="muted small">925 Silver: ~{formatUsdExact((customSilverSpot / 31.1034768) * 0.925)}/g</span>
+            </div>
+          </div>
+
+          {canEdit ? (
+            <button
+              className="button secondary button--md fitContent"
+              type="submit"
+              disabled={savingSpots}
+            >
+              {savingSpots ? "Saving Spot Rates…" : "Save Custom Spot Rates"}
+            </button>
+          ) : null}
+        </form>
+      </section>
+
       {/* ── Margin Input & Presets ── */}
       <section className="card">
         <div className="sectionHeader">
@@ -123,7 +259,7 @@ export default function PricingMarginSimulator({
               <label htmlFor="marginInput" style={{ fontWeight: 600 }}>
                 Default Retail Margin Markup:
               </label>
-              <span className="badge" style={{ fontSize: "1.1rem", padding: "4px 12px", background: "rgba(201, 168, 76, 0.15)", color: "#c9a84c", fontWeight: 700 }}>
+              <span className="badge" style={{ fontSize: "1.1rem", padding: "4px 12px", background: "rgba(2, 132, 199, 0.12)", color: "var(--color-primary, #0284c7)", fontWeight: 700 }}>
                 {marginPct}%
               </span>
             </div>
@@ -133,22 +269,22 @@ export default function PricingMarginSimulator({
                 id="marginRange"
                 type="range"
                 min={50}
-                max={200}
-                step={1}
+                max={500}
+                step={5}
                 value={marginPct}
                 onChange={(e) => setMarginPct(Number(e.target.value))}
                 disabled={!canEdit}
                 style={{ flex: 1, accentColor: "var(--color-primary, #0284c7)", cursor: canEdit ? "pointer" : "not-allowed" }}
               />
-              <div className="inputUnitRow" style={{ width: 120 }}>
+              <div className="inputUnitRow" style={{ width: 130 }}>
                 <input
                   id="marginInput"
                   type="number"
                   min={50}
-                  max={200}
-                  step={0.5}
+                  max={500}
+                  step={1}
                   value={marginPct}
-                  onChange={(e) => setMarginPct(Math.max(50, Math.min(200, Number(e.target.value) || 50)))}
+                  onChange={(e) => setMarginPct(Math.max(50, Math.min(500, Number(e.target.value) || 50)))}
                   disabled={!canEdit}
                   className="shortInput"
                   style={{ fontSize: "1.15rem", fontWeight: "700", textAlign: "center" }}
@@ -169,7 +305,8 @@ export default function PricingMarginSimulator({
                   style={{
                     borderRadius: 999,
                     borderColor: marginPct === preset.value ? "var(--color-primary, #0284c7)" : undefined,
-                    background: marginPct === preset.value ? "rgba(2, 132, 199, 0.1)" : undefined,
+                    background: marginPct === preset.value ? "rgba(2, 132, 199, 0.12)" : undefined,
+                    color: marginPct === preset.value ? "var(--color-primary, #0284c7)" : undefined,
                     fontWeight: marginPct === preset.value ? 700 : 500
                   }}
                 >
@@ -199,10 +336,10 @@ export default function PricingMarginSimulator({
       </section>
 
       {/* ── LIVE INTERACTIVE SAMPLE QUOTE PREVIEW ── */}
-      <section className="card" style={{ background: "linear-gradient(145deg, var(--color-surface), rgba(201, 168, 76, 0.04))", borderColor: "rgba(201, 168, 76, 0.3)" }}>
+      <section className="card" style={{ background: "linear-gradient(145deg, var(--color-surface), rgba(2, 132, 199, 0.03))", borderColor: "rgba(2, 132, 199, 0.25)" }}>
         <div className="sectionHeader">
           <div>
-            <span className="eyebrow" style={{ color: "#c9a84c" }}>✦ Real-Time Margin Simulator</span>
+            <span className="eyebrow" style={{ color: "var(--color-primary, #0284c7)" }}>✦ Real-Time Margin Simulator</span>
             <h2>Sample Quote Breakdown</h2>
             <p className="muted">
               Live simulation showing how your <strong>{marginPct}% markup</strong> affects wholesale production costs, retail presentation price, and net profit.
@@ -215,9 +352,9 @@ export default function PricingMarginSimulator({
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24, marginTop: 16 }}>
           {/* Left Column: Sample Ring Spec & Wholesale Costs */}
-          <div style={{ padding: 20, borderRadius: 12, background: "rgba(0, 0, 0, 0.03)", border: "1px solid var(--color-outline-variant)" }}>
+          <div style={{ padding: 20, borderRadius: 12, background: "rgba(0, 0, 0, 0.02)", border: "1px solid var(--color-outline-variant)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <span className="material-symbols-outlined" style={{ color: "#c9a84c", fontSize: 24 }}>diamond</span>
+              <span className="material-symbols-outlined" style={{ color: "var(--color-primary, #0284c7)", fontSize: 24 }}>diamond</span>
               <div>
                 <strong style={{ fontSize: "1.05rem" }}>14K White Gold Solitaire</strong>
                 <p className="muted small" style={{ margin: 0 }}>2.0ct Oval Lab Diamond · 6.5g Gold</p>
@@ -250,9 +387,9 @@ export default function PricingMarginSimulator({
           </div>
 
           {/* Right Column: Markup, Retail Price & Net Profit */}
-          <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 20, borderRadius: 12, background: "rgba(201, 168, 76, 0.08)", border: "1px solid rgba(201, 168, 76, 0.25)" }}>
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 20, borderRadius: 12, background: "rgba(2, 132, 199, 0.06)", border: "1px solid rgba(2, 132, 199, 0.2)" }}>
             <div>
-              <span className="eyebrow" style={{ color: "#c9a84c" }}>Customer Retail Quote</span>
+              <span className="eyebrow" style={{ color: "var(--color-primary, #0284c7)" }}>Customer Retail Quote</span>
               <div style={{ fontSize: "2.5rem", fontWeight: 800, fontFamily: "var(--font-display, Georgia, serif)", color: "var(--color-on-surface)", margin: "8px 0" }}>
                 {formatUsd(sampleRing.retailSellingPrice)}
               </div>

@@ -13,7 +13,10 @@ import { buildPublicUrl } from "@/lib/security";
 export const runtime = "nodejs";
 
 const schema = z.object({
-  customerMarginPct: z.coerce.number().min(50, "Margin must be at least 50%").max(200, "Margin cannot exceed 200%")
+  customerMarginPct: z.coerce.number().min(50, "Margin must be at least 50%").max(500, "Margin cannot exceed 500%").optional(),
+  goldSpotPerOz: z.coerce.number().positive("Gold spot price must be positive").optional(),
+  platinumSpotPerOz: z.coerce.number().positive("Platinum spot price must be positive").optional(),
+  silverSpotPerOz: z.coerce.number().positive("Silver spot price must be positive").optional()
 });
 
 async function parseInput(request: Request) {
@@ -24,7 +27,10 @@ async function parseInput(request: Request) {
 
   const formData = await request.formData();
   return schema.parse({
-    customerMarginPct: formData.get("customerMarginPct")
+    customerMarginPct: formData.get("customerMarginPct") || undefined,
+    goldSpotPerOz: formData.get("goldSpotPerOz") || undefined,
+    platinumSpotPerOz: formData.get("platinumSpotPerOz") || undefined,
+    silverSpotPerOz: formData.get("silverSpotPerOz") || undefined
   });
 }
 
@@ -51,12 +57,35 @@ export async function POST(request: Request) {
 
     const input = await parseInput(request);
 
-    await prisma.company.update({
-      where: { id: context.company.id },
-      data: {
-        customerMarginPct: input.customerMarginPct
-      }
-    });
+    if (input.customerMarginPct !== undefined) {
+      await prisma.company.update({
+        where: { id: context.company.id },
+        data: {
+          customerMarginPct: input.customerMarginPct
+        }
+      });
+    }
+
+    if (
+      input.goldSpotPerOz !== undefined ||
+      input.platinumSpotPerOz !== undefined ||
+      input.silverSpotPerOz !== undefined
+    ) {
+      await prisma.pricingProfile.upsert({
+        where: { companyId: context.company.id },
+        create: {
+          companyId: context.company.id,
+          goldSpotPerOz: input.goldSpotPerOz ?? 4500,
+          platinumSpotPerOz: input.platinumSpotPerOz ?? 985.2,
+          silverSpotPerOz: input.silverSpotPerOz ?? 31.4
+        },
+        update: {
+          ...(input.goldSpotPerOz !== undefined ? { goldSpotPerOz: input.goldSpotPerOz } : {}),
+          ...(input.platinumSpotPerOz !== undefined ? { platinumSpotPerOz: input.platinumSpotPerOz } : {}),
+          ...(input.silverSpotPerOz !== undefined ? { silverSpotPerOz: input.silverSpotPerOz } : {})
+        }
+      });
+    }
 
     await logAuditEvent({
       action: "COMPANY_UPDATED",
@@ -65,7 +94,10 @@ export async function POST(request: Request) {
       targetType: "Company",
       targetId: context.company.id,
       metadata: {
-        customerMarginPct: input.customerMarginPct
+        customerMarginPct: input.customerMarginPct,
+        goldSpotPerOz: input.goldSpotPerOz,
+        platinumSpotPerOz: input.platinumSpotPerOz,
+        silverSpotPerOz: input.silverSpotPerOz
       }
     }).catch(() => undefined);
 
@@ -73,7 +105,10 @@ export async function POST(request: Request) {
     if (contentType.includes("application/json")) {
       return NextResponse.json({
         ok: true,
-        customerMarginPct: input.customerMarginPct
+        customerMarginPct: input.customerMarginPct,
+        goldSpotPerOz: input.goldSpotPerOz,
+        platinumSpotPerOz: input.platinumSpotPerOz,
+        silverSpotPerOz: input.silverSpotPerOz
       });
     }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import QRCode from "qrcode";
 import { QuoteCreationLayout, QuoteStepCard, QuoteBuilderPreview } from "@/components/QuoteCreationLayout";
 import {
@@ -373,6 +373,17 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setStarted(true);
   }
 
+  const analysisAbortControllerRef = useRef<AbortController | null>(null);
+
+  function stopAnalysis() {
+    if (analysisAbortControllerRef.current) {
+      analysisAbortControllerRef.current.abort();
+      analysisAbortControllerRef.current = null;
+    }
+    setAnalyzing(false);
+    setError("Analysis was stopped.");
+  }
+
   async function runAnalysis(selectedFiles?: File[]) {
     const filesToAnalyze = selectedFiles || files;
     const hasFiles = filesToAnalyze.length > 0;
@@ -390,6 +401,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setAnalysis(null);
     setRenderingImageUrl(null);
 
+    const controller = new AbortController();
+    analysisAbortControllerRef.current = controller;
+
     const pulser = window.setInterval(() => {
       setStageIndex((current) => (current + 1) % KIOSK_ANALYSIS_STAGES.length);
     }, 900);
@@ -401,7 +415,11 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       if (hasFiles) {
         filesToAnalyze.forEach((file) => form.append("images", file));
       }
-      const response = await fetch("/api/showroom/analyze", { method: "POST", body: form });
+      const response = await fetch("/api/showroom/analyze", {
+        method: "POST",
+        body: form,
+        signal: controller.signal
+      });
       const body = await response.json().catch(() => null);
       if (!response.ok) throw new Error(body?.error || "Analysis failed. Please try again.");
       if (!body) throw new Error("The server is momentarily busy or updating. Please try again.");
@@ -410,11 +428,16 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       if (body.renderingImageUrl) {
         setRenderingImageUrl(body.renderingImageUrl);
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Analysis failed.");
+    } catch (e: any) {
+      if (e?.name === "AbortError") {
+        setError("Analysis was stopped.");
+      } else {
+        setError(e instanceof Error ? e.message : "Analysis failed.");
+      }
     } finally {
       window.clearInterval(pulser);
       setAnalyzing(false);
+      analysisAbortControllerRef.current = null;
     }
   }
 
@@ -927,21 +950,6 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       onChange={(event) => setDescription(event.target.value)}
                       placeholder="Describe the piece, stone preferences, sizing, engravings, or changes you want..."
                     />
-                    {description.trim() ? (
-                      <button
-                        className="button secondary button--sm"
-                        style={{ marginTop: 10, alignSelf: "flex-start" }}
-                        type="button"
-                        disabled={generatingConcept}
-                        onClick={generateAiConcept}
-                      >
-                        {generatingConcept ? (
-                          <><span className="material-symbols-outlined ai-pulse" style={{ fontSize: 16 }}>auto_awesome</span> Generating AI Concept Render…</>
-                        ) : (
-                          <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>auto_awesome</span> Generate AI 3D Concept Render</>
-                        )}
-                      </button>
-                    ) : null}
                   </div>
 
                   <div className="dropzone dropzone--multi">
@@ -1000,25 +1008,39 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       </div>
                     ) : null}
 
-                    {/* Explicit Analyze Button for Showroom Kiosk */}
+                    {/* Explicit Analyze & Stop Buttons for Showroom Kiosk */}
                     <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                      <button
-                        className="button primary button--md"
-                        type="button"
-                        disabled={analyzing || (!files.length && !description.trim())}
-                        onClick={() => runAnalysis(files)}
-                        style={{ flex: 1, padding: "12px 20px", fontSize: "0.95rem" }}
-                      >
-                        <span className={`material-symbols-outlined${analyzing ? " ai-pulse" : ""}`} style={{ fontSize: 18 }}>
-                          auto_awesome
-                        </span>
-                        {analyzing ? "Analyzing Design with AI…" : analysis ? "Re-analyze Design with AI" : "Analyze Design with AI"}
-                      </button>
-                      {files.length > 0 ? (
+                      {analyzing ? (
+                        <button
+                          className="button destructive button--md"
+                          type="button"
+                          onClick={stopAnalysis}
+                          style={{ flex: 1, padding: "12px 20px", fontSize: "0.95rem" }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                            stop_circle
+                          </span>
+                          Stop Analysis ✕
+                        </button>
+                      ) : (
+                        <button
+                          className="button primary button--md"
+                          type="button"
+                          disabled={!files.length && !description.trim()}
+                          onClick={() => runAnalysis(files)}
+                          style={{ flex: 1, padding: "12px 20px", fontSize: "0.95rem" }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                            auto_awesome
+                          </span>
+                          {analysis ? "Re-analyze Design with AI" : "Analyze Design with AI"}
+                        </button>
+                      )}
+
+                      {files.length > 0 && !analyzing ? (
                         <button
                           className="button secondary button--sm"
                           type="button"
-                          disabled={analyzing}
                           onClick={() => {
                             setFiles([]);
                             setAnalysis(null);
@@ -1226,6 +1248,18 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                   <span>{stage}</span>
                 </div>
               ))}
+            </div>
+
+            <div style={{ marginTop: 24, textAlign: "center" }}>
+              <button
+                type="button"
+                className="button destructive button--md"
+                onClick={stopAnalysis}
+                style={{ width: "100%", padding: "12px", fontSize: "0.95rem" }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>stop_circle</span>
+                Stop Analysis
+              </button>
             </div>
           </div>
         </div>

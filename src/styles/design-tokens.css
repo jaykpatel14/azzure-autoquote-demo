@@ -1,101 +1,101 @@
 :root {
-  /* ── Material Design 3 · Azzure AI Quote · Light Mode ── */
+  /* ── Azzure AI Quote · Jeweler Workspace High-Contrast Light Mode ── */
 
-  /* Primary */
-  --color-primary: #005ab7;
-  --color-primary-hover: #004590;
-  --color-primary-container: #0072e5;
+  /* Primary (Royal Sapphire) */
+  --color-primary: #0284c7;
+  --color-primary-hover: #0369a1;
+  --color-primary-container: #0284c7;
   --color-on-primary: #ffffff;
-  --color-on-primary-container: #fefcff;
-  --color-on-primary-fixed: #001b3f;
-  --color-on-primary-fixed-variant: #004590;
-  --color-primary-fixed: #d7e2ff;
-  --color-primary-fixed-dim: #abc7ff;
-  --color-inverse-primary: #abc7ff;
+  --color-on-primary-container: #ffffff;
+  --color-on-primary-fixed: #082f49;
+  --color-on-primary-fixed-variant: #0369a1;
+  --color-primary-fixed: #e0f2fe;
+  --color-primary-fixed-dim: #bae6fd;
+  --color-inverse-primary: #38bdf8;
 
-  /* Secondary */
-  --color-secondary: #5c5e66;
+  /* Secondary (Slate 700 / Slate 800) */
+  --color-secondary: #334155;
   --color-on-secondary: #ffffff;
-  --color-secondary-container: #dfdfe9;
-  --color-on-secondary-container: #61626b;
-  --color-secondary-fixed: #e2e2ec;
-  --color-secondary-fixed-dim: #c5c6cf;
-  --color-on-secondary-fixed: #191b22;
-  --color-on-secondary-fixed-variant: #45464e;
+  --color-secondary-container: #f1f5f9;
+  --color-on-secondary-container: #1e293b;
+  --color-secondary-fixed: #f1f5f9;
+  --color-secondary-fixed-dim: #e2e8f0;
+  --color-on-secondary-fixed: #0f172a;
+  --color-on-secondary-fixed-variant: #334155;
 
   /* Tertiary */
-  --color-tertiary: #5b5c5c;
+  --color-tertiary: #475569;
   --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #747575;
-  --color-on-tertiary-container: #fdfcfc;
-  --color-tertiary-fixed: #e3e2e2;
-  --color-tertiary-fixed-dim: #c6c6c6;
-  --color-on-tertiary-fixed: #1a1c1c;
-  --color-on-tertiary-fixed-variant: #464747;
+  --color-tertiary-container: #f8fafc;
+  --color-on-tertiary-container: #0f172a;
+  --color-tertiary-fixed: #f1f5f9;
+  --color-tertiary-fixed-dim: #cbd5e1;
+  --color-on-tertiary-fixed: #0f172a;
+  --color-on-tertiary-fixed-variant: #334155;
 
-  /* Surface Hierarchy */
-  --color-surface: #f9f9ff;
-  --color-surface-bright: #f9f9ff;
-  --color-surface-dim: #d7dae4;
+  /* Surface Hierarchy (Pure White Cards on Clean Slate-50 Canvas) */
+  --color-surface: #ffffff;
+  --color-surface-bright: #ffffff;
+  --color-surface-dim: #f1f5f9;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f1f3fe;
-  --color-surface-container: #ebedf8;
-  --color-surface-container-high: #e6e8f3;
-  --color-surface-container-highest: #e0e2ed;
-  --color-surface-variant: #e0e2ed;
-  --color-surface-tint: #005cbc;
-  --color-inverse-surface: #2d3039;
-  --color-inverse-on-surface: #eef0fb;
+  --color-surface-container-low: #f8fafc;
+  --color-surface-container: #f1f5f9;
+  --color-surface-container-high: #e2e8f0;
+  --color-surface-container-highest: #cbd5e1;
+  --color-surface-variant: #f1f5f9;
+  --color-surface-tint: #0284c7;
+  --color-inverse-surface: #0f172a;
+  --color-inverse-on-surface: #f8fafc;
 
-  /* On-Surface */
-  --color-on-surface: #181c23;
-  --color-on-surface-variant: #414754;
-  --color-on-background: #181c23;
+  /* High-Contrast On-Surface Typography */
+  --color-on-surface: #0f172a;
+  --color-on-surface-variant: #334155;
+  --color-on-background: #0f172a;
 
-  /* Outline */
-  --color-outline: #717786;
-  --color-outline-variant: #c1c6d7;
+  /* Outline & Structural Dividers */
+  --color-outline: #64748b;
+  --color-outline-variant: #cbd5e1;
 
   /* Background */
-  --color-background: #f9f9ff;
+  --color-background: #f8fafc;
 
   /* Error */
-  --color-error: #ba1a1a;
+  --color-error: #dc2626;
   --color-on-error: #ffffff;
-  --color-error-container: #ffdad6;
-  --color-on-error-container: #93000a;
+  --color-error-container: #fee2e2;
+  --color-on-error-container: #991b1b;
 
   /* Backward compatibility aliases */
   --color-body: var(--color-on-surface);
-  --color-gold: var(--color-primary);
-  --color-gold-light: var(--color-primary-fixed-dim);
-  --color-gold-hover: var(--color-primary-hover);
-  --color-gold-subtle: rgba(0, 90, 183, 0.08);
-  --color-gold-border: rgba(0, 90, 183, 0.2);
+  --color-gold: #b45309;
+  --color-gold-light: #f59e0b;
+  --color-gold-hover: #92400e;
+  --color-gold-subtle: rgba(217, 119, 6, 0.08);
+  --color-gold-border: rgba(217, 119, 6, 0.25);
   --color-ivory: #ffffff;
-  --color-ivory-dark: #f9f9ff;
+  --color-ivory-dark: #f8fafc;
   --surface-card: var(--color-surface-container-lowest);
   --surface-base: var(--color-background);
   --color-muted: var(--color-on-surface-variant);
   --color-muted-light: var(--color-outline);
-  --color-primary-glow: rgba(0, 90, 183, 0.2);
-  --color-primary-subtle: rgba(0, 90, 183, 0.06);
-  --color-primary-border: rgba(0, 90, 183, 0.2);
+  --color-primary-glow: rgba(2, 132, 199, 0.2);
+  --color-primary-subtle: rgba(2, 132, 199, 0.08);
+  --color-primary-border: rgba(2, 132, 199, 0.25);
   --color-border: var(--color-outline-variant);
   --color-border-hover: var(--color-primary);
   --color-border-active: var(--color-primary);
 
   /* Feedback colors */
-  --color-success: #137333;
-  --color-success-subtle: #e6f4ea;
-  --color-warning: #f57f17;
-  --color-warning-subtle: #fff8e1;
+  --color-success: #16a34a;
+  --color-success-subtle: #dcfce7;
+  --color-warning: #d97706;
+  --color-warning-subtle: #fef3c7;
   --color-error-compat: var(--color-error);
   --color-error-subtle: var(--color-error-container);
   --color-signup-warning: #d97706;
-  --color-signup-success: #059669;
-  --color-signup-error: #ba1a1a;
-  --color-signup-error-strong: #93000a;
+  --color-signup-success: #16a34a;
+  --color-signup-error: #dc2626;
+  --color-signup-error-strong: #991b1b;
 
   /* Typography */
   --font-display: var(--font-display-loaded, "Playfair Display", Georgia, serif);

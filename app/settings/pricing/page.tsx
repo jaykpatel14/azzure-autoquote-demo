@@ -82,9 +82,9 @@ export default async function PricingSettingsPage() {
 
       <div className="stack" style={{ gap: "var(--space-6)" }}>
         {!canUseCustomPricing && (
-          <div className="banner" style={{ background: "rgba(201, 168, 76, 0.08)", border: "1px solid rgba(201, 168, 76, 0.3)", borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+          <div className="banner" style={{ background: "rgba(217, 119, 6, 0.06)", border: "1px solid rgba(217, 119, 6, 0.25)", borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
             <div>
-              <strong style={{ color: "#dfc674", display: "block", marginBottom: 4 }}>Standard Live Spot Engine (Starter Plan)</strong>
+              <strong style={{ color: "#b45309", display: "block", marginBottom: 4 }}>Standard Live Spot Engine (Starter Plan)</strong>
               <p className="muted small" style={{ margin: 0 }}>
                 Custom pricing profiles, granular formula controls, and custom margin configurations are unlocked on Professional and Enterprise plans.
               </p>
@@ -136,6 +136,8 @@ export default async function PricingSettingsPage() {
         <PricingMarginSimulator
           initialMarginPct={Math.max(50, company.customerMarginPct ?? 50)}
           goldSpotPerOz={goldSpot}
+          platinumSpotPerOz={platSpot}
+          silverSpotPerOz={silverSpot}
           canEdit={canEdit && canUseCustomPricing}
         />
       </div>
