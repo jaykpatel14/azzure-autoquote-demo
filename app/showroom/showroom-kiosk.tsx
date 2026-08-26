@@ -45,6 +45,7 @@ type JewelryFactItem = {
   icon: string;
   headline: string;
   fact: string;
+  sourceOrTrend?: string;
   trivia?: { question: string; answer: string };
 };
 
@@ -227,6 +228,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const [description, setDescription] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [stageIndex, setStageIndex] = useState(0);
+  const [jewelryFacts, setJewelryFacts] = useState<JewelryFactItem[]>(JEWELRY_FACTS_COLLECTION);
   const [factIndex, setFactIndex] = useState(0);
   const [showTriviaAnswer, setShowTriviaAnswer] = useState(false);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
@@ -298,6 +300,38 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setMobileUploadSessionId("");
     setMobileUploadQrDataUrl(null);
   }, []);
+
+  // Fetch dynamic AI web-searched fine jewelry facts
+  const refreshAIJewelryFacts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/showroom/facts");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.facts && Array.isArray(data.facts) && data.facts.length > 0) {
+          setJewelryFacts(data.facts);
+        }
+      }
+    } catch {
+      // Retain fallback collection on error
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void refreshAIJewelryFacts();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [refreshAIJewelryFacts]);
+
+  // Rotate fine jewelry facts every 10 seconds while analyzing (pauses if customer opened trivia answer)
+  useEffect(() => {
+    if (!analyzing || showTriviaAnswer) return;
+    const total = jewelryFacts.length || 6;
+    const timer = setInterval(() => {
+      setFactIndex((current) => (current + 1) % total);
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [analyzing, showTriviaAnswer, jewelryFacts.length]);
 
   useEffect(() => {
     // The idle clock only used to reset on touch/pointer activity, so it kept
@@ -485,10 +519,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       setStageIndex((current) => (current + 1) % KIOSK_ANALYSIS_STAGES.length);
     }, 900);
 
-    const factTimer = window.setInterval(() => {
-      setFactIndex((current) => (current + 1) % JEWELRY_FACTS_COLLECTION.length);
-      setShowTriviaAnswer(false);
-    }, 4200);
+    // Trigger background refresh of fresh AI web-searched jewelry facts
+    void refreshAIJewelryFacts();
+    setFactIndex(0);
+    setShowTriviaAnswer(false);
 
     try {
       const form = new FormData();
@@ -518,7 +552,6 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       }
     } finally {
       window.clearInterval(pulser);
-      window.clearInterval(factTimer);
       setAnalyzing(false);
       analysisAbortControllerRef.current = null;
     }
@@ -1349,7 +1382,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
             {/* Interactive Fine Jewelry Facts & Trivia Card */}
             {(() => {
-              const currentFact = JEWELRY_FACTS_COLLECTION[factIndex] || JEWELRY_FACTS_COLLECTION[0];
+              const currentFact = jewelryFacts[factIndex] || jewelryFacts[0] || JEWELRY_FACTS_COLLECTION[0];
+              const totalFacts = jewelryFacts.length || JEWELRY_FACTS_COLLECTION.length;
               return (
                 <div
                   style={{
@@ -1364,9 +1398,42 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                     overflow: "hidden"
                   }}
                 >
-                  {/* Top Bar: Category Pill, Counter, Prev/Next Arrows */}
+                  <style>{`
+                    @keyframes factReadingProgress {
+                      from { width: 0%; }
+                      to { width: 100%; }
+                    }
+                  `}</style>
+
+                  {/* 10s Reading Timer Progress Bar */}
+                  {!showTriviaAnswer ? (
+                    <div
+                      key={`fact-progress-${factIndex}`}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        height: 3,
+                        background: "linear-gradient(90deg, #c9a84c, #f6e09e)",
+                        animation: "factReadingProgress 10s linear forwards"
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        height: 3,
+                        width: "100%",
+                        background: "rgba(134, 239, 172, 0.8)"
+                      }}
+                    />
+                  )}
+
+                  {/* Top Bar: Category Pill, Live AI Badge, Counter, Prev/Next Arrows */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                       <span
                         style={{
                           fontSize: "0.7rem",
@@ -1382,8 +1449,23 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       >
                         {currentFact.category}
                       </span>
+                      {currentFact.sourceOrTrend ? (
+                        <span
+                          style={{
+                            fontSize: "0.6875rem",
+                            fontWeight: 600,
+                            color: "#38bdf8",
+                            background: "rgba(56, 189, 248, 0.12)",
+                            border: "1px solid rgba(56, 189, 248, 0.25)",
+                            padding: "2px 7px",
+                            borderRadius: 6
+                          }}
+                        >
+                          ✦ {currentFact.sourceOrTrend}
+                        </span>
+                      ) : null}
                       <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: 600 }}>
-                        {factIndex + 1} of {JEWELRY_FACTS_COLLECTION.length}
+                        {factIndex + 1} of {totalFacts}
                       </span>
                     </div>
 
@@ -1391,7 +1473,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       <button
                         type="button"
                         onClick={() => {
-                          setFactIndex((current) => (current - 1 + JEWELRY_FACTS_COLLECTION.length) % JEWELRY_FACTS_COLLECTION.length);
+                          setFactIndex((current) => (current - 1 + totalFacts) % totalFacts);
                           setShowTriviaAnswer(false);
                         }}
                         style={{
@@ -1413,7 +1495,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       <button
                         type="button"
                         onClick={() => {
-                          setFactIndex((current) => (current + 1) % JEWELRY_FACTS_COLLECTION.length);
+                          setFactIndex((current) => (current + 1) % totalFacts);
                           setShowTriviaAnswer(false);
                         }}
                         style={{
