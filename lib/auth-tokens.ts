@@ -1,15 +1,25 @@
 import { prisma } from "@/lib/prisma";
-import { generateToken, hashToken, tokenExpiresIn } from "@/lib/tokens";
+import { generateOtp, generateToken, hashToken, tokenExpiresIn } from "@/lib/tokens";
 import { logAuditEvent } from "@/lib/audit";
 
 export async function createEmailVerificationToken(userId: string, companyId: string) {
   const token = generateToken();
-  await prisma.emailVerificationToken.create({
-    data: {
-      userId,
-      tokenHash: hashToken(token),
-      expiresAt: tokenExpiresIn(24)
-    }
+  const otp = generateOtp();
+
+  // Create records for both magic link token and 6-digit OTP
+  await prisma.emailVerificationToken.createMany({
+    data: [
+      {
+        userId,
+        tokenHash: hashToken(token),
+        expiresAt: tokenExpiresIn(24)
+      },
+      {
+        userId,
+        tokenHash: hashToken(otp),
+        expiresAt: tokenExpiresIn(24)
+      }
+    ]
   });
 
   await logAuditEvent({
@@ -20,11 +30,11 @@ export async function createEmailVerificationToken(userId: string, companyId: st
     targetId: userId
   }).catch(() => undefined);
 
-  return token;
+  return { token, otp };
 }
 
-export async function consumeEmailVerificationToken(token: string) {
-  const tokenHash = hashToken(token);
+export async function consumeEmailVerificationToken(tokenOrOtp: string) {
+  const tokenHash = hashToken(tokenOrOtp.trim());
   const record = await prisma.emailVerificationToken.findUnique({
     where: { tokenHash },
     include: { user: true }
@@ -35,8 +45,8 @@ export async function consumeEmailVerificationToken(token: string) {
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.emailVerificationToken.update({
-      where: { id: record.id },
+    await tx.emailVerificationToken.updateMany({
+      where: { userId: record.userId },
       data: { consumedAt: new Date() }
     });
     await tx.user.update({

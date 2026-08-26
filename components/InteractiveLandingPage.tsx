@@ -333,8 +333,7 @@ export function InteractiveLandingPage() {
 
           {/* Desktop Navigation Links */}
           <nav className="js-nav">
-            <a href="#features">Features</a>
-            <a href="#design-studio">Live Studio</a>
+            <a href="#interactive-demo">Interactive Demo</a>
             <a href="#the-problem">The Problem</a>
             <a href="#how-it-works">How It Works</a>
             <a href="#dashboard">Dashboard</a>
@@ -392,8 +391,7 @@ export function InteractiveLandingPage() {
               pointerEvents: "auto"
             }}
           >
-            <a onClick={() => setMobileMenuOpen(false)} href="#features" style={{ color: "#f8fafc", textDecoration: "none" }}>Features</a>
-            <a onClick={() => setMobileMenuOpen(false)} href="#design-studio" style={{ color: "#f8fafc", textDecoration: "none" }}>Live Studio</a>
+            <a onClick={() => setMobileMenuOpen(false)} href="#interactive-demo" style={{ color: "#f8fafc", textDecoration: "none" }}>Interactive Demo</a>
             <a onClick={() => setMobileMenuOpen(false)} href="#the-problem" style={{ color: "#f8fafc", textDecoration: "none" }}>The Problem</a>
             <a onClick={() => setMobileMenuOpen(false)} href="#how-it-works" style={{ color: "#f8fafc", textDecoration: "none" }}>How It Works</a>
             <a onClick={() => setMobileMenuOpen(false)} href="#dashboard" style={{ color: "#f8fafc", textDecoration: "none" }}>Dashboard</a>
@@ -448,8 +446,8 @@ export function InteractiveLandingPage() {
                 <Link href="/signup" className="js-btn-aurora" style={{ fontSize: "15px", padding: "14px 32px" }}>
                   Start 14-Day Free Trial →
                 </Link>
-                <a href="#design-studio" className="js-btn-ghost" style={{ fontSize: "15px", padding: "14px 28px" }}>
-                  Try Live Sandbox ↓
+                <a href="#interactive-demo" className="js-btn-ghost" style={{ fontSize: "15px", padding: "14px 28px" }}>
+                  Try Interactive Demo ↓
                 </a>
               </div>
 
@@ -691,24 +689,7 @@ export function InteractiveLandingPage() {
       </section>
 
       {/* ====================================================================
-           4. MARQUEE BRAND STRIP
-           ==================================================================== */}
-      <section className="js-marquee-section">
-        <p style={{ textAlign: "center", fontSize: "11px", color: "#64748b", fontFamily: "var(--font-mono-loaded, monospace)", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: "20px" }}>
-          Trusted by premier custom ateliers &amp; retail jewelers nationwide
-        </p>
-
-        <div className="js-marquee-track">
-          {[...BRAND_LOGOS, ...BRAND_LOGOS].map((brand, i) => (
-            <span key={i} className="js-marquee-item">
-              {brand}
-            </span>
-          ))}
-        </div>
-      </section>
-
-      {/* ====================================================================
-           5. THE PROBLEM SECTION & ANIMATED LOST-SALE CHAT SIMULATOR
+           4. THE PROBLEM SECTION & ANIMATED LOST-SALE CHAT SIMULATOR
            ==================================================================== */}
       <section id="the-problem" className="js-problem-section">
         <div className="js-container">
@@ -798,7 +779,7 @@ export function InteractiveLandingPage() {
       {/* ====================================================================
            6. PRODUCT DEEP-DIVE: INTERACTIVE 3-STEP STUDIO GENERATOR
            ==================================================================== */}
-      <section id="features" className="js-generator-section">
+      <section id="interactive-demo" className="js-generator-section">
         <div className="js-container">
           <div style={{ marginBottom: "48px" }}>
             <span className="js-eyebrow">Interactive Demonstration</span>
@@ -968,12 +949,12 @@ export function InteractiveLandingPage() {
       <section id="how-it-works" className="js-workflow-section">
         <div className="js-container">
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <span className="js-eyebrow">Effortless Integration</span>
+            <span className="js-eyebrow">Effortless Workflow</span>
             <h2 className="js-display" style={{ fontSize: "44px", margin: "10px 0 14px" }}>
               Live in 1 minute. <em className="js-accent-italic">Closing in seconds.</em>
             </h2>
             <p style={{ color: "#94a3b8", fontSize: "17px", maxWidth: "560px", margin: "0 auto" }}>
-              No software developers required. Embeds on any site or showroom iPad with one line of code.
+              No software developers required. Launch showroom iPad kiosk mode or send instant quote links in seconds.
             </p>
           </div>
 
@@ -994,20 +975,6 @@ export function InteractiveLandingPage() {
                 {workflowTab === 0 && (
                   <div>
                     <h3 className="js-display" style={{ fontSize: "28px", margin: "0 0 12px" }}>
-                      Connect to Shopify, WooCommerce, Wix, or Custom Website
-                    </h3>
-                    <p style={{ color: "#94a3b8", fontSize: "15px", lineHeight: "1.6", marginBottom: "18px" }}>
-                      Embed our lightning-fast 3D quotation widget onto your website with a single copy-paste script tag. Integrates seamlessly with your existing luxury brand theme.
-                    </p>
-                    <div style={{ padding: "14px", borderRadius: "10px", background: "#040711", border: "1px solid rgba(56, 189, 248, 0.2)", fontFamily: "var(--font-mono-loaded, monospace)", fontSize: "12px", color: "#38bdf8" }}>
-                      &lt;script src=&quot;https://cdn.azzureaiquote.com/embed.js&quot; data-store=&quot;your-store&quot;&gt;&lt;/script&gt;
-                    </div>
-                  </div>
-                )}
-
-                {workflowTab === 1 && (
-                  <div>
-                    <h3 className="js-display" style={{ fontSize: "28px", margin: "0 0 12px" }}>
                       Set Your Precious Metal Formulas &amp; Retail Markups
                     </h3>
                     <p style={{ color: "#94a3b8", fontSize: "15px", lineHeight: "1.6", marginBottom: "18px" }}>
@@ -1021,6 +988,24 @@ export function InteractiveLandingPage() {
                       <div style={{ padding: "14px", borderRadius: "10px", background: "#040711", border: "1px solid rgba(56, 189, 248, 0.2)" }}>
                         <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>Deposit Requirement</span>
                         <strong style={{ fontSize: "18px", color: "#f5d061" }}>20% or $500 Min</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {workflowTab === 1 && (
+                  <div>
+                    <h3 className="js-display" style={{ fontSize: "28px", margin: "0 0 12px" }}>
+                      Launch Showroom Tablet &amp; Shareable Client Links
+                    </h3>
+                    <p style={{ color: "#94a3b8", fontSize: "15px", lineHeight: "1.6", marginBottom: "18px" }}>
+                      Deploy self-service touchscreen kiosk mode on countertop iPads or generate branded private quote links and QR codes for remote customers.
+                    </p>
+                    <div style={{ padding: "14px", borderRadius: "10px", background: "#040711", border: "1px solid rgba(56, 189, 248, 0.2)", display: "flex", alignItems: "center", gap: "12px" }}>
+                      <span style={{ fontSize: "22px" }}>📱</span>
+                      <div>
+                        <strong style={{ display: "block", color: "#f5d061", fontSize: "14px" }}>Counter iPad Kiosk Mode &amp; Branded Links</strong>
+                        <span style={{ fontSize: "12px", color: "#94a3b8" }}>Walk-in clients create specs and generate private quote codes on the spot.</span>
                       </div>
                     </div>
                   </div>
@@ -1047,10 +1032,10 @@ export function InteractiveLandingPage() {
                       Automated Lead Capture &amp; Direct Manufacturing Queue
                     </h3>
                     <p style={{ color: "#94a3b8", fontSize: "15px", lineHeight: "1.6", marginBottom: "18px" }}>
-                      Customer deposits are securely processed before they leave your site. Quote specs automatically export to PDF and push directly to CAD/CAM casting.
+                      Customer deposits are securely processed before they leave your showroom. Quote specs automatically export to PDF and push directly to CAD/CAM casting.
                     </p>
                     <div style={{ padding: "14px", borderRadius: "10px", background: "rgba(52, 211, 153, 0.15)", border: "1px solid #34d399", color: "#34d399", fontSize: "13px", fontWeight: "bold" }}>
-                      ✓ Instant Stripe deposit checkout + PDF quote reference link generated.
+                      ✓ Instant deposit recording + PDF quote reference link generated.
                     </div>
                   </div>
                 )}
@@ -1077,9 +1062,9 @@ export function InteractiveLandingPage() {
             {/* Selectors Right */}
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {[
-                { step: "01", title: "Connect to your website", desc: "One snippet, one minute, any platform." },
-                { step: "02", title: "Set up pricing & formulas", desc: "Match your colors, logo, markups, and catalog." },
-                { step: "03", title: "Customers design live", desc: "AI visual builder with instant 3D renders." },
+                { step: "01", title: "Set up pricing & formulas", desc: "Match your colors, markups, labor rates, and catalog." },
+                { step: "02", title: "Launch showroom tablet or share link", desc: "Open counter kiosk mode or share branded links." },
+                { step: "03", title: "Customers & staff design live", desc: "AI visual builder with instant 3D renders." },
                 { step: "04", title: "Lead capture & deposit secured", desc: "Hot buyers land in your CRM with deposits attached." }
               ].map((item, idx) => (
                 <button
@@ -1219,9 +1204,14 @@ export function InteractiveLandingPage() {
                 <br /><br />
                 Your sales reps pull up the exact specifications in the jeweler portal, confirm metal weight, and dispatch to manufacturing instantly.
               </p>
-              <button onClick={openKioskModal} className="js-btn-aurora">
-                Launch Showroom Kiosk Simulation →
-              </button>
+              <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
+                <a href="#interactive-demo" className="js-btn-aurora">
+                  Try Showroom Demo Studio ↓
+                </a>
+                <button onClick={openKioskModal} className="js-btn-ghost">
+                  Launch In-Store Kiosk Modal ↗
+                </button>
+              </div>
             </div>
 
             <div className="js-glass-card" style={{ padding: "32px", textAlign: "center", border: "1px solid rgba(245, 208, 97, 0.35)" }}>
@@ -1343,9 +1333,9 @@ export function InteractiveLandingPage() {
                   <li style={{ color: "#f8fafc" }}>✓ <strong>1,200 quotes / month</strong></li>
                   <li style={{ color: "#f8fafc" }}>✓ Everything in Starter</li>
                   <li>✓ Unlimited staff seats + role access</li>
-                  <li>✓ Shareable branded quote links</li>
+                  <li>✓ Shareable branded quote links &amp; QR codes</li>
                   <li>✓ Custom pricing markups &amp; formulas</li>
-                  <li>✓ Embed on unlimited website domains</li>
+                  <li>✓ Real-time precious metal spot sync</li>
                 </ul>
 
                 {expandedCards["pro"] && (
@@ -1432,8 +1422,8 @@ export function InteractiveLandingPage() {
                 a: "Azzure AI Quote is an AI-powered pricing and 3D visualization platform engineered specifically for independent and luxury retail jewelers. It allows customers to upload any inspiration photo and receive instant, photorealistic 3D renders with mathematically accurate retail quotes in seconds."
               },
               {
-                q: "How fast can I go live on my website and in-store?",
-                a: "You can be live in under 60 seconds. Simply add our lightweight embed script to Shopify, WooCommerce, Squarespace, Wix, or WordPress, or launch the tablet kiosk mode in your showroom. No developer needed."
+                q: "How fast can I go live in my showroom and send quotes?",
+                a: "You can be live in under 60 seconds. Simply launch the tablet kiosk mode on your showroom iPad, or send shareable branded quote links and QR codes directly to your clients. No software developers needed."
               },
               {
                 q: "Is Azzure AI Quote fully white-labeled?",

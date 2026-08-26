@@ -56,14 +56,27 @@ export async function POST(request: Request) {
       createdUser = user;
       createdCompany = company;
 
-      const token = await createEmailVerificationToken(user.id, company.id);
-      const verificationUrl = buildAppUrl(`/verify-email?token=${token}`);
+      const { token, otp } = await createEmailVerificationToken(user.id, company.id);
+      const verificationUrl = buildAppUrl(`/verify-email?token=${token}&email=${encodeURIComponent(user.email)}`);
 
       await sendAuthMail({
         to: user.email,
-        subject: "Verify your Azzure AI Quote account",
-        text: `Verify your email address: ${verificationUrl}`,
-        html: `<p>Verify your email address: <a href="${verificationUrl}">${verificationUrl}</a></p>`
+        subject: `${otp} is your Azzure AI Quote verification code`,
+        text: `Your Azzure AI Quote verification code is: ${otp}\n\nEnter this 6-digit code on the verification screen, or click the link below to verify your email:\n${verificationUrl}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 540px; margin: 0 auto; padding: 24px; background: #080e22; color: #f8fafc; border-radius: 16px;">
+            <h2 style="color: #38bdf8; margin-top: 0;">Verify your Azzure AI Quote account</h2>
+            <p style="color: #94a3b8; font-size: 15px;">Thank you for registering. Please enter the following 6-digit verification code to activate your luxury jewelry workspace:</p>
+            <div style="margin: 24px 0; padding: 18px; background: #040711; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; text-align: center;">
+              <span style="font-family: monospace; font-size: 36px; font-weight: bold; letter-spacing: 0.25em; color: #f5d061;">${otp}</span>
+            </div>
+            <p style="color: #94a3b8; font-size: 14px;">Or verify automatically with one click:</p>
+            <div style="text-align: center; margin: 20px 0;">
+              <a href="${verificationUrl}" style="background: linear-gradient(135deg, #38bdf8, #2563eb); color: #ffffff; padding: 12px 28px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block;">Verify Email Address →</a>
+            </div>
+            <p style="color: #64748b; font-size: 12px; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">This code is valid for 24 hours. If you did not sign up for Azzure AI Quote, you can safely ignore this email.</p>
+          </div>
+        `
       });
 
       await sendSignupApprovalAlert({
