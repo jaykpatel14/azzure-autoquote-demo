@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type TouchEvent } from "react";
 import QRCode from "qrcode";
 import { QuoteCreationLayout, QuoteStepCard, QuoteBuilderPreview } from "@/components/QuoteCreationLayout";
 import {
@@ -231,6 +231,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const [jewelryFacts, setJewelryFacts] = useState<JewelryFactItem[]>(JEWELRY_FACTS_COLLECTION);
   const [factIndex, setFactIndex] = useState(0);
   const [showTriviaAnswer, setShowTriviaAnswer] = useState(false);
+  const factSwipeStartXRef = useRef<number | null>(null);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [analysisIds, setAnalysisIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -323,16 +324,6 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     return () => clearTimeout(timer);
   }, [refreshAIJewelryFacts]);
 
-  // Rotate fine jewelry facts every 10 seconds while analyzing (pauses if customer opened trivia answer)
-  useEffect(() => {
-    if (!analyzing || showTriviaAnswer) return;
-    const total = jewelryFacts.length || 6;
-    const timer = setInterval(() => {
-      setFactIndex((current) => (current + 1) % total);
-    }, 10000);
-    return () => clearInterval(timer);
-  }, [analyzing, showTriviaAnswer, jewelryFacts.length]);
-
   useEffect(() => {
     // The idle clock only used to reset on touch/pointer activity, so it kept
     // counting down through an in-flight AI analysis/save/share — a slow
@@ -361,6 +352,38 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       document.removeEventListener("pointerdown", arm);
     };
   }, [reset, analyzing, saving, sharing, generatingConcept]);
+
+  const totalFacts = jewelryFacts.length || JEWELRY_FACTS_COLLECTION.length;
+
+  const goToPreviousFact = useCallback(() => {
+    setFactIndex((current) => (current - 1 + totalFacts) % totalFacts);
+    setShowTriviaAnswer(false);
+  }, [totalFacts]);
+
+  const goToNextFact = useCallback(() => {
+    setFactIndex((current) => (current + 1) % totalFacts);
+    setShowTriviaAnswer(false);
+  }, [totalFacts]);
+
+  const handleFactTouchStart = useCallback((event: TouchEvent<HTMLDivElement>) => {
+    factSwipeStartXRef.current = event.touches[0]?.clientX ?? null;
+  }, []);
+
+  const handleFactTouchEnd = useCallback((event: TouchEvent<HTMLDivElement>) => {
+    const startX = factSwipeStartXRef.current;
+    const endX = event.changedTouches[0]?.clientX ?? null;
+    factSwipeStartXRef.current = null;
+
+    if (startX === null || endX === null) return;
+    const deltaX = endX - startX;
+    if (Math.abs(deltaX) < 40) return;
+
+    if (deltaX < 0) {
+      goToNextFact();
+    } else {
+      goToPreviousFact();
+    }
+  }, [goToNextFact, goToPreviousFact]);
 
   useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
 
@@ -1383,9 +1406,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
             {/* Interactive Fine Jewelry Facts & Trivia Card */}
             {(() => {
               const currentFact = jewelryFacts[factIndex] || jewelryFacts[0] || JEWELRY_FACTS_COLLECTION[0];
-              const totalFacts = jewelryFacts.length || JEWELRY_FACTS_COLLECTION.length;
               return (
                 <div
+                  className="showroomFactsCard"
                   style={{
                     marginTop: 20,
                     background: "linear-gradient(145deg, rgba(201, 168, 76, 0.12), rgba(0, 0, 0, 0.5))",
@@ -1397,6 +1420,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                     position: "relative",
                     overflow: "hidden"
                   }}
+                  onTouchStart={handleFactTouchStart}
+                  onTouchEnd={handleFactTouchEnd}
                 >
                   <style>{`
                     @keyframes factReadingProgress {
@@ -1472,10 +1497,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                     <div style={{ display: "flex", gap: 6 }}>
                       <button
                         type="button"
-                        onClick={() => {
-                          setFactIndex((current) => (current - 1 + totalFacts) % totalFacts);
-                          setShowTriviaAnswer(false);
-                        }}
+                        onClick={goToPreviousFact}
                         style={{
                           background: "rgba(255, 255, 255, 0.08)",
                           border: "1px solid rgba(255, 255, 255, 0.15)",
@@ -1494,10 +1516,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          setFactIndex((current) => (current + 1) % totalFacts);
-                          setShowTriviaAnswer(false);
-                        }}
+                        onClick={goToNextFact}
+                        className="showroomFactNextButton"
                         style={{
                           background: "rgba(255, 255, 255, 0.08)",
                           border: "1px solid rgba(255, 255, 255, 0.15)",

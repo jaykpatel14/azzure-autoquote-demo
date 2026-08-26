@@ -9,7 +9,7 @@ import { getAuthenticatedCompanyContext, canSeeFullPricing } from "@/lib/company
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { deriveQuoteStatus, getBrandedQuotePublicUrl, getQuotePublicUrl, getQuote } from "@/src/services/quotes";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
-import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
+import { loadAnalysisImageDataUrlFromS3, loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 import { QuoteCostBreakdown, RestrictedQuoteCostBreakdown } from "@/components/quote-cost-breakdown";
 import type { MakingPriceBreakdown } from "@/src/services/pricing";
 
@@ -70,7 +70,10 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
     ? await loadQuoteRenderingDataUrlFromS3(quote.renderingStorageKey)
     : quote.renderingDataUrl;
   const sourceImageDataUrl = quote.analysis?.sourceImageStorageKey
-    ? await loadQuoteRenderingDataUrlFromS3(quote.analysis.sourceImageStorageKey)
+    ? await loadAnalysisImageDataUrlFromS3({
+        key: quote.analysis.sourceImageStorageKey,
+        mimeType: quote.analysis.sourceImageMimeType || "image/jpeg"
+      })
     : quote.analysis?.imageDataUrl ?? null;
   const status = deriveQuoteStatus(quote);
   const subscription = context.company.subscription;
@@ -111,7 +114,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
           ) : null}
         </div>
       }
-    >
+      >
       <section className="grid twoUp">
         <article className="card">
           <div className="sectionHeader">
@@ -121,21 +124,57 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
             </div>
             <StatusBadge status={status} />
           </div>
-          {renderingDataUrl ? (
-            <div className="detailCard detailCard--stacked" style={{ marginBottom: "1rem" }}>
-              <span>Realistic design visualization</span>
-              <img className="quoteDetailImage" src={renderingDataUrl} alt={`AI design visualization for quote ${quote.quoteNumber}`} />
-              <p className="muted small">AI-generated design visualization. Appearance is illustrative and may differ from the finished product.</p>
-            </div>
-          ) : sourceImageDataUrl ? (
-            <div className="detailCard detailCard--stacked" style={{ marginBottom: "1rem" }}>
-              <span>Customer Reference Image</span>
-              <img className="quoteDetailImage" src={sourceImageDataUrl} alt={`Customer reference image for quote ${quote.quoteNumber}`} />
-              <p className="muted small">Uploaded customer reference photograph analyzed for this estimate.</p>
-            </div>
-          ) : quote.renderingStatus === "FAILED" ? (
-            <p className="fieldError">The presentation rendering could not be generated.</p>
-          ) : null}
+          <div className="quoteVisualGallery">
+            <section className="quoteVisualPanel quoteVisualPanel--featured" aria-label="AI design visualization">
+              <div className="quoteVisualPanelHeader">
+                <div>
+                  <p className="eyebrow">Presentation render</p>
+                  <h3>Photorealistic concept</h3>
+                </div>
+                <span className={`statusPill ${renderingDataUrl ? "statusPill--done" : quote.renderingStatus === "PROCESSING" ? "statusPill--processing" : ""}`}>
+                  {renderingDataUrl ? "Ready" : quote.renderingStatus === "PROCESSING" ? "Processing" : quote.renderingStatus === "FAILED" ? "Failed" : "Pending"}
+                </span>
+              </div>
+              {renderingDataUrl ? (
+                <img className="quoteMediaImage" src={renderingDataUrl} alt={`AI design visualization for quote ${quote.quoteNumber}`} />
+              ) : (
+                <div className="quoteMediaPlaceholder">
+                  <strong>{quote.renderingStatus === "FAILED" ? "Render unavailable" : "Render pending"}</strong>
+                  <p>
+                    {quote.renderingStatus === "FAILED"
+                      ? "The presentation render could not be generated yet."
+                      : "The render will appear here once the AI job completes."}
+                  </p>
+                </div>
+              )}
+              <p className="muted small">
+                AI-generated design visualization. Appearance is illustrative and may differ from the finished product.
+              </p>
+            </section>
+
+            <section className="quoteVisualPanel" aria-label="Customer reference photo">
+              <div className="quoteVisualPanelHeader">
+                <div>
+                  <p className="eyebrow">Source photo</p>
+                  <h3>Uploaded reference</h3>
+                </div>
+                <span className="statusPill">
+                  {sourceImageDataUrl ? "Uploaded" : "Not uploaded"}
+                </span>
+              </div>
+              {sourceImageDataUrl ? (
+                <img className="quoteMediaImage" src={sourceImageDataUrl} alt={`Customer reference image for quote ${quote.quoteNumber}`} />
+              ) : (
+                <div className="quoteMediaPlaceholder">
+                  <strong>No upload on file</strong>
+                  <p>This quote was likely created from text input or a preset product, so there is no source image to show.</p>
+                </div>
+              )}
+              <p className="muted small">
+                Uploaded customer reference photograph analyzed for this estimate.
+              </p>
+            </section>
+          </div>
           <div className="detailStack">
             <div className="detailRow">
               <span>Quote number</span>
@@ -231,15 +270,6 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <p className="muted">{quote.notes}</p>
             </div>
           ) : null}
-
-          {quote.analysis?.sourceImageStorageKey || quote.analysis?.imageDataUrl ? (
-            <img
-              className="quoteDetailImage"
-              src={quote.analysis.sourceImageStorageKey ? `/api/quotes/${quote.id}/image` : (quote.analysis.imageDataUrl ?? "")}
-              alt={`${quote.metalType} jewelry for quote ${quote.quoteNumber}`}
-            />
-          ) : null}
-
 
           {status === "ordered" && quote.order ? (
             <div className="detailCard detailCard--stacked quoteOrderCard">

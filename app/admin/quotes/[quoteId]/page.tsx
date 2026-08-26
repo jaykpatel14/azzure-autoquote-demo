@@ -5,7 +5,7 @@ import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
 import { getPricingTierLabel, type MakingPriceBreakdown, calculateMetalCost } from "@/src/services/pricing";
-import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
+import { loadAnalysisImageDataUrlFromS3, loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricing";
 import { QuotePricingKpis, money, num } from "@/components/admin/quote-pricing-breakdown";
 import { PricingAuditor } from "@/components/admin/pricing-auditor";
@@ -85,7 +85,10 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
     : quote.renderingDataUrl;
 
   const sourceImageUrl = quote.analysis?.sourceImageStorageKey
-    ? await loadQuoteRenderingDataUrlFromS3(quote.analysis.sourceImageStorageKey)
+    ? await loadAnalysisImageDataUrlFromS3({
+        key: quote.analysis.sourceImageStorageKey,
+        mimeType: quote.analysis.sourceImageMimeType || "image/jpeg"
+      })
     : quote.analysis?.imageDataUrl ?? null;
 
   const planName = quote.company.subscription?.plan.name ?? "No plan";
