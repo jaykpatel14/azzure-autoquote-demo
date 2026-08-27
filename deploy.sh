@@ -49,6 +49,13 @@ docker image prune -af --filter "until=1h" 2>/dev/null || true
 echo "Disk space available after pruning:"
 df -h / 2>/dev/null || true
 
+echo "Stopping any container currently publishing port ${APP_PORT}..."
+docker ps --filter "publish=${APP_PORT}" --format '{{.Names}}' | while read -r name; do
+  if [[ -n "${name}" ]]; then
+    docker stop "${name}" >/dev/null 2>&1 || true
+  fi
+done
+
 echo "Pulling migrator image..."
 docker pull "${MIGRATOR_IMAGE}"
 
@@ -82,7 +89,6 @@ if docker ps -a --format '{{.Names}}' |
   grep -qx "${CONTAINER_NAME}"; then
 
   docker rm -f "${CONTAINER_NAME}-previous" 2>/dev/null || true
-  docker stop "${CONTAINER_NAME}" >/dev/null 2>&1 || true
   docker rename "${CONTAINER_NAME}" "${CONTAINER_NAME}-previous"
 fi
 
