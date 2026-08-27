@@ -33,10 +33,10 @@ export const jewelryAnalysisSchema = z.object({
   sideStones: z.array(sideStoneGroupSchema),
   /** Overall named ring setting style (e.g. "hidden halo", "cathedral", "bezel", "solitaire").
    *  Distinct from sideStones[].settingType which is the diamond-setting method on accent stones. */
-  settingStyle: z.string().trim().max(120).nullable().optional(),
+  settingStyle: z.string().trim().max(120).nullable(),
   /** Additional named colored gemstones explicitly requested by the customer,
    *  beyond the primary center stone (e.g. ruby, sapphire, tsavorite). */
-  accentColorStones: z.array(accentColorStoneSchema).optional(),
+  accentColorStones: z.array(accentColorStoneSchema).nullable(),
   colorClarity: z.literal("E VS1"),
   confidence: z.enum(["low", "medium", "high"]),
   assumptions: z.array(z.string().trim().min(1).max(500)).min(1).max(12)

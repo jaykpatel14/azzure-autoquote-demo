@@ -86,14 +86,14 @@ function buildPrompt(
     "- centerStone: the primary center gemstone. Accurately identify shape (Round, Oval, Emerald, Radiant, Cushion, Pear, Marquise, Princess, Asscher, Heart), realistic carat weight, and color when one is explicitly present.",
     "- sideStones: all accent diamond groups, each with shape, caratWeightEach, count, and settingType (prong, bezel, pave, channel, micro-prong). Do not invent side stones or setting types unless clearly visible in the image or explicitly described.",
     // Bug 2 fix: dedicated settingStyle field for named ring setting styles
-    "- settingStyle: the OVERALL named ring setting style, exactly as stated by the customer or clearly visible in the image. Examples: 'hidden halo', 'cathedral', 'bezel', 'tension', 'solitaire', 'three-stone', 'pavé band'. This is SEPARATE from sideStones[].settingType. If the customer explicitly requests 'hidden halo', you MUST set settingStyle to 'hidden halo'. Do not leave this null when the customer has named a setting style.",
+    "- settingStyle: the OVERALL named ring setting style, exactly as stated by the customer or clearly visible in the image. Examples: 'hidden halo', 'cathedral', 'bezel', 'tension', 'solitaire', 'three-stone', 'pave band'. This is SEPARATE from sideStones[].settingType. If the customer explicitly requests 'hidden halo', you MUST set settingStyle to 'hidden halo'. If no named setting style is present, return null.",
     // Bug 3 fix: dedicated array for additional named colored gemstones
-    "- accentColorStones: if the customer explicitly requests additional named colored gemstones BEYOND the primary center stone (e.g. 'with ruby and sapphire', 'emerald, ruby, sapphire'), list EACH stone as a separate entry with: stone (gem name, e.g. 'ruby'), shape (e.g. 'round', 'baguette', 'oval' — use 'round' if unspecified), and count (default 2 if quantity not stated). Do NOT omit any gemstone the customer explicitly named. If no additional colored stones are requested, omit this field or return an empty array.",
+    "- accentColorStones: if the customer explicitly requests additional named colored gemstones BEYOND the primary center stone (e.g. 'with ruby and sapphire', 'emerald, ruby, sapphire'), list EACH stone as a separate entry with: stone (gem name, e.g. 'ruby'), shape (e.g. 'round', 'baguette', 'oval' - use 'round' if unspecified), and count (default 2 if quantity not stated). Do NOT omit any gemstone the customer explicitly named. If no additional colored stones are requested, return null or an empty array.",
     "- colorClarity: always return E VS1.",
     "- confidence: low, medium, or high.",
     "- assumptions: list of key technical assumptions made during CAD analysis, each under 200 characters.",
     customerDescription?.trim()
-      ? `Customer-provided design description: ${customerDescription.trim()}. Match ALL specifications — karat, metal color, setting style, and every gemstone — exactly as the customer requested.`
+      ? `Customer-provided design description: ${customerDescription.trim()}. Match ALL specifications - karat, metal color, setting style, and every gemstone - exactly as the customer requested.`
       : "No customer description was supplied."
   ];
 
