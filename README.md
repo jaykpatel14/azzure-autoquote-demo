@@ -13,7 +13,7 @@ Production-oriented starter for an AI-assisted jewelry quotation SaaS.
 - Editable metal and diamond estimates
 - Metal density conversion
 - Server-side pricing
-- Live metal spot pricing with Metals.dev fallback
+- Live metal spot pricing with Metals.dev primary feed and MetalpriceAPI backup
 - Atomic monthly usage reservation
 - Stripe Checkout and Customer Portal billing
 - Tenant-scoped quote persistence
@@ -78,9 +78,10 @@ Internal Azzure admin testing account:
 
 10. Add your OpenAI key to `OPENAI_API_KEY`.
 11. Add `METALS_DEV_API_KEY` if you want live spot prices to flow into quotes.
-12. Add at least one email to `AZZURE_ADMIN_EMAILS` if you want to access the internal admin console.
-13. Add `APP_SETTINGS_ENCRYPTION_KEY` in production so secret runtime settings are stored encrypted.
-14. Start the app:
+12. Optionally add `METALPRICE_API_KEY` to enable automatic backup live pricing if Metals.dev is unavailable.
+13. Add at least one email to `AZZURE_ADMIN_EMAILS` if you want to access the internal admin console.
+14. Add `APP_SETTINGS_ENCRYPTION_KEY` in production so secret runtime settings are stored encrypted.
+15. Start the app:
 
 ```bash
 npm run dev
@@ -123,15 +124,16 @@ Before shipping to production, make sure these are in place:
 2. Set `DATABASE_URL` to the production PostgreSQL instance.
 3. Set `OPENAI_API_KEY` and confirm `OPENAI_MODEL` is the model you want to use.
 4. Set `METALS_DEV_API_KEY` if you want live metal pricing in quotes.
-5. Set `RESEND_API_KEY` and a verified `RESEND_FROM_EMAIL` for account verification and password resets.
-6. Set `S3_BUCKET` and AWS credentials if you want generated PDFs stored in S3.
-7. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and the Stripe price/product ids.
-8. Set `APP_SETTINGS_ENCRYPTION_KEY` so admin-managed secret settings are encrypted at rest.
-9. Set `AZZURE_ADMIN_EMAILS` to the internal Azzure team emails that should access `/admin`.
-10. Run `npm run db:migrate` against production before deploying code.
-11. Run `npm run db:seed` only for fresh demo environments, not on existing customer data.
-12. Run `npm run build` and confirm it passes before releasing.
-13. After deploy, verify `/api/health`, `/admin`, `/settings`, and a sample quote flow.
+5. Set `METALPRICE_API_KEY` if you want an automatic backup provider when Metals.dev is unavailable.
+6. Set `RESEND_API_KEY` and a verified `RESEND_FROM_EMAIL` for account verification and password resets.
+7. Set `S3_BUCKET` and AWS credentials if you want generated PDFs stored in S3.
+8. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and the Stripe price/product ids.
+9. Set `APP_SETTINGS_ENCRYPTION_KEY` so admin-managed secret settings are encrypted at rest.
+10. Set `AZZURE_ADMIN_EMAILS` to the internal Azzure team emails that should access `/admin`.
+11. Run `npm run db:migrate` against production before deploying code.
+12. Run `npm run db:seed` only for fresh demo environments, not on existing customer data.
+13. Run `npm run build` and confirm it passes before releasing.
+14. After deploy, verify `/api/health`, `/admin`, `/settings`, and a sample quote flow.
 
 Recommended runtime checks:
 

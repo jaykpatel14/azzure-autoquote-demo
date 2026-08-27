@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    refreshedFromLiveFeed: result.source === "metals.dev",
+    refreshedFromLiveFeed: result.source !== "configured-default",
     source: result.source,
     goldSpotPerOz: result.pricingProfile.goldSpotPerOz,
     platinumSpotPerOz: result.pricingProfile.platinumSpotPerOz,

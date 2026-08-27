@@ -442,7 +442,7 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
           </div>
           <div className="detailCard">
             <span>Source</span>
-            <strong>{livePricing.source === "metals.dev" ? "Live feed" : "Fallback"}</strong>
+            <strong>{livePricing.source !== "configured-default" ? "Live feed" : "Fallback"}</strong>
             <p className="muted small">{livePricing.message}</p>
           </div>
         </div>

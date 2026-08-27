@@ -252,7 +252,7 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
             <p className="eyebrow">Current Live Market Rates</p>
             <h3 style={{ margin: "0.25rem 0 1rem" }}>Metal Spot Pricing (Today)</h3>
             <p className="muted small" style={{ marginTop: -8, marginBottom: 12 }}>
-              {livePricing.source === "metals.dev" ? "🟢 Live from metals.dev" : "🟡 Configured fallback (live feed unavailable)"} — {livePricing.message}
+              {livePricing.source !== "configured-default" ? "🟢 Live pricing" : "🟡 Configured fallback (live feed unavailable)"} — {livePricing.message}
               {" "}Not a historical snapshot — the locked price this quote actually charged is the KPI grid above.
             </p>
             <div className="adminSpotGrid">

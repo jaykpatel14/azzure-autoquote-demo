@@ -95,7 +95,7 @@ export default async function NewQuotePage({ searchParams }: NewQuotePageProps) 
         cadCost={(await getSettingValue("cad_cost_per_quote")) ?? 0}
         pricingProfile={livePricing.pricingProfile}
         pricingSourceLabel={
-          livePricing.source === "metals.dev"
+          livePricing.source !== "configured-default"
             ? "Live metal spot prices are applied to this preview."
             : "Using stored pricing values because live metal pricing is unavailable."
         }

@@ -1,14 +1,50 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { calculateQuote, convertMetalWeight } from "@/lib/pricing";
-import { resolveMetalPricing } from "@/lib/metal-pricing";
-import { prisma } from "@/lib/prisma";
 
-afterEach(async () => {
+type AppSettingRecord = { key: string; value: string };
+
+const { appSettingStore, prismaMock } = vi.hoisted(() => {
+  const appSettingStore = new Map<string, string>();
+  const prismaMock = {
+    appSetting: {
+      findUnique: vi.fn(async ({ where }: { where: { key: string } }) => {
+        const value = appSettingStore.get(where.key);
+        return value ? ({ key: where.key, value } as AppSettingRecord) : null;
+      }),
+      upsert: vi.fn(async ({ where, create, update }: { where: { key: string }; create: AppSettingRecord; update: Partial<AppSettingRecord> }) => {
+        const value = update.value ?? create.value;
+        appSettingStore.set(where.key, value);
+        return { key: where.key, value } as AppSettingRecord;
+      }),
+      create: vi.fn(async ({ data }: { data: AppSettingRecord }) => {
+        appSettingStore.set(data.key, data.value);
+        return data;
+      }),
+      deleteMany: vi.fn(async ({ where }: { where?: { key?: string } }) => {
+        if (where?.key) {
+          appSettingStore.delete(where.key);
+        } else {
+          appSettingStore.clear();
+        }
+        return { count: 0 };
+      })
+    }
+  };
+
+  return { appSettingStore, prismaMock };
+});
+
+vi.mock("@/lib/prisma", () => ({ prisma: prismaMock }));
+vi.mock("@/lib/app-settings", () => ({
+  resolveRuntimeSetting: vi.fn(async (_key: string, fallback?: string | null) => fallback ?? null)
+}));
+
+import { resolveMetalPricing } from "@/lib/metal-pricing";
+
+afterEach(() => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
-  await prisma.appSetting.deleteMany({
-    where: { key: "METALS_LIVE_PRICING_CACHE_V1" }
-  });
+  appSettingStore.clear();
 });
 
 describe("pricing", () => {
@@ -102,4 +138,109 @@ describe("pricing", () => {
     expect(result.pricingProfile.goldSpotPerOz).toBe(3000);
   });
 
+  test("resolveMetalPricing keeps cached live prices when Metals.dev is quota-limited", async () => {
+    vi.stubEnv("METALS_DEV_API_KEY", "test-key");
+    await prismaMock.appSetting.create({
+      data: {
+        key: "METALS_LIVE_PRICING_CACHE_V1",
+        value: JSON.stringify({
+          fetchedAt: "2026-08-27T13:00:00.000Z",
+          torontoDate: "2026-08-26",
+          pricingProfile: {
+            goldSpotPerOz: 3333.33,
+            platinumSpotPerOz: 1444.44,
+            silverSpotPerOz: 27.77
+          },
+          timestamp: "2026-08-27T13:00:00.000Z",
+          message: "Cached live market spot prices loaded from Metals.dev at 2026-08-27T13:00:00.000Z."
+        })
+      }
+    });
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          status: "error",
+          error_message: "Your plan quota for the month is exhausted."
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        }
+      ) as Response
+    );
+
+    const result = await resolveMetalPricing({
+      goldSpotPerOz: 4500,
+      platinumSpotPerOz: 2000,
+      silverSpotPerOz: 100,
+      cadCharge: 25,
+      centerSettingPerCarat: 15,
+      sideSettingPerStone: 3,
+      sellingMarginDivisor: 0.7,
+      finalMultiplier: 2
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.source).toBe("metals.dev");
+    expect(result.pricingProfile.goldSpotPerOz).toBe(3333.33);
+    expect(result.pricingProfile.platinumSpotPerOz).toBe(1444.44);
+    expect(result.pricingProfile.silverSpotPerOz).toBe(27.77);
+    expect(result.message).toContain("most recent live prices");
+  });
+
+  test("resolveMetalPricing switches to MetalpriceAPI when Metals.dev fails", async () => {
+    vi.stubEnv("METALS_DEV_API_KEY", "primary-key");
+    vi.stubEnv("METALPRICE_API_KEY", "backup-key");
+
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            status: "error",
+            error_message: "Your plan quota for the month is exhausted."
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" }
+          }
+        ) as Response
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            success: true,
+            timestamp: 1753617600,
+            base: "USD",
+            rates: {
+              "USDXAU (Gold)": 3222.1,
+              "USDXPT (Platinum)": 1477.4,
+              "USDXAG (Silver)": 35.8
+            }
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" }
+          }
+        ) as Response
+      );
+
+    const result = await resolveMetalPricing({
+      goldSpotPerOz: 4500,
+      platinumSpotPerOz: 2000,
+      silverSpotPerOz: 100,
+      cadCharge: 25,
+      centerSettingPerCarat: 15,
+      sideSettingPerStone: 3,
+      sellingMarginDivisor: 0.7,
+      finalMultiplier: 2
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.source).toBe("metalpriceapi");
+    expect(result.pricingProfile.goldSpotPerOz).toBe(3222.1);
+    expect(result.pricingProfile.platinumSpotPerOz).toBe(1477.4);
+    expect(result.pricingProfile.silverSpotPerOz).toBe(35.8);
+  });
 });

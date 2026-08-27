@@ -496,7 +496,7 @@ export default async function HomePage() {
           <div>
             <h2>Live precious metal pricing</h2>
             <p className="muted">
-              {livePricing.source === "metals.dev"
+              {livePricing.source !== "configured-default"
                 ? "Auto-refreshed daily and used in every new quote's metal cost."
                 : "Live feed unavailable right now — quotes are using the configured fallback pricing below."}
             </p>
@@ -539,7 +539,7 @@ export default async function HomePage() {
             <div className="detailCard" style={{ borderLeft: "3px solid #0284c7" }}>
               <span className="eyebrow" style={{ color: "#0284c7" }}>Feed status</span>
               <strong style={{ fontSize: "1.125rem" }}>
-                {livePricing.source === "metals.dev" ? "🟢 Live" : "🟡 Fallback"}
+                {livePricing.source !== "configured-default" ? "🟢 Live" : "🟡 Fallback"}
               </strong>
               <p className="muted small" style={{ marginTop: 4 }}>
                 {livePricing.message || "Daily spot rate auto-refreshed."}

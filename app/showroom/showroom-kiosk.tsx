@@ -481,66 +481,6 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
   useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
 
-  if (displayMode === "marketing") {
-    return (
-      <div className="showroomRoot" style={{ overflow: "hidden" }}>
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            width: "100vw",
-            height: "100vh",
-            overflow: "hidden",
-            background: "#000"
-          }}
-        >
-          {marketingImages.length > 0 ? (
-            hasMarketingSlider ? (
-              <div
-                style={{
-                  display: "flex",
-                  width: `${marketingImages.length * 100}%`,
-                  height: "100%",
-                  transform: `translateX(-${currentMarketingIndex * (100 / marketingImages.length)}%)`,
-                  transition: "transform 820ms cubic-bezier(0.22, 1, 0.36, 1)",
-                  willChange: "transform"
-                }}
-              >
-                {marketingImages.map((image, index) => (
-                  <div key={image} style={{ position: "relative", width: `${100 / marketingImages.length}%`, height: "100%", flex: "0 0 auto" }}>
-                    <img
-                      src={image}
-                      alt={`Showroom marketing piece ${index + 1}`}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        objectPosition: "center center",
-                        display: "block"
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <img
-                src={marketingImages[0]}
-                alt="Showroom marketing piece"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  objectPosition: "center center",
-                  display: "block"
-                }}
-              />
-            )
-          ) : null}
-        </div>
-      </div>
-    );
-  }
-
   async function openMobileUploadQr() {
     const sessionId = crypto.randomUUID();
     setMobileUploadSessionId(sessionId);
@@ -1145,6 +1085,66 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
             </div>
           ) : null}
         </section>
+      </div>
+    );
+  }
+
+  if (displayMode === "marketing") {
+    return (
+      <div className="showroomRoot" style={{ overflow: "hidden" }}>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            width: "100vw",
+            height: "100vh",
+            overflow: "hidden",
+            background: "#000"
+          }}
+        >
+          {marketingImages.length > 0 ? (
+            hasMarketingSlider ? (
+              <div
+                style={{
+                  display: "flex",
+                  width: `${marketingImages.length * 100}%`,
+                  height: "100%",
+                  transform: `translateX(-${currentMarketingIndex * (100 / marketingImages.length)}%)`,
+                  transition: "transform 820ms cubic-bezier(0.22, 1, 0.36, 1)",
+                  willChange: "transform"
+                }}
+              >
+                {marketingImages.map((image, index) => (
+                  <div key={image} style={{ position: "relative", width: `${100 / marketingImages.length}%`, height: "100%", flex: "0 0 auto" }}>
+                    <img
+                      src={image}
+                      alt={`Showroom marketing piece ${index + 1}`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        objectPosition: "center center",
+                        display: "block"
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <img
+                src={marketingImages[0]}
+                alt="Showroom marketing piece"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  objectPosition: "center center",
+                  display: "block"
+                }}
+              />
+            )
+          ) : null}
+        </div>
       </div>
     );
   }

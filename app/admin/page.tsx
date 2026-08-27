@@ -249,7 +249,7 @@ export default async function AdminDashboardPage() {
           <div className="detailCard" style={{ borderLeft: "3px solid #0284c7" }}>
             <span className="eyebrow" style={{ color: "#0284c7" }}>Feed Status &amp; Cache</span>
             <strong style={{ fontSize: "1.25rem" }}>
-              {livePricing.source === "metals.dev" ? "🟢 Live API Stream" : "🟡 Cached Fallback"}
+              {livePricing.source !== "configured-default" ? "🟢 Live API Stream" : "🟡 Cached Fallback"}
             </strong>
             <p className="muted small" style={{ marginTop: 4 }}>
               {livePricing.message || "Daily spot rate auto-refreshed."}

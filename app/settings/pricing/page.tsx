@@ -107,7 +107,7 @@ export default async function PricingSettingsPage() {
             </div>
             <div className="consultationPill">
               <span className="consultationDot" aria-hidden="true" />
-              <span>{livePricing.source === "metals.dev" ? "Live Market Feed" : "Active Live Engine"}</span>
+              <span>{livePricing.source !== "configured-default" ? "Live Market Feed" : "Active Live Engine"}</span>
             </div>
           </div>
 

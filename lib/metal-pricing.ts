@@ -4,6 +4,7 @@ import { resolveRuntimeSetting } from "@/lib/app-settings";
 import { DEFAULT_PRICING_PROFILE, type PricingProfileInput } from "@/lib/pricing";
 
 const METALS_DEV_BASE_URL = "https://api.metals.dev/v1";
+const METALPRICE_API_BASE_URL = "https://api.metalpriceapi.com/v1";
 const TORONTO_TIME_ZONE = "America/Toronto";
 const TORONTO_DAILY_REFRESH_HOUR = 9;
 const LIVE_PRICING_CACHE_KEY = "METALS_LIVE_PRICING_CACHE_V1";
@@ -21,9 +22,23 @@ type MetalsDevLatestResponse = {
   error_message?: string;
 };
 
+type MetalpriceApiLatestResponse = {
+  success?: boolean;
+  timestamp?: number | string;
+  base?: string;
+  date?: string;
+  rates?: Record<string, number | string | null | undefined>;
+  error_message?: string;
+  error?: {
+    message?: string;
+  };
+};
+
+type LivePricingSource = "metals.dev" | "metalpriceapi" | "configured-default";
+
 export type ResolvedMetalPricing = {
   pricingProfile: PricingProfileInput;
-  source: "metals.dev" | "configured-default";
+  source: LivePricingSource;
   message: string;
   timestamp?: string;
 };
@@ -35,6 +50,7 @@ type CachedLivePricing = {
     PricingProfileInput,
     "goldSpotPerOz" | "platinumSpotPerOz" | "silverSpotPerOz"
   >;
+  provider?: Exclude<LivePricingSource, "configured-default">;
   timestamp?: string;
   message?: string;
 };
@@ -131,6 +147,25 @@ async function storeCachedLivePricing(cache: CachedLivePricing) {
   });
 }
 
+function buildCachedLivePricingResult(
+  configuredProfile: PricingProfileInput,
+  cachedPricing: CachedLivePricing,
+  message?: string
+): ResolvedMetalPricing {
+  return {
+    pricingProfile: {
+      ...configuredProfile,
+      ...cachedPricing.pricingProfile
+    },
+    source: cachedPricing.provider ?? "metals.dev",
+    timestamp: cachedPricing.timestamp,
+    message:
+      message ||
+      cachedPricing.message ||
+      `Live market spot prices loaded from the Toronto 9:00 AM cache${cachedPricing.timestamp ? ` at ${cachedPricing.timestamp}` : "."}`
+  };
+}
+
 async function buildMetalsDevUrl() {
   const baseUrl =
     (await resolveRuntimeSetting("METALS_DEV_BASE_URL", process.env.METALS_DEV_BASE_URL)) ||
@@ -153,6 +188,130 @@ async function buildMetalsDevUrl() {
   url.searchParams.set("unit", unit);
 
   return url;
+}
+
+async function buildMetalpriceApiUrl() {
+  const baseUrl =
+    (await resolveRuntimeSetting("METALPRICE_API_BASE_URL", process.env.METALPRICE_API_BASE_URL)) ||
+    METALPRICE_API_BASE_URL;
+  const apiKey =
+    (await resolveRuntimeSetting("METALPRICE_API_KEY", process.env.METALPRICE_API_KEY)) || null;
+
+  if (!apiKey) {
+    return null;
+  }
+
+  const url = new URL(`${baseUrl.replace(/\/$/, "")}/latest`);
+  url.searchParams.set("api_key", apiKey.trim());
+  url.searchParams.set("base", "USD");
+  url.searchParams.set("currencies", "XAU,XAG,XPT");
+
+  return url;
+}
+
+function extractMetalpriceRate(rates: Record<string, number | string | null | undefined> | undefined, symbol: string) {
+  if (!rates) {
+    return null;
+  }
+
+  const exact = rates[symbol];
+  if (exact !== undefined && exact !== null) {
+    const numeric = Number(exact);
+    if (Number.isFinite(numeric)) {
+      return numeric;
+    }
+  }
+
+  const matchingKey = Object.keys(rates).find(
+    (key) => key.toUpperCase() === symbol || key.toUpperCase().includes(symbol)
+  );
+  if (!matchingKey) {
+    return null;
+  }
+
+  const numeric = Number(rates[matchingKey]);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function normalizeLiveTimestamp(timestamp?: number | string, date?: string) {
+  if (typeof timestamp === "number" && Number.isFinite(timestamp)) {
+    return new Date(timestamp * 1000).toISOString();
+  }
+
+  if (typeof timestamp === "string" && timestamp.trim()) {
+    return timestamp.trim();
+  }
+
+  return date?.trim() || undefined;
+}
+
+async function resolveMetalpriceApiPricing(
+  configuredProfile: PricingProfileInput
+): Promise<ResolvedMetalPricing> {
+  const url = await buildMetalpriceApiUrl();
+  if (!url) {
+    return {
+      pricingProfile: configuredProfile,
+      source: "configured-default",
+      message: "Live metal pricing is disabled because METALPRICE_API_KEY is not set."
+    };
+  }
+
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AzzureAutoQuote/2.0"
+    },
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as MetalpriceApiLatestResponse | null;
+    const detail = errorBody?.error_message || errorBody?.error?.message;
+    throw new Error(`MetalpriceAPI request failed with status ${response.status}.${detail ? ` (${detail})` : ""}`);
+  }
+
+  const payload = (await response.json()) as MetalpriceApiLatestResponse;
+  if (payload.success === false) {
+    throw new Error(payload.error_message || payload.error?.message || "Unexpected response from MetalpriceAPI.");
+  }
+
+  const rates = payload.rates ?? {};
+  const gold = extractMetalpriceRate(rates, "XAU");
+  const platinum = extractMetalpriceRate(rates, "XPT");
+  const silver = extractMetalpriceRate(rates, "XAG");
+
+  if (gold === null && platinum === null && silver === null) {
+    throw new Error("Unexpected response from MetalpriceAPI.");
+  }
+
+  const liveProfile: PricingProfileInput = {
+    ...configuredProfile,
+    goldSpotPerOz: gold ?? configuredProfile.goldSpotPerOz,
+    platinumSpotPerOz: platinum ?? configuredProfile.platinumSpotPerOz,
+    silverSpotPerOz: silver ?? configuredProfile.silverSpotPerOz
+  };
+  const timestamp = normalizeLiveTimestamp(payload.timestamp, payload.date);
+
+  await storeCachedLivePricing({
+    fetchedAt: new Date().toISOString(),
+    torontoDate: getTorontoDateKey(),
+    provider: "metalpriceapi",
+    pricingProfile: {
+      goldSpotPerOz: liveProfile.goldSpotPerOz,
+      platinumSpotPerOz: liveProfile.platinumSpotPerOz,
+      silverSpotPerOz: liveProfile.silverSpotPerOz
+    },
+    timestamp,
+    message: `Live market spot prices loaded from MetalpriceAPI${timestamp ? ` at ${timestamp}` : "."}`
+  });
+
+  return {
+    pricingProfile: liveProfile,
+    source: "metalpriceapi",
+    timestamp,
+    message: `Live market spot prices loaded from MetalpriceAPI${timestamp ? ` at ${timestamp}` : "."}`
+  };
 }
 
 // Global promise to prevent thundering herd API requests when Next.js prefetches multiple pages concurrently
@@ -204,34 +363,21 @@ async function doResolveMetalPricing(
   // Company values are legacy fallbacks. Explicit Master Pricing values override them.
   // Live/cache metal spot values are applied later and have the highest precedence.
   const configuredProfile = normalizePricingProfile({ ...(pricingProfile ?? {}), ...masterProfile });
-  const url = await buildMetalsDevUrl();
+  const metalsDevUrl = await buildMetalsDevUrl();
+  const metalpriceApiUrl = await buildMetalpriceApiUrl();
   const now = new Date();
   const cachedPricing = await readCachedLivePricing();
 
-  if (url && cachedPricing && !shouldRefreshLivePricing(cachedPricing, now)) {
-    return {
-      pricingProfile: {
-        ...configuredProfile,
-        ...cachedPricing.pricingProfile
-      },
-      source: "metals.dev",
-      timestamp: cachedPricing.timestamp,
-      message:
-        cachedPricing.message ||
-        `Live market spot prices loaded from the Toronto 9:00 AM cache${cachedPricing.timestamp ? ` at ${cachedPricing.timestamp}` : "."}`
-    };
-  }
-
-  if (!url) {
-    return {
-      pricingProfile: configuredProfile,
-      source: "configured-default",
-      message: "Live metal pricing is disabled because METALS_DEV_API_KEY is not set. Using Master Pricing."
-    };
+  if (metalsDevUrl && cachedPricing && !shouldRefreshLivePricing(cachedPricing, now)) {
+    return buildCachedLivePricingResult(configuredProfile, cachedPricing);
   }
 
   try {
-    const response = await fetch(url, {
+    if (!metalsDevUrl) {
+      throw new Error("METALS_DEV_API_KEY is not set.");
+    }
+
+    const response = await fetch(metalsDevUrl, {
       headers: {
         Accept: "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AzzureAutoQuote/2.0"
@@ -261,6 +407,7 @@ async function doResolveMetalPricing(
     await storeCachedLivePricing({
       fetchedAt: now.toISOString(),
       torontoDate: getTorontoDateKey(now),
+      provider: "metals.dev",
       pricingProfile: {
         goldSpotPerOz: liveProfile.goldSpotPerOz,
         platinumSpotPerOz: liveProfile.platinumSpotPerOz,
@@ -277,13 +424,29 @@ async function doResolveMetalPricing(
       message: `Live market spot prices loaded from Metals.dev${payload.timestamp ? ` at ${payload.timestamp}` : "."}`
     };
   } catch (error) {
+    console.warn("Primary live metal pricing provider failed:", error);
+
+    if (metalpriceApiUrl) {
+      try {
+        return await resolveMetalpriceApiPricing(configuredProfile);
+      } catch (backupError) {
+        console.warn("Backup live metal pricing provider failed:", backupError);
+      }
+    }
+
+    if (cachedPricing) {
+      return buildCachedLivePricingResult(
+        configuredProfile,
+        cachedPricing,
+        `Live metal pricing is temporarily unavailable. Showing the most recent live prices${cachedPricing.timestamp ? ` from ${cachedPricing.timestamp}` : ""}.`
+      );
+    }
+
     return {
       pricingProfile: configuredProfile,
       source: "configured-default",
       message:
-        error instanceof Error
-          ? `Live metal pricing unavailable, using Master Pricing instead: ${error.message}`
-          : "Live metal pricing unavailable, using Master Pricing instead."
+        "Live metal pricing is temporarily unavailable. Using Master Pricing instead."
     };
   }
 }
