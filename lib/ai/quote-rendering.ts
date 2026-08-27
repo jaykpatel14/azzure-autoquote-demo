@@ -22,16 +22,27 @@ type RenderingSubject = {
   centerClarity: string | null;
   settingType: string | null;
   metalType: string;
+  metalColor: string | null;
   metalWeightGrams: unknown;
   centerDiamondCarats: unknown;
   sideDiamondCarats: unknown;
   sideDiamondQuantity: number | null;
+  centerStoneColor: string | null;
 };
 
 function buildRenderingPrompt(subject: RenderingSubject, hasReferencePhoto: boolean) {
   const jewelryType = subject.jewelryType || "fine jewelry piece";
   const centerShape = subject.centerShape || "proportionate center stone";
-  const settingType = subject.settingType || "professionally appropriate setting";
+  const settingType = subject.settingType || null;
+  const metalLabel =
+    subject.metalColor && subject.metalType !== "Platinum" && subject.metalType !== "Silver"
+      ? `${subject.metalType} ${subject.metalColor} gold`
+      : subject.metalType;
+  const centerStoneLabel = subject.centerStoneColor ? `${subject.centerStoneColor} ${centerShape}` : centerShape;
+  const sideStoneInstruction =
+    subject.sideDiamondQuantity && subject.sideDiamondQuantity > 0
+      ? `Include ${subject.sideDiamondQuantity} side diamonds totaling approximately ${Number(subject.sideDiamondCarats ?? 0).toFixed(2)} carats.`
+      : "Do not add side stones, pavé accents, or hidden halos unless they are clearly visible in the reference photo or explicitly requested.";
 
   return [
     hasReferencePhoto
@@ -40,9 +51,10 @@ function buildRenderingPrompt(subject: RenderingSubject, hasReferencePhoto: bool
     hasReferencePhoto
       ? "Match the design, silhouette, stone placement, and proportions shown in the reference photo as closely as possible — this must depict the same piece, re-rendered as a clean studio product shot, not a different design."
       : "",
-    `Use ${subject.metalType} metal, approximately ${Number(subject.metalWeightGrams ?? 0).toFixed(2)} grams.`,
-    `Use a ${centerShape} center diamond of approximately ${Number(subject.centerDiamondCarats ?? 0).toFixed(2)} carats`,
-    `in a ${settingType}, with ${subject.sideDiamondQuantity ?? 0} side diamonds totaling approximately ${Number(subject.sideDiamondCarats ?? 0).toFixed(2)} carats.`,
+    `Use ${metalLabel}, approximately ${Number(subject.metalWeightGrams ?? 0).toFixed(2)} grams.`,
+    `Use a ${centerStoneLabel} center diamond of approximately ${Number(subject.centerDiamondCarats ?? 0).toFixed(2)} carats.`,
+    settingType ? `Place it in a ${settingType} setting.` : "Do not invent a decorative setting unless it is clearly visible in the reference photo.",
+    sideStoneInstruction,
     subject.centerClarity ? `The center diamond clarity specification is ${subject.centerClarity}.` : "",
     "Show only one complete jewelry piece in a refined three-quarter product view.",
     `Realistic precious-metal reflections, physically believable gemstone refraction, crisp edges, premium jewelry studio lighting. ${PLAIN_BACKGROUND_INSTRUCTION}`,
@@ -139,6 +151,7 @@ export async function generateQuoteRendering(params: { quoteId: string; companyI
           centerShape: true,
           centerClarity: true,
           settingType: true,
+          output: true,
           sourceImageStorageKey: true,
           imageDataUrl: true,
           sourceImageMimeType: true
@@ -164,6 +177,7 @@ export async function generateQuoteRendering(params: { quoteId: string; companyI
     if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
 
     const referencePhoto = await loadReferencePhoto(quote.analysis);
+    const analysisOutput = quote.analysis?.output as Record<string, unknown> | null;
     const prompt = buildRenderingPrompt(
       {
         jewelryType: quote.analysis?.jewelryType ?? null,
@@ -171,10 +185,15 @@ export async function generateQuoteRendering(params: { quoteId: string; companyI
         centerClarity: quote.analysis?.centerClarity ?? null,
         settingType: quote.analysis?.settingType ?? null,
         metalType: quote.metalType,
+        metalColor: typeof analysisOutput?.metalColor === "string" ? analysisOutput.metalColor : null,
         metalWeightGrams: quote.metalWeightGrams,
         centerDiamondCarats: quote.centerDiamondCarats,
         sideDiamondCarats: quote.sideDiamondCarats,
-        sideDiamondQuantity: quote.sideDiamondQuantity
+        sideDiamondQuantity: quote.sideDiamondQuantity,
+        centerStoneColor:
+          typeof analysisOutput?.centerStone === "object" && analysisOutput.centerStone !== null && typeof (analysisOutput.centerStone as Record<string, unknown>).color === "string"
+            ? String((analysisOutput.centerStone as Record<string, unknown>).color)
+            : null
       },
       Boolean(referencePhoto)
     );
@@ -235,6 +254,7 @@ export async function generateAnalysisRendering(params: { analysisId: string; co
     if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
 
     const referencePhoto = await loadReferencePhoto(analysis);
+    const analysisOutput = analysis.output as Record<string, unknown> | null;
     const prompt = buildRenderingPrompt(
       {
         jewelryType: analysis.jewelryType,
@@ -242,10 +262,15 @@ export async function generateAnalysisRendering(params: { analysisId: string; co
         centerClarity: analysis.centerClarity,
         settingType: analysis.settingType,
         metalType: analysis.selectedMetal,
+        metalColor: typeof analysisOutput?.metalColor === "string" ? analysisOutput.metalColor : null,
         metalWeightGrams: analysis.metalWeightGrams,
         centerDiamondCarats: analysis.centerDiamondCarats,
         sideDiamondCarats: analysis.sideDiamondCarats,
-        sideDiamondQuantity: analysis.sideDiamondQuantity
+        sideDiamondQuantity: analysis.sideDiamondQuantity,
+        centerStoneColor:
+          typeof analysisOutput?.centerStone === "object" && analysisOutput.centerStone !== null && typeof (analysisOutput.centerStone as Record<string, unknown>).color === "string"
+            ? String((analysisOutput.centerStone as Record<string, unknown>).color)
+            : null
       },
       Boolean(referencePhoto)
     );

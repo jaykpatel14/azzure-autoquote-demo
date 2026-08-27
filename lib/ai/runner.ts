@@ -36,6 +36,7 @@ export type JewelryAnalysisRun = {
   merged: {
     jewelryType: string;
     selectedMetal: MetalType;
+    metalColor: "yellow" | "white" | "rose" | null;
     metalWeightGrams: number;
     isTwoTone: boolean;
     hasWeddingBand: boolean;
@@ -208,7 +209,9 @@ export function aggregateJewelryAnalysis(outputs: JewelryAnalysis[], selectedMet
 
   const centerStone: CenterStoneSpec = {
     shape: centerShape,
-    caratWeight: centerCaratWeight
+    caratWeight: centerCaratWeight,
+    color:
+      chooseMode(outputs.map((output) => output.centerStone?.color ?? "").filter(Boolean) as string[]) || null
   };
 
   // Pick representative side stones from outputs
@@ -243,6 +246,12 @@ export function aggregateJewelryAnalysis(outputs: JewelryAnalysis[], selectedMet
     selectedMetal:
       (chooseMode(outputs.map((output) => output.selected_metal)) as MetalType | undefined) ||
       selectedMetal,
+    metalColor:
+      (chooseMode(outputs.map((output) => output.metalColor).filter(Boolean) as Array<"yellow" | "white" | "rose">) as
+        | "yellow"
+        | "white"
+        | "rose"
+        | undefined) || null,
     metalWeightGrams: Number(median(outputs.map((output) => output.metal_weight_grams)).toFixed(2)),
     isTwoTone,
     hasWeddingBand,

@@ -228,14 +228,17 @@ export async function POST(request: Request) {
       analysisId: record.id,
       jewelryType: merged.jewelryType,
       selectedMetal: merged.selectedMetal,
+      metalColor: merged.metalColor,
       metalWeightGrams: merged.metalWeightGrams,
       centerDiamondCarats: merged.centerDiamondCarats,
       sideDiamondCarats: merged.sideDiamondCarats,
       sideDiamondQuantity: merged.sideDiamondQuantity,
       centerShape: merged.centerShape,
+      centerStoneColor: merged.centerStone.color,
       settingType: merged.settingType,
       hasWeddingBand: merged.hasWeddingBand,
       isTwoTone: merged.isTwoTone,
+      assumptions: merged.assumptions,
       renderingStatus,
       renderingImageUrl
     });

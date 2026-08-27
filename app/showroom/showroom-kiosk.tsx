@@ -22,14 +22,17 @@ type Analysis = {
   analysisId: string;
   jewelryType: string;
   selectedMetal: string;
+  metalColor?: string | null;
   metalWeightGrams: number;
   centerDiamondCarats: number;
   sideDiamondCarats: number;
   sideDiamondQuantity: number;
   centerShape?: string;
+  centerStoneColor?: string | null;
   settingType?: string;
   hasWeddingBand?: boolean;
   isTwoTone?: boolean;
+  assumptions?: string[];
   renderingImageUrl?: string | null;
   renderingStatus?: string;
 };
@@ -115,11 +118,23 @@ const JEWELRY_FACTS_COLLECTION: JewelryFactItem[] = [
 
 const METAL_OPTIONS = ["10K", "14K", "18K", "Platinum", "Silver"];
 
+function formatMetalDisplay(metal: string, metalColor?: string | null) {
+  if (metal === "Platinum" || metal === "Silver") return metal;
+  if (!metalColor) return metal;
+  const suffix = metalColor === "rose" ? "rose gold" : `${metalColor} gold`;
+  return `${metal} ${suffix}`;
+}
+
+function formatStoneColor(color?: string | null) {
+  if (!color) return "";
+  return color.trim();
+}
+
 function getRingSpecTitle(analysis: Analysis | null): string {
   if (!analysis) return "Custom Jewelry Design";
-  const metal = analysis.selectedMetal || "14K";
+  const metal = formatMetalDisplay(analysis.selectedMetal || "14K", analysis.metalColor);
   const centerCarat = Number(analysis.centerDiamondCarats || 0).toFixed(2);
-  const centerShape = analysis.centerShape ? `${analysis.centerShape}` : "Diamond";
+  const centerShape = analysis.centerShape ? `${formatStoneColor(analysis.centerStoneColor) ? `${formatStoneColor(analysis.centerStoneColor)} ` : ""}${analysis.centerShape}` : "Diamond";
   const sideCarat = Number(analysis.sideDiamondCarats || 0);
   const sideQty = analysis.sideDiamondQuantity || 0;
   
@@ -1513,7 +1528,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                 <QuoteStepCard
                   number="01"
                   title="Your Details & Design Inspiration"
-                  description="Please provide your contact details (mandatory) and reference photo or design description."
+                  description="Start with the design details first. Contact details are captured when you save or share the quote."
                 >
                   {/* Mandatory Customer Contact Section for Showroom */}
                   <div
@@ -1770,11 +1785,31 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                         </select>
                       </label>
                       <label className="facetResolvedField">
+                        <span>Metal color</span>
+                        <select
+                          value={analysis.metalColor ?? ""}
+                          onChange={(event) => updateAnalysisField("metalColor", (event.target.value || null) as Analysis["metalColor"])}
+                        >
+                          <option value="">Auto / not specified</option>
+                          <option value="yellow">Yellow gold</option>
+                          <option value="white">White gold</option>
+                          <option value="rose">Rose gold</option>
+                        </select>
+                      </label>
+                      <label className="facetResolvedField">
                         <span>Center shape</span>
                         <input
                           value={analysis.centerShape ?? ""}
                           onChange={(event) => updateAnalysisField("centerShape", event.target.value)}
                           placeholder="e.g. Oval, Pear, Round"
+                        />
+                      </label>
+                      <label className="facetResolvedField">
+                        <span>Center stone color</span>
+                        <input
+                          value={analysis.centerStoneColor ?? ""}
+                          onChange={(event) => updateAnalysisField("centerStoneColor", event.target.value || null)}
+                          placeholder="e.g. Green, blue, pink"
                         />
                       </label>
                       <label className="facetResolvedField">
@@ -1828,6 +1863,19 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                         </label>
                       </div>
                     </div>
+                    {analysis.assumptions?.length ? (
+                      <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 12, background: "rgba(15, 23, 42, 0.04)", border: "1px solid rgba(15, 23, 42, 0.08)" }}>
+                        <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>AI assumptions to review</div>
+                        <ul style={{ margin: 0, paddingLeft: 18, color: "#334155", fontSize: "0.8rem", lineHeight: 1.5 }}>
+                          {analysis.assumptions.slice(0, 4).map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                        <p className="muted small" style={{ margin: "8px 0 0" }}>
+                          Side stones and setting type are suggestions unless they were clearly stated or visible.
+                        </p>
+                      </div>
+                    ) : null}
                   </QuoteStepCard>
                 ) : null}
               </>

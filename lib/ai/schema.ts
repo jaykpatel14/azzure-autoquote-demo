@@ -5,7 +5,8 @@ export const AI_ANALYSIS_PROMPT_VERSION = "jewelry-analysis-v2";
 
 export const centerStoneSchema = z.object({
   shape: z.string().trim().min(1).max(120),
-  caratWeight: z.number().min(0).max(100)
+  caratWeight: z.number().min(0).max(100),
+  color: z.string().trim().min(1).max(120).nullable()
 });
 
 export const sideStoneGroupSchema = z.object({
@@ -18,6 +19,7 @@ export const sideStoneGroupSchema = z.object({
 export const jewelryAnalysisSchema = z.object({
   jewelry_type: z.string().trim().min(1).max(120),
   selected_metal: z.enum(METAL_TYPES),
+  metalColor: z.enum(["yellow", "white", "rose"]).nullable(),
   metal_weight_grams: z.number().min(0).max(500),
   isTwoTone: z.boolean(),
   hasWeddingBand: z.boolean(),

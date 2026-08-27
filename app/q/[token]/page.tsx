@@ -12,6 +12,13 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function formatMetalDisplay(metal: string, metalColor?: string | null) {
+  if (metal === "Platinum" || metal === "Silver") return metal;
+  if (!metalColor) return metal;
+  const suffix = metalColor === "rose" ? "rose gold" : `${metalColor} gold`;
+  return `${metal} ${suffix}`;
+}
+
 export default async function PublicQuotePage({
   params
 }: {
@@ -47,7 +54,8 @@ export default async function PublicQuotePage({
       analysis: {
         select: {
           imageDataUrl: true,
-          sourceImageStorageKey: true
+          sourceImageStorageKey: true,
+          output: true
         }
       }
     }
@@ -58,6 +66,15 @@ export default async function PublicQuotePage({
   }
 
   const headerList = await headers();
+  const analysisOutput = quote.analysis?.output as Record<string, unknown> | null;
+  const displayMetal = formatMetalDisplay(
+    quote.metalType,
+    typeof analysisOutput?.metalColor === "string" ? analysisOutput.metalColor : null
+  );
+  const displayCenterColor =
+    typeof analysisOutput?.centerStone === "object" && analysisOutput.centerStone !== null && typeof (analysisOutput.centerStone as Record<string, unknown>).color === "string"
+      ? String((analysisOutput.centerStone as Record<string, unknown>).color)
+      : null;
   const renderingDataUrl = quote.renderingStorageKey
     ? await loadQuoteRenderingDataUrlFromS3(quote.renderingStorageKey)
     : quote.renderingDataUrl;
@@ -109,7 +126,7 @@ export default async function PublicQuotePage({
             <img
               className="publicQuoteImage"
               src={quote.analysis.sourceImageStorageKey ? `/q/${token}/image` : (quote.analysis.imageDataUrl ?? "")}
-              alt={`${quote.metalType} jewelry for quote ${quote.quoteNumber}`}
+              alt={`${displayMetal} jewelry for quote ${quote.quoteNumber}`}
             />
           ) : null}
 
@@ -123,11 +140,12 @@ export default async function PublicQuotePage({
               </div>
               <div>
                 <span>Metal</span>
-                <strong>{quote.metalType}</strong>
+                <strong>{displayMetal}</strong>
               </div>
               <div>
                 <span>Stone layout</span>
                 <strong>
+                  {displayCenterColor ? `${displayCenterColor} ` : ""}
                   {Number(quote.centerDiamondCarats).toFixed(2)} ct center, {quote.sideDiamondQuantity} side stones
                 </strong>
               </div>

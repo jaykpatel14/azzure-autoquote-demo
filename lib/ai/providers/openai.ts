@@ -61,25 +61,28 @@ function buildPrompt(
     "Benchmark Finished Casting Weights (US Finger Size 6.5-7 in 14K Gold):",
     "- Dainty plain solitaire (1.5mm - 1.8mm shank): 3.0g to 4.2g.",
     "- Classic solitaire with hidden halo, cathedral prongs, or peg head: 4.2g to 5.4g.",
-    "- PavÃ© band engagement ring with hidden collar: 4.8g to 6.2g.",
+    "- Pavé band engagement ring with hidden collar: 4.8g to 6.2g.",
     "- Classic Halo or 3-Stone ring with side diamonds/trapezoids: 5.2g to 7.5g.",
     "- Split-shank, vintage filigree, or wide bridal mounting: 6.5g to 9.5g.",
-    "- Two-piece bridal set (engagement ring + matching pavÃ© band): 7.0g to 11.5g total.",
+    "- Two-piece bridal set (engagement ring + matching pavé band): 7.0g to 11.5g total.",
     "- Men's wedding band or heavy signet: 7.0g to 14.0g.",
     "(Note: 18K Gold density is ~1.15x higher than 14K; Platinum 950 density is ~1.65x higher than 14K Gold; Sterling Silver is ~0.80x of 14K).",
+    "Do not collapse metal karat and metal color into one field. selected_metal is the karat/base metal and metalColor is the visible hue/finish (yellow, white, or rose). If the customer says 'rose gold', keep selected_metal as 18K/14K/10K and set metalColor to 'rose'.",
+    "If the customer or image specifies a gemstone color, capture it on centerStone.color. For example, 'green diamonds' should keep the center stone shape and set centerStone.color to a concise color word like 'green'.",
     "Side Stone Calculations:",
     "- 3-stone trilogy side stones (pears, trapezoids, baguettes, tapered baguettes): typically 0.20ct to 0.50ct each.",
-    "- Hidden halo / under-gallery micro-pavÃ© collar: 0.010ct to 0.015ct each (~14 to 28 stones = 0.15ct to 0.35ct total).",
-    "- PavÃ© shank diamonds (3/4 eternity): 0.015ct to 0.03ct each (~16 to 24 stones = 0.30ct to 0.60ct total).",
+    "- Hidden halo / under-gallery micro-pavé collar: 0.010ct to 0.015ct each (~14 to 28 stones = 0.15ct to 0.35ct total).",
+    "- Pavé shank diamonds (3/4 eternity): 0.015ct to 0.03ct each (~16 to 24 stones = 0.30ct to 0.60ct total).",
     "- Full eternity band: 0.03ct to 0.08ct each (~18 to 26 stones = 0.60ct to 1.80ct total).",
     "Identify accurately:",
     "- jewelry_type: Ring, Pendant, Earrings, Bracelet, Necklace, etc.",
     "- selected_metal: the selected metal.",
+    "- metalColor: the visible metal hue/finish, if the customer or image specifies it. Use yellow, white, or rose; otherwise null.",
     "- isTwoTone: true if the design combines white metal and yellow/rose gold, false otherwise.",
     "- hasWeddingBand: true if there are two distinct interlocking bands (engagement ring + wedding band), false otherwise.",
     "- metal_weight_grams: realistic finished metal weight in grams based on structural shank volume and finger size.",
-    "- centerStone: the primary center gemstone. Accurately identify shape (Round, Oval, Emerald, Radiant, Cushion, Pear, Marquise, Princess, Asscher, Heart) and realistic carat weight.",
-    "- sideStones: all accent stones grouped by shape and setting type (prong, bezel, pavÃ©, channel, micro-prong).",
+    "- centerStone: the primary center gemstone. Accurately identify shape (Round, Oval, Emerald, Radiant, Cushion, Pear, Marquise, Princess, Asscher, Heart), realistic carat weight, and color when one is explicitly present.",
+    "- sideStones: all accent stones grouped by shape and setting type (prong, bezel, pavé, channel, micro-prong). Do not invent side stones, hidden halos, or setting types unless they are clearly visible in the image or explicitly described by the customer.",
     "- colorClarity: always return 'E VS1'.",
     "- confidence: low, medium, or high.",
     "- assumptions: list of key technical assumptions made during CAD analysis (each under 200 characters).",
@@ -97,7 +100,6 @@ function buildPrompt(
 
   return prompt.join(" ");
 }
-
 export async function createOpenAIJewelryAnalysisProvider(
   clientOrOverrides?: OpenAI | Partial<{
     model: string;
@@ -255,3 +257,4 @@ export function isRetryableAnalysisError(error: unknown) {
 export function serializeAnalysisError(error: unknown) {
   return serializeError(error);
 }
+
