@@ -40,6 +40,22 @@ const schema = z.object({
   showroomBackgroundColor: z.string().regex(/^#[0-9a-f]{6}$/i).optional().or(z.literal(""))
 });
 
+async function readFormData(request: Request) {
+  try {
+    return await request.formData();
+  } catch {
+    const body = await request.text().catch(() => "");
+    const params = new URLSearchParams(body);
+    const formData = new FormData();
+
+    for (const [key, value] of params.entries()) {
+      formData.append(key, value);
+    }
+
+    return formData;
+  }
+}
+
 async function parseInput(request: Request) {
   const contentType = request.headers.get("content-type") || "";
   const isJson = contentType.includes("application/json");
@@ -55,7 +71,7 @@ async function parseInput(request: Request) {
     };
   }
 
-  const formData = await request.formData();
+  const formData = await readFormData(request);
   const rawWebsite = String(formData.get("websiteUrl") || "").trim();
   const input = schema.parse({
     companyName: String(formData.get("companyName") || "").trim(),
