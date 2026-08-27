@@ -718,10 +718,9 @@ export default function QuoteCalculator({
       origin: stoneOrigin,
       shape,
       colorClarity: manualCenterClarity,
-      caratWeight,
-      gemstonePerCarat: Number(pricingProfile?.gemstonePerCarat ?? 40)
+      caratWeight
     });
-  }, [aggregateQuote?.centerDiamondCarats, aggregateQuote?.centerShape, creationMode, manualCenterCarats, manualCenterClarity, manualCenterShape, pricingProfile?.gemstonePerCarat, stoneOrigin]);
+  }, [aggregateQuote?.centerDiamondCarats, aggregateQuote?.centerShape, creationMode, manualCenterCarats, manualCenterClarity, manualCenterShape, stoneOrigin]);
 
   function updateFacet(id: string, updater: (facet: FacetDraft) => FacetDraft) {
     setFacets((current) => current.map((facet) => (facet.id === id ? updater(facet) : facet)));

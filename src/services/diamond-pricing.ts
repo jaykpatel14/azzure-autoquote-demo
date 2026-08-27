@@ -67,9 +67,9 @@ export function getCenterStonePricePerCarat(input: {
   shape: string;
   colorClarity: string;
   caratWeight: number;
-  gemstonePerCarat: number;
+  gemstonePerCarat?: number;
 }): PriceResult {
-  if (input.origin === "gemstone") return { pricePerCarat: input.gemstonePerCarat };
+  if (input.origin === "gemstone") return { pricePerCarat: input.gemstonePerCarat ?? 40 };
   return input.origin === "natural"
     ? getNaturalPricePerCarat(input.shape, input.colorClarity, input.caratWeight)
     : getLabCenterPricePerCarat(input.colorClarity, input.caratWeight);
@@ -80,9 +80,9 @@ export function getSideStonePricePerCarat(input: {
   shape: string;
   colorClarity: string;
   caratWeightEach: number;
-  gemstonePerCarat: number;
+  gemstonePerCarat?: number;
 }): PriceResult {
-  if (input.origin === "gemstone") return { pricePerCarat: input.gemstonePerCarat };
+  if (input.origin === "gemstone") return { pricePerCarat: input.gemstonePerCarat ?? 40 };
   const round = input.shape.toLowerCase().includes("round");
   const millimeters = estimateRoundMillimeters(input.caratWeightEach);
 

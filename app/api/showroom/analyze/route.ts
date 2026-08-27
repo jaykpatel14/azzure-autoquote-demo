@@ -13,6 +13,7 @@ import {
 } from "@/lib/quote-pdf-s3";
 import { METAL_TYPES, type MetalType } from "@/lib/pricing";
 import { generateAnalysisRendering } from "@/lib/ai/quote-rendering";
+import { estimateAccentStoneCost } from "@/lib/gemstone-pricing";
 
 export const runtime = "nodejs";
 
@@ -224,6 +225,12 @@ export async function POST(request: Request) {
       renderingStatus = "FAILED";
     }
 
+    // Accent colored-stone estimate — computed from the GemstoneRate table
+    const accentStoneEstimate =
+      merged.accentColorStones && merged.accentColorStones.length > 0
+        ? estimateAccentStoneCost(merged.accentColorStones)
+        : null;
+
     return NextResponse.json({
       analysisId: record.id,
       jewelryType: merged.jewelryType,
@@ -239,6 +246,8 @@ export async function POST(request: Request) {
       hasWeddingBand: merged.hasWeddingBand,
       isTwoTone: merged.isTwoTone,
       assumptions: merged.assumptions,
+      accentColorStones: merged.accentColorStones,
+      accentStonePriceEstimate: accentStoneEstimate,
       renderingStatus,
       renderingImageUrl
     });

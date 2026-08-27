@@ -18,6 +18,22 @@ import { useShowroomDevice } from "@/components/showroom-device-provider";
 
 type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; backgroundColor: string | null; backgroundMediaUrl: string | null; backgroundMediaType: string | null; overlayColor: string | null; overlayOpacity: number | null; textColor: string | null; backgroundFit: string | null; backgroundPosition: string | null; panelOpacity: number | null; aboutUs: string | null; marketingImages: string[] };
 type Pricing = { cadCost: number; customerMarginPct: number; pricingTier: PricingTier | null; pricingProfile: PricingProfileInput };
+type AccentStoneEstimate = {
+  tier: "commercial";
+  caratWeightEach: number;
+  lineItems: Array<{
+    stone: string;
+    count: number;
+    caratWeightEach: number;
+    totalCarats: number;
+    lowTotal: number;
+    highTotal: number;
+  }>;
+  lowTotal: number;
+  highTotal: number;
+  disclaimer: string;
+};
+
 type Analysis = {
   analysisId: string;
   jewelryType: string;
@@ -33,6 +49,8 @@ type Analysis = {
   hasWeddingBand?: boolean;
   isTwoTone?: boolean;
   assumptions?: string[];
+  accentColorStones?: Array<{ stone: string; color: string; count: number; clarity: string }>;
+  accentStonePriceEstimate?: AccentStoneEstimate | null;
   renderingImageUrl?: string | null;
   renderingStatus?: string;
 };
@@ -115,6 +133,23 @@ const JEWELRY_FACTS_COLLECTION: JewelryFactItem[] = [
     }
   }
 ];
+
+/**
+ * Bug 1 fix — karat detection:
+ * Parse the customer's free-text description for an explicit metal / karat mention
+ * so the FormData metalType field is set correctly before the API call.
+ * The API route defaults to "14K" when no metalType is sent — which biases the AI
+ * prompt and causes 18K requests to always be stored as 14K.
+ */
+function detectMetalFromDescription(text: string): string {
+  const normalized = text.toLowerCase();
+  if (/platinum/.test(normalized)) return "Platinum";
+  if (/sterling|silver/.test(normalized)) return "Silver";
+  if (/18\s*k(?:arat)?|18-karat/.test(normalized)) return "18K";
+  if (/10\s*k(?:arat)?|10-karat/.test(normalized)) return "10K";
+  if (/14\s*k(?:arat)?|14-karat/.test(normalized)) return "14K";
+  return "14K"; // safe default when no karat is mentioned
+}
 
 const METAL_OPTIONS = ["10K", "14K", "18K", "Platinum", "Silver"];
 
@@ -667,8 +702,13 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setShowTriviaAnswer(false);
 
     try {
+      // Bug 1 fix: parse karat/metal from the customer description before sending so the
+      // AI model prompt is told the correct base metal (not always the "14K" default).
+      const detectedMetal = detectMetalFromDescription(description);
+
       const form = new FormData();
       form.set("token", token);
+      form.set("metalType", detectedMetal);
       if (hasDesc) form.set("description", description.trim());
       if (hasFiles) {
         filesToAnalyze.forEach((file) => form.append("images", file));
@@ -1929,6 +1969,23 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(estimatedSellingPrice)
                       : "—"}
                   </div>
+                  {analysis && analysis.accentStonePriceEstimate ? (
+                    <>
+                      <p className="muted small" style={{ marginTop: 4, fontSize: "0.875rem" }}>
+                        Accent stones (est.):{" "}
+                        <span className="badge" style={{ background: "rgba(201, 168, 76, 0.15)", color: "#e6cb78" }}>
+                          {new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: "USD"
+                          }).format(analysis.accentStonePriceEstimate.lowTotal)}–
+                          {new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: "USD"
+                          }).format(analysis.accentStonePriceEstimate.highTotal)}
+                        </span>
+                      </p>
+                    </>
+                  ) : null}
                   {analysis ? (
                     <div className="showroomRingSpecTitle">
                       {getRingSpecTitle(analysis)}

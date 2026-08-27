@@ -51,6 +51,8 @@ function buildPrompt(
     "You are an expert master jeweler, graduate gemologist, and custom fine jewelry production estimator.",
     `This is independent review ${attemptNumber}.`,
     `The currently selected finished metal is ${metal}.`,
+    // Bug 1 fix: explicit karat-lock so the AI never silently downgrades the karat
+    "IMPORTANT — Karat accuracy: If the customer description explicitly states a karat (e.g. '18k', '18 karat', '18-karat', '18K'), you MUST set selected_metal to that exact karat (e.g. '18K'). Do NOT downgrade or change the karat. The currently selected metal above is your fallback only when the customer does not specify a karat.",
     "Evaluate the piece from the reference image and customer description with highest precision for production casting and gem pricing.",
     "Geometric and physical benchmarks for center diamonds (use millimeter-to-carat proportion against standard 1.8mm-2.0mm ring shanks):",
     "- Round Brilliant: 1.0ct (~6.5mm), 1.5ct (~7.4mm), 2.0ct (~8.1mm), 2.5ct (~8.8mm), 3.0ct (~9.3mm).",
@@ -76,18 +78,22 @@ function buildPrompt(
     "- Full eternity band: 0.03ct to 0.08ct each (about 18 to 26 stones = 0.60ct to 1.80ct total).",
     "Identify accurately:",
     "- jewelry_type: Ring, Pendant, Earrings, Bracelet, Necklace, etc.",
-    "- selected_metal: the selected metal.",
+    "- selected_metal: the karat/base metal as described above. Never change a customer-stated karat.",
     "- metalColor: the visible metal hue/finish, if the customer or image specifies it. Use yellow, white, or rose; otherwise null.",
     "- isTwoTone: true if the design combines white metal and yellow or rose gold, false otherwise.",
     "- hasWeddingBand: true if there are two distinct interlocking bands (engagement ring + wedding band), false otherwise.",
     "- metal_weight_grams: realistic finished metal weight in grams based on structural shank volume and finger size.",
     "- centerStone: the primary center gemstone. Accurately identify shape (Round, Oval, Emerald, Radiant, Cushion, Pear, Marquise, Princess, Asscher, Heart), realistic carat weight, and color when one is explicitly present.",
-    "- sideStones: all accent stones grouped by shape and setting type (prong, bezel, pave, channel, micro-prong). Do not invent side stones, hidden halos, or setting types unless they are clearly visible in the image or explicitly described by the customer.",
+    "- sideStones: all accent diamond groups, each with shape, caratWeightEach, count, and settingType (prong, bezel, pave, channel, micro-prong). Do not invent side stones or setting types unless clearly visible in the image or explicitly described.",
+    // Bug 2 fix: dedicated settingStyle field for named ring setting styles
+    "- settingStyle: the OVERALL named ring setting style, exactly as stated by the customer or clearly visible in the image. Examples: 'hidden halo', 'cathedral', 'bezel', 'tension', 'solitaire', 'three-stone', 'pavé band'. This is SEPARATE from sideStones[].settingType. If the customer explicitly requests 'hidden halo', you MUST set settingStyle to 'hidden halo'. Do not leave this null when the customer has named a setting style.",
+    // Bug 3 fix: dedicated array for additional named colored gemstones
+    "- accentColorStones: if the customer explicitly requests additional named colored gemstones BEYOND the primary center stone (e.g. 'with ruby and sapphire', 'emerald, ruby, sapphire'), list EACH stone as a separate entry with: stone (gem name, e.g. 'ruby'), shape (e.g. 'round', 'baguette', 'oval' — use 'round' if unspecified), and count (default 2 if quantity not stated). Do NOT omit any gemstone the customer explicitly named. If no additional colored stones are requested, omit this field or return an empty array.",
     "- colorClarity: always return E VS1.",
     "- confidence: low, medium, or high.",
     "- assumptions: list of key technical assumptions made during CAD analysis, each under 200 characters.",
     customerDescription?.trim()
-      ? `Customer-provided design description: ${customerDescription.trim()}. Match all specifications and stone preferences requested by the customer.`
+      ? `Customer-provided design description: ${customerDescription.trim()}. Match ALL specifications — karat, metal color, setting style, and every gemstone — exactly as the customer requested.`
       : "No customer description was supplied."
   ];
 

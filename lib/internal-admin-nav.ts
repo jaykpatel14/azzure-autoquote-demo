@@ -22,6 +22,7 @@ export const NAV_ITEMS = [
   { href: "/admin/analytics", label: "Analytics", icon: "analytics", priority: "secondary", roles: ["SUPER_ADMIN"] },
   { href: "/admin/hardware", label: "Hardware", icon: "manufacturing", priority: "secondary", roles: ["SUPER_ADMIN", "SUPPORT_ADMIN", "OPERATIONS_MANAGER"] },
   { href: "/admin/platform/api-keys", label: "API keys", icon: "key", priority: "secondary", roles: ["SUPER_ADMIN"] },
+  { href: "/admin/platform/gemstone-rates", label: "Gemstone Rates", icon: "diamond", priority: "secondary", roles: ["SUPER_ADMIN", "OPERATIONS_MANAGER"] },
   { href: "/admin/platform/settings", label: "Settings", icon: "settings", priority: "secondary", roles: ["SUPER_ADMIN"] }
 ] as const satisfies readonly InternalAdminNavItem[];
 

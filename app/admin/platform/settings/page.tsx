@@ -30,7 +30,6 @@ export default async function AdminPlatformSettingsPage() {
     master_fancy_center_diamond_per_ct: DEFAULT_PRICING_PROFILE.fancyCenterDiamondPerCarat,
     master_round_side_diamond_per_ct: DEFAULT_PRICING_PROFILE.roundSideDiamondPerCarat,
     master_fancy_side_diamond_per_ct: DEFAULT_PRICING_PROFILE.fancySideDiamondPerCarat,
-    master_gemstone_per_ct: DEFAULT_PRICING_PROFILE.gemstonePerCarat,
     master_center_setting_per_ct: DEFAULT_PRICING_PROFILE.centerSettingPerCarat,
     master_round_side_setting_per_stone: DEFAULT_PRICING_PROFILE.roundSideSettingPerStone,
     master_fancy_side_setting_per_stone: DEFAULT_PRICING_PROFILE.fancySideSettingPerStone,

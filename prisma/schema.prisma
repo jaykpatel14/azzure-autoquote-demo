@@ -539,3 +539,22 @@ model StripeWebhookEvent {
   errorMessage String?
   createdAt    DateTime  @default(now())
 }
+
+model GemstoneRate {
+  id                  String   @id @default(cuid())
+  stone               String   @unique
+  displayName         String
+  commercialLowPerCt  Decimal
+  commercialHighPerCt Decimal
+  fineLowPerCt        Decimal
+  fineHighPerCt       Decimal
+  premiumLowPerCt     Decimal
+  premiumHighPerCt    Decimal
+  sources             String?
+  refreshedAt         DateTime @default(now())
+  reviewedAt          DateTime?
+  reviewedBy          String?
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}

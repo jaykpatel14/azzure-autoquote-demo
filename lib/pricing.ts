@@ -31,7 +31,6 @@ export type PricingProfileInput = Partial<{
   fancyCenterDiamondPerCarat: number;
   roundSideDiamondPerCarat: number;
   fancySideDiamondPerCarat: number;
-  gemstonePerCarat: number;
   roundSideSettingPerStone: number;
   fancySideSettingPerStone: number;
   waxPerPiece: number;
@@ -53,7 +52,6 @@ export const DEFAULT_PRICING_PROFILE = {
   fancyCenterDiamondPerCarat: 175,
   roundSideDiamondPerCarat: 80,
   fancySideDiamondPerCarat: 130,
-  gemstonePerCarat: 40,
   roundSideSettingPerStone: 1.25,
   fancySideSettingPerStone: 5,
   waxPerPiece: 15,
@@ -114,7 +112,6 @@ export function mergePricingProfiles(
     fancyCenterDiamondPerCarat: base.fancyCenterDiamondPerCarat + (extra.fancyCenterDiamondPerCarat ?? 0),
     roundSideDiamondPerCarat: base.roundSideDiamondPerCarat + (extra.roundSideDiamondPerCarat ?? 0),
     fancySideDiamondPerCarat: base.fancySideDiamondPerCarat + (extra.fancySideDiamondPerCarat ?? 0),
-    gemstonePerCarat: base.gemstonePerCarat + (extra.gemstonePerCarat ?? 0),
     roundSideSettingPerStone: base.roundSideSettingPerStone + (extra.roundSideSettingPerStone ?? 0),
     fancySideSettingPerStone: base.fancySideSettingPerStone + (extra.fancySideSettingPerStone ?? 0),
     waxPerPiece: base.waxPerPiece + (extra.waxPerPiece ?? 0),

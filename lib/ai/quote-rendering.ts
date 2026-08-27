@@ -28,6 +28,7 @@ type RenderingSubject = {
   sideDiamondCarats: unknown;
   sideDiamondQuantity: number | null;
   centerStoneColor: string | null;
+  accentColorStones?: Array<{ stone: string; shape: string; count: number }> | null;
 };
 
 function buildRenderingPrompt(subject: RenderingSubject, hasReferencePhoto: boolean) {
@@ -44,6 +45,14 @@ function buildRenderingPrompt(subject: RenderingSubject, hasReferencePhoto: bool
       ? `Include ${subject.sideDiamondQuantity} side diamonds totaling approximately ${Number(subject.sideDiamondCarats ?? 0).toFixed(2)} carats.`
       : "Do not add side stones, pavé accents, or hidden halos unless they are clearly visible in the reference photo or explicitly requested.";
 
+  // Bug 3 fix: build an explicit sentence listing every accent colored gemstone the customer requested
+  const accentStonesInstruction =
+    subject.accentColorStones && subject.accentColorStones.length > 0
+      ? `Also incorporate the following accent colored gemstones explicitly requested by the customer: ${subject.accentColorStones
+          .map((s) => `${s.count}x ${s.stone} (${s.shape} cut)`)
+          .join(", ")}. Place them prominently on the shank or shoulders of the ring.`
+      : "";
+
   return [
     hasReferencePhoto
       ? `Using the attached reference photo as the design source, create one photorealistic presentation rendering of this ${jewelryType}.`
@@ -55,6 +64,7 @@ function buildRenderingPrompt(subject: RenderingSubject, hasReferencePhoto: bool
     `Use a ${centerStoneLabel} center diamond of approximately ${Number(subject.centerDiamondCarats ?? 0).toFixed(2)} carats.`,
     settingType ? `Place it in a ${settingType} setting.` : "Do not invent a decorative setting unless it is clearly visible in the reference photo.",
     sideStoneInstruction,
+    accentStonesInstruction,
     subject.centerClarity ? `The center diamond clarity specification is ${subject.centerClarity}.` : "",
     "Show only one complete jewelry piece in a refined three-quarter product view.",
     `Realistic precious-metal reflections, physically believable gemstone refraction, crisp edges, premium jewelry studio lighting. ${PLAIN_BACKGROUND_INSTRUCTION}`,
@@ -141,6 +151,25 @@ async function requestRenderingBase64(params: {
   return base64;
 }
 
+/** Helper to safely extract accentColorStones from a stored analysis output JSON blob */
+function extractAccentColorStones(
+  analysisOutput: Record<string, unknown> | null
+): Array<{ stone: string; shape: string; count: number }> | null {
+  if (!analysisOutput) return null;
+  const raw = analysisOutput.accentColorStones;
+  if (!Array.isArray(raw)) return null;
+  return raw
+    .filter(
+      (item): item is { stone: string; shape: string; count: number } =>
+        typeof item === "object" &&
+        item !== null &&
+        typeof (item as Record<string, unknown>).stone === "string" &&
+        typeof (item as Record<string, unknown>).shape === "string" &&
+        typeof (item as Record<string, unknown>).count === "number"
+    )
+    .map((item) => ({ stone: item.stone, shape: item.shape, count: item.count }));
+}
+
 export async function generateQuoteRendering(params: { quoteId: string; companyId: string }) {
   const quote = await prisma.quote.findFirst({
     where: { id: params.quoteId, companyId: params.companyId },
@@ -193,7 +222,8 @@ export async function generateQuoteRendering(params: { quoteId: string; companyI
         centerStoneColor:
           typeof analysisOutput?.centerStone === "object" && analysisOutput.centerStone !== null && typeof (analysisOutput.centerStone as Record<string, unknown>).color === "string"
             ? String((analysisOutput.centerStone as Record<string, unknown>).color)
-            : null
+            : null,
+        accentColorStones: extractAccentColorStones(analysisOutput)
       },
       Boolean(referencePhoto)
     );
@@ -270,7 +300,8 @@ export async function generateAnalysisRendering(params: { analysisId: string; co
         centerStoneColor:
           typeof analysisOutput?.centerStone === "object" && analysisOutput.centerStone !== null && typeof (analysisOutput.centerStone as Record<string, unknown>).color === "string"
             ? String((analysisOutput.centerStone as Record<string, unknown>).color)
-            : null
+            : null,
+        accentColorStones: extractAccentColorStones(analysisOutput)
       },
       Boolean(referencePhoto)
     );

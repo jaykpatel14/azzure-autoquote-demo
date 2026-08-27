@@ -209,7 +209,10 @@ async function buildMetalpriceApiUrl() {
   return url;
 }
 
-function extractMetalpriceRate(rates: Record<string, number | string | null | undefined> | undefined, symbol: string) {
+function extractMetalpriceRate(
+  rates: Record<string, number | string | null | undefined> | undefined,
+  symbol: string
+): number | null {
   if (!rates) {
     return null;
   }
@@ -217,8 +220,12 @@ function extractMetalpriceRate(rates: Record<string, number | string | null | un
   const exact = rates[symbol];
   if (exact !== undefined && exact !== null) {
     const numeric = Number(exact);
-    if (Number.isFinite(numeric)) {
-      return numeric;
+    // MetalpriceAPI with `base=USD` returns rates as "how many oz of metal
+    // equal 1 USD" — i.e. the inverse of USD/oz. Invert to get $/oz before
+    // returning; otherwise we'd store ~0.00043 for gold and every quote
+    // would round down to $0.00.
+    if (Number.isFinite(numeric) && numeric > 0) {
+      return 1 / numeric;
     }
   }
 
@@ -230,7 +237,10 @@ function extractMetalpriceRate(rates: Record<string, number | string | null | un
   }
 
   const numeric = Number(rates[matchingKey]);
-  return Number.isFinite(numeric) ? numeric : null;
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return null;
+  }
+  return 1 / numeric;
 }
 
 function normalizeLiveTimestamp(timestamp?: number | string, date?: string) {
@@ -345,7 +355,6 @@ async function doResolveMetalPricing(
     fancyCenterDiamondPerCarat: "master_fancy_center_diamond_per_ct",
     roundSideDiamondPerCarat: "master_round_side_diamond_per_ct",
     fancySideDiamondPerCarat: "master_fancy_side_diamond_per_ct",
-    gemstonePerCarat: "master_gemstone_per_ct",
     centerSettingPerCarat: "master_center_setting_per_ct",
     roundSideSettingPerStone: "master_round_side_setting_per_stone",
     fancySideSettingPerStone: "master_fancy_side_setting_per_stone",

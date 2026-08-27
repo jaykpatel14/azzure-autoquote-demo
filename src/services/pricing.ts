@@ -1,6 +1,8 @@
 import type { PricingTier } from "@prisma/client";
 import { DEFAULT_PRICING_PROFILE, type PricingProfileInput } from "@/lib/pricing";
 import { getCenterStonePricePerCarat, getSideStonePricePerCarat } from "@/src/services/diamond-pricing";
+import { estimateAccentStoneCost, type AccentStoneCostEstimate } from "@/lib/gemstone-pricing";
+import type { AccentColorStoneSpec } from "@/lib/ai/schema";
 
 export const TIER_DIVISORS: Record<PricingTier, number> = {
   TIER_1: 0.6,
@@ -151,6 +153,11 @@ export type MakingPriceInput = {
 
   // Jeweler margin percentage (snapshotted from company settings at quote creation)
   customerMarginPct?: number;
+
+  // Optional accent colored gemstones — added as a separate range line item
+  // (never merged into a single number) so the main quote stays precise and
+  // the accent stones are flagged as estimates requiring jeweler confirmation.
+  accentColorStones?: AccentColorStoneSpec[];
 };
 
 export type MakingPriceBreakdown = {
@@ -175,6 +182,13 @@ export type MakingPriceBreakdown = {
   customerMarginAmount: number;
   // End Customer Selling Price (What the end customer pays)
   estimatedSellingPrice: number;
+  // Accent colored-stone estimate — additive range line item, NOT merged into
+  // the single ring price. Stays as a range so the main quote (metal + diamond
+  // rates) stays precise and the accent stones are flagged as estimates that
+  // require jeweler confirmation.
+  accentStoneCostLow?: number;
+  accentStoneCostHigh?: number;
+  accentStoneEstimate?: AccentStoneCostEstimate;
   pieces: 1 | 2;
   colorClarity: "E VS1";
 };
@@ -262,8 +276,7 @@ export function calculateMakingPrice(
         origin: input.stoneOrigin ?? "lab",
         shape: input.centerStone.shape,
         colorClarity: input.colorClarity ?? DEFAULT_COLOR_CLARITY,
-        caratWeight: input.centerStone.caratWeight,
-        gemstonePerCarat: Number(pricing.gemstonePerCarat)
+        caratWeight: input.centerStone.caratWeight
       })
     : { pricePerCarat: 0 };
   const centerPpc = centerPrice.pricePerCarat > 0 ? centerPrice.pricePerCarat : (input.stoneOrigin === "natural" ? 1500 : 100);
@@ -274,8 +287,7 @@ export function calculateMakingPrice(
       origin: input.stoneOrigin ?? "lab",
       shape: ss.shape ?? "round",
       colorClarity: input.colorClarity ?? DEFAULT_COLOR_CLARITY,
-      caratWeightEach: ss.caratWeightEach,
-      gemstonePerCarat: Number(pricing.gemstonePerCarat)
+      caratWeightEach: ss.caratWeightEach
     });
     const sidePpc = sidePrice.pricePerCarat > 0 ? sidePrice.pricePerCarat : (isSideStoneRound(ss.shape) ? 80 : 130);
     return total + ss.caratWeightEach * ss.count * sidePpc;
@@ -301,6 +313,10 @@ export function calculateMakingPrice(
   const _cadCost = cadCost;
 
   // Step 1: Production Subtotal = all components (metal + stones + labor + cad) before tier formula and customer margin
+  // NOTE: accent colored stones are deliberately NOT included in subtotal — they
+  // are surfaced as an additive range line item so the main ring price stays
+  // precise and the accent stones are flagged as estimates requiring jeweler
+  // confirmation.
   const subtotal = Math.round((
     _metalCost +
     _centerStoneCost +
@@ -319,6 +335,14 @@ export function calculateMakingPrice(
   const _customerMarginAmount = Math.round((makingPrice * (customerMarginPct / 100)) * 100) / 100;
   const estimatedSellingPrice = Math.round((makingPrice + _customerMarginAmount) * 100) / 100;
 
+  // Accent colored-stone estimate — computed from the GemstoneRate table
+  // (commercial tier by default). Returned as a range, never merged into the
+  // single ring price above.
+  const accentEstimate =
+    input.accentColorStones && input.accentColorStones.length > 0
+      ? estimateAccentStoneCost(input.accentColorStones)
+      : null;
+
   return {
     metalCost: Math.round(_metalCost * 100) / 100,
     centerStoneCost: Math.round(_centerStoneCost * 100) / 100,
@@ -334,6 +358,9 @@ export function calculateMakingPrice(
     customerMarginPct,
     customerMarginAmount: _customerMarginAmount,
     estimatedSellingPrice,
+    accentStoneCostLow: accentEstimate?.lowTotal,
+    accentStoneCostHigh: accentEstimate?.highTotal,
+    accentStoneEstimate: accentEstimate ?? undefined,
     pieces: pieceCount(pieceConfig),
     colorClarity: DEFAULT_COLOR_CLARITY
   };

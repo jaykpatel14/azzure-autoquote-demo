@@ -12,7 +12,7 @@ import type {
 } from "@/lib/ai/provider";
 import { median, mergeConfidence } from "@/lib/statistics";
 import { type MetalType } from "@/lib/pricing";
-import type { JewelryAnalysis, CenterStoneSpec, SideStoneSpec } from "@/lib/ai/schema";
+import type { JewelryAnalysis, CenterStoneSpec, SideStoneSpec, AccentColorStoneSpec } from "@/lib/ai/schema";
 
 export type AnalysisAttemptResult =
   | {
@@ -48,6 +48,7 @@ export type JewelryAnalysisRun = {
     centerShape?: string;
     centerClarity: string;
     settingType?: string;
+    accentColorStones: AccentColorStoneSpec[];
     confidence: "low" | "medium" | "high";
     assumptions: string[];
     notes: string;
@@ -236,10 +237,23 @@ export function aggregateJewelryAnalysis(outputs: JewelryAnalysis[], selectedMet
     )
   );
 
-  const settingType =
+  // Bug 2 fix: prefer the top-level settingStyle (named ring setting) over sideStones[].settingType
+  // (which is the stone-setting method, not the overall ring architecture).
+  const namedSettingStyle =
+    chooseMode(
+      outputs.map((output) => output.settingStyle ?? "").filter(Boolean) as string[]
+    ) || undefined;
+
+  const sideStonesSettingType =
     chooseMode(
       outputs.flatMap((output) => (output.sideStones || []).map((ss) => ss.settingType)).filter(Boolean) as string[]
     ) || undefined;
+
+  const settingType = namedSettingStyle || sideStonesSettingType;
+
+  // Bug 3 fix: collect accentColorStones — use first non-empty array across attempts
+  const accentColorStones: AccentColorStoneSpec[] =
+    outputs.find((o) => (o.accentColorStones || []).length > 0)?.accentColorStones || [];
 
   return {
     jewelryType: chooseMode(outputs.map((output) => output.jewelry_type)) || "Jewelry",
@@ -263,6 +277,7 @@ export function aggregateJewelryAnalysis(outputs: JewelryAnalysis[], selectedMet
     centerShape,
     centerClarity: "E VS1",
     settingType,
+    accentColorStones,
     confidence: mergeConfidence(outputs.map((output) => output.confidence)),
     assumptions: mergeAssumptions(outputs),
     notes: outputs.length

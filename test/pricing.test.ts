@@ -213,10 +213,13 @@ describe("pricing", () => {
             success: true,
             timestamp: 1753617600,
             base: "USD",
+            // MetalpriceAPI with `base=USD` returns rates as "how many oz of
+            // metal equal 1 USD" — the inverse of USD/oz. Realistic values:
+            // gold ~$3,222/oz, platinum ~$1,477/oz, silver ~$35.80/oz.
             rates: {
-              "USDXAU (Gold)": 3222.1,
-              "USDXPT (Platinum)": 1477.4,
-              "USDXAG (Silver)": 35.8
+              "XAU": 1 / 3222.1,
+              "XPT": 1 / 1477.4,
+              "XAG": 1 / 35.8
             }
           }),
           {
