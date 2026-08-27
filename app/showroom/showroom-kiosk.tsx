@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type TouchEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type SyntheticEvent, type TouchEvent } from "react";
 import QRCode from "qrcode";
 import { QuoteCreationLayout, QuoteStepCard, QuoteBuilderPreview } from "@/components/QuoteCreationLayout";
 import {
@@ -215,6 +215,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const [showStaffPinModal, setShowStaffPinModal] = useState(false);
   const [staffSession, setStaffSession] = useState<{ staffName: string; staffId: string; sessionToken: string } | null>(null);
   const [marketingIndex, setMarketingIndex] = useState(0);
+  const [imageAspectRatios, setImageAspectRatios] = useState<Record<string, string>>({});
   const [displayMode, setDisplayMode] = useState<"showroom" | "marketing">(() => {
     if (typeof window === "undefined") return "showroom";
     try {
@@ -268,6 +269,28 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setRenderingImageUrl(null);
     setError("");
   }, []);
+
+  const registerImageAspectRatio = useCallback((src: string, width: number, height: number) => {
+    if (!src || width <= 0 || height <= 0) return;
+    const nextAspectRatio = `${width} / ${height}`;
+    setImageAspectRatios((current) => (current[src] === nextAspectRatio ? current : { ...current, [src]: nextAspectRatio }));
+  }, []);
+
+  const handleImageLoad = useCallback(
+    (src: string) =>
+      (event: SyntheticEvent<HTMLImageElement>) => {
+        registerImageAspectRatio(src, event.currentTarget.naturalWidth, event.currentTarget.naturalHeight);
+      },
+    [registerImageAspectRatio]
+  );
+
+  const getImageAspectRatio = useCallback(
+    (src: string | null | undefined, fallback = "1 / 1") => {
+      if (!src) return fallback;
+      return imageAspectRatios[src] || fallback;
+    },
+    [imageAspectRatios]
+  );
 
   // Fetch dynamic AI web-searched fine jewelry facts
   const refreshAIJewelryFacts = useCallback(async () => {
@@ -343,13 +366,63 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const hasMarketingSlider = marketingImages.length > 1;
   const currentMarketingIndex = marketingImages.length > 0 ? marketingIndex % marketingImages.length : 0;
   const marketingIsImmersive = displayMode === "marketing";
+  const currentMarketingImage = marketingImages[currentMarketingIndex] || null;
+  const currentMarketingAspectRatio = getImageAspectRatio(currentMarketingImage, marketingIsImmersive ? "21 / 9" : "16 / 10");
   const marketingPanelMaxWidth = marketingIsImmersive ? 1440 : 760;
-  const marketingPanelPadding = marketingIsImmersive ? 28 : 14;
-  const marketingMediaBleed = marketingIsImmersive ? `-${marketingPanelPadding}px` : 0;
-  const marketingImageMinHeight = marketingIsImmersive ? 680 : 320;
-  const marketingImageMaxHeight = marketingIsImmersive ? 860 : 360;
-  const marketingImageAspectRatio = marketingIsImmersive ? "16 / 9" : "16 / 10";
-  const marketingImageFit = displayMode === "marketing" ? "cover" : "contain";
+  const marketingPanelPadding = marketingIsImmersive ? 0 : 14;
+  const marketingImageMinHeight = marketingIsImmersive ? "100vh" : 280;
+  const marketingImageMaxHeight = marketingIsImmersive ? "100vh" : "none";
+  const marketingImageAspectRatio = currentMarketingAspectRatio;
+  const marketingImageFit = marketingIsImmersive ? "cover" : "contain";
+  const modeToggle = (
+    <div
+      style={{
+        position: "fixed",
+        top: 16,
+        right: 16,
+        zIndex: 80,
+        display: "flex",
+        gap: 8,
+        padding: 6,
+        borderRadius: 999,
+        background: "rgba(0, 0, 0, 0.32)",
+        border: "1px solid rgba(255,255,255,0.12)",
+        backdropFilter: "blur(14px)"
+      }}
+    >
+      <button
+        type="button"
+        className="button secondary button--sm"
+        onClick={() => setDisplayMode("showroom")}
+        style={{
+          minWidth: 128,
+          background: displayMode === "showroom" ? "linear-gradient(135deg, rgba(201,168,76,0.28), rgba(201,168,76,0.12))" : "rgba(255,255,255,0.03)",
+          borderColor: displayMode === "showroom" ? "rgba(201,168,76,0.5)" : "rgba(255,255,255,0.08)",
+          color: displayMode === "showroom" ? "#f6e09e" : "#cbd5e1"
+        }}
+      >
+        Showroom
+      </button>
+      <button
+        type="button"
+        className="button secondary button--sm"
+        onClick={() => {
+          setDisplayMode("marketing");
+          if (marketingImages.length > 1) {
+            setMarketingIndex(0);
+          }
+        }}
+        style={{
+          minWidth: 128,
+          background: displayMode === "marketing" ? "linear-gradient(135deg, rgba(56,189,248,0.25), rgba(56,189,248,0.1))" : "rgba(255,255,255,0.03)",
+          borderColor: displayMode === "marketing" ? "rgba(56,189,248,0.5)" : "rgba(255,255,255,0.08)",
+          color: displayMode === "marketing" ? "#7dd3fc" : "#cbd5e1"
+        }}
+      >
+        Marketing
+      </button>
+    </div>
+  );
 
   useEffect(() => {
     try {
@@ -809,6 +882,202 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     );
   }
 
+  if (displayMode === "marketing") {
+    return (
+      <div
+        className="showroom"
+        style={{
+          ...brandStyle,
+          width: "100vw",
+          height: "100vh",
+          minHeight: "100vh",
+          overflow: "hidden",
+          position: "relative",
+          background: branding.backgroundColor || "#030304"
+        }}
+      >
+        {branding.backgroundMediaUrl ? (
+          branding.backgroundMediaType?.startsWith("video/") ? (
+            <video className="showroomBackgroundMedia" src={branding.backgroundMediaUrl} autoPlay muted loop playsInline aria-hidden="true" />
+          ) : (
+            <img className="showroomBackgroundMedia" src={branding.backgroundMediaUrl} alt="" aria-hidden="true" />
+          )
+        ) : null}
+        {branding.backgroundMediaUrl ? <div className="showroomBackgroundOverlay" aria-hidden="true" /> : null}
+        {modeToggle}
+
+        <section
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            minHeight: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            padding: "clamp(18px, 2vw, 32px)",
+            boxSizing: "border-box"
+          }}
+        >
+          <header
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 18,
+              position: "relative",
+              zIndex: 2
+            }}
+          >
+            <div className="showroomBrandIdentity">
+              {branding.logoUrl ? (
+                <div className="showroomBrandLogoWrapper">
+                  <img src={branding.logoUrl} alt={branding.companyName || "Store logo"} className="showroomBrandLogo" />
+                </div>
+              ) : null}
+              <strong>{branding.companyName || "Azzure Custom Studio"}</strong>
+            </div>
+            <div className="showroomBadge">
+              <span className="showroomBadgeDot" />
+              Marketing Mode
+            </div>
+          </header>
+
+          {marketingImages.length > 0 ? (
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "stretch",
+                marginTop: "clamp(14px, 2vw, 28px)",
+                marginBottom: "clamp(14px, 2vw, 28px)",
+                position: "relative",
+                zIndex: 2
+              }}
+            >
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: 0,
+                  overflow: "hidden",
+                  background: "#000"
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    width: "100%",
+                    height: "100%",
+                    transform: `translateX(-${currentMarketingIndex * 100}%)`,
+                    transition: "transform 760ms cubic-bezier(0.22, 1, 0.36, 1)",
+                    willChange: "transform"
+                  }}
+                >
+                  {marketingImages.map((image, index) => (
+                    <div
+                      key={image}
+                      style={{
+                        minWidth: "100%",
+                        minHeight: "100%",
+                        height: "100%",
+                        position: "relative"
+                      }}
+                    >
+                      <img
+                        src={image}
+                        alt={`Marketing piece ${index + 1}`}
+                        onLoad={handleImageLoad(image)}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          objectPosition: "center center",
+                          display: "block"
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          background:
+                            "linear-gradient(90deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.12) 28%, rgba(0,0,0,0.08) 72%, rgba(0,0,0,0.35) 100%)"
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "clamp(18px, 2vw, 32px)",
+                    top: "clamp(18px, 2vw, 32px)",
+                    zIndex: 3,
+                    maxWidth: "min(40vw, 520px)",
+                    color: "#fff",
+                    textShadow: "0 8px 30px rgba(0,0,0,0.55)"
+                  }}
+                >
+                  <div style={{ color: "#7dd3fc", letterSpacing: "0.22em", fontSize: "0.72rem", fontWeight: 700, marginBottom: 8 }}>
+                    FEATURED COLLECTION
+                  </div>
+                  <h1 style={{ fontFamily: "var(--font-display, Georgia, serif)", fontSize: "clamp(2.8rem, 5vw, 5.6rem)", lineHeight: 0.92, margin: 0 }}>
+                    Show your latest offer in full width
+                  </h1>
+                  <p style={{ marginTop: 14, maxWidth: 460, fontSize: "clamp(0.98rem, 1.5vw, 1.2rem)", lineHeight: 1.55, color: "rgba(255,255,255,0.88)" }}>
+                    Run your marketing deal, collection drop, or seasonal promotion on the kiosk without any showroom controls on screen.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {hasMarketingSlider ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 16,
+                flexWrap: "wrap",
+                position: "relative",
+                zIndex: 2
+              }}
+            >
+              <div style={{ color: "rgba(255,255,255,0.72)", fontSize: "0.9rem", fontWeight: 600 }}>
+                {currentMarketingIndex + 1} of {marketingImages.length}
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+                {marketingImages.map((image, index) => (
+                  <button
+                    key={image}
+                    type="button"
+                    onClick={() => setMarketingIndex(index)}
+                    aria-label={`View marketing image ${index + 1}`}
+                    style={{
+                      width: 64,
+                      height: 64,
+                      padding: 0,
+                      borderRadius: 14,
+                      overflow: "hidden",
+                      border: index === marketingIndex ? "2px solid var(--color-brand)" : "1px solid rgba(255,255,255,0.14)",
+                      background: "rgba(255,255,255,0.04)",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <img src={image} alt="" onLoad={handleImageLoad(image)} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="showroom" style={brandStyle}>
       {branding.backgroundMediaUrl ? (
@@ -819,6 +1088,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
         )
       ) : null}
       {branding.backgroundMediaUrl ? <div className="showroomBackgroundOverlay" aria-hidden="true" /> : null}
+      {modeToggle}
       <header className="showroomBrand">
         <div className="showroomBrandIdentity">
           {branding.logoUrl ? (
@@ -917,39 +1187,6 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
           </div>
 
           <div style={{ textAlign: "center", marginBottom: 18, borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: 14 }}>
-            <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-              <button
-                type="button"
-                className="button secondary button--sm"
-                onClick={() => setDisplayMode("showroom")}
-                style={{
-                  minWidth: 132,
-                  background: displayMode === "showroom" ? "linear-gradient(135deg, rgba(201,168,76,0.28), rgba(201,168,76,0.12))" : "rgba(255,255,255,0.04)",
-                  borderColor: displayMode === "showroom" ? "rgba(201,168,76,0.5)" : "rgba(255,255,255,0.08)",
-                  color: displayMode === "showroom" ? "#f6e09e" : "#cbd5e1"
-                }}
-              >
-                Showroom Mode
-              </button>
-              <button
-                type="button"
-                className="button secondary button--sm"
-                onClick={() => {
-                  setDisplayMode("marketing");
-                  if (marketingImages.length > 1) {
-                    setMarketingIndex(0);
-                  }
-                }}
-                style={{
-                  minWidth: 132,
-                  background: displayMode === "marketing" ? "linear-gradient(135deg, rgba(56,189,248,0.25), rgba(56,189,248,0.1))" : "rgba(255,255,255,0.04)",
-                  borderColor: displayMode === "marketing" ? "rgba(56,189,248,0.5)" : "rgba(255,255,255,0.08)",
-                  color: displayMode === "marketing" ? "#7dd3fc" : "#cbd5e1"
-                }}
-              >
-                Marketing Mode
-              </button>
-            </div>
             <button
               type="button"
               onClick={() => setShowStaffPinModal(true)}
@@ -970,86 +1207,54 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
               Staff Access
             </button>
           </div>
+          {modeToggle}
 
           {marketingImages.length > 0 ? (
             <section
               style={{
-                marginTop: 4,
-                paddingTop: 20,
-                borderTop: "1px solid rgba(255, 255, 255, 0.08)"
+                marginTop: marketingIsImmersive ? 4 : 24,
+                paddingTop: marketingIsImmersive ? 20 : 0,
+                borderTop: marketingIsImmersive ? "1px solid rgba(255, 255, 255, 0.08)" : "none",
+                width: marketingIsImmersive ? "100%" : "100vw",
+                marginLeft: "calc(50% - 50vw)",
+                marginRight: "calc(50% - 50vw)"
               }}
             >
               <div
                 style={{
-                  borderRadius: 24,
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: marketingIsImmersive ? 0 : 24,
+                  border: marketingIsImmersive ? "none" : "1px solid rgba(255,255,255,0.1)",
                   background: marketingIsImmersive
-                    ? "radial-gradient(circle at top, rgba(56,189,248,0.18), rgba(10,11,14,0.94) 52%, rgba(0,0,0,0.96) 100%)"
+                    ? "radial-gradient(circle at top, rgba(56,189,248,0.18), rgba(10,11,14,0.96) 52%, rgba(0,0,0,0.98) 100%)"
                     : "rgba(10, 11, 14, 0.55)",
-                  padding: marketingPanelPadding,
-                  boxShadow: marketingIsImmersive ? "0 30px 120px rgba(0,0,0,0.72)" : "0 18px 50px rgba(0,0,0,0.45)",
-                  maxWidth: marketingPanelMaxWidth,
+                  padding: marketingIsImmersive ? 0 : marketingPanelPadding,
+                  boxShadow: marketingIsImmersive ? "none" : "0 18px 50px rgba(0,0,0,0.45)",
+                  maxWidth: marketingIsImmersive ? "none" : "100%",
                   margin: "0 auto",
-                  minHeight: marketingIsImmersive ? "min(82vh, 1000px)" : undefined,
+                  minHeight: marketingIsImmersive ? "100vh" : undefined,
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "space-between"
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: marketingIsImmersive ? 18 : 12 }}>
-                  <div>
-                    <span className="eyebrow" style={{ marginBottom: 4, display: "block" }}>Featured Pieces</span>
-                    <strong style={{ color: "#fff" }}>
-                      {hasMarketingSlider ? `${currentMarketingIndex + 1} of ${marketingImages.length}` : "1 image"}
-                    </strong>
-                    {marketingIsImmersive ? (
-                      <div style={{ marginTop: 4, color: "#7dd3fc", fontSize: "0.8rem", fontWeight: 600 }}>
-                        Full-screen marketing mode
-                      </div>
-                    ) : null}
-                  </div>
-                  {hasMarketingSlider ? (
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        type="button"
-                        className="button secondary button--sm"
-                        onClick={() => setMarketingIndex((current) => (current - 1 + marketingImages.length) % marketingImages.length)}
-                        aria-label="Previous marketing image"
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="button secondary button--sm"
-                        onClick={() => setMarketingIndex((current) => (current + 1) % marketingImages.length)}
-                        aria-label="Next marketing image"
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-
                 {hasMarketingSlider ? (
                   <div
                     style={{
                       borderRadius: marketingIsImmersive ? 0 : 18,
                       overflow: "hidden",
                       border: marketingIsImmersive ? "none" : "1px solid rgba(255,255,255,0.08)",
-                      background: marketingIsImmersive ? "rgba(0, 0, 0, 0.22)" : "rgba(0, 0, 0, 0.18)",
+                      background: "rgba(0, 0, 0, 0.18)",
                       aspectRatio: marketingImageAspectRatio,
-                      minHeight: marketingImageMinHeight,
-                      boxShadow: marketingIsImmersive ? "inset 0 0 0 1px rgba(255,255,255,0.04)" : "none",
-                      marginLeft: marketingMediaBleed,
-                      marginRight: marketingMediaBleed,
-                      width: marketingIsImmersive ? `calc(100% + ${marketingPanelPadding * 2}px)` : "100%"
+                      minHeight: marketingIsImmersive ? "100vh" : marketingImageMinHeight,
+                      boxShadow: marketingIsImmersive ? "none" : "inset 0 0 0 1px rgba(255,255,255,0.04)",
+                      width: "100%"
                     }}
                   >
                     <div
                       style={{
                         display: "flex",
                         transform: `translateX(-${currentMarketingIndex * 100}%)`,
-                        transition: marketingIsImmersive ? "transform 620ms cubic-bezier(0.22, 1, 0.36, 1)" : "transform 420ms ease",
+                        transition: marketingIsImmersive ? "transform 820ms cubic-bezier(0.22, 1, 0.36, 1)" : "transform 420ms ease",
                         willChange: "transform"
                       }}
                     >
@@ -1058,7 +1263,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                           key={image}
                           style={{
                             minWidth: "100%",
-                            minHeight: marketingImageMinHeight,
+                            minHeight: marketingIsImmersive ? "100vh" : marketingImageMinHeight,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -1071,49 +1276,97 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                             style={{
                               width: "100%",
                               height: "100%",
-                              maxHeight: marketingImageMaxHeight,
+                              maxHeight: marketingIsImmersive ? "none" : marketingImageMaxHeight,
                               objectFit: marketingImageFit,
                               objectPosition: "center center",
                               display: "block",
                               borderRadius: marketingIsImmersive ? 0 : 0
                             }}
                           />
+                          {marketingIsImmersive ? (
+                            <div
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                background: "linear-gradient(180deg, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.12) 40%, rgba(0,0,0,0.55) 100%)",
+                                pointerEvents: "none"
+                              }}
+                            />
+                          ) : null}
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <div style={{ borderRadius: marketingIsImmersive ? 0 : 18, overflow: "hidden", border: marketingIsImmersive ? "none" : "1px solid rgba(255,255,255,0.08)", background: "rgba(0, 0, 0, 0.18)", aspectRatio: marketingImageAspectRatio, minHeight: marketingImageMinHeight, marginLeft: marketingMediaBleed, marginRight: marketingMediaBleed, width: marketingIsImmersive ? `calc(100% + ${marketingPanelPadding * 2}px)` : "100%" }}>
+                  <div style={{ borderRadius: marketingIsImmersive ? 0 : 18, overflow: "hidden", border: marketingIsImmersive ? "none" : "1px solid rgba(255,255,255,0.08)", background: "rgba(0, 0, 0, 0.18)", aspectRatio: marketingImageAspectRatio, minHeight: marketingIsImmersive ? "100vh" : marketingImageMinHeight, width: "100%" }}>
                     <img
                       src={marketingImages[0]}
                       alt="Showroom marketing piece"
-                      style={{ width: "100%", height: "100%", maxHeight: marketingImageMaxHeight, objectFit: marketingImageFit, objectPosition: "center center", display: "block" }}
+                      style={{ width: "100%", height: "100%", maxHeight: marketingIsImmersive ? "none" : marketingImageMaxHeight, objectFit: marketingImageFit, objectPosition: "center center", display: "block" }}
                     />
                   </div>
                 )}
 
-                {hasMarketingSlider ? (
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: marketingIsImmersive ? 18 : 12, justifyContent: marketingIsImmersive ? "center" : "flex-start" }}>
-                    {marketingImages.map((image, index) => (
+                {marketingIsImmersive ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      position: "absolute",
+                      left: "clamp(18px, 2vw, 32px)",
+                      right: "clamp(18px, 2vw, 32px)",
+                      bottom: "clamp(18px, 2vw, 28px)",
+                      zIndex: 3,
+                      color: "#fff"
+                    }}
+                  >
+                    <div style={{ maxWidth: "42rem", textShadow: "0 8px 24px rgba(0,0,0,0.65)" }}>
+                      <div style={{ color: "#7dd3fc", letterSpacing: "0.22em", fontSize: "0.7rem", fontWeight: 700, marginBottom: 8 }}>
+                        RETAIL DISPLAY
+                      </div>
+                      <div style={{ fontFamily: "var(--font-display, Georgia, serif)", fontSize: "clamp(1.4rem, 2vw, 2.5rem)", lineHeight: 1.02, marginBottom: 6 }}>
+                        Swipe-free, full-width marketing for your showcase offers.
+                      </div>
+                      <div style={{ color: "rgba(255,255,255,0.82)", fontSize: "clamp(0.88rem, 1.1vw, 1.05rem)", lineHeight: 1.5 }}>
+                        Perfect for promotions, seasonal deals, and branded campaigns on the showroom display.
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                       <button
-                        key={image}
                         type="button"
-                        onClick={() => setMarketingIndex(index)}
+                        onClick={() => setMarketingIndex((current) => (current - 1 + marketingImages.length) % marketingImages.length)}
+                        aria-label="Previous marketing image"
                         style={{
-                          width: marketingIsImmersive ? 58 : 44,
-                          height: marketingIsImmersive ? 58 : 44,
-                          padding: 0,
-                          borderRadius: marketingIsImmersive ? 14 : 10,
-                          overflow: "hidden",
-                          border: index === marketingIndex ? "2px solid var(--color-brand)" : "1px solid rgba(255,255,255,0.12)",
-                          background: "transparent",
+                          width: 48,
+                          height: 48,
+                          borderRadius: 999,
+                          border: "1px solid rgba(255,255,255,0.2)",
+                          background: "rgba(0,0,0,0.36)",
+                          color: "#fff",
                           cursor: "pointer"
                         }}
-                        aria-label={`View marketing image ${index + 1}`}
                       >
-                        <img src={image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                        <span className="material-symbols-outlined" style={{ fontSize: 20 }}>chevron_left</span>
                       </button>
-                    ))}
+                      <button
+                        type="button"
+                        onClick={() => setMarketingIndex((current) => (current + 1) % marketingImages.length)}
+                        aria-label="Next marketing image"
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 999,
+                          border: "1px solid rgba(255,255,255,0.2)",
+                          background: "rgba(0,0,0,0.36)",
+                          color: "#fff",
+                          cursor: "pointer"
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 20 }}>chevron_right</span>
+                      </button>
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -1298,8 +1551,17 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                     {previews.length > 0 ? (
                       <div className="facetThumbRail" aria-label="Uploaded photos" style={{ marginBottom: 16 }}>
                         {previews.map((src, index) => (
-                          <div key={src} className="facetThumb">
-                            <img src={src} alt={`Reference ${index + 1}`} className="facetThumbImage" />
+                          <div
+                            key={src}
+                            className="facetThumb"
+                            style={{
+                              width: "auto",
+                              height: 72,
+                              aspectRatio: getImageAspectRatio(src, "1 / 1"),
+                              flex: "0 0 auto"
+                            }}
+                          >
+                            <img src={src} alt={`Reference ${index + 1}`} className="facetThumbImage" onLoad={handleImageLoad(src)} />
                             <span className="facetThumbBadge">#{index + 1}</span>
                           </div>
                         ))}
@@ -1456,6 +1718,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       src={activeImage}
                       alt="AI generated or reference photo"
                       className="quotePreviewImage"
+                      onLoad={handleImageLoad(activeImage)}
+                      style={{ objectFit: "contain", aspectRatio: getImageAspectRatio(activeImage, renderingImageUrl ? "4 / 5" : "1 / 1") }}
                     />
                   ) : (
                     <div className="quotePreviewImagePlaceholder">
