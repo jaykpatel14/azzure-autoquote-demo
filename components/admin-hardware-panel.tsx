@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type HardwareCompany = {
   id: string;
@@ -105,6 +105,24 @@ function getHeartbeatStatus(lastSeenAt: string | null, isActive: boolean) {
   };
 }
 
+function getLifecycleLabel(device: HardwareDevice) {
+  const isHeartbeatLive = Boolean(device.showroomDevice?.isActive && getHeartbeatStatus(device.showroomDevice.lastSeenAt, device.showroomDevice.isActive).label.startsWith("Online"));
+
+  if (device.status === "DEACTIVATED") {
+    return "Deactivated";
+  }
+
+  if (device.status === "ACTIVATED") {
+    return "Activated";
+  }
+
+  if (isHeartbeatLive) {
+    return "Live kiosk";
+  }
+
+  return "Pre-provisioned";
+}
+
 export default function AdminHardwarePanel({
   initialDevices,
   companies
@@ -120,11 +138,41 @@ export default function AdminHardwarePanel({
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [heartbeatBusyId, setHeartbeatBusyId] = useState<string | null>(null);
 
   const companyLabel = useMemo(() => {
     const map = new Map(companies.map((company) => [company.id, company]));
     return (id: string | null) => (id ? map.get(id)?.name || "Unassigned" : "Unassigned");
   }, [companies]);
+
+  async function refreshDevices() {
+    try {
+      const response = await fetch("/api/admin/hardware");
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.devices) {
+        return;
+      }
+
+      setDevices(data.devices);
+    } catch {
+      // Keep the current list if polling fails momentarily.
+    }
+  }
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void refreshDevices();
+    }, 10000);
+
+    const initialRefresh = window.setTimeout(() => {
+      void refreshDevices();
+    }, 0);
+
+    return () => {
+      window.clearInterval(timer);
+      window.clearTimeout(initialRefresh);
+    };
+  }, []);
 
   async function createDevice(e: React.FormEvent) {
     e.preventDefault();
@@ -183,6 +231,43 @@ export default function AdminHardwarePanel({
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to deactivate device.");
+    }
+  }
+
+  async function heartbeatDevice(id: string) {
+    if (heartbeatBusyId) return;
+
+    setHeartbeatBusyId(id);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/admin/hardware/${id}/heartbeat`, {
+        method: "POST"
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(data?.error || "Unable to refresh heartbeat.");
+      }
+
+      setDevices((current) =>
+        current.map((device) =>
+          device.id === id && device.showroomDevice
+            ? {
+                ...device,
+                showroomDevice: {
+                  ...device.showroomDevice,
+                  lastSeenAt: data.lastSeenAt || new Date().toISOString(),
+                  lastSeenIp: data.lastSeenIp ?? device.showroomDevice.lastSeenIp,
+                  isActive: true
+                  }
+                }
+            : device
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to refresh heartbeat.");
+    } finally {
+      setHeartbeatBusyId(null);
     }
   }
 
@@ -270,11 +355,22 @@ export default function AdminHardwarePanel({
                     <span className="badge" style={{ background: device.status === "ACTIVATED" ? "rgba(16,185,129,0.15)" : device.status === "DEACTIVATED" ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)", color: device.status === "ACTIVATED" ? "#10b981" : device.status === "DEACTIVATED" ? "#f87171" : "#f59e0b" }}>
                       {device.status}
                     </span>
+                    {device.status === "PRE_PROVISIONED" && device.showroomDevice?.isActive ? (
+                      <span className="badge" style={{ background: "rgba(14,165,233,0.15)", color: "#0284c7" }}>
+                        Live kiosk
+                      </span>
+                    ) : null}
                   </div>
                   <p style={{ margin: "8px 0 0", color: "#475569" }}>
                     Assigned to: <strong style={{ color: "#0f172a" }}>{companyLabel(device.companyId)}</strong>
                     {device.orderId ? ` · Order ${device.orderId}` : ""}
                     {device.notes ? ` · ${device.notes}` : ""}
+                  </p>
+                  <p style={{ margin: "4px 0 0", color: "#475569" }}>
+                    Lifecycle: <strong style={{ color: "#0f172a" }}>{getLifecycleLabel(device)}</strong>
+                    {device.status === "PRE_PROVISIONED"
+                      ? " · This serial exists in inventory; it becomes fully activated after the kiosk completes the showroom activation flow."
+                      : ""}
                   </p>
                   <p style={{ margin: "4px 0 0", color: "#475569" }}>
                     Created {formatDate(device.createdAt)} · Shipped {formatDate(device.shippedAt)} · Activated {formatDate(device.activatedAt)}
@@ -293,6 +389,16 @@ export default function AdminHardwarePanel({
                 </div>
 
                 <div style={{ display: "flex", gap: 8 }}>
+                  {device.showroomDevice ? (
+                    <button
+                      className="button secondary button--sm"
+                      type="button"
+                      onClick={() => heartbeatDevice(device.id)}
+                      disabled={heartbeatBusyId === device.id}
+                    >
+                      {heartbeatBusyId === device.id ? "Pinging…" : "Heartbeat now"}
+                    </button>
+                  ) : null}
                   {device.status !== "DEACTIVATED" ? (
                     <button className="button secondary button--sm" type="button" onClick={() => deactivateDevice(device.id)}>
                       Deactivate

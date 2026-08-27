@@ -216,6 +216,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const [staffSession, setStaffSession] = useState<{ staffName: string; staffId: string; sessionToken: string } | null>(null);
   const [marketingIndex, setMarketingIndex] = useState(0);
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<string, string>>({});
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [displayMode, setDisplayMode] = useState<"showroom" | "marketing">(() => {
     if (typeof window === "undefined") return "showroom";
     try {
@@ -367,13 +368,42 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const currentMarketingIndex = marketingImages.length > 0 ? marketingIndex % marketingImages.length : 0;
   const marketingIsImmersive = displayMode === "marketing";
   const currentMarketingImage = marketingImages[currentMarketingIndex] || null;
-  const currentMarketingAspectRatio = getImageAspectRatio(currentMarketingImage, marketingIsImmersive ? "21 / 9" : "16 / 10");
+  const currentMarketingAspectRatio = getImageAspectRatio(currentMarketingImage, marketingIsImmersive ? "16 / 9" : "16 / 10");
   const marketingPanelMaxWidth = marketingIsImmersive ? 1440 : 760;
   const marketingPanelPadding = marketingIsImmersive ? 0 : 14;
   const marketingImageMinHeight = marketingIsImmersive ? "100vh" : 280;
   const marketingImageMaxHeight = marketingIsImmersive ? "100vh" : "none";
   const marketingImageAspectRatio = currentMarketingAspectRatio;
-  const marketingImageFit = marketingIsImmersive ? "cover" : "contain";
+  const viewportAspectRatio = viewportSize.height > 0 ? viewportSize.width / viewportSize.height : 0;
+  const marketingImageRatio = useMemo(() => {
+    const [widthPart, heightPart] = currentMarketingAspectRatio.split("/").map((part) => Number.parseFloat(part.trim()));
+    if (!Number.isFinite(widthPart) || !Number.isFinite(heightPart) || widthPart <= 0 || heightPart <= 0) {
+      return 0;
+    }
+
+    return widthPart / heightPart;
+  }, [currentMarketingAspectRatio]);
+  const marketingImageFit = useMemo(() => {
+    if (!marketingIsImmersive) return "contain";
+    if (!viewportAspectRatio || !marketingImageRatio) return "cover";
+
+    const ratioDelta = Math.abs(marketingImageRatio - viewportAspectRatio) / viewportAspectRatio;
+    return ratioDelta > 0.12 ? "contain" : "cover";
+  }, [marketingImageRatio, marketingIsImmersive, viewportAspectRatio]);
+
+  useEffect(() => {
+    const updateViewportSize = () => {
+      setViewportSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+
+    updateViewportSize();
+    window.addEventListener("resize", updateViewportSize);
+    window.addEventListener("orientationchange", updateViewportSize);
+    return () => {
+      window.removeEventListener("resize", updateViewportSize);
+      window.removeEventListener("orientationchange", updateViewportSize);
+    };
+  }, []);
   const modeToggle = (
     <div
       style={{
@@ -1122,9 +1152,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       style={{
                         width: "100%",
                         height: "100%",
-                        objectFit: "cover",
+                        objectFit: marketingImageFit,
                         objectPosition: "center center",
-                        display: "block"
+                        display: "block",
+                        background: "#000"
                       }}
                     />
                   </div>
@@ -1137,9 +1168,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "cover",
+                  objectFit: marketingImageFit,
                   objectPosition: "center center",
-                  display: "block"
+                  display: "block",
+                  background: "#000"
                 }}
               />
             )

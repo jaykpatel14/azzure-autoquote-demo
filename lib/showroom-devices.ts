@@ -127,6 +127,21 @@ export async function heartbeatShowroomDevice(input: HeartbeatShowroomDeviceInpu
     }
   });
 
+  if (device.azzureSerial) {
+    await prisma.azzureDevice.updateMany({
+      where: {
+        serialNumber: device.azzureSerial,
+        status: { not: "DEACTIVATED" }
+      },
+      data: {
+        status: "ACTIVATED",
+        activatedAt: new Date(),
+        showroomDeviceId: device.id,
+        companyId: device.companyId
+      }
+    });
+  }
+
   const configVersion = await getShowroomConfigHash(device.companyId);
   return {
     data: {
