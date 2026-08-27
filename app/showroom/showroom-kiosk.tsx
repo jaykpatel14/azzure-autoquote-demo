@@ -438,6 +438,17 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     return () => window.clearInterval(timer);
   }, [displayMode, hasMarketingSlider, marketingImages.length]);
 
+  useEffect(() => {
+    if (displayMode !== "marketing") return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setDisplayMode("showroom");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [displayMode]);
+
   const goToPreviousFact = useCallback(() => {
     setFactIndex((current) => (current - 1 + totalFacts) % totalFacts);
     setShowTriviaAnswer(false);
@@ -469,6 +480,66 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   }, [goToNextFact, goToPreviousFact]);
 
   useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
+
+  if (displayMode === "marketing") {
+    return (
+      <div className="showroomRoot" style={{ overflow: "hidden" }}>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            width: "100vw",
+            height: "100vh",
+            overflow: "hidden",
+            background: "#000"
+          }}
+        >
+          {marketingImages.length > 0 ? (
+            hasMarketingSlider ? (
+              <div
+                style={{
+                  display: "flex",
+                  width: `${marketingImages.length * 100}%`,
+                  height: "100%",
+                  transform: `translateX(-${currentMarketingIndex * (100 / marketingImages.length)}%)`,
+                  transition: "transform 820ms cubic-bezier(0.22, 1, 0.36, 1)",
+                  willChange: "transform"
+                }}
+              >
+                {marketingImages.map((image, index) => (
+                  <div key={image} style={{ position: "relative", width: `${100 / marketingImages.length}%`, height: "100%", flex: "0 0 auto" }}>
+                    <img
+                      src={image}
+                      alt={`Showroom marketing piece ${index + 1}`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        objectPosition: "center center",
+                        display: "block"
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <img
+                src={marketingImages[0]}
+                alt="Showroom marketing piece"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  objectPosition: "center center",
+                  display: "block"
+                }}
+              />
+            )
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   async function openMobileUploadQr() {
     const sessionId = crypto.randomUUID();
@@ -882,7 +953,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     );
   }
 
-  if (displayMode === "marketing") {
+  if (false) {
     return (
       <div
         className="showroom"
@@ -898,9 +969,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       >
         {branding.backgroundMediaUrl ? (
           branding.backgroundMediaType?.startsWith("video/") ? (
-            <video className="showroomBackgroundMedia" src={branding.backgroundMediaUrl} autoPlay muted loop playsInline aria-hidden="true" />
+            <video className="showroomBackgroundMedia" src={branding.backgroundMediaUrl ?? undefined} autoPlay muted loop playsInline aria-hidden="true" />
           ) : (
-            <img className="showroomBackgroundMedia" src={branding.backgroundMediaUrl} alt="" aria-hidden="true" />
+            <img className="showroomBackgroundMedia" src={branding.backgroundMediaUrl ?? undefined} alt="" aria-hidden="true" />
           )
         ) : null}
         {branding.backgroundMediaUrl ? <div className="showroomBackgroundOverlay" aria-hidden="true" /> : null}
@@ -932,7 +1003,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
             <div className="showroomBrandIdentity">
               {branding.logoUrl ? (
                 <div className="showroomBrandLogoWrapper">
-                  <img src={branding.logoUrl} alt={branding.companyName || "Store logo"} className="showroomBrandLogo" />
+                  <img src={branding.logoUrl ?? undefined} alt={branding.companyName || "Store logo"} className="showroomBrandLogo" />
                 </div>
               ) : null}
               <strong>{branding.companyName || "Azzure Custom Studio"}</strong>
@@ -1082,18 +1153,43 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     <div className="showroom" style={brandStyle}>
       {branding.backgroundMediaUrl ? (
         branding.backgroundMediaType?.startsWith("video/") ? (
-          <video className="showroomBackgroundMedia" src={branding.backgroundMediaUrl} autoPlay muted loop playsInline aria-hidden="true" />
+          <video className="showroomBackgroundMedia" src={branding.backgroundMediaUrl ?? undefined} autoPlay muted loop playsInline aria-hidden="true" />
         ) : (
-          <img className="showroomBackgroundMedia" src={branding.backgroundMediaUrl} alt="" aria-hidden="true" />
+          <img className="showroomBackgroundMedia" src={branding.backgroundMediaUrl ?? undefined} alt="" aria-hidden="true" />
         )
       ) : null}
       {branding.backgroundMediaUrl ? <div className="showroomBackgroundOverlay" aria-hidden="true" /> : null}
       {modeToggle}
+      <button
+        type="button"
+        onClick={() => setShowStaffPinModal(true)}
+        style={{
+          position: "fixed",
+          left: 16,
+          bottom: 16,
+          zIndex: 81,
+          background: "rgba(0, 0, 0, 0.38)",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
+          color: "rgba(255, 255, 255, 0.78)",
+          fontSize: "13px",
+          fontWeight: 600,
+          letterSpacing: "0.04em",
+          cursor: "pointer",
+          padding: "10px 16px",
+          borderRadius: 999,
+          backdropFilter: "blur(14px)",
+          textTransform: "none"
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255, 255, 255, 1)")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255, 255, 255, 0.78)")}
+      >
+        Staff Access
+      </button>
       <header className="showroomBrand">
         <div className="showroomBrandIdentity">
           {branding.logoUrl ? (
             <div className="showroomBrandLogoWrapper">
-              <img src={branding.logoUrl} alt={branding.companyName || "Store logo"} className="showroomBrandLogo" />
+              <img src={branding.logoUrl ?? undefined} alt={branding.companyName || "Store logo"} className="showroomBrandLogo" />
             </div>
           ) : null}
           <strong>{branding.companyName || "Azzure Custom Studio"}</strong>
@@ -1185,29 +1281,6 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
               </button>
             </div>
           </div>
-
-          <div style={{ textAlign: "center", marginBottom: 18, borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: 14 }}>
-            <button
-              type="button"
-              onClick={() => setShowStaffPinModal(true)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "rgba(255, 255, 255, 0.4)",
-                fontSize: "13px",
-                fontWeight: 500,
-                cursor: "pointer",
-                padding: "6px 14px",
-                textDecoration: "none",
-                transition: "color 0.2s ease"
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255, 255, 255, 0.8)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255, 255, 255, 0.4)")}
-            >
-              Staff Access
-            </button>
-          </div>
-          {modeToggle}
 
           {marketingImages.length > 0 ? (
             <section

@@ -26,6 +26,7 @@ type HardwareDevice = {
     id: string;
     deviceName: string;
     lastSeenAt: string;
+    lastSeenIp: string | null;
     isActive: boolean;
   } | null;
 };
@@ -44,6 +45,64 @@ function formatRelativeTime(value: string | null) {
   const diffHours = Math.floor(diffMins / 60);
   if (diffHours < 24) return `${diffHours}h ago`;
   return `${Math.floor(diffHours / 24)}d ago`;
+}
+
+function getHeartbeatStatus(lastSeenAt: string | null, isActive: boolean) {
+  if (!isActive) {
+    return {
+      label: "Deactivated",
+      detail: "Heartbeat disabled",
+      dot: "○",
+      textColor: "#b91c1c",
+      background: "rgba(239, 68, 68, 0.08)",
+      borderColor: "rgba(239, 68, 68, 0.22)"
+    };
+  }
+
+  if (!lastSeenAt) {
+    return {
+      label: "No heartbeat yet",
+      detail: "Waiting for first kiosk ping",
+      dot: "◌",
+      textColor: "#b45309",
+      background: "rgba(245, 158, 11, 0.08)",
+      borderColor: "rgba(245, 158, 11, 0.22)"
+    };
+  }
+
+  const diffMs = Date.now() - new Date(lastSeenAt).getTime();
+  const diffMins = diffMs / 60000;
+
+  if (diffMins <= 3) {
+    return {
+      label: `Online · ${formatRelativeTime(lastSeenAt)}`,
+      detail: "Heartbeat is current",
+      dot: "●",
+      textColor: "#047857",
+      background: "rgba(16, 185, 129, 0.08)",
+      borderColor: "rgba(16, 185, 129, 0.22)"
+    };
+  }
+
+  if (diffMins <= 10) {
+    return {
+      label: `Recent · ${formatRelativeTime(lastSeenAt)}`,
+      detail: "Heartbeat lagging a little",
+      dot: "◔",
+      textColor: "#b45309",
+      background: "rgba(245, 158, 11, 0.08)",
+      borderColor: "rgba(245, 158, 11, 0.22)"
+    };
+  }
+
+  return {
+    label: `Offline · ${formatRelativeTime(lastSeenAt)}`,
+    detail: "Heartbeat has gone stale",
+    dot: "○",
+    textColor: "#6b7280",
+    background: "rgba(107, 114, 128, 0.08)",
+    borderColor: "rgba(107, 114, 128, 0.22)"
+  };
 }
 
 export default function AdminHardwarePanel({
@@ -198,31 +257,38 @@ export default function AdminHardwarePanel({
               style={{
                 padding: 18,
                 borderRadius: 16,
-                border: "1px solid rgba(255,255,255,0.08)",
-                background: "rgba(255,255,255,0.03)"
+                border: "1px solid #dbe4f0",
+                background: "#ffffff",
+                boxShadow: "0 10px 28px rgba(15, 23, 42, 0.04)"
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "start", flexWrap: "wrap" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    <strong style={{ fontSize: 18, color: "#fff" }}>{device.serialNumber}</strong>
+                    <strong style={{ fontSize: 18, color: "#0f172a" }}>{device.serialNumber}</strong>
                     <span className="badge">{device.deviceType}</span>
                     <span className="badge" style={{ background: device.status === "ACTIVATED" ? "rgba(16,185,129,0.15)" : device.status === "DEACTIVATED" ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)", color: device.status === "ACTIVATED" ? "#10b981" : device.status === "DEACTIVATED" ? "#f87171" : "#f59e0b" }}>
                       {device.status}
                     </span>
                   </div>
-                  <p className="muted small" style={{ margin: "8px 0 0" }}>
-                    Assigned to: <strong style={{ color: "#fff" }}>{companyLabel(device.companyId)}</strong>
+                  <p style={{ margin: "8px 0 0", color: "#475569" }}>
+                    Assigned to: <strong style={{ color: "#0f172a" }}>{companyLabel(device.companyId)}</strong>
                     {device.orderId ? ` · Order ${device.orderId}` : ""}
                     {device.notes ? ` · ${device.notes}` : ""}
                   </p>
-                  <p className="muted small" style={{ margin: "4px 0 0" }}>
+                  <p style={{ margin: "4px 0 0", color: "#475569" }}>
                     Created {formatDate(device.createdAt)} · Shipped {formatDate(device.shippedAt)} · Activated {formatDate(device.activatedAt)}
                   </p>
                   {device.showroomDevice ? (
-                    <p className="muted small" style={{ margin: "4px 0 0" }}>
-                      Linked showroom screen: <strong style={{ color: "#fff" }}>{device.showroomDevice.deviceName}</strong> · Last seen {formatRelativeTime(device.showroomDevice.lastSeenAt)}
-                    </p>
+                    <>
+                      <p style={{ margin: "4px 0 0", color: "#475569" }}>
+                        Linked showroom screen: <strong style={{ color: "#0f172a" }}>{device.showroomDevice.deviceName}</strong> · Last seen {formatRelativeTime(device.showroomDevice.lastSeenAt)}
+                      </p>
+                      <div style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>
+                        Heartbeat: <strong style={{ color: "#0f172a" }}>{getHeartbeatStatus(device.showroomDevice.lastSeenAt, device.showroomDevice.isActive).label}</strong>
+                        {device.showroomDevice.lastSeenIp ? ` · IP ${device.showroomDevice.lastSeenIp}` : ""}
+                      </div>
+                    </>
                   ) : null}
                 </div>
 
@@ -232,7 +298,7 @@ export default function AdminHardwarePanel({
                       Deactivate
                     </button>
                   ) : (
-                    <span className="badge" style={{ background: "rgba(239,68,68,0.15)", color: "#f87171" }}>Deactivated</span>
+                    <span className="badge" style={{ background: "rgba(239,68,68,0.12)", color: "#b91c1c" }}>Deactivated</span>
                   )}
                 </div>
               </div>

@@ -224,6 +224,7 @@ export async function listAzzureDevices() {
           id: true,
           deviceName: true,
           lastSeenAt: true,
+          lastSeenIp: true,
           isActive: true
         }
       }
