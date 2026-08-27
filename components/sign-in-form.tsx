@@ -54,6 +54,7 @@ export default function SignInForm({
 
   return (
     <div
+      className="js-signin-surface"
       style={{
         minHeight: "100vh",
         background: "#040711",
@@ -93,7 +94,7 @@ export default function SignInForm({
       />
 
       <div
-        className="js-glass-card"
+        className="js-glass-card js-signin-card"
         style={{
           maxWidth: "920px",
           width: "100%",
@@ -108,6 +109,7 @@ export default function SignInForm({
 
         {/* Left Aside (Branding & Perks) */}
         <aside
+          className="js-signin-aside"
           style={{
             padding: "48px 36px",
             background: "linear-gradient(180deg, rgba(8, 14, 34, 0.95), rgba(4, 7, 17, 0.95))",
@@ -188,7 +190,7 @@ export default function SignInForm({
         </aside>
 
         {/* Right Form */}
-        <div style={{ padding: "48px 40px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <div className="js-signin-panel" style={{ padding: "48px 40px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <div style={{ marginBottom: "28px" }}>
             <span className="js-eyebrow" style={{ display: "block", marginBottom: "6px" }}>Secure Sign In</span>
             <h2 className="js-display" style={{ fontSize: "28px", margin: "0 0 6px", color: "#f8fafc" }}>

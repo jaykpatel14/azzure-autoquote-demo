@@ -998,6 +998,87 @@
 }
 
 @media (max-width: 640px) {
+  .js-header {
+    padding: 10px 12px;
+  }
+
+  .js-header-inner {
+    padding: 10px 14px;
+    gap: 10px;
+    border-radius: 24px;
+  }
+
+  .js-logo-text {
+    font-size: 16px;
+  }
+
+  .js-logo-badge,
+  .js-header-actions > a {
+    display: none;
+  }
+
+  .js-header-actions {
+    gap: 0;
+  }
+
+  .js-mobile-toggle {
+    display: block;
+    margin-left: auto;
+    padding: 6px 2px 6px 10px;
+  }
+
+  .js-container,
+  .js-container-sm,
+  .js-container-xs {
+    padding: 0 16px;
+  }
+
+  .js-hero-section {
+    padding: 96px 16px 64px;
+    min-height: auto;
+  }
+
+  .js-hero-grid {
+    gap: 28px;
+  }
+
+  .js-hero-badge {
+    margin-bottom: 14px;
+    padding: 5px 12px;
+  }
+
+  .js-hero-title {
+    font-size: 30px;
+    line-height: 1.08;
+    margin-bottom: 16px;
+  }
+
+  .js-hero-desc {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 22px;
+  }
+
+  .js-hero-ctas {
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .js-hero-ctas .js-btn-aurora,
+  .js-hero-ctas .js-btn-ghost {
+    width: 100% !important;
+    min-height: 46px;
+    padding: 12px 18px !important;
+    font-size: 14px !important;
+  }
+
+  .js-hero-trust {
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    padding-top: 14px;
+    line-height: 1.35;
+  }
+
   .js-category-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1011,7 +1092,7 @@
     height: 180px;
   }
 
-  .js-hero-title {
-    font-size: 32px;
+  .js-footer .js-container {
+    padding: 0 16px;
   }
 }

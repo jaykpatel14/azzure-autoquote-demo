@@ -2030,6 +2030,33 @@ input[type="checkbox"] {
   color: var(--color-success);
 }
 
+@media (max-width: 900px) {
+  .authShell,
+  .authPage {
+    padding: var(--space-6);
+  }
+
+  .authCard {
+    max-width: 100%;
+  }
+
+  .authGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+
+  .authAside {
+    border-right: none;
+    border-bottom: 1px solid var(--color-outline-variant);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: var(--space-6);
+  }
+
+  .authCard > div:last-child {
+    padding: var(--space-6);
+  }
+}
+
 @media (max-width: 768px) {
   .authGrid {
     grid-template-columns: 1fr;
@@ -2056,6 +2083,100 @@ input[type="checkbox"] {
   font-size: var(--text-sm);
   color: var(--color-on-surface-variant);
   margin: 0 0 var(--space-8);
+}
+
+.js-signin-surface {
+  width: 100%;
+}
+
+.js-signin-card {
+  width: 100%;
+  max-width: 920px !important;
+  grid-template-columns: 1fr 1.2fr !important;
+}
+
+.js-signin-aside {
+  padding: 48px 36px !important;
+}
+
+.js-signin-panel {
+  padding: 48px 40px !important;
+}
+
+@media (max-width: 900px) {
+  .js-signin-surface {
+    padding: 18px !important;
+    align-items: flex-start !important;
+  }
+
+  .js-signin-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  .js-signin-aside {
+    border-right: none !important;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.15) !important;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
+  }
+
+  .js-signin-panel {
+    padding: 28px 24px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .js-signin-surface {
+    padding: 12px !important;
+  }
+
+  .js-signin-card {
+    border-radius: 22px !important;
+  }
+
+  .js-signin-aside {
+    padding: 24px 20px !important;
+  }
+
+  .js-signin-panel {
+    padding: 24px 20px !important;
+  }
+
+  .js-signin-aside .js-logo-badge {
+    display: none;
+  }
+
+  .js-signin-aside h1,
+  .js-signin-panel h2 {
+    font-size: clamp(1.5rem, 6vw, 2rem) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .authShell,
+  .authPage {
+    padding: var(--space-4);
+    align-items: flex-start;
+  }
+
+  .authCard {
+    border-radius: var(--radius-xl);
+  }
+
+  .authAside {
+    padding: var(--space-5);
+  }
+
+  .authCard > div:last-child {
+    padding: var(--space-5);
+  }
+
+  .authHeading {
+    font-size: var(--text-2xl);
+  }
+
+  .authSubheading {
+    margin-bottom: var(--space-5);
+  }
 }
 
 /* ============================================================
@@ -2656,10 +2777,270 @@ input[type="checkbox"] {
   }
 }
 
+@media (max-width: 640px) {
+  .publicQuoteShell,
+  .onboardingPublicShell,
+  .signupShell,
+  .pricingShell,
+  .onboardingPage,
+  .authPage {
+    padding: 12px;
+  }
+
+  .publicQuoteCard,
+  .onboardingPublicCard,
+  .signupCard,
+  .onboardingCard,
+  .authCard {
+    width: 100%;
+    padding: 18px;
+    border-radius: var(--radius-lg);
+  }
+
+  .publicQuoteHeader,
+  .signupHeader,
+  .onboardingHero,
+  .pricingHero {
+    margin-bottom: 16px;
+  }
+
+  .publicQuoteBody,
+  .signupForm,
+  .onboardingForm,
+  .authForm {
+    gap: 14px;
+  }
+
+  .publicQuoteActions,
+  .onboardingStepActions,
+  .signupFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .publicQuoteActions > *,
+  .onboardingStepActions > *,
+  .signupFooter > * {
+    width: 100%;
+  }
+
+  .pricingHero {
+    margin-bottom: 28px;
+  }
+
+  .pricingCards,
+  .pricingGrid,
+  .statGrid,
+  .planGrid,
+  .featureSteps,
+  .twoUp,
+  .twoColumnLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pricingCard,
+  .pricingTableCard,
+  .onboardingStep {
+    padding: 18px;
+  }
+
+  .pricingTableCard {
+    margin-top: 24px;
+  }
+
+  .pricingTableShell {
+    margin-top: 20px;
+  }
+
+  .featureTable th,
+  .featureTable td {
+    padding: 12px 14px;
+  }
+
+  .featureCategoryHeader {
+    padding: 12px 14px !important;
+  }
+
+  .toastStack {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    width: auto;
+  }
+
+  .toast {
+    grid-template-columns: 4px 1fr auto;
+  }
+
+  .breadcrumbs {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .onboardingStepHeader {
+    gap: 10px;
+  }
+
+  .onboardingStepNumber {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
+  }
+
+  .publicQuoteButton,
+  .signupButton,
+  .button.primary,
+  .button.secondary {
+    width: 100%;
+  }
+
+  .workspaceMain,
+  .main {
+    padding: 12px;
+  }
+
+  .mobileTopBar {
+    padding: 12px 14px;
+  }
+
+  .mobileBrandBlock {
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .pageHero,
+  .workspacePageHeader {
+    gap: var(--space-3);
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+  }
+
+  .pageTitle,
+  .heading {
+    font-size: clamp(1.45rem, 6vw, 1.9rem);
+    line-height: 1.12;
+  }
+
+  .pageLead {
+    margin-top: 6px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .sectionHeader {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .heroActions,
+  .buttonRow,
+  .actions {
+    gap: 8px;
+  }
+
+  .heroActions .button,
+  .buttonRow .button,
+  .actions .button {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .grid,
+  .twoUp,
+  .twoColumnLayout,
+  .cardsGrid,
+  .supportGrid,
+  .pricingGrid,
+  .statGrid {
+    gap: 16px;
+  }
+
+  .card,
+  .authCard,
+  .statCard,
+  .detailCard,
+  .planCard {
+    padding: 16px;
+    border-radius: var(--radius-lg);
+  }
+
+  .statCard strong,
+  .detailCard strong,
+  .planName,
+  .quotePrice {
+    font-size: 1.75rem;
+  }
+
+  .field {
+    gap: 6px;
+  }
+
+  .field input,
+  .field textarea,
+  .field select {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+
+  .pricingCardPrice {
+    font-size: clamp(1.8rem, 8vw, 2.2rem);
+  }
+
+  .publicQuoteTitle,
+  .signupTitle,
+  .onboardingTitle,
+  .pricingTitle,
+  .heading {
+    font-size: clamp(1.45rem, 7vw, 1.9rem);
+    line-height: 1.12;
+  }
+
+  .publicQuoteBlurb,
+  .signupLead,
+  .onboardingLead,
+  .pricingLead,
+  .pageLead {
+    font-size: 14px;
+    line-height: 1.55;
+  }
+}
+
 @media (max-width: 480px) {
   .statGrid,
-  .pricingGrid {
+  .pricingGrid,
+  .pricingCards {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mobileWorkspaceNav {
+    gap: 4px;
+    padding: 6px 4px 10px;
+  }
+
+  .mobileWorkspaceNavItem {
+    min-height: 38px;
+    padding: 7px 10px;
+    font-size: 0.68rem;
+  }
+
+  .workspaceMain,
+  .main {
+    padding: 10px;
+  }
+
+  .pageTitle,
+  .heading {
+    font-size: clamp(1.35rem, 7vw, 1.7rem);
+  }
+
+  .button {
+    min-height: 40px;
+    padding-inline: 16px;
+  }
+
+  .button--lg {
+    min-height: 46px;
+    padding: 12px 20px;
   }
 }
 
