@@ -53,7 +53,18 @@ jobs:
       - name: Deploy to EC2 through SSM
         shell: bash
         run: |
-          COMMANDS='["cd /opt/azzure-autoquote","git fetch origin main","git reset --hard origin/main","AWS_REGION='"${AWS_REGION}"' ECR_REPOSITORY='"${ECR_REPOSITORY}"' ./deploy.sh '"${IMAGE_TAG}"'"]'
+          DEPLOY_SCRIPT_B64="$(base64 -w0 deploy.sh)"
+
+          COMMANDS=$(jq -nc \
+            --arg script "${DEPLOY_SCRIPT_B64}" \
+            --arg region "${AWS_REGION}" \
+            --arg repo "${ECR_REPOSITORY}" \
+            --arg tag "${IMAGE_TAG}" \
+            '[
+              "printf %s \"\($script)\" | base64 -d >/tmp/azzure-autoquote-deploy.sh",
+              "chmod 700 /tmp/azzure-autoquote-deploy.sh",
+              "AWS_REGION=\($region) ECR_REPOSITORY=\($repo) /tmp/azzure-autoquote-deploy.sh \($tag)"
+            ]')
 
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
