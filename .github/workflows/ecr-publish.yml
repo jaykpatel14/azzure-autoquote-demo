@@ -101,15 +101,28 @@ jobs:
 
           echo "ECR_REGISTRY=${ECR_REGISTRY}" >> "$GITHUB_ENV"
           echo "IMAGE_URI=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "MIGRATOR_IMAGE_URI=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}-migrator" >> "$GITHUB_ENV"
+          echo "LATEST_MIGRATOR_IMAGE_URI=${ECR_REGISTRY}/${ECR_REPOSITORY}:latest-migrator" >> "$GITHUB_ENV"
 
       - name: Build Docker image
         run: |
           docker build \
+            --target runner \
             -t "$IMAGE_URI" \
             -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest" \
+            .
+
+      - name: Build migrator image
+        run: |
+          docker build \
+            --target migrator \
+            -t "$MIGRATOR_IMAGE_URI" \
+            -t "$LATEST_MIGRATOR_IMAGE_URI" \
             .
 
       - name: Push Docker image
         run: |
           docker push "$IMAGE_URI"
           docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
+          docker push "$MIGRATOR_IMAGE_URI"
+          docker push "$LATEST_MIGRATOR_IMAGE_URI"

@@ -20,8 +20,10 @@ ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 IMAGE_TAG="${1:-latest}"
 
 APP_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+MIGRATOR_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}-migrator"
 
 echo "Application image: ${APP_IMAGE}"
+echo "Migrator image:     ${MIGRATOR_IMAGE}"
 
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "Environment file not found: ${ENV_FILE}"
@@ -47,21 +49,21 @@ docker image prune -af --filter "until=1h" 2>/dev/null || true
 echo "Disk space available after pruning:"
 df -h / 2>/dev/null || true
 
-echo "Pulling application image..."
-docker pull "${APP_IMAGE}"
+echo "Pulling migrator image..."
+docker pull "${MIGRATOR_IMAGE}"
 
 echo "Running Prisma migrations..."
 
 docker run --rm \
   --env-file "${ENV_FILE}" \
-  "${APP_IMAGE}" \
+  "${MIGRATOR_IMAGE}" \
   ./node_modules/.bin/prisma migrate deploy --schema=/app/prisma/schema.prisma
 
 echo "Validating migration status..."
 
 if ! docker run --rm \
   --env-file "${ENV_FILE}" \
-  "${APP_IMAGE}" \
+  "${MIGRATOR_IMAGE}" \
   ./node_modules/.bin/prisma migrate status --schema=/app/prisma/schema.prisma; then
   echo "ERROR: Prisma schema drift detected. Database migrations and schema are not in sync."
   echo "Please generate a migration locally (npx prisma migrate dev) and push."
@@ -69,6 +71,12 @@ if ! docker run --rm \
 fi
 
 echo "Migrations completed."
+
+docker image rm "${MIGRATOR_IMAGE}" 2>/dev/null || true
+docker image prune -f
+
+echo "Pulling application image..."
+docker pull "${APP_IMAGE}"
 
 if docker ps -a --format '{{.Names}}' |
   grep -qx "${CONTAINER_NAME}"; then
