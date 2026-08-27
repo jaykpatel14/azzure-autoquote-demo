@@ -38,6 +38,9 @@ echo "Pruning Docker objects to free up disk space..."
 # Clean up unused images, containers, networks, and volumes
 docker system prune -af --volumes 2>/dev/null || true
 
+# Build cache can be the largest leftover on the host, so clear it too.
+docker builder prune -af 2>/dev/null || true
+
 # Also remove dangling images specifically
 docker image prune -af --filter "until=1h" 2>/dev/null || true
 

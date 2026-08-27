@@ -46,7 +46,7 @@ type JewelryFactItem = {
   icon: string;
   headline: string;
   fact: string;
-  sourceOrTrend?: string;
+  sourceOrTrend?: string | null;
   trivia?: { question: string; answer: string };
 };
 
@@ -1122,6 +1122,31 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   if (displayMode === "marketing") {
     return (
       <div className="showroomRoot" style={{ overflow: "hidden" }}>
+        <button
+          type="button"
+          onClick={() => setDisplayMode("showroom")}
+          aria-label="Return to showroom mode"
+          title="Return to showroom mode"
+          style={{
+            position: "fixed",
+            top: 16,
+            right: 16,
+            zIndex: 90,
+            width: 52,
+            height: 52,
+            borderRadius: 999,
+            border: "1px solid rgba(255,255,255,0.16)",
+            background: "rgba(0,0,0,0.42)",
+            color: "#fff",
+            display: "grid",
+            placeItems: "center",
+            boxShadow: "0 10px 24px rgba(0,0,0,0.35)",
+            backdropFilter: "blur(14px)",
+            cursor: "pointer"
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 22 }}>storefront</span>
+        </button>
         <div
           style={{
             position: "fixed",

@@ -8,7 +8,7 @@ export type DynamicJewelryFact = {
   icon: string;
   headline: string;
   fact: string;
-  sourceOrTrend?: string;
+  sourceOrTrend?: string | null;
   trivia?: {
     question: string;
     answer: string;
@@ -135,13 +135,13 @@ const jewelryFactsResponseSchema = z.object({
       icon: z.string(),
       headline: z.string(),
       fact: z.string(),
-      sourceOrTrend: z.string().optional(),
+      sourceOrTrend: z.string().nullable(),
       trivia: z
         .object({
           question: z.string(),
           answer: z.string()
         })
-        .optional()
+        .nullable()
     })
   )
 });

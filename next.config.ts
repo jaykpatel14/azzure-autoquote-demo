@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
     "127.0.0.1:3000"
   ],
   experimental: {
+    proxyClientMaxBodySize: "60mb",
     serverActions: {
       bodySizeLimit: "10mb"
     }
