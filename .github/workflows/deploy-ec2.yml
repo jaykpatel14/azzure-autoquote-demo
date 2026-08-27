@@ -32,6 +32,11 @@ jobs:
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
       - name: Determine image tag
         shell: bash
         run: |
