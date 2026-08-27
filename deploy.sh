@@ -82,6 +82,7 @@ if docker ps -a --format '{{.Names}}' |
   grep -qx "${CONTAINER_NAME}"; then
 
   docker rm -f "${CONTAINER_NAME}-previous" 2>/dev/null || true
+  docker stop "${CONTAINER_NAME}" >/dev/null 2>&1 || true
   docker rename "${CONTAINER_NAME}" "${CONTAINER_NAME}-previous"
 fi
 
