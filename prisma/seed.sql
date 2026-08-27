@@ -213,20 +213,21 @@ INSERT INTO "GemstoneRate" (
   "premiumHighPerCt",
   "sources",
   "refreshedAt",
+  "updatedAt",
   "isActive"
 ) VALUES
-  ('gem_ruby', 'ruby', 'Ruby (Corundum)', 100, 400, 800, 2500, 3000, 10000, 'GIA market report; Pricescope trade data', CURRENT_TIMESTAMP, true),
-  ('gem_sapphire', 'sapphire', 'Sapphire (Corundum)', 100, 500, 800, 3000, 2500, 12000, 'GIA market report; Pricescope trade data', CURRENT_TIMESTAMP, true),
-  ('gem_emerald', 'emerald', 'Emerald (Beryl)', 200, 1000, 1000, 5000, 4000, 20000, 'GIA market report; trade data', CURRENT_TIMESTAMP, true),
-  ('gem_tsavorite', 'tsavorite', 'Tsavorite (Garnet)', 300, 1200, 1200, 6000, 5000, 20000, 'GIA market report; trade data', CURRENT_TIMESTAMP, true),
-  ('gem_alexandrite', 'alexandrite', 'Alexandrite (Chrysoberyl)', 500, 3000, 3000, 15000, 12000, 50000, 'GIA market report; trade data', CURRENT_TIMESTAMP, true),
-  ('gem_tanzanite', 'tanzanite', 'Tanzanite (Zoisite)', 150, 800, 800, 4000, 3000, 12000, 'GIA market report; trade data', CURRENT_TIMESTAMP, true),
-  ('gem_aquamarine', 'aquamarine', 'Aquamarine (Beryl)', 50, 300, 300, 1200, 1000, 5000, 'GIA market report; trade data', CURRENT_TIMESTAMP, true),
-  ('gem_amethyst', 'amethyst', 'Amethyst (Quartz)', 20, 100, 100, 500, 400, 2000, 'GIA market report; trade data', CURRENT_TIMESTAMP, true),
-  ('gem_peridot', 'peridot', 'Peridot (Olivine)', 50, 250, 250, 1000, 800, 4000, 'GIA market report; trade data', CURRENT_TIMESTAMP, true),
-  ('gem_spinel', 'spinel', 'Spinel', 200, 1000, 1000, 5000, 4000, 18000, 'GIA market report; trade data', CURRENT_TIMESTAMP, true),
-  ('gem_tourmaline', 'tourmaline', 'Tourmaline', 50, 400, 400, 2000, 1500, 8000, 'GIA market report; trade data', CURRENT_TIMESTAMP, true),
-  ('gem_opal', 'opal', 'Opal', 50, 300, 300, 1500, 1000, 5000, 'GIA market report; trade data', CURRENT_TIMESTAMP, true)
+  ('gem_ruby', 'ruby', 'Ruby (Corundum)', 100, 400, 800, 2500, 3000, 10000, 'GIA market report; Pricescope trade data', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),
+  ('gem_sapphire', 'sapphire', 'Sapphire (Corundum)', 100, 500, 800, 3000, 2500, 12000, 'GIA market report; Pricescope trade data', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),
+  ('gem_emerald', 'emerald', 'Emerald (Beryl)', 200, 1000, 1000, 5000, 4000, 20000, 'GIA market report; trade data', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),
+  ('gem_tsavorite', 'tsavorite', 'Tsavorite (Garnet)', 300, 1200, 1200, 6000, 5000, 20000, 'GIA market report; trade data', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),
+  ('gem_alexandrite', 'alexandrite', 'Alexandrite (Chrysoberyl)', 500, 3000, 3000, 15000, 12000, 50000, 'GIA market report; trade data', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),
+  ('gem_tanzanite', 'tanzanite', 'Tanzanite (Zoisite)', 150, 800, 800, 4000, 3000, 12000, 'GIA market report; trade data', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),
+  ('gem_aquamarine', 'aquamarine', 'Aquamarine (Beryl)', 50, 300, 300, 1200, 1000, 5000, 'GIA market report; trade data', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),
+  ('gem_amethyst', 'amethyst', 'Amethyst (Quartz)', 20, 100, 100, 500, 400, 2000, 'GIA market report; trade data', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),
+  ('gem_peridot', 'peridot', 'Peridot (Olivine)', 50, 250, 250, 1000, 800, 4000, 'GIA market report; trade data', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),
+  ('gem_spinel', 'spinel', 'Spinel', 200, 1000, 1000, 5000, 4000, 18000, 'GIA market report; trade data', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),
+  ('gem_tourmaline', 'tourmaline', 'Tourmaline', 50, 400, 400, 2000, 1500, 8000, 'GIA market report; trade data', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),
+  ('gem_opal', 'opal', 'Opal', 50, 300, 300, 1500, 1000, 5000, 'GIA market report; trade data', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true)
 ON CONFLICT ("stone") DO UPDATE SET
   "displayName" = EXCLUDED."displayName",
   "commercialLowPerCt" = EXCLUDED."commercialLowPerCt",
@@ -237,4 +238,5 @@ ON CONFLICT ("stone") DO UPDATE SET
   "premiumHighPerCt" = EXCLUDED."premiumHighPerCt",
   "sources" = EXCLUDED."sources",
   "refreshedAt" = EXCLUDED."refreshedAt",
+  "updatedAt" = CURRENT_TIMESTAMP,
   "isActive" = EXCLUDED."isActive";
