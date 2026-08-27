@@ -142,7 +142,7 @@ describe("pricing", () => {
     vi.stubEnv("METALS_DEV_API_KEY", "test-key");
     await prismaMock.appSetting.create({
       data: {
-        key: "METALS_LIVE_PRICING_CACHE_V1",
+        key: "METALS_LIVE_PRICING_CACHE_V2",
         value: JSON.stringify({
           fetchedAt: "2026-08-27T13:00:00.000Z",
           torontoDate: "2026-08-26",

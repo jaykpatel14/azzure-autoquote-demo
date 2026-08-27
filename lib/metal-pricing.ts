@@ -7,7 +7,7 @@ const METALS_DEV_BASE_URL = "https://api.metals.dev/v1";
 const METALPRICE_API_BASE_URL = "https://api.metalpriceapi.com/v1";
 const TORONTO_TIME_ZONE = "America/Toronto";
 const TORONTO_DAILY_REFRESH_HOUR = 9;
-const LIVE_PRICING_CACHE_KEY = "METALS_LIVE_PRICING_CACHE_V1";
+const LIVE_PRICING_CACHE_KEY = "METALS_LIVE_PRICING_CACHE_V2";
 
 type MetalsDevLatestResponse = {
   status?: string;
@@ -54,6 +54,25 @@ type CachedLivePricing = {
   timestamp?: string;
   message?: string;
 };
+
+function isSuspiciousLivePricingProfile(
+  profile: CachedLivePricing["pricingProfile"] | undefined | null
+) {
+  if (!profile) return true;
+
+  const gold = Number(profile.goldSpotPerOz);
+  const platinum = Number(profile.platinumSpotPerOz);
+  const silver = Number(profile.silverSpotPerOz);
+
+  return (
+    !Number.isFinite(gold) ||
+    !Number.isFinite(platinum) ||
+    !Number.isFinite(silver) ||
+    gold < 100 ||
+    platinum < 100 ||
+    silver < 1
+  );
+}
 
 export function normalizePricingProfile(
   profile?: Partial<PricingProfileInput> | null
@@ -125,6 +144,10 @@ async function readCachedLivePricing() {
   try {
     const parsed = JSON.parse(record.value) as CachedLivePricing;
     if (!parsed.torontoDate || !parsed.fetchedAt || !parsed.pricingProfile) {
+      return null;
+    }
+
+    if (isSuspiciousLivePricingProfile(parsed.pricingProfile)) {
       return null;
     }
 

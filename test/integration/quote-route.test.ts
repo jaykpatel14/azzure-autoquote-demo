@@ -156,7 +156,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   vi.stubEnv("METALS_DEV_API_KEY", "");
   await prisma.appSetting.deleteMany({
-    where: { key: "METALS_LIVE_PRICING_CACHE_V1" }
+    where: { key: "METALS_LIVE_PRICING_CACHE_V2" }
   });
 });
 
