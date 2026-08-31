@@ -28,7 +28,7 @@ const publicPagePrefixes = [
   "/showroom"
 ];
 
-const publicApiPrefixes = ["/api/auth", "/api/health", "/api/billing/webhook", "/api/account/status", "/api/showroom/validate", "/api/showroom/analyze", "/api/showroom/quotes", "/api/showroom/render"];
+const publicApiPrefixes = ["/api/auth", "/api/health", "/api/billing/webhook", "/api/account/status", "/api/showroom/validate", "/api/showroom/analyze", "/api/showroom/quotes", "/api/showroom/render", "/api/showroom/devices/heartbeat"];
 
 function withSecurityHeaders(response: NextResponse) {
   response.headers.set("X-Content-Type-Options", "nosniff");

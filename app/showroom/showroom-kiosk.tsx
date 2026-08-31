@@ -551,6 +551,64 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       window.removeEventListener("orientationchange", updateViewportSize);
     };
   }, []);
+
+  // Background remote telemetry & command execution for store owners
+  useEffect(() => {
+    let timer: number | undefined;
+
+    const runHeartbeat = async () => {
+      const storedDeviceToken = typeof window !== "undefined" ? localStorage.getItem("azzure_showroom_device_token") : null;
+      if (!storedDeviceToken || !token) return;
+
+      try {
+        const res = await fetch("/api/showroom/devices/heartbeat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            deviceToken: storedDeviceToken,
+            showroomToken: token,
+            screenResolution: `${window.innerWidth}x${window.innerHeight}`,
+            currentMode: displayMode,
+            lastError: error || null,
+            appVersion: "1.0.0"
+          })
+        });
+
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Process remote commands dispatched by store owner / admin
+        if (Array.isArray(data?.commands)) {
+          for (const cmd of data.commands) {
+            if (cmd.command === "reload") {
+              window.location.reload();
+            } else if (cmd.command === "clear_cache") {
+              try {
+                localStorage.removeItem("azzure_showroom_draft");
+                sessionStorage.clear();
+                reset();
+              } catch {}
+            } else if (cmd.command === "set_mode_marketing") {
+              setDisplayMode("marketing");
+            } else if (cmd.command === "set_mode_quoting") {
+              setDisplayMode("showroom");
+            } else if (cmd.command === "reset_draft") {
+              reset();
+            }
+          }
+        }
+      } catch {
+        // Silently ignore background polling errors
+      }
+    };
+
+    runHeartbeat();
+    timer = window.setInterval(runHeartbeat, 15000);
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [token, displayMode, error, reset]);
   const modeToggle = (
     <button
       type="button"

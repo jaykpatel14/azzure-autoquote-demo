@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { deviceToken, showroomToken } = body;
+    const { deviceToken, showroomToken, screenResolution, currentMode, lastError, appVersion } = body;
 
     if (!deviceToken || !showroomToken) {
       return NextResponse.json({ error: "Invalid device credentials" }, { status: 401 });
@@ -17,7 +17,11 @@ export async function POST(req: NextRequest) {
     const result = await heartbeatShowroomDevice({
       deviceToken: String(deviceToken),
       showroomToken: String(showroomToken),
-      ip
+      ip,
+      screenResolution: screenResolution ? String(screenResolution) : undefined,
+      currentMode: currentMode ? String(currentMode) : undefined,
+      lastError: lastError ? String(lastError) : undefined,
+      appVersion: appVersion ? String(appVersion) : undefined
     });
 
     if ("error" in result) {

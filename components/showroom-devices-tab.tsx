@@ -10,6 +10,13 @@ type ShowroomDeviceItem = {
   lastSeenAt: string;
   isActive: boolean;
   registeredAt: string;
+  telemetry?: {
+    screenResolution?: string | null;
+    currentMode?: string | null;
+    lastError?: string | null;
+    appVersion?: string | null;
+    lastPing?: number;
+  } | null;
 };
 
 function formatRelativeTime(dateString: string): string {
@@ -165,15 +172,30 @@ export default function ShowroomDevicesTab({
     });
   };
 
+  const handleRemoteCommand = async (deviceId: string, deviceName: string, command: string) => {
+    try {
+      const res = await fetch(`/api/showroom/devices/${deviceId}/command`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to dispatch command.");
+      alert(`Success: ${data.message || `Command sent to ${deviceName}.`}`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to dispatch command.");
+    }
+  };
+
   return (
     <div className="stack" style={{ gap: "var(--space-6)" }}>
       <section className="card stack">
         <div className="sectionHeader">
           <div>
             <span className="eyebrow">Physical Displays</span>
-            <h2>Registered Showroom Devices</h2>
+            <h2>Registered Showroom Devices &amp; Remote Control</h2>
             <p className="muted">
-              Manage in-store touchscreen kiosks, Android TV displays, and showroom tablets linked to your account.
+              Remotely monitor, troubleshoot, reload, and manage in-store touchscreen kiosks, TVs, and tablets from anywhere.
             </p>
           </div>
         </div>
@@ -193,6 +215,7 @@ export default function ShowroomDevicesTab({
           <div className="stack" style={{ gap: 14 }}>
             {devices.map((device) => {
               const status = getOnlineStatus(device.lastSeenAt, device.isActive);
+              const telemetry = device.telemetry;
               return (
                 <div
                   key={device.id}
@@ -208,7 +231,7 @@ export default function ShowroomDevicesTab({
                     gap: 16
                   }}
                 >
-                  <div>
+                  <div style={{ flex: "1 1 300px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
                       <span style={{ color: status.color, fontSize: "1.1rem" }}>{status.dot}</span>
                       <strong style={{ fontSize: "1.05rem", color: "#f8fafc" }}>{device.deviceName}</strong>
@@ -224,11 +247,64 @@ export default function ShowroomDevicesTab({
                         Serial: {device.azzureSerial}
                       </p>
                     ) : null}
+                    {telemetry ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                        {telemetry.screenResolution ? (
+                          <span style={{ fontSize: "0.75rem", background: "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 4, color: "#94a3b8" }}>
+                            🖥 {telemetry.screenResolution}
+                          </span>
+                        ) : null}
+                        {telemetry.currentMode ? (
+                          <span style={{ fontSize: "0.75rem", background: "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 4, color: "#94a3b8" }}>
+                            {telemetry.currentMode === "marketing" ? "📺 Marketing Mode" : "💍 Quoting Mode"}
+                          </span>
+                        ) : null}
+                        {telemetry.lastError ? (
+                          <span style={{ fontSize: "0.75rem", background: "rgba(239, 68, 68, 0.15)", padding: "2px 8px", borderRadius: 4, color: "#f87171" }}>
+                            ⚠ {telemetry.lastError}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
 
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
                     {device.isActive ? (
                       <>
+                        <button
+                          className="button secondary button--sm"
+                          type="button"
+                          title="Remotely refresh and reload this kiosk"
+                          onClick={() => handleRemoteCommand(device.id, device.deviceName, "reload")}
+                          style={{ borderColor: "rgba(59, 130, 246, 0.4)", color: "#60a5fa" }}
+                        >
+                          🔄 Remote Reload
+                        </button>
+                        <button
+                          className="button secondary button--sm"
+                          type="button"
+                          title="Remotely clear cached drafts and local storage"
+                          onClick={() => handleRemoteCommand(device.id, device.deviceName, "clear_cache")}
+                          style={{ borderColor: "rgba(245, 158, 11, 0.4)", color: "#fbbf24" }}
+                        >
+                          🧹 Clear Cache
+                        </button>
+                        <button
+                          className="button secondary button--sm"
+                          type="button"
+                          title="Switch kiosk to Marketing Standby"
+                          onClick={() => handleRemoteCommand(device.id, device.deviceName, "set_mode_marketing")}
+                        >
+                          📺 Marketing
+                        </button>
+                        <button
+                          className="button secondary button--sm"
+                          type="button"
+                          title="Switch kiosk to Interactive Ring Quoter"
+                          onClick={() => handleRemoteCommand(device.id, device.deviceName, "set_mode_quoting")}
+                        >
+                          💍 Quoting
+                        </button>
                         <button
                           className="button secondary button--sm"
                           type="button"
@@ -374,7 +450,7 @@ export default function ShowroomDevicesTab({
           <div
             style={{
               width: "100%",
-              maxWidth: 460,
+              maxWidth: 440,
               background: "#12141a",
               border: "1px solid rgba(239, 68, 68, 0.3)",
               borderRadius: 16,
@@ -382,10 +458,10 @@ export default function ShowroomDevicesTab({
               boxShadow: "0 20px 40px rgba(0,0,0,0.8)"
             }}
           >
-            <h3 style={{ margin: "0 0 12px", color: "#f87171" }}>Deactivate Device?</h3>
-            <p className="muted" style={{ margin: "0 0 20px", lineHeight: 1.5 }}>
-              This will immediately disconnect <strong>{deactivatingDevice.deviceName}</strong>. The screen will be
-              blocked and will need to be registered again before it can be used.
+            <h3 style={{ margin: "0 0 12px", color: "#f87171" }}>Deactivate Device</h3>
+            <p className="muted" style={{ marginBottom: 20 }}>
+              Are you sure you want to deactivate <strong>{deactivatingDevice.deviceName}</strong>?
+              It will no longer be able to submit quotes or display your showroom until re-registered.
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <button
@@ -399,11 +475,11 @@ export default function ShowroomDevicesTab({
               <button
                 className="button primary"
                 type="button"
-                style={{ background: "#ef4444", borderColor: "#dc2626" }}
+                style={{ background: "#dc2626", borderColor: "#dc2626" }}
                 onClick={handleConfirmDeactivate}
                 disabled={savingDeactivate}
               >
-                {savingDeactivate ? "Deactivating…" : "Deactivate Screen"}
+                {savingDeactivate ? "Deactivating…" : "Yes, Deactivate"}
               </button>
             </div>
           </div>

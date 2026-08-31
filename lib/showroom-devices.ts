@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getCompanyPlanFeatures, PlanError } from "@/src/stripe/plans";
+import { getCompanyPlanFeatures } from "@/src/stripe/plans";
 
 export async function getShowroomConfigHash(companyId: string): Promise<string> {
   const company = await prisma.company.findUnique({
@@ -99,10 +99,62 @@ export async function registerShowroomDevice(input: RegisterShowroomDeviceInput)
   };
 }
 
+export type RemoteKioskCommandType =
+  | "reload"
+  | "clear_cache"
+  | "set_mode_marketing"
+  | "set_mode_quoting"
+  | "reset_draft"
+  | "run_diagnostics";
+
+export type RemoteKioskCommand = {
+  id: string;
+  command: RemoteKioskCommandType;
+  timestamp: number;
+  payload?: Record<string, unknown>;
+};
+
+export type DeviceTelemetry = {
+  screenResolution?: string | null;
+  currentMode?: string | null;
+  lastError?: string | null;
+  appVersion?: string | null;
+  lastPing?: number;
+};
+
+// Global in-memory command queue & telemetry storage per deviceToken
+const pendingDeviceCommands = new Map<string, RemoteKioskCommand[]>();
+const deviceTelemetryStore = new Map<string, DeviceTelemetry>();
+
+export function queueRemoteCommand(deviceToken: string, command: RemoteKioskCommandType, payload?: Record<string, unknown>) {
+  const existing = pendingDeviceCommands.get(deviceToken) || [];
+  const cmd: RemoteKioskCommand = {
+    id: `cmd_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    command,
+    timestamp: Date.now(),
+    payload
+  };
+  // Retain at most 5 latest commands
+  pendingDeviceCommands.set(deviceToken, [...existing.slice(-4), cmd]);
+  return cmd;
+}
+
+export function queueCompanyWideCommand(deviceTokens: string[], command: RemoteKioskCommandType, payload?: Record<string, unknown>) {
+  return deviceTokens.map((token) => queueRemoteCommand(token, command, payload));
+}
+
+export function getDeviceTelemetry(deviceToken: string): DeviceTelemetry | null {
+  return deviceTelemetryStore.get(deviceToken) ?? null;
+}
+
 export type HeartbeatShowroomDeviceInput = {
   deviceToken: string;
   showroomToken: string;
   ip?: string | null;
+  screenResolution?: string | null;
+  currentMode?: string | null;
+  lastError?: string | null;
+  appVersion?: string | null;
 };
 
 export async function heartbeatShowroomDevice(input: HeartbeatShowroomDeviceInput) {
@@ -127,6 +179,15 @@ export async function heartbeatShowroomDevice(input: HeartbeatShowroomDeviceInpu
     }
   });
 
+  // Store live telemetry
+  deviceTelemetryStore.set(device.deviceToken, {
+    screenResolution: input.screenResolution || null,
+    currentMode: input.currentMode || null,
+    lastError: input.lastError || null,
+    appVersion: input.appVersion || "1.0.0",
+    lastPing: Date.now()
+  });
+
   if (device.azzureSerial) {
     await prisma.azzureDevice.updateMany({
       where: {
@@ -142,11 +203,16 @@ export async function heartbeatShowroomDevice(input: HeartbeatShowroomDeviceInpu
     });
   }
 
+  // Retrieve and consume pending remote commands for this device
+  const commands = pendingDeviceCommands.get(device.deviceToken) || [];
+  pendingDeviceCommands.delete(device.deviceToken);
+
   const configVersion = await getShowroomConfigHash(device.companyId);
   return {
     data: {
       ok: true,
-      configVersion
+      configVersion,
+      commands
     },
     status: 200 as const
   };
@@ -167,11 +233,12 @@ export function touchShowroomDevice(deviceToken: string, companyId?: string) {
 }
 
 export async function getShowroomDevicesForCompany(companyId: string) {
-  return prisma.showroomDevice.findMany({
+  const devices = await prisma.showroomDevice.findMany({
     where: { companyId },
     orderBy: { registeredAt: "desc" },
     select: {
       id: true,
+      deviceToken: true,
       deviceName: true,
       platform: true,
       azzureSerial: true,
@@ -179,6 +246,14 @@ export async function getShowroomDevicesForCompany(companyId: string) {
       isActive: true,
       registeredAt: true
     }
+  });
+
+  return devices.map((dev) => {
+    const telemetry = getDeviceTelemetry(dev.deviceToken);
+    return {
+      ...dev,
+      telemetry: telemetry || null
+    };
   });
 }
 
