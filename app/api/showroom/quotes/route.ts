@@ -185,9 +185,14 @@ export async function POST(request: Request) {
       // don't block the save response on it. The PDF generated below just won't
       // have the AI render yet; a later view of the same link will, since
       // generateAndStoreQuotePdf always rebuilds the PDF from current data.
-      after(() => {
+      const scheduleRender = () => {
         generateQuoteRendering({ quoteId: result.data.id, companyId: session.companyId }).catch(() => undefined);
-      });
+      };
+      try {
+        after(scheduleRender);
+      } catch {
+        setImmediate(scheduleRender);
+      }
     }
 
     // The kiosk's QR code / "Open PDF Proposal" / "Copy Link" all need a real

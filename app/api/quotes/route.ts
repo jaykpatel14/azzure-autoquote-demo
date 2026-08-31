@@ -96,9 +96,14 @@ export async function POST(request: Request) {
         // once it's ready and is picked up next time the quote is viewed.
         const quoteId = quoteResult.data.id;
         const companyId = companyContext.company.id;
-        after(() => {
+        const scheduleRender = () => {
           generateQuoteRendering({ quoteId, companyId }).catch(() => undefined);
-        });
+        };
+        try {
+          after(scheduleRender);
+        } catch {
+          setImmediate(scheduleRender);
+        }
         renderingStatus = "PROCESSING";
       }
     }
