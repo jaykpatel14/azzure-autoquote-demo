@@ -89,7 +89,7 @@ async function applyAdminAccessControl(request: NextRequest) {
 
 async function applyAccountAccessControl(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (isPublicRoute(pathname) || pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+  if (isPublicRoute(pathname) || isPublicApiRoute(pathname) || pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
     return null;
   }
 

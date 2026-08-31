@@ -869,6 +869,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       }
     } catch (err) {
       console.warn("[triggerRender3D] Rendering warning:", err);
+      setError(err instanceof Error ? err.message : "3D rendering failed.");
     } finally {
       setGeneratingConcept(false);
     }
