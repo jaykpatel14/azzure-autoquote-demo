@@ -159,9 +159,8 @@ export async function POST(request: Request) {
         `${item.analysis?.jewelryType || "Jewelry"}, ${item.metalType}, ${Number(item.metalWeightGrams).toFixed(2)} g, ${item.analysis?.centerShape || "unspecified"} ${Number(item.centerDiamondCarats).toFixed(2)} ct center, ${Number(item.sideDiamondCarats).toFixed(2)} ct across ${item.sideDiamondQuantity} side stones, ${item.analysis?.settingType || "unspecified"} setting`
     );
 
-    const outputs = [];
-    for (let attemptNumber = 1; attemptNumber <= 3; attemptNumber++) {
-      const attempt = await runReviewAttempt({
+    const attemptPromises = [1, 2, 3].map((attemptNumber) =>
+      runReviewAttempt({
         provider,
         imageDataUrls,
         taggedImages,
@@ -169,7 +168,15 @@ export async function POST(request: Request) {
         attemptNumber,
         customerDescription: description || undefined,
         learnedGuidance
-      });
+      })
+    );
+
+    const attempts = await Promise.all(attemptPromises);
+    const outputs = [];
+
+    for (let i = 0; i < attempts.length; i++) {
+      const attempt = attempts[i];
+      const attemptNumber = i + 1;
 
       if (attempt.kind !== "success") {
         throw new Error("Jewelry analysis could not be completed.");
