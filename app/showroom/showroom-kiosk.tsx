@@ -1291,37 +1291,92 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                     height: "100%",
                     flex: "0 0 auto",
                     margin: 0,
-                    padding: 0
+                    padding: 0,
+                    overflow: "hidden",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
                   }}
                 >
+                  {/* Ambient luxury backdrop glow fills full screen */}
+                  <img
+                    src={image}
+                    alt=""
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute",
+                      inset: -30,
+                      width: "calc(100% + 60px)",
+                      height: "calc(100% + 60px)",
+                      objectFit: "cover",
+                      filter: "blur(45px) brightness(0.35) saturate(1.3)",
+                      transform: "scale(1.15)",
+                      pointerEvents: "none"
+                    }}
+                  />
+                  {/* Foreground artwork: 100% uncropped with full text, logos, and borders visible on every device */}
                   <img
                     src={image}
                     alt={`Marketing piece ${index + 1}`}
                     style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      objectPosition: "center center",
-                      display: "block"
+                      position: "relative",
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      width: "auto",
+                      height: "auto",
+                      objectFit: "contain",
+                      display: "block",
+                      zIndex: 1,
+                      boxShadow: "0 0 60px rgba(0, 0, 0, 0.75)"
                     }}
                   />
                 </div>
               ))}
             </div>
           ) : (
-            <img
-              src={marketingImages[0]}
-              alt="Marketing piece"
+            <div
               style={{
                 position: "absolute",
                 inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                objectPosition: "center center",
-                display: "block"
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden"
               }}
-            />
+            >
+              {/* Ambient luxury backdrop glow fills full screen */}
+              <img
+                src={marketingImages[0]}
+                alt=""
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  inset: -30,
+                  width: "calc(100% + 60px)",
+                  height: "calc(100% + 60px)",
+                  objectFit: "cover",
+                  filter: "blur(45px) brightness(0.35) saturate(1.3)",
+                  transform: "scale(1.15)",
+                  pointerEvents: "none"
+                }}
+              />
+              {/* Foreground artwork: 100% uncropped with full text, logos, and borders visible on every device */}
+              <img
+                src={marketingImages[0]}
+                alt="Marketing piece"
+                style={{
+                  position: "relative",
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  width: "auto",
+                  height: "auto",
+                  objectFit: "contain",
+                  display: "block",
+                  zIndex: 1,
+                  boxShadow: "0 0 60px rgba(0, 0, 0, 0.75)"
+                }}
+              />
+            </div>
           )
         ) : null}
       </div>
@@ -1473,12 +1528,12 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                 style={{
                   position: "relative",
                   width: "100%",
-                  height: "clamp(280px, 46vh, 580px)",
+                  height: "clamp(280px, 48vh, 600px)",
                   borderRadius: 20,
                   overflow: "hidden",
                   border: "1.5px solid rgba(201, 168, 76, 0.35)",
                   boxShadow: "0 20px 60px rgba(0, 0, 0, 0.65)",
-                  background: "#000000",
+                  background: "#050608",
                   margin: "0 auto",
                   boxSizing: "border-box"
                 }}
@@ -1500,19 +1555,44 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                         minWidth: "100%",
                         height: "100%",
                         position: "relative",
-                        overflow: "hidden"
+                        overflow: "hidden",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
                       }}
                     >
+                      {/* Ambient background glow to softly fill wide/tall areas */}
+                      <img
+                        src={image}
+                        alt=""
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute",
+                          inset: -25,
+                          width: "calc(100% + 50px)",
+                          height: "calc(100% + 50px)",
+                          objectFit: "cover",
+                          filter: "blur(35px) brightness(0.3) saturate(1.25)",
+                          transform: "scale(1.1)",
+                          pointerEvents: "none"
+                        }}
+                      />
+                      {/* Foreground: 100% complete, uncropped full marketing artwork */}
                       <img
                         src={image}
                         alt={`Showroom marketing piece ${index + 1}`}
                         onLoad={handleImageLoad(image)}
                         style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
+                          position: "relative",
+                          maxWidth: "100%",
+                          maxHeight: "100%",
+                          width: "auto",
+                          height: "auto",
+                          objectFit: "contain",
                           objectPosition: "center center",
-                          display: "block"
+                          display: "block",
+                          zIndex: 1,
+                          boxShadow: "0 4px 30px rgba(0, 0, 0, 0.5)"
                         }}
                       />
                     </div>

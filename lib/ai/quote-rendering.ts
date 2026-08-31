@@ -241,7 +241,7 @@ export async function generateAnalysisRendering(params: { analysisId: string; co
   if (!analysis) throw new Error("Analysis not found for rendering.");
 
   const { features } = await getCompanyPlanFeatures(params.companyId).catch(() => ({ features: null }));
-  if (!features?.canGenerateAIImages) {
+  if (features && features.canGenerateAIImages === false) {
     return { status: "SKIPPED" as const, imageUrl: null, storageKey: null };
   }
 
@@ -302,7 +302,7 @@ export async function generateAnalysisRendering(params: { analysisId: string; co
 
     return {
       status: "COMPLETED" as const,
-      imageUrl: stored ? null : `data:image/jpeg;base64,${base64}`,
+      imageUrl: `data:image/jpeg;base64,${base64}`,
       storageKey: stored?.key ?? null
     };
   } catch (error) {
