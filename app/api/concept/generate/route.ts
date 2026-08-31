@@ -164,13 +164,11 @@ export async function POST(request: Request) {
         ].filter(Boolean).join(" ");
 
         const imgResponse = await client.images.generate({
-          model: "gpt-image-2",
-          prompt: imagePrompt,
-          size: "1024x1536",
-          quality: "medium",
-          background: "opaque",
-          output_format: "jpeg",
-          output_compression: 85,
+          model: "dall-e-3",
+          prompt: imagePrompt.slice(0, 4000),
+          size: "1024x1024",
+          quality: "standard",
+          response_format: "b64_json",
           n: 1
         });
 
@@ -198,8 +196,8 @@ export async function POST(request: Request) {
       data: {
         companyId: companyContext.company.id,
         provider: "concept-synthesizer",
-        model: "gpt-image-2",
-        modelVersion: "gpt-image-2",
+        model: "dall-e-3",
+        modelVersion: "dall-e-3",
         promptVersion: "concept-v1",
         selectedMetal: metalType,
         jewelryType: extractedSpecs.jewelryType,

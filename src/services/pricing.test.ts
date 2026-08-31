@@ -3,6 +3,7 @@ import {
   calculateMakingPrice,
   calculateMetalCost,
   calculateTierPrice,
+  DEFAULT_COLOR_CLARITY,
   isSideStoneRound,
   sideStoneCost,
   sideStoneSettingCost
@@ -308,6 +309,26 @@ describe("calculateMakingPrice", () => {
     expect(semiMount.sideStoneCost).toBeGreaterThan(0);
     expect(semiMount.subtotal).toBeGreaterThan(0);
     expect(semiMount.estimatedSellingPrice).toBeGreaterThan(0);
+  });
+
+  it("calculates making price with 300% retail customer margin without error", () => {
+    const quote = calculateMakingPrice({
+      metalType: "14K",
+      metalWeightGrams: 7.5,
+      centerStone: { shape: "pear", caratWeight: 3.2 },
+      sideStones: [{ shape: "round", caratWeightEach: 0.8, count: 2, settingType: "prong" }],
+      hasWeddingBand: false,
+      isTwoTone: false,
+      colorClarity: DEFAULT_COLOR_CLARITY,
+      cadCost: 20,
+      pricingTier: "TIER_1",
+      customerMarginPct: 300
+    });
+
+    expect(quote.customerMarginPct).toBe(300);
+    expect(quote.makingPrice).toBeGreaterThan(0);
+    expect(quote.customerMarginAmount).toBe(Math.round(quote.makingPrice * 3 * 100) / 100);
+    expect(quote.estimatedSellingPrice).toBe(Math.round((quote.makingPrice + quote.customerMarginAmount) * 100) / 100);
   });
 });
 

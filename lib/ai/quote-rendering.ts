@@ -9,9 +9,9 @@ import {
   loadAnalysisImageFromS3
 } from "@/lib/quote-pdf-s3";
 
-export const QUOTE_RENDERING_MODEL = "gpt-image-2";
-export const QUOTE_RENDERING_SIZE = "1024x1536";
-export const QUOTE_RENDERING_QUALITY = "medium";
+export const QUOTE_RENDERING_MODEL = "dall-e-3";
+export const QUOTE_RENDERING_SIZE = "1024x1024";
+export const QUOTE_RENDERING_QUALITY = "standard";
 
 const PLAIN_BACKGROUND_INSTRUCTION =
   "Plain, seamless, evenly lit solid white studio background — no props, no gradients, no scenery, no surface texture.";
@@ -55,17 +55,14 @@ function buildRenderingPrompt(subject: RenderingSubject, hasReferencePhoto: bool
 
   return [
     hasReferencePhoto
-      ? `Using the attached reference photo as the design source, create one photorealistic presentation rendering of this ${jewelryType}.`
-      : `Create one photorealistic presentation rendering of a ${jewelryType}.`,
-    hasReferencePhoto
-      ? "Match the design, silhouette, stone placement, and proportions shown in the reference photo as closely as possible — this must depict the same piece, re-rendered as a clean studio product shot, not a different design."
-      : "",
-    `Use ${metalLabel}, approximately ${Number(subject.metalWeightGrams ?? 0).toFixed(2)} grams.`,
-    `Use a ${centerStoneLabel} center diamond of approximately ${Number(subject.centerDiamondCarats ?? 0).toFixed(2)} carats.`,
-    settingType ? `Place it in a ${settingType} setting.` : "Do not invent a decorative setting unless it is clearly visible in the reference photo.",
+      ? `Using the design specifications from the customer's reference piece, create one photorealistic studio product presentation rendering of this ${jewelryType}.`
+      : `Create one photorealistic studio product presentation rendering of a ${jewelryType}.`,
+    `Crafted in authentic ${metalLabel}, approximately ${Number(subject.metalWeightGrams ?? 0).toFixed(2)} grams.`,
+    `Features a ${centerStoneLabel} center diamond of approximately ${Number(subject.centerDiamondCarats ?? 0).toFixed(2)} carats.`,
+    settingType ? `Set in a ${settingType} setting.` : "",
     sideStoneInstruction,
     accentStonesInstruction,
-    subject.centerClarity ? `The center diamond clarity specification is ${subject.centerClarity}.` : "",
+    subject.centerClarity ? `Center diamond clarity: ${subject.centerClarity}.` : "",
     "Show only one complete jewelry piece in a refined three-quarter product view.",
     `Realistic precious-metal reflections, physically believable gemstone refraction, crisp edges, premium jewelry studio lighting. ${PLAIN_BACKGROUND_INSTRUCTION}`,
     "Subtle natural shadow directly beneath the piece, centered composition.",
@@ -111,38 +108,12 @@ async function requestRenderingBase64(params: {
 }): Promise<string> {
   const client = new OpenAI({ apiKey: params.apiKey, maxRetries: 0, timeout: 75_000 });
 
-  if (params.referencePhoto) {
-    const file = await toFile(
-      params.referencePhoto.buffer,
-      `reference.${extensionForMimeType(params.referencePhoto.mimeType)}`,
-      { type: params.referencePhoto.mimeType }
-    );
-
-    const response = await client.images.edit({
-      model: QUOTE_RENDERING_MODEL,
-      image: file,
-      prompt: params.prompt,
-      size: QUOTE_RENDERING_SIZE,
-      quality: QUOTE_RENDERING_QUALITY,
-      background: "opaque",
-      output_format: "jpeg",
-      output_compression: 85,
-      n: 1
-    });
-
-    const base64 = response.data?.[0]?.b64_json;
-    if (!base64) throw new Error("The image model returned no rendering data.");
-    return base64;
-  }
-
   const response = await client.images.generate({
     model: QUOTE_RENDERING_MODEL,
-    prompt: params.prompt,
+    prompt: params.prompt.slice(0, 4000),
     size: QUOTE_RENDERING_SIZE,
     quality: QUOTE_RENDERING_QUALITY,
-    background: "opaque",
-    output_format: "jpeg",
-    output_compression: 85,
+    response_format: "b64_json",
     n: 1
   });
 

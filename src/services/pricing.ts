@@ -251,8 +251,8 @@ export function calculateMakingPrice(
   if (input.centerStone.caratWeight < 0) {
     throw new ValidationError("Center stone carat weight cannot be negative");
   }
-  if (customerMarginPct < 0 || customerMarginPct > 200) {
-    throw new ValidationError("Customer margin must be between 0% and 200%");
+  if (customerMarginPct < 0 || customerMarginPct > 1000) {
+    throw new ValidationError("Customer margin must be between 0% and 1000%");
   }
   if (cadCost < 0) {
     throw new ValidationError("CAD cost cannot be negative");
