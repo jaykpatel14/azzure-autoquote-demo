@@ -1224,7 +1224,19 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
   if (displayMode === "marketing") {
     return (
-      <div className="showroomRoot" style={{ overflow: "hidden" }}>
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          width: "100vw",
+          height: "100vh",
+          overflow: "hidden",
+          background: "#000000",
+          zIndex: 99999,
+          margin: 0,
+          padding: 0
+        }}
+      >
         <button
           type="button"
           onClick={() => setDisplayMode("showroom")}
@@ -1232,84 +1244,86 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
           title="Return to Showroom Mode"
           style={{
             position: "fixed",
-            top: 16,
-            right: 16,
-            zIndex: 90,
-            width: 44,
-            height: 44,
+            top: 24,
+            right: 24,
+            zIndex: 100000,
+            width: 48,
+            height: 48,
             padding: 0,
             borderRadius: 999,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
             cursor: "pointer",
-            border: "1px solid rgba(255, 255, 255, 0.16)",
-            background: "rgba(0, 0, 0, 0.45)",
+            border: "1px solid rgba(255, 255, 255, 0.25)",
+            background: "rgba(0, 0, 0, 0.55)",
             color: "#f6e09e",
-            backdropFilter: "blur(14px)",
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.35)",
+            backdropFilter: "blur(16px)",
+            boxShadow: "0 6px 24px rgba(0, 0, 0, 0.6)",
             transition: "all 0.2s ease"
           }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <polygon points="6 3 18 3 22 9 12 22 2 9" />
           </svg>
         </button>
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            width: "100vw",
-            height: "100vh",
-            overflow: "hidden",
-            background: "#000"
-          }}
-        >
-          {marketingImages.length > 0 ? (
-            hasMarketingSlider ? (
-              <div
-                style={{
-                  display: "flex",
-                  width: `${marketingImages.length * 100}%`,
-                  height: "100%",
-                  transform: `translateX(-${currentMarketingIndex * (100 / marketingImages.length)}%)`,
-                  transition: "transform 820ms cubic-bezier(0.22, 1, 0.36, 1)",
-                  willChange: "transform"
-                }}
-              >
-                {marketingImages.map((image, index) => (
-                  <div key={image} style={{ position: "relative", width: `${100 / marketingImages.length}%`, height: "100%", flex: "0 0 auto" }}>
-                    <img
-                      src={image}
-                      alt={`Showroom marketing piece ${index + 1}`}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: marketingImageFit,
-                        objectPosition: "center center",
-                        display: "block",
-                        background: "#000"
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <img
-                src={marketingImages[0]}
-                alt="Showroom marketing piece"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: marketingImageFit,
-                  objectPosition: "center center",
-                  display: "block",
-                  background: "#000"
-                }}
-              />
-            )
-          ) : null}
-        </div>
+
+        {marketingImages.length > 0 ? (
+          hasMarketingSlider ? (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                width: `${marketingImages.length * 100}%`,
+                height: "100%",
+                transform: `translateX(-${currentMarketingIndex * (100 / marketingImages.length)}%)`,
+                transition: "transform 820ms cubic-bezier(0.22, 1, 0.36, 1)",
+                willChange: "transform"
+              }}
+            >
+              {marketingImages.map((image, index) => (
+                <div
+                  key={image}
+                  style={{
+                    position: "relative",
+                    width: `${100 / marketingImages.length}%`,
+                    height: "100%",
+                    flex: "0 0 auto",
+                    margin: 0,
+                    padding: 0
+                  }}
+                >
+                  <img
+                    src={image}
+                    alt={`Marketing piece ${index + 1}`}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      objectPosition: "center center",
+                      display: "block"
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <img
+              src={marketingImages[0]}
+              alt="Marketing piece"
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center center",
+                display: "block"
+              }}
+            />
+          )
+        ) : null}
       </div>
     );
   }
@@ -1457,157 +1471,148 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
             >
               <div
                 style={{
-                  borderRadius: 20,
-                  border: "1px solid rgba(201, 168, 76, 0.25)",
-                  background: "rgba(10, 11, 14, 0.65)",
-                  padding: "16px 16px 20px",
-                  boxShadow: "0 18px 50px rgba(0, 0, 0, 0.45)",
-                  width: "100%",
-                  margin: "0 auto",
                   position: "relative",
+                  width: "100%",
+                  height: "clamp(280px, 46vh, 580px)",
+                  borderRadius: 20,
+                  overflow: "hidden",
+                  border: "1.5px solid rgba(201, 168, 76, 0.35)",
+                  boxShadow: "0 20px 60px rgba(0, 0, 0, 0.65)",
+                  background: "#000000",
+                  margin: "0 auto",
                   boxSizing: "border-box"
                 }}
               >
                 <div
                   style={{
-                    position: "relative",
-                    width: "100%",
-                    height: "clamp(240px, 38vh, 500px)",
-                    borderRadius: 14,
-                    overflow: "hidden",
-                    background: "#000000",
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
+                    width: "100%",
+                    height: "100%",
+                    transform: `translateX(-${currentMarketingIndex * 100}%)`,
+                    transition: "transform 650ms cubic-bezier(0.22, 1, 0.36, 1)",
+                    willChange: "transform"
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      width: "100%",
-                      height: "100%",
-                      transform: `translateX(-${currentMarketingIndex * 100}%)`,
-                      transition: "transform 500ms cubic-bezier(0.22, 1, 0.36, 1)",
-                      willChange: "transform"
-                    }}
-                  >
-                    {marketingImages.map((image, index) => (
-                      <div
-                        key={image}
+                  {marketingImages.map((image, index) => (
+                    <div
+                      key={image}
+                      style={{
+                        minWidth: "100%",
+                        height: "100%",
+                        position: "relative",
+                        overflow: "hidden"
+                      }}
+                    >
+                      <img
+                        src={image}
+                        alt={`Showroom marketing piece ${index + 1}`}
+                        onLoad={handleImageLoad(image)}
                         style={{
-                          minWidth: "100%",
+                          width: "100%",
                           height: "100%",
-                          position: "relative",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          background: "#000000"
+                          objectFit: "cover",
+                          objectPosition: "center center",
+                          display: "block"
                         }}
-                      >
-                        <img
-                          src={image}
-                          alt={`Showroom marketing piece ${index + 1}`}
-                          onLoad={handleImageLoad(image)}
-                          style={{
-                            maxWidth: "100%",
-                            maxHeight: "100%",
-                            width: "auto",
-                            height: "auto",
-                            objectFit: "contain",
-                            display: "block",
-                            margin: "auto"
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  {hasMarketingSlider ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setMarketingIndex((current) => (current - 1 + marketingImages.length) % marketingImages.length)}
-                        aria-label="Previous marketing image"
-                        style={{
-                          position: "absolute",
-                          left: 12,
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          width: 44,
-                          height: 44,
-                          borderRadius: "50%",
-                          border: "1px solid rgba(255, 255, 255, 0.25)",
-                          background: "rgba(0, 0, 0, 0.6)",
-                          color: "#ffffff",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          zIndex: 4,
-                          backdropFilter: "blur(8px)"
-                        }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 22 }}>chevron_left</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setMarketingIndex((current) => (current + 1) % marketingImages.length)}
-                        aria-label="Next marketing image"
-                        style={{
-                          position: "absolute",
-                          right: 12,
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          width: 44,
-                          height: 44,
-                          borderRadius: "50%",
-                          border: "1px solid rgba(255, 255, 255, 0.25)",
-                          background: "rgba(0, 0, 0, 0.6)",
-                          color: "#ffffff",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          zIndex: 4,
-                          backdropFilter: "blur(8px)"
-                        }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 22 }}>chevron_right</span>
-                      </button>
-                    </>
-                  ) : null}
+                      />
+                    </div>
+                  ))}
                 </div>
 
                 {hasMarketingSlider ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 8,
-                      marginTop: 14
-                    }}
-                  >
-                    {marketingImages.map((image, index) => (
-                      <button
-                        key={image}
-                        type="button"
-                        onClick={() => setMarketingIndex(index)}
-                        aria-label={`View image ${index + 1}`}
-                        style={{
-                          width: index === currentMarketingIndex ? 24 : 8,
-                          height: 8,
-                          borderRadius: 999,
-                          border: "none",
-                          background: index === currentMarketingIndex ? "var(--color-brand, #c9a84c)" : "rgba(255, 255, 255, 0.25)",
-                          cursor: "pointer",
-                          padding: 0,
-                          transition: "all 0.3s ease"
-                        }}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setMarketingIndex((current) => (current - 1 + marketingImages.length) % marketingImages.length)}
+                      aria-label="Previous marketing image"
+                      style={{
+                        position: "absolute",
+                        left: 16,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        width: 48,
+                        height: 48,
+                        borderRadius: "50%",
+                        border: "1px solid rgba(255, 255, 255, 0.3)",
+                        background: "rgba(0, 0, 0, 0.55)",
+                        color: "#ffffff",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 4,
+                        backdropFilter: "blur(12px)",
+                        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.5)"
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 24 }}>chevron_left</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setMarketingIndex((current) => (current + 1) % marketingImages.length)}
+                      aria-label="Next marketing image"
+                      style={{
+                        position: "absolute",
+                        right: 16,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        width: 48,
+                        height: 48,
+                        borderRadius: "50%",
+                        border: "1px solid rgba(255, 255, 255, 0.3)",
+                        background: "rgba(0, 0, 0, 0.55)",
+                        color: "#ffffff",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 4,
+                        backdropFilter: "blur(12px)",
+                        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.5)"
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 24 }}>chevron_right</span>
+                    </button>
+
+                    {/* Centered Overlay Pagination Dots */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: 16,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "6px 14px",
+                        borderRadius: 999,
+                        background: "rgba(0, 0, 0, 0.55)",
+                        backdropFilter: "blur(12px)",
+                        border: "1px solid rgba(255, 255, 255, 0.15)",
+                        zIndex: 4
+                      }}
+                    >
+                      {marketingImages.map((image, index) => (
+                        <button
+                          key={image}
+                          type="button"
+                          onClick={() => setMarketingIndex(index)}
+                          aria-label={`View image ${index + 1}`}
+                          style={{
+                            width: index === currentMarketingIndex ? 24 : 8,
+                            height: 8,
+                            borderRadius: 999,
+                            border: "none",
+                            background: index === currentMarketingIndex ? "var(--color-brand, #c9a84c)" : "rgba(255, 255, 255, 0.4)",
+                            cursor: "pointer",
+                            padding: 0,
+                            transition: "all 0.3s ease"
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </>
                 ) : null}
               </div>
             </section>

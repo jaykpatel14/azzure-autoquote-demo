@@ -92,6 +92,19 @@ type KioskStaffViewProps = {
 const METAL_CHOICES = ["10K", "14K", "18K", "Platinum", "Silver"];
 const SHAPE_CHOICES = ["Round", "Oval", "Emerald", "Cushion", "Radiant", "Pear", "Marquise", "Princess"];
 const SETTING_CHOICES = ["Prong", "Bezel", "Pavé", "Channel", "Tension", "Halo", "Cathedral"];
+const CLARITY_CHOICES = [
+  "E VS1",
+  "D VVS1",
+  "D VVS2",
+  "E VVS2",
+  "F VS1",
+  "F VS2",
+  "G VS2",
+  "G SI1",
+  "H SI1",
+  "Lab DEF VS1",
+  "Lab DEF VVS"
+];
 
 export default function KioskStaffView({
   staffName,
@@ -115,6 +128,7 @@ export default function KioskStaffView({
   const [editMetalWeight, setEditMetalWeight] = useState("");
   const [editCenterCarats, setEditCenterCarats] = useState("");
   const [editCenterShape, setEditCenterShape] = useState("");
+  const [editCenterClarity, setEditCenterClarity] = useState("E VS1");
   const [editSideCarats, setEditSideCarats] = useState("");
   const [editSideCount, setEditSideCount] = useState("");
   const [editSettingType, setEditSettingType] = useState("");
@@ -202,6 +216,7 @@ export default function KioskStaffView({
     setEditMetalWeight(q.specs.metalWeightGrams ? String(q.specs.metalWeightGrams) : "");
     setEditCenterCarats(q.specs.centerCarats ? String(q.specs.centerCarats) : "");
     setEditCenterShape(q.specs.centerShape || "Round");
+    setEditCenterClarity(q.specs.centerClarity || "E VS1");
     setEditSideCarats(q.specs.sideCarats ? String(q.specs.sideCarats) : "");
     setEditSideCount(q.specs.sideDiamondQuantity ? String(q.specs.sideDiamondQuantity) : "");
     setEditSettingType(q.specs.settingType || "Prong");
@@ -214,11 +229,29 @@ export default function KioskStaffView({
     setSaveErrorMessage(null);
   };
 
-  const liveEstimatedPrice = useMemo(() => {
+  const livePricingCalculation = useMemo(() => {
     if (!selectedQuote) return null;
 
-    const pricingProfile = selectedQuote.pricingContext?.pricingProfile;
-    if (!pricingProfile) return selectedQuote.estimatedPrice;
+    const pricingProfile = selectedQuote.pricingContext?.pricingProfile || {
+      goldSpotPerOz: 4500,
+      platinumSpotPerOz: 2000,
+      silverSpotPerOz: 300,
+      cadCharge: 25,
+      centerSettingPerCarat: 20,
+      sideSettingPerStone: 3,
+      sellingMarginDivisor: 0.7,
+      finalMultiplier: 2,
+      platinumLaborPct: 40,
+      goldWastagePct: 25,
+      standardCenterDiamondPerCarat: 125,
+      fancyCenterDiamondPerCarat: 175,
+      roundSideDiamondPerCarat: 80,
+      fancySideDiamondPerCarat: 130,
+      roundSideSettingPerStone: 1.25,
+      fancySideSettingPerStone: 5,
+      waxPerPiece: 10,
+      polishingPerPiece: 15
+    };
 
     const metalType = editMetalType || selectedQuote.specs.metalType || selectedQuote.metalType || "14K";
     const metalWeightGrams = parseOptionalNumber(editMetalWeight) ?? selectedQuote.specs.metalWeightGrams ?? 0;
@@ -226,6 +259,7 @@ export default function KioskStaffView({
     const sideCarats = parseOptionalNumber(editSideCarats) ?? selectedQuote.specs.sideCarats ?? 0;
     const sideCount = parseOptionalNumber(editSideCount) ?? selectedQuote.specs.sideDiamondQuantity ?? 0;
     const centerShape = editCenterShape || selectedQuote.specs.centerShape || "Round";
+    const centerClarity = editCenterClarity || selectedQuote.specs.centerClarity || "E VS1";
     const settingType = editSettingType || selectedQuote.specs.settingType || "Prong";
     const customerMarginPct = selectedQuote.pricingContext?.customerMarginPct ?? 0;
     const pricingTier = (selectedQuote.pricingTierSnapshot as PricingTier | undefined) ?? "TIER_2";
@@ -234,13 +268,13 @@ export default function KioskStaffView({
       : "round";
 
     try {
-      return calculateMakingPrice({
+      const result = calculateMakingPrice({
         pricingProfile,
         metalType,
         metalWeightGrams,
         centerStone: {
           shape: centerShape,
-          caratWeight: Math.max(centerCarats, 0.0001)
+          caratWeight: Math.max(centerCarats, 0)
         },
         sideStones:
           sideCarats > 0 && sideCount > 0
@@ -255,16 +289,38 @@ export default function KioskStaffView({
             : [],
         hasWeddingBand: false,
         isTwoTone: false,
-        colorClarity: DEFAULT_COLOR_CLARITY,
+        colorClarity: centerClarity,
         cadCost: Number(pricingProfile.cadCharge ?? 25),
         pricingTier,
         customerMarginPct
-      }).estimatedSellingPrice;
+      });
+
+      const originalPrice = selectedQuote.estimatedPrice || 0;
+      const livePrice = result.estimatedSellingPrice;
+      const diff = livePrice - originalPrice;
+      const diffPct = originalPrice > 0 ? (diff / originalPrice) * 100 : 0;
+
+      return {
+        price: livePrice,
+        originalPrice,
+        diff,
+        diffPct,
+        breakdown: result,
+        calculation: result
+      };
     } catch {
-      return selectedQuote.estimatedPrice;
+      return {
+        price: selectedQuote.estimatedPrice || 0,
+        originalPrice: selectedQuote.estimatedPrice || 0,
+        diff: 0,
+        diffPct: 0,
+        breakdown: null,
+        calculation: null
+      };
     }
   }, [
     editCenterCarats,
+    editCenterClarity,
     editCenterShape,
     editMetalType,
     editMetalWeight,
@@ -274,9 +330,11 @@ export default function KioskStaffView({
     selectedQuote
   ]);
 
+  const liveEstimatedPrice = livePricingCalculation?.price ?? selectedQuote?.estimatedPrice ?? null;
+
   const displayedQuotePrice = isEditing
-    ? liveEstimatedPrice ?? selectedQuote?.estimatedPrice ?? 0
-    : selectedQuote?.estimatedPrice ?? 0;
+    ? (parseOptionalNumber(editPrice) ?? liveEstimatedPrice ?? selectedQuote?.estimatedPrice ?? 0)
+    : (selectedQuote?.estimatedPrice ?? 0);
 
   // Lookup quote by code
   const handleLookup = async (codeToLookup?: string) => {
@@ -335,6 +393,7 @@ export default function KioskStaffView({
           metalWeightGrams: editMetalWeight ? parseFloat(editMetalWeight) : undefined,
           centerCarats: editCenterCarats ? parseFloat(editCenterCarats) : undefined,
           centerShape: editCenterShape,
+          centerClarity: editCenterClarity,
           sideCarats: editSideCarats ? parseFloat(editSideCarats) : undefined,
           sideDiamondQuantity: editSideCount ? parseInt(editSideCount, 10) : undefined,
           settingType: editSettingType,
@@ -639,7 +698,119 @@ export default function KioskStaffView({
             {/* Toggle between Edit Form and View Mode */}
             {isEditing ? (
               /* ── INLINE QUOTE EDITOR FORM ── */
-              <form onSubmit={handleSaveQuoteChanges} style={{ background: "rgba(0, 0, 0, 0.4)", border: "1px solid rgba(201, 168, 76, 0.3)", borderRadius: 18, padding: 24 }}>
+              <form onSubmit={handleSaveQuoteChanges} style={{ background: "rgba(0, 0, 0, 0.4)", border: "1.5px solid rgba(201, 168, 76, 0.4)", borderRadius: 18, padding: 24, position: "relative" }}>
+                
+                {/* ── STICKY REAL-TIME PRICING HUD BANNER ── */}
+                <div
+                  style={{
+                    position: "sticky",
+                    top: 80,
+                    zIndex: 9,
+                    background: "linear-gradient(135deg, rgba(20, 24, 33, 0.96), rgba(15, 23, 42, 0.98))",
+                    border: "1.5px solid var(--color-brand, #c9a84c)",
+                    boxShadow: "0 12px 30px rgba(0, 0, 0, 0.6), 0 0 24px rgba(201, 168, 76, 0.2)",
+                    borderRadius: 16,
+                    padding: "16px 20px",
+                    marginBottom: 24,
+                    backdropFilter: "blur(14px)"
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          background: "#10b981",
+                          boxShadow: "0 0 10px #10b981"
+                        }}
+                      />
+                      <div>
+                        <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: brandColor, fontWeight: 800 }}>
+                          Live Recalculated Price
+                        </div>
+                        <div style={{ fontSize: "2.1rem", fontWeight: 800, color: "#ffffff", lineHeight: 1.1 }}>
+                          {formatPrice(livePricingCalculation?.price ?? displayedQuotePrice)}
+                          {editPrice.trim() ? (
+                            <span style={{ fontSize: "0.85rem", color: "#e6cb78", fontWeight: 600, marginLeft: 8 }}>
+                              (Manual Override: {formatPrice(Number(editPrice))})
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      {livePricingCalculation && Math.abs(livePricingCalculation.diff) >= 0.5 ? (
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            padding: "6px 14px",
+                            borderRadius: 999,
+                            background: livePricingCalculation.diff > 0 ? "rgba(239, 68, 68, 0.18)" : "rgba(16, 185, 129, 0.18)",
+                            border: `1px solid ${livePricingCalculation.diff > 0 ? "rgba(239, 68, 68, 0.4)" : "rgba(16, 185, 129, 0.4)"}`,
+                            color: livePricingCalculation.diff > 0 ? "#f87171" : "#34d399",
+                            fontWeight: 700,
+                            fontSize: "0.875rem"
+                          }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                            {livePricingCalculation.diff > 0 ? "trending_up" : "trending_down"}
+                          </span>
+                          {livePricingCalculation.diff > 0 ? `+${formatPrice(livePricingCalculation.diff)}` : formatPrice(livePricingCalculation.diff)}
+                          {" "}({livePricingCalculation.diffPct > 0 ? `+${livePricingCalculation.diffPct.toFixed(1)}%` : `${livePricingCalculation.diffPct.toFixed(1)}%`})
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: "0.8rem", color: "#94a3b8", fontWeight: 600 }}>
+                          Original Price: {formatPrice(selectedQuote.estimatedPrice)}
+                        </div>
+                      )}
+
+                      {editPrice.trim() ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditPrice("")}
+                          style={{
+                            background: "rgba(201, 168, 76, 0.15)",
+                            border: "1px solid rgba(201, 168, 76, 0.4)",
+                            color: "#e6cb78",
+                            padding: "4px 10px",
+                            borderRadius: 8,
+                            fontSize: "0.75rem",
+                            fontWeight: 700,
+                            cursor: "pointer"
+                          }}
+                        >
+                          Clear Override
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* Component Breakdown Pills */}
+                  {livePricingCalculation?.breakdown ? (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                      <div style={{ padding: "4px 10px", borderRadius: 8, background: "rgba(255, 255, 255, 0.05)", fontSize: "0.75rem", color: "#cbd5e1" }}>
+                        Metal ({editMetalType}, {editMetalWeight || 0}g): <strong style={{ color: "#fff" }}>{formatPrice(livePricingCalculation.breakdown.metalCost)}</strong>
+                      </div>
+                      <div style={{ padding: "4px 10px", borderRadius: 8, background: "rgba(255, 255, 255, 0.05)", fontSize: "0.75rem", color: "#cbd5e1" }}>
+                        Center ({editCenterCarats || 0}ct {editCenterShape}, {editCenterClarity}): <strong style={{ color: "#fff" }}>{formatPrice(livePricingCalculation.breakdown.centerStoneCost)}</strong>
+                      </div>
+                      {Number(editSideCarats) > 0 ? (
+                        <div style={{ padding: "4px 10px", borderRadius: 8, background: "rgba(255, 255, 255, 0.05)", fontSize: "0.75rem", color: "#cbd5e1" }}>
+                          Accents ({editSideCarats}ct, {editSideCount || 0} stones): <strong style={{ color: "#fff" }}>{formatPrice(livePricingCalculation.breakdown.sideStoneCost)}</strong>
+                        </div>
+                      ) : null}
+                      <div style={{ padding: "4px 10px", borderRadius: 8, background: "rgba(255, 255, 255, 0.05)", fontSize: "0.75rem", color: "#cbd5e1" }}>
+                        Setting &amp; CAD: <strong style={{ color: "#fff" }}>{formatPrice((livePricingCalculation.breakdown.centerStoneSettingCost || 0) + (livePricingCalculation.breakdown.sideStoneSettingCost || 0) + (livePricingCalculation.breakdown.cadCost || 0))}</strong>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
                   <span className="material-symbols-outlined" style={{ color: brandColor, fontSize: 24 }}>tune</span>
                   <h3 style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, color: "#ffffff" }}>
@@ -686,7 +857,7 @@ export default function KioskStaffView({
 
                   {/* Metal Type */}
                   <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Metal Alloy</span>
+                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Metal Alloy (Live Price)</span>
                     <select
                       value={editMetalType}
                       onChange={(e) => setEditMetalType(e.target.value)}
@@ -719,7 +890,7 @@ export default function KioskStaffView({
                       step="0.01"
                       value={editCenterCarats}
                       onChange={(e) => setEditCenterCarats(e.target.value)}
-                      placeholder="e.g. 2.00"
+                      placeholder="e.g. 2.00 (or 0 for mount)"
                       style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
                     />
                   </label>
@@ -734,6 +905,20 @@ export default function KioskStaffView({
                     >
                       {SHAPE_CHOICES.map((s) => (
                         <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  {/* Center Diamond Quality / Clarity */}
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>Diamond Quality / Clarity</span>
+                    <select
+                      value={editCenterClarity}
+                      onChange={(e) => setEditCenterClarity(e.target.value)}
+                      style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, color: "#fff" }}
+                    >
+                      {CLARITY_CHOICES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
                   </label>
@@ -780,7 +965,7 @@ export default function KioskStaffView({
 
                   {/* Selling Price Override */}
                   <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span style={{ fontSize: "0.8125rem", color: "#e6cb78", fontWeight: 700 }}>Selling Price ($ USD)</span>
+                    <span style={{ fontSize: "0.8125rem", color: "#e6cb78", fontWeight: 700 }}>Custom Selling Price Override ($ USD)</span>
                     <input
                       type="number"
                       step="1"
@@ -790,7 +975,7 @@ export default function KioskStaffView({
                       style={{ padding: "10px 14px", background: "#0f172a", border: "1px solid #e6cb78", borderRadius: 8, color: "#e6cb78", fontWeight: 700, fontSize: "1.1rem" }}
                     />
                     <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-                      Live estimate: <strong style={{ color: "#fff" }}>{formatOptionalPrice(liveEstimatedPrice)}</strong>
+                      Live calculated: <strong style={{ color: "#fff" }}>{formatOptionalPrice(liveEstimatedPrice)}</strong>
                     </span>
                   </label>
 
