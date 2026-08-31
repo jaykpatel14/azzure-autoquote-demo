@@ -192,6 +192,15 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   return debounced;
 }
 
+const ANGLE_SLOTS = [
+  { id: "top_face" as const, title: "Top / Face View", badge: "Primary Anchor", desc: "Anchors shape & ct weight", icon: "diamond" },
+  { id: "side_profile" as const, title: "Side Profile", badge: "Under-Gallery", desc: "Basket, prongs & gallery", icon: "filter_hdr" },
+  { id: "angle_view" as const, title: "Angle 3/4 View", badge: "Perspective", desc: "Shank & shoulder stones", icon: "view_in_ar" },
+  { id: "tag_receipt" as const, title: "Tag / Receipt", badge: "Ground Truth", desc: "Printed ct & quality codes", icon: "receipt_long" }
+];
+
+type AngleSlotKey = (typeof ANGLE_SLOTS)[number]["id"];
+
 export default function ShowroomKiosk({ token, branding, pricing }: { token: string; branding: Branding; pricing: Pricing }) {
   const { deviceToken } = useShowroomDevice();
   const brandStyle = useMemo(() => {
@@ -217,7 +226,16 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   }, [branding]);
 
   const [started, setStarted] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
+  const [slotFiles, setSlotFiles] = useState<Record<AngleSlotKey, File | null>>({
+    top_face: null,
+    side_profile: null,
+    angle_view: null,
+    tag_receipt: null
+  });
+  const [activeUploadSlot, setActiveUploadSlot] = useState<AngleSlotKey | null>(null);
+  const files = useMemo(() => {
+    return [slotFiles.top_face, slotFiles.side_profile, slotFiles.angle_view, slotFiles.tag_receipt].filter(Boolean) as File[];
+  }, [slotFiles]);
   const [description, setDescription] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [stageIndex, setStageIndex] = useState(0);
@@ -277,6 +295,16 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     }
   });
 
+  const slotPreviews = useMemo(() => {
+    const map: Record<AngleSlotKey, string | null> = {
+      top_face: slotFiles.top_face ? URL.createObjectURL(slotFiles.top_face) : null,
+      side_profile: slotFiles.side_profile ? URL.createObjectURL(slotFiles.side_profile) : null,
+      angle_view: slotFiles.angle_view ? URL.createObjectURL(slotFiles.angle_view) : null,
+      tag_receipt: slotFiles.tag_receipt ? URL.createObjectURL(slotFiles.tag_receipt) : null
+    };
+    return map;
+  }, [slotFiles]);
+
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
   const debouncedAnalysis = useDebouncedValue(analysis, 300);
   const showroomHeaders = useMemo(
@@ -286,7 +314,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
   const reset = useCallback(() => {
     setStarted(false);
-    setFiles([]);
+    setSlotFiles({ top_face: null, side_profile: null, angle_view: null, tag_receipt: null });
     setDescription("");
     setCustomerName("");
     setCustomerEmail("");
@@ -313,12 +341,37 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setMobileUploadQrDataUrl(null);
   }, []);
 
-  const addReferenceFiles = useCallback((incomingFiles: File[]) => {
+  const addReferenceFiles = useCallback((incomingFiles: File[], targetSlot?: AngleSlotKey) => {
     if (incomingFiles.length === 0) return;
-    setFiles((current) => [...current, ...incomingFiles].slice(0, 4));
+    setSlotFiles((current) => {
+      if (targetSlot) {
+        return { ...current, [targetSlot]: incomingFiles[0] };
+      }
+      const next = { ...current };
+      const slots: AngleSlotKey[] = ["top_face", "side_profile", "angle_view", "tag_receipt"];
+      let incomingIdx = 0;
+      for (const slot of slots) {
+        if (!next[slot] && incomingIdx < incomingFiles.length) {
+          next[slot] = incomingFiles[incomingIdx];
+          incomingIdx++;
+        }
+      }
+      if (incomingIdx === 0 && incomingFiles.length > 0) {
+        incomingFiles.slice(0, 4).forEach((file, idx) => {
+          if (slots[idx]) next[slots[idx]] = file;
+        });
+      }
+      return next;
+    });
     setAnalysis(null);
     setRenderingImageUrl(null);
     setError("");
+  }, []);
+
+  const removeSlotFile = useCallback((slot: AngleSlotKey) => {
+    setSlotFiles((current) => ({ ...current, [slot]: null }));
+    setAnalysis(null);
+    setRenderingImageUrl(null);
   }, []);
 
   const registerImageAspectRatio = useCallback((src: string, width: number, height: number) => {
@@ -455,53 +508,43 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     };
   }, []);
   const modeToggle = (
-    <div
+    <button
+      type="button"
+      title="Switch to Marketing Mode"
+      aria-label="Switch to Marketing Mode"
+      onClick={() => {
+        setDisplayMode("marketing");
+        if (marketingImages.length > 1) {
+          setMarketingIndex(0);
+        }
+      }}
       style={{
         position: "fixed",
         top: 16,
         right: 16,
         zIndex: 80,
-        display: "flex",
-        gap: 8,
-        padding: 6,
+        width: 44,
+        height: 44,
+        padding: 0,
         borderRadius: 999,
-        background: "rgba(0, 0, 0, 0.32)",
-        border: "1px solid rgba(255,255,255,0.12)",
-        backdropFilter: "blur(14px)"
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        border: "1px solid rgba(255, 255, 255, 0.16)",
+        background: "rgba(0, 0, 0, 0.45)",
+        color: "#7dd3fc",
+        backdropFilter: "blur(14px)",
+        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.35)",
+        transition: "all 0.2s ease"
       }}
     >
-      <button
-        type="button"
-        className="button secondary button--sm"
-        onClick={() => setDisplayMode("showroom")}
-        style={{
-          minWidth: 128,
-          background: displayMode === "showroom" ? "linear-gradient(135deg, rgba(201,168,76,0.28), rgba(201,168,76,0.12))" : "rgba(255,255,255,0.03)",
-          borderColor: displayMode === "showroom" ? "rgba(201,168,76,0.5)" : "rgba(255,255,255,0.08)",
-          color: displayMode === "showroom" ? "#f6e09e" : "#cbd5e1"
-        }}
-      >
-        Showroom
-      </button>
-      <button
-        type="button"
-        className="button secondary button--sm"
-        onClick={() => {
-          setDisplayMode("marketing");
-          if (marketingImages.length > 1) {
-            setMarketingIndex(0);
-          }
-        }}
-        style={{
-          minWidth: 128,
-          background: displayMode === "marketing" ? "linear-gradient(135deg, rgba(56,189,248,0.25), rgba(56,189,248,0.1))" : "rgba(255,255,255,0.03)",
-          borderColor: displayMode === "marketing" ? "rgba(56,189,248,0.5)" : "rgba(255,255,255,0.08)",
-          color: displayMode === "marketing" ? "#7dd3fc" : "#cbd5e1"
-        }}
-      >
-        Marketing
-      </button>
-    </div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
+      </svg>
+    </button>
   );
 
   useEffect(() => {
@@ -607,8 +650,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const estimatedSellingPrice = useMemo(() => {
     if (!debouncedAnalysis || !pricing.pricingTier) return 0;
 
-    const centerCarat = Math.max(debouncedAnalysis.centerDiamondCarats, 0.0001);
-    const detectedSideShape = (debouncedAnalysis.centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(debouncedAnalysis.centerShape.toLowerCase()) && debouncedAnalysis.sideDiamondQuantity <= 4)
+    const centerCarat = debouncedAnalysis.centerDiamondCarats || 0;
+    const centerShape = debouncedAnalysis.centerShape && debouncedAnalysis.centerShape.toLowerCase() !== "none" ? debouncedAnalysis.centerShape : "round";
+    const detectedSideShape = (centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(centerShape.toLowerCase()) && debouncedAnalysis.sideDiamondQuantity <= 4)
       ? "fancy"
       : "round";
 
@@ -629,7 +673,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
         pricingProfile: pricing.pricingProfile,
         metalType: debouncedAnalysis.selectedMetal || "14K",
         metalWeightGrams: debouncedAnalysis.metalWeightGrams || 6,
-        centerStone: { shape: debouncedAnalysis.centerShape || "round", caratWeight: centerCarat },
+        centerStone: { shape: centerShape, caratWeight: centerCarat },
         sideStones,
         hasWeddingBand: Boolean(debouncedAnalysis.hasWeddingBand),
         isTwoTone: Boolean(debouncedAnalysis.isTwoTone),
@@ -673,8 +717,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   }
 
   async function runAnalysis(selectedFiles?: File[]) {
-    const filesToAnalyze = selectedFiles || files;
-    const hasFiles = filesToAnalyze.length > 0;
+    const hasFiles = files.length > 0 || (selectedFiles && selectedFiles.length > 0);
     const hasDesc = description.trim().length > 0;
     if ((!hasFiles && !hasDesc) || analyzing) {
       if (!hasFiles && !hasDesc) {
@@ -702,17 +745,21 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setShowTriviaAnswer(false);
 
     try {
-      // Bug 1 fix: parse karat/metal from the customer description before sending so the
-      // AI model prompt is told the correct base metal (not always the "14K" default).
       const detectedMetal = detectMetalFromDescription(description);
 
       const form = new FormData();
       form.set("token", token);
       form.set("metalType", detectedMetal);
       if (hasDesc) form.set("description", description.trim());
-      if (hasFiles) {
-        filesToAnalyze.forEach((file) => form.append("images", file));
-      }
+
+      ANGLE_SLOTS.forEach((slot) => {
+        const file = slotFiles[slot.id];
+        if (file) {
+          form.append("images", file);
+          form.append("angles", slot.id);
+        }
+      });
+
       const response = await fetch("/api/showroom/analyze", {
         method: "POST",
         headers: showroomHeaders,
@@ -1180,27 +1227,32 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
         <button
           type="button"
           onClick={() => setDisplayMode("showroom")}
-          aria-label="Return to showroom mode"
-          title="Return to showroom mode"
+          aria-label="Return to Showroom Mode"
+          title="Return to Showroom Mode"
           style={{
             position: "fixed",
             top: 16,
             right: 16,
             zIndex: 90,
-            width: 52,
-            height: 52,
+            width: 44,
+            height: 44,
+            padding: 0,
             borderRadius: 999,
-            border: "1px solid rgba(255,255,255,0.16)",
-            background: "rgba(0,0,0,0.42)",
-            color: "#fff",
-            display: "grid",
-            placeItems: "center",
-            boxShadow: "0 10px 24px rgba(0,0,0,0.35)",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            border: "1px solid rgba(255, 255, 255, 0.16)",
+            background: "rgba(0, 0, 0, 0.45)",
+            color: "#f6e09e",
             backdropFilter: "blur(14px)",
-            cursor: "pointer"
+            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.35)",
+            transition: "all 0.2s ease"
           }}
         >
-          <span className="material-symbols-outlined" style={{ fontSize: 22 }}>storefront</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polygon points="6 3 18 3 22 9 12 22 2 9" />
+          </svg>
         </button>
         <div
           style={{
@@ -1675,41 +1727,159 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                     />
                   </div>
 
-                  <div className="dropzone dropzone--multi">
-                    <div className="dropzoneContent">
-                      <div className="dropzoneIcon">
-                        <span className="material-symbols-outlined" style={{ fontSize: 28, color: "var(--color-primary)" }}>smartphone</span>
+                  {/* Multi-Angle 4-Slot Upload Grid */}
+                  <div style={{ marginTop: 20 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <div>
+                        <strong style={{ fontSize: "0.95rem", color: "#ffffff", display: "block" }}>
+                          Multi-Angle Reference Photos (Up to 4 Slots)
+                        </strong>
+                        <span className="muted small" style={{ fontSize: "0.8rem" }}>
+                          Tagging canonical angles ensures accurate center diamond and setting detection.
+                        </span>
                       </div>
-                      <strong>Add Reference Photo</strong>
-                      <span className="muted small">Scan the QR code to upload securely from your phone, or snap a live photo (1 photo)</span>
-                    </div>
-                    <div className="dropzoneActions" style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
                       <button
                         type="button"
                         className="button primary button--sm"
                         onClick={openMobileUploadQr}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 6
-                        }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px" }}
                       >
-                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>qr_code_scanner</span>
-                        Upload from Phone (Scan QR)
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>qr_code_scanner</span>
+                        Phone QR
                       </button>
+                    </div>
 
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(135px, 1fr))",
+                      gap: 12,
+                      marginBottom: 16
+                    }}>
+                      {ANGLE_SLOTS.map((slot) => {
+                        const previewSrc = slotPreviews[slot.id];
+                        return (
+                          <div
+                            key={slot.id}
+                            style={{
+                              background: previewSrc ? "rgba(201, 168, 76, 0.08)" : "rgba(255, 255, 255, 0.03)",
+                              border: previewSrc ? "1px solid rgba(201, 168, 76, 0.5)" : "1px dashed rgba(255, 255, 255, 0.15)",
+                              borderRadius: 12,
+                              padding: 10,
+                              display: "flex",
+                              flexDirection: "column",
+                              justifyContent: "space-between",
+                              minHeight: 155,
+                              position: "relative",
+                              transition: "all 0.2s ease"
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 4, marginBottom: 8 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--color-brand, #c9a84c)" }}>
+                                  {slot.icon}
+                                </span>
+                                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#ffffff" }}>
+                                  {slot.title}
+                                </span>
+                              </div>
+                              <span
+                                style={{
+                                  fontSize: "0.625rem",
+                                  padding: "2px 6px",
+                                  borderRadius: 6,
+                                  background: slot.id === "top_face" ? "rgba(201, 168, 76, 0.25)" : "rgba(255, 255, 255, 0.08)",
+                                  color: slot.id === "top_face" ? "#d9b85f" : "#94a3b8",
+                                  fontWeight: 600,
+                                  whiteSpace: "nowrap"
+                                }}
+                              >
+                                {slot.badge}
+                              </span>
+                            </div>
+
+                            {previewSrc ? (
+                              <div style={{ position: "relative", width: "100%", height: 80, borderRadius: 8, overflow: "hidden", marginTop: "auto" }}>
+                                <img
+                                  src={previewSrc}
+                                  alt={slot.title}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  onLoad={handleImageLoad(previewSrc)}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeSlotFile(slot.id)}
+                                  style={{
+                                    position: "absolute",
+                                    top: 4,
+                                    right: 4,
+                                    width: 22,
+                                    height: 22,
+                                    borderRadius: "50%",
+                                    background: "rgba(0, 0, 0, 0.8)",
+                                    border: "none",
+                                    color: "#ffffff",
+                                    fontSize: 12,
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center"
+                                  }}
+                                  title="Remove photo"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={{ textAlign: "center", marginTop: "auto" }}>
+                                <p style={{ fontSize: "0.6875rem", color: "#94a3b8", margin: "0 0 8px", lineHeight: 1.3 }}>
+                                  {slot.desc}
+                                </p>
+                                <label
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: 4,
+                                    padding: "4px 8px",
+                                    background: "rgba(255, 255, 255, 0.08)",
+                                    borderRadius: 6,
+                                    color: "#e2e8f0",
+                                    fontSize: "0.6875rem",
+                                    fontWeight: 600,
+                                    cursor: "pointer",
+                                    width: "100%"
+                                  }}
+                                >
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: "none" }}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) addReferenceFiles([file], slot.id);
+                                      e.currentTarget.value = "";
+                                    }}
+                                  />
+                                  <span className="material-symbols-outlined" style={{ fontSize: 14 }}>add_a_photo</span>
+                                  Add Angle
+                                </label>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Master Actions Bar */}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 12 }}>
                       <button
                         type="button"
                         className="button secondary button--sm"
                         onClick={() => setShowLiveCamera(true)}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 6
-                        }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: 18 }}>photo_camera</span>
-                        Take Photo
+                        Take Live Camera Photo
                       </button>
 
                       <label className="button secondary button--sm" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -1727,38 +1897,28 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                           style={{ display: "none" }}
                         />
                         <span className="material-symbols-outlined" style={{ fontSize: 18 }}>folder_open</span>
-                        Choose Photos
+                        Choose Files (Auto-Slot)
                       </label>
+
+                      {files.length > 0 && !analyzing ? (
+                        <button
+                          className="button secondary button--sm"
+                          type="button"
+                          onClick={() => {
+                            setSlotFiles({ top_face: null, side_profile: null, angle_view: null, tag_receipt: null });
+                            setAnalysis(null);
+                            setRenderingImageUrl(null);
+                          }}
+                          style={{ marginLeft: "auto" }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
+                          Clear All Photos
+                        </button>
+                      ) : null}
                     </div>
-                  </div>
 
-                  <div style={{ marginTop: 16 }}>
-                    {previews.length > 0 ? (
-                      <div className="facetThumbRail" aria-label="Uploaded photos" style={{ marginBottom: 16 }}>
-                        {previews.map((src, index) => (
-                          <div
-                            key={src}
-                            className="facetThumb"
-                            style={{
-                              width: "auto",
-                              height: 72,
-                              aspectRatio: getImageAspectRatio(src, "1 / 1"),
-                              flex: "0 0 auto"
-                            }}
-                          >
-                            <img src={src} alt={`Reference ${index + 1}`} className="facetThumbImage" onLoad={handleImageLoad(src)} />
-                            <span className="facetThumbBadge">#{index + 1}</span>
-                          </div>
-                        ))}
-                      </div>
-                        ) : null}
-
-                    <p className="muted small" style={{ margin: "10px 0 0" }}>
-                      Upload up to 4 photos with different angles so the AI can read the piece more accurately.
-                    </p>
-
-                    {/* Explicit Analyze & Stop Buttons for Showroom Kiosk */}
-                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    {/* Explicit Analyze & Stop Buttons */}
+                    <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8 }}>
                       {analyzing ? (
                         <button
                           className="button destructive button--md"
@@ -1782,24 +1942,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
                             auto_awesome
                           </span>
-                          {analysis ? "Re-analyze Design with AI" : "Analyze Design with AI"}
+                          {analysis ? "Re-analyze 4 Angles with AI" : "Analyze Design with AI"}
                         </button>
                       )}
-
-                      {files.length > 0 && !analyzing ? (
-                        <button
-                          className="button secondary button--sm"
-                          type="button"
-                          onClick={() => {
-                            setFiles([]);
-                            setAnalysis(null);
-                            setRenderingImageUrl(null);
-                          }}
-                        >
-                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
-                          Clear
-                        </button>
-                      ) : null}
                     </div>
                   </div>
 
@@ -1812,6 +1957,28 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                     title="Adjust your ring"
                     description="Tweak any value — your price updates automatically."
                   >
+                    {/* Validation Gate: Center Stone Warning */}
+                    {(!analysis.centerDiamondCarats || analysis.centerDiamondCarats === 0 || !analysis.centerShape || analysis.centerShape.toLowerCase() === "none") ? (
+                      <div style={{
+                        marginBottom: 16,
+                        padding: "14px 16px",
+                        background: "rgba(245, 158, 11, 0.12)",
+                        border: "1px solid rgba(245, 158, 11, 0.4)",
+                        borderRadius: 12,
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 12
+                      }}>
+                        <span className="material-symbols-outlined" style={{ color: "#f59e0b", fontSize: 24, marginTop: 1, flexShrink: 0 }}>warning</span>
+                        <div>
+                          <div style={{ fontSize: "0.875rem", fontWeight: 700, color: "#f59e0b" }}>Center Stone Not Detected</div>
+                          <div style={{ fontSize: "0.8125rem", color: "#cbd5e1", lineHeight: 1.4, marginTop: 2 }}>
+                            No central solitaire was identified from the uploaded angles. The quote currently reflects the semi-mount / mounting price. If this piece features a center diamond (e.g. Pear, Oval, Round), enter its shape and carat weight below to recalculate.
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
                     <div className="facetResolvedGrid">
                       <label className="facetResolvedField">
                         <span>Metal</span>

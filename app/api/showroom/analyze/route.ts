@@ -50,12 +50,17 @@ export async function POST(request: Request) {
       );
     }
 
+    const rawAngles = form.getAll("angles").map(String);
+    const angleSlotDefaults = ["top_face", "side_profile", "angle_view", "tag_receipt"] as const;
+
     const imageDataUrls: string[] = [];
+    const taggedImages: Array<{ dataUrl: string; angle: "top_face" | "side_profile" | "angle_view" | "tag_receipt" | "general"; label?: string }> = [];
     let primaryImageType: string | null = null;
     let primaryImageSizeBytes: number = 0;
     let primaryBytes: Buffer | null = null;
 
-    for (const image of rawImages.slice(0, 1)) {
+    for (let i = 0; i < Math.min(rawImages.length, 4); i++) {
+      const image = rawImages[i];
       if (image.size > MAX_FILE_SIZE) {
         return NextResponse.json(
           { error: `File "${image.name}" exceeds 10 MB.` },
@@ -78,7 +83,22 @@ export async function POST(request: Request) {
         primaryImageSizeBytes = image.size;
       }
 
-      imageDataUrls.push(`data:${detectedType};base64,${fileBytes.toString("base64")}`);
+      const dataUrl = `data:${detectedType};base64,${fileBytes.toString("base64")}`;
+      imageDataUrls.push(dataUrl);
+
+      const angleSlot = (rawAngles[i] || angleSlotDefaults[i] || "general") as "top_face" | "side_profile" | "angle_view" | "tag_receipt" | "general";
+      const slotNames: Record<string, string> = {
+        top_face: "Top / Face View (Primary)",
+        side_profile: "Side Profile",
+        angle_view: "Angle / Perspective",
+        tag_receipt: "Tag / Receipt Closeup",
+        general: "General Reference"
+      };
+      taggedImages.push({
+        dataUrl,
+        angle: angleSlot,
+        label: slotNames[angleSlot] || "Reference Angle"
+      });
     }
 
     const provider = await getJewelryAnalysisProvider();
@@ -144,6 +164,7 @@ export async function POST(request: Request) {
       const attempt = await runReviewAttempt({
         provider,
         imageDataUrls,
+        taggedImages,
         selectedMetal: metalType,
         attemptNumber,
         customerDescription: description || undefined,

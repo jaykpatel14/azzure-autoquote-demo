@@ -287,6 +287,28 @@ describe("calculateMakingPrice", () => {
     expect(platinum.metalCost).toBe(2800);
     expect(silver.metalCost).toBe(300);
   });
+
+  it("successfully prices semi-mounts and mountings with 0ct center stone without throwing", () => {
+    const semiMount = calculateMakingPrice({
+      metalType: "14K",
+      metalWeightGrams: 5.0,
+      goldSpotPerOz: 4500,
+      centerStone: { shape: "none", caratWeight: 0 },
+      sideStones: [{ shape: "round", caratWeightEach: 0.02, count: 18, settingType: "pave" }],
+      hasWeddingBand: false,
+      isTwoTone: false,
+      cadCost: 20,
+      pricingTier: "TIER_2",
+      customerMarginPct: 0
+    });
+
+    expect(semiMount.centerStoneCost).toBe(0);
+    expect(semiMount.centerStoneSettingCost).toBe(0);
+    expect(semiMount.metalCost).toBeGreaterThan(0);
+    expect(semiMount.sideStoneCost).toBeGreaterThan(0);
+    expect(semiMount.subtotal).toBeGreaterThan(0);
+    expect(semiMount.estimatedSellingPrice).toBeGreaterThan(0);
+  });
 });
 
 describe("calculateTierPrice", () => {

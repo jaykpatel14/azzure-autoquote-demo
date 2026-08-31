@@ -10,8 +10,10 @@ import type {
   JewelryAnalysisProvider,
   JewelryReviewSnapshot,
   ModerationSnapshot,
+  TaggedImageInput,
   TokenUsageSnapshot
 } from "@/lib/ai/provider";
+import { extractJewelryTagData, type JewelryTagData } from "@/lib/ai/tag-ocr";
 import { resolveRuntimeSetting } from "@/lib/app-settings";
 import { METAL_TYPES } from "@/lib/pricing";
 
@@ -41,7 +43,9 @@ function buildPrompt(
   selectedMetal: string,
   attemptNumber: number,
   customerDescription?: string,
-  learnedGuidance: string[] = []
+  learnedGuidance: string[] = [],
+  taggedImages?: TaggedImageInput[] | null,
+  tagData?: JewelryTagData | null
 ) {
   const metal = METAL_TYPES.includes(selectedMetal as (typeof METAL_TYPES)[number])
     ? selectedMetal
@@ -51,9 +55,14 @@ function buildPrompt(
     "You are an expert master jeweler, graduate gemologist, and custom fine jewelry production estimator.",
     `This is independent review ${attemptNumber}.`,
     `The currently selected finished metal is ${metal}.`,
-    // Bug 1 fix: explicit karat-lock so the AI never silently downgrades the karat
-    "IMPORTANT — Karat accuracy: If the customer description explicitly states a karat (e.g. '18k', '18 karat', '18-karat', '18K'), you MUST set selected_metal to that exact karat (e.g. '18K'). Do NOT downgrade or change the karat. The currently selected metal above is your fallback only when the customer does not specify a karat.",
-    "Evaluate the piece from the reference image and customer description with highest precision for production casting and gem pricing.",
+    // Karat accuracy
+    "IMPORTANT — Karat accuracy: If the customer description or jewelry tag explicitly states a karat (e.g. '18k', '18 karat', '18-karat', '18K', 'Platinum'), you MUST set selected_metal to that exact karat (e.g. '18K'). Do NOT downgrade or change the karat. The currently selected metal above is your fallback only when not specified.",
+    "Evaluate the piece from the reference images and customer description with highest precision for production casting and gem pricing.",
+    // Multi-angle evaluation hierarchy
+    "MULTI-ANGLE PHOTO HIERARCHY & CANONICAL FACE-VIEW ANCHORING RULES:",
+    "1. PRIMARY FACE/TOP VIEW ANCHOR: The top/face-on view is the CANONICAL ANCHOR for center diamond shape (Round, Oval, Emerald, Radiant, Cushion, Pear, Marquise, Princess, Asscher, Heart) and carat weight proportion. The center stone observed in the face view is the primary focus of the piece.",
+    "2. SIDE/ANGLE PROFILE ROLE: Side profile and perspective shots are evaluated strictly to confirm setting architecture (e.g. cathedral, filigree under-gallery, petal basket, hidden halo, peg head) and accent side-stone counts. CRITICAL: A side view showing filigree/petals or basket mounting MUST NEVER override or erase a center diamond clearly visible from the face shot. Do NOT confuse the under-gallery structure with the center stone!",
+    "3. JEWELRY TAG / RECEIPT AS GROUND TRUTH: If a jewelry tag, dumbbell sticker, or receipt is visible in the photos (or tag OCR data is provided below), the printed diamond carat weights (e.g. '3.020 ct' center, '0.320 ct' side) and metal purity MUST BE TREATED AS 100% GROUND TRUTH and override any loose visual approximations.",
     "Geometric and physical benchmarks for center diamonds (use millimeter-to-carat proportion against standard 1.8mm-2.0mm ring shanks):",
     "- Round Brilliant: 1.0ct (~6.5mm), 1.5ct (~7.4mm), 2.0ct (~8.1mm), 2.5ct (~8.8mm), 3.0ct (~9.3mm).",
     "- Oval Cut: 1.0ct (~7.5x5.3mm), 1.5ct (~8.5x6.0mm), 2.0ct (~9.5x7.0mm), 2.5ct (~10.2x7.5mm), 3.0ct (~11.0x8.0mm).",
@@ -85,10 +94,8 @@ function buildPrompt(
     "- metal_weight_grams: realistic finished metal weight in grams based on structural shank volume and finger size.",
     "- centerStone: the primary center gemstone. Accurately identify shape (Round, Oval, Emerald, Radiant, Cushion, Pear, Marquise, Princess, Asscher, Heart), realistic carat weight, and color when one is explicitly present.",
     "- sideStones: all accent diamond groups, each with shape, caratWeightEach, count, and settingType (prong, bezel, pave, channel, micro-prong). Do not invent side stones or setting types unless clearly visible in the image or explicitly described.",
-    // Bug 2 fix: dedicated settingStyle field for named ring setting styles
-    "- settingStyle: the OVERALL named ring setting style, exactly as stated by the customer or clearly visible in the image. Examples: 'hidden halo', 'cathedral', 'bezel', 'tension', 'solitaire', 'three-stone', 'pave band'. This is SEPARATE from sideStones[].settingType. If the customer explicitly requests 'hidden halo', you MUST set settingStyle to 'hidden halo'. If no named setting style is present, return null.",
-    // Bug 3 fix: dedicated array for additional named colored gemstones
-    "- accentColorStones: if the customer explicitly requests additional named colored gemstones BEYOND the primary center stone (e.g. 'with ruby and sapphire', 'emerald, ruby, sapphire'), list EACH stone as a separate entry with: stone (gem name, e.g. 'ruby'), shape (e.g. 'round', 'baguette', 'oval' - use 'round' if unspecified), and count (default 2 if quantity not stated). Do NOT omit any gemstone the customer explicitly named. If no additional colored stones are requested, return null or an empty array.",
+    "- settingStyle: the OVERALL named ring setting style, exactly as stated by the customer or clearly visible in the image. Examples: 'hidden halo', 'cathedral', 'bezel', 'tension', 'solitaire', 'three-stone', 'pave band', 'vintage filigree'.",
+    "- accentColorStones: if the customer explicitly requests additional named colored gemstones BEYOND the primary center stone (e.g. 'with ruby and sapphire'), list EACH stone as a separate entry.",
     "- colorClarity: always return E VS1.",
     "- confidence: low, medium, or high.",
     "- assumptions: list of key technical assumptions made during CAD analysis, each under 200 characters.",
@@ -96,6 +103,18 @@ function buildPrompt(
       ? `Customer-provided design description: ${customerDescription.trim()}. Match ALL specifications - karat, metal color, setting style, and every gemstone - exactly as the customer requested.`
       : "No customer description was supplied."
   ];
+
+  if (tagData && tagData.hasTag) {
+    promptParts.push(
+      `HIGH-PRIORITY JEWELRY TAG GROUND TRUTH DETECTED: Center carat weight: ${tagData.centerCarats ?? "unspecified"}, Side diamond carat weight: ${tagData.sideCarats ?? "unspecified"}, Clarity: ${tagData.diamondClarity ?? "VS1"}, Purity: ${tagData.metalPurity ?? "14K"}. Raw tag transcript: "${tagData.rawText || ""}". YOU MUST SET centerStone.caratWeight TO EXACTLY ${tagData.centerCarats ?? "the detected weight"} AND USE THESE VALUES.`
+    );
+  }
+
+  if (taggedImages && taggedImages.length > 0) {
+    promptParts.push(
+      `Photo Angle Mapping: ${taggedImages.map((img, idx) => `Photo ${idx + 1}: ${img.label || img.angle}`).join(", ")}.`
+    );
+  }
 
   if (learnedGuidance.length) {
     promptParts.push(
@@ -212,23 +231,47 @@ export async function createOpenAIJewelryAnalysisProvider(
     async analyzeImage({
       imageDataUrl,
       imageDataUrls,
+      taggedImages,
+      tagData: passedTagData,
       selectedMetal,
       attemptNumber,
       customerDescription,
       learnedGuidance
     }): Promise<JewelryReviewSnapshot> {
       const start = Date.now();
+
+      // Collect all images
+      const images: string[] = [];
+      if (taggedImages && taggedImages.length > 0) {
+        taggedImages.forEach((img) => {
+          if (img.dataUrl) images.push(img.dataUrl);
+        });
+      } else if (imageDataUrls && imageDataUrls.length > 0) {
+        images.push(...imageDataUrls.filter(Boolean));
+      } else if (imageDataUrl) {
+        images.push(imageDataUrl);
+      }
+
+      // Check for tag/receipt images or run tag OCR if needed
+      let resolvedTagData = passedTagData;
+      if (!resolvedTagData && images.length > 0) {
+        // Check tag-tagged slot first, or check the last image
+        const tagCandidate = taggedImages?.find((img) => img.angle === "tag_receipt")?.dataUrl || images[images.length - 1];
+        if (tagCandidate) {
+          resolvedTagData = await extractJewelryTagData(openai, tagCandidate, model);
+        }
+      }
+
       const contentList: Array<
         | { type: "input_text"; text: string }
         | { type: "input_image"; image_url: string; detail: "high" }
       > = [
         {
           type: "input_text",
-          text: buildPrompt(selectedMetal, attemptNumber, customerDescription, learnedGuidance)
+          text: buildPrompt(selectedMetal, attemptNumber, customerDescription, learnedGuidance, taggedImages, resolvedTagData)
         }
       ];
 
-      const images = (imageDataUrls?.length ? imageDataUrls : imageDataUrl ? [imageDataUrl] : []).filter(Boolean);
       for (const imageUrl of images) {
         contentList.push({
           type: "input_image",
@@ -262,6 +305,42 @@ export async function createOpenAIJewelryAnalysisProvider(
       }
 
       const output = response.output_parsed as JewelryAnalysis;
+
+      // Apply ground truth overrides if tag OCR extracted hard data
+      if (resolvedTagData && resolvedTagData.hasTag) {
+        if (resolvedTagData.centerCarats && resolvedTagData.centerCarats > 0) {
+          output.centerStone.caratWeight = resolvedTagData.centerCarats;
+          if (output.centerStone.shape.toLowerCase() === "none") {
+            output.centerStone.shape = resolvedTagData.centerShape || "Pear";
+          }
+        }
+        if (resolvedTagData.sideCarats && resolvedTagData.sideCarats > 0) {
+          if (output.sideStones.length === 0) {
+            output.sideStones.push({
+              shape: "pear",
+              caratWeightEach: resolvedTagData.sideCount ? resolvedTagData.sideCarats / resolvedTagData.sideCount : resolvedTagData.sideCarats / 2,
+              count: resolvedTagData.sideCount || 2,
+              settingType: "prong"
+            });
+          } else {
+            const totalCount = output.sideStones.reduce((sum, ss) => sum + ss.count, 0) || 1;
+            output.sideStones.forEach((ss) => {
+              ss.caratWeightEach = Number((resolvedTagData!.sideCarats! / totalCount).toFixed(3));
+            });
+          }
+        }
+        if (resolvedTagData.metalPurity) {
+          const normPurity = resolvedTagData.metalPurity.toUpperCase();
+          if (normPurity.includes("18")) output.selected_metal = "18K";
+          else if (normPurity.includes("14")) output.selected_metal = "14K";
+          else if (normPurity.includes("10")) output.selected_metal = "10K";
+          else if (normPurity.includes("PLAT")) output.selected_metal = "Platinum";
+        }
+        output.assumptions.unshift(
+          `Tag Ground Truth: ${resolvedTagData.centerCarats ? `${resolvedTagData.centerCarats}ct center, ` : ""}${resolvedTagData.sideCarats ? `${resolvedTagData.sideCarats}ct side stones, ` : ""}${resolvedTagData.diamondClarity || ""} verified from jewelry tag.`
+        );
+      }
+
       return {
         responseId: response.id,
         output,
@@ -285,3 +364,4 @@ export function isRetryableAnalysisError(error: unknown) {
 export function serializeAnalysisError(error: unknown) {
   return serializeError(error);
 }
+

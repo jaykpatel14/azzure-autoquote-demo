@@ -1,5 +1,14 @@
 import type { JewelryAnalysis } from "@/lib/ai/schema";
 import type { SerializedError } from "@/lib/ai/errors";
+import type { JewelryTagData } from "@/lib/ai/tag-ocr";
+
+export type AngleSlot = "top_face" | "side_profile" | "angle_view" | "tag_receipt" | "general";
+
+export type TaggedImageInput = {
+  dataUrl: string;
+  angle: AngleSlot;
+  label?: string;
+};
 
 export type TokenUsageSnapshot = {
   inputTokens?: number;
@@ -41,6 +50,8 @@ export interface JewelryAnalysisProvider {
   analyzeImage(input: {
     imageDataUrl?: string | null;
     imageDataUrls?: string[] | null;
+    taggedImages?: TaggedImageInput[] | null;
+    tagData?: JewelryTagData | null;
     selectedMetal: string;
     attemptNumber: number;
     customerDescription?: string;

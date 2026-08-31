@@ -248,8 +248,8 @@ export function calculateMakingPrice(
   const pricing = { ...DEFAULT_PRICING_PROFILE, ...(input.pricingProfile ?? {}) };
 
   // Validate inputs
-  if (input.centerStone.caratWeight <= 0) {
-    throw new ValidationError("Center stone carat weight must be greater than zero");
+  if (input.centerStone.caratWeight < 0) {
+    throw new ValidationError("Center stone carat weight cannot be negative");
   }
   if (customerMarginPct < 0 || customerMarginPct > 200) {
     throw new ValidationError("Customer margin must be between 0% and 200%");

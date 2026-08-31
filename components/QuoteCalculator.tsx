@@ -1048,9 +1048,11 @@ export default function QuoteCalculator({
       const formData = new FormData();
       formData.append("metalType", metalType);
       if (description) formData.append("description", description);
-      if (assignedCompanyId) formData.append("assignedCompanyId", assignedCompanyId);
-      if (assignedCompanyId) formData.append("assignedCompanyId", assignedCompanyId);
-      files.forEach((file) => formData.append("images", file));
+      const angleDefaults = ["top_face", "side_profile", "angle_view", "tag_receipt"];
+      files.forEach((file, index) => {
+        formData.append("images", file);
+        formData.append("angles", angleDefaults[index] || "general");
+      });
 
       const response = await fetch("/api/analyze", { method: "POST", body: formData });
       const responseText = await response.text();

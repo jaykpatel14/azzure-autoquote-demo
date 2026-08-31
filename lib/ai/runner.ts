@@ -8,8 +8,10 @@ import type {
   JewelryAnalysisProvider,
   JewelryReviewFailure,
   JewelryReviewSnapshot,
-  ModerationSnapshot
+  ModerationSnapshot,
+  TaggedImageInput
 } from "@/lib/ai/provider";
+import type { JewelryTagData } from "@/lib/ai/tag-ocr";
 import { median, mergeConfidence } from "@/lib/statistics";
 import { type MetalType } from "@/lib/pricing";
 import type { JewelryAnalysis, CenterStoneSpec, SideStoneSpec, AccentColorStoneSpec } from "@/lib/ai/schema";
@@ -98,13 +100,13 @@ export function chooseMode(values: string[]) {
 
   let bestValue: string | undefined;
   let bestCount = -1;
-  let bestIndex = Number.POSITIVE_INFINITY;
+  let bestFirstIndex = Number.POSITIVE_INFINITY;
 
-  for (const [value, entry] of counts.entries()) {
-    if (entry.count > bestCount || (entry.count === bestCount && entry.firstIndex < bestIndex)) {
+  for (const [value, { count, firstIndex }] of counts.entries()) {
+    if (count > bestCount || (count === bestCount && firstIndex < bestFirstIndex)) {
       bestValue = value;
-      bestCount = entry.count;
-      bestIndex = entry.firstIndex;
+      bestCount = count;
+      bestFirstIndex = firstIndex;
     }
   }
 
@@ -134,6 +136,8 @@ export async function runReviewAttempt(params: {
   provider: JewelryAnalysisProvider;
   imageDataUrl?: string | null;
   imageDataUrls?: string[] | null;
+  taggedImages?: TaggedImageInput[] | null;
+  tagData?: JewelryTagData | null;
   selectedMetal: MetalType;
   attemptNumber: number;
   attemptLimit?: number;
@@ -161,6 +165,8 @@ export async function runReviewAttempt(params: {
         params.provider.analyzeImage({
           imageDataUrl: params.imageDataUrl,
           imageDataUrls: params.imageDataUrls,
+          taggedImages: params.taggedImages,
+          tagData: params.tagData,
           selectedMetal: params.selectedMetal,
           attemptNumber: params.attemptNumber,
           customerDescription: params.customerDescription,
@@ -237,8 +243,6 @@ export function aggregateJewelryAnalysis(outputs: JewelryAnalysis[], selectedMet
     )
   );
 
-  // Bug 2 fix: prefer the top-level settingStyle (named ring setting) over sideStones[].settingType
-  // (which is the stone-setting method, not the overall ring architecture).
   const namedSettingStyle =
     chooseMode(
       outputs.map((output) => output.settingStyle ?? "").filter(Boolean) as string[]
@@ -290,6 +294,8 @@ export async function runJewelryAnalysis(params: {
   provider: JewelryAnalysisProvider;
   imageDataUrl?: string | null;
   imageDataUrls?: string[] | null;
+  taggedImages?: TaggedImageInput[] | null;
+  tagData?: JewelryTagData | null;
   customerDescription?: string;
   selectedMetal: MetalType;
   reviewCount: number;
@@ -298,7 +304,7 @@ export async function runJewelryAnalysis(params: {
   const moderation = await runModerationCheck({
     provider: params.provider,
     imageDataUrl: params.imageDataUrl,
-    imageDataUrls: params.imageDataUrls,
+    imageDataUrls: params.imageDataUrls || params.taggedImages?.map((t) => t.dataUrl),
     text: params.customerDescription,
     attemptLimit: params.attemptLimit
   });
@@ -315,6 +321,8 @@ export async function runJewelryAnalysis(params: {
       provider: params.provider,
       imageDataUrl: params.imageDataUrl,
       imageDataUrls: params.imageDataUrls,
+      taggedImages: params.taggedImages,
+      tagData: params.tagData,
       customerDescription: params.customerDescription,
       selectedMetal: params.selectedMetal,
       attemptNumber,
