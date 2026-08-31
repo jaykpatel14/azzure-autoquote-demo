@@ -732,26 +732,54 @@ export default function QuoteCalculator({
     setSavedQuote(null);
     setRenderingImageUrl(null);
     setDraftIsFresh(false);
-    const file = selectedFiles[0];
-    const nextFacet = {
-      id: uid(),
-      file,
-      previewUrl: URL.createObjectURL(file),
-      isObjectUrl: true,
-      title: "Reference Photo",
-      description: "",
-      showDescription: false,
-      status: "pending" as FacetStatus,
-      stageIndex: 0,
-      output: null,
-      error: ""
-    };
 
-    setFacets([nextFacet]);
-    setActiveFacetId(nextFacet.id);
-    setStatus("Photo uploaded. Click 'Analyze with AI' to start.");
+    const validFiles = selectedFiles.filter((file) => file.type.startsWith("image/"));
+    if (!validFiles.length) {
+      showToast({
+        message: "Please upload valid image files (JPG, PNG, or WEBP).",
+        variant: "error"
+      });
+      return;
+    }
+
+    const angleLabels = [
+      "Top / Face View (Primary)",
+      "Side Profile",
+      "Angle / 3/4 View",
+      "Tag / Receipt Closeup"
+    ];
+
+    setFacets((current) => {
+      const existing = current.filter((f) => Boolean(f.file));
+      const updated = [...existing];
+
+      for (const file of validFiles) {
+        if (updated.length >= 4) break;
+        const index = updated.length;
+        updated.push({
+          id: uid(),
+          file,
+          previewUrl: URL.createObjectURL(file),
+          isObjectUrl: true,
+          title: angleLabels[index] || `Angle Photo ${index + 1}`,
+          description: "",
+          showDescription: false,
+          status: "pending" as FacetStatus,
+          stageIndex: 0,
+          output: null,
+          error: ""
+        });
+      }
+
+      if (updated.length > 0) {
+        setActiveFacetId(updated[0].id);
+      }
+      return updated;
+    });
+
+    setStatus("Photos uploaded. Click 'Analyze with AI' to start.");
     showToast({
-      message: "Reference photo added. Click 'Analyze with AI' to run analysis.",
+      message: `${validFiles.length > 1 ? `${validFiles.length} photos` : "Photo"} added (up to 4 angles). Click 'Analyze with AI'.`,
       variant: "info",
       autoDismiss: true
     });
@@ -760,40 +788,8 @@ export default function QuoteCalculator({
 
   async function handleShowroomPhotoSelect(fileList: FileList | File[] | null) {
     if (!fileList || !fileList.length) return;
-    const file = fileList[0];
-    if (!file.type.startsWith("image/")) {
-      showToast({
-        message: "Please select an image file (JPG, PNG, or WEBP).",
-        variant: "error"
-      });
-      return;
-    }
-
-    setSavedQuote(null);
-    setRenderingImageUrl(null);
-    setDraftIsFresh(false);
-    const newFacet: FacetDraft = {
-      id: uid(),
-      file,
-      previewUrl: URL.createObjectURL(file),
-      isObjectUrl: true,
-      title: "Showroom Reference",
-      description: "",
-      showDescription: false,
-      status: "pending" as FacetStatus,
-      stageIndex: 0,
-      output: null,
-      error: ""
-    };
-
-    setFacets([newFacet]);
-    setActiveFacetId(newFacet.id);
-    setStatus("Reference photo added. Click 'Analyze with AI' to start.");
-    showToast({
-      message: "Photo added. Click 'Analyze with AI' to run analysis.",
-      variant: "info",
-      autoDismiss: true
-    });
+    const files = Array.from(fileList);
+    handleFiles(files);
   }
 
   function clearAllFacets() {
@@ -1891,30 +1887,30 @@ export default function QuoteCalculator({
                 <div className="dropzoneIcon">
                   <span className="material-symbols-outlined" style={{ fontSize: 28, color: "var(--color-primary)" }}>cloud_upload</span>
                 </div>
-                <strong>Add customer reference photo</strong>
-                <span className="muted small">JPG, PNG, or WEBP · 1 image max (up to 10 MB)</span>
+                <strong>Add customer reference photos (Up to 4 angles)</strong>
+                <span className="muted small">JPG, PNG, or WEBP · 4 angles max: Top View, Side Profile, Angle 3/4, Tag closeup (10 MB each)</span>
               </div>
               <div className="dropzoneActions" style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
                 <button
                   type="button"
                   className="button primary button--sm"
                   onClick={() => setShowLiveCamera(true)}
-                  disabled={!canEdit}
+                  disabled={!canEdit || facets.length >= 4}
                   style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: 16 }}>photo_camera</span>
                   Take photo
                 </button>
-                <label className="button secondary button--sm" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  <input type="file" accept="image/*" disabled={!canEdit} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} style={{ display: "none" }} />
+                <label className={`button secondary button--sm${facets.length >= 4 ? " disabled" : ""}`} style={{ cursor: facets.length >= 4 ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <input type="file" accept="image/*" multiple disabled={!canEdit || facets.length >= 4} onChange={(event) => handleFiles(Array.from(event.target.files ?? []))} style={{ display: "none" }} />
                   <span className="material-symbols-outlined" style={{ fontSize: 16 }}>folder_open</span>
-                  Choose file
+                  Choose files (Up to 4)
                 </label>
                 <button
                   type="button"
                   className="button secondary button--sm"
                   onClick={openMobileUploadQr}
-                  disabled={!canEdit}
+                  disabled={!canEdit || facets.length >= 4}
                   style={{
                     background: "rgba(201, 168, 76, 0.12)",
                     borderColor: "rgba(201, 168, 76, 0.35)",
@@ -1931,21 +1927,58 @@ export default function QuoteCalculator({
             {/* Photo thumbnail strip & Action Buttons */}
             <div style={{ marginTop: 16 }}>
               {facets.length > 0 ? (
-                <div className="facetThumbRail" aria-label="Uploaded photos" style={{ marginBottom: 16 }}>
+                <div className="facetThumbRail" aria-label="Uploaded photos" style={{ marginBottom: 16, display: "flex", flexWrap: "wrap", gap: 10 }}>
                   {facets.map((facet, index) => (
-                    <button
+                    <div
                       key={facet.id}
-                      type="button"
-                      className={activeFacet?.id === facet.id ? "facetThumb isActive" : "facetThumb"}
-                      onClick={() => setActiveFacetId(facet.id)}
+                      style={{ position: "relative", display: "inline-block" }}
                     >
-                      {facet.previewUrl ? (
-                        <img src={facet.previewUrl} alt={`Photo ${index + 1}`} className="facetThumbImage" />
-                      ) : (
-                        <div className="facetThumbImage facetThumbImage--fallback"><span>{index + 1}</span></div>
+                      <button
+                        type="button"
+                        className={activeFacet?.id === facet.id ? "facetThumb isActive" : "facetThumb"}
+                        onClick={() => setActiveFacetId(facet.id)}
+                        style={{ display: "block" }}
+                      >
+                        {facet.previewUrl ? (
+                          <img src={facet.previewUrl} alt={facet.title || `Photo ${index + 1}`} className="facetThumbImage" />
+                        ) : (
+                          <div className="facetThumbImage facetThumbImage--fallback"><span>{index + 1}</span></div>
+                        )}
+                        <span className="facetThumbBadge">#{index + 1} {facet.title?.split(" ")[0]}</span>
+                      </button>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFacet(facet.id);
+                          }}
+                          aria-label={`Remove photo ${index + 1}`}
+                          style={{
+                            position: "absolute",
+                            top: -6,
+                            right: -6,
+                            width: 20,
+                            height: 20,
+                            borderRadius: "50%",
+                            background: "#ef4444",
+                            color: "#fff",
+                            border: "2px solid #fff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            zIndex: 10,
+                            padding: 0,
+                            lineHeight: 1
+                          }}
+                        >
+                          ×
+                        </button>
                       )}
-                      <span className="facetThumbBadge">#{index + 1}</span>
-                    </button>
+                    </div>
                   ))}
                 </div>
               ) : null}
