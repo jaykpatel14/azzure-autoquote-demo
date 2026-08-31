@@ -271,6 +271,21 @@ export default function AdminHardwarePanel({
     }
   }
 
+  async function handleRemoteCommand(deviceId: string, deviceName: string, command: string) {
+    try {
+      const res = await fetch(`/api/showroom/devices/${deviceId}/command`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to dispatch remote command.");
+      alert(`Success: ${data.message || `Command sent to ${deviceName}.`}`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to dispatch remote command.");
+    }
+  }
+
   return (
     <div className="stack" style={{ gap: 24 }}>
       <section className="card stack">
@@ -388,16 +403,36 @@ export default function AdminHardwarePanel({
                   ) : null}
                 </div>
 
-                <div style={{ display: "flex", gap: 8 }}>
-                  {device.showroomDevice ? (
-                    <button
-                      className="button secondary button--sm"
-                      type="button"
-                      onClick={() => heartbeatDevice(device.id)}
-                      disabled={heartbeatBusyId === device.id}
-                    >
-                      {heartbeatBusyId === device.id ? "Pinging…" : "Heartbeat now"}
-                    </button>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {device.showroomDevice && device.showroomDevice.isActive ? (
+                    <>
+                      <button
+                        className="button secondary button--sm"
+                        type="button"
+                        title="Force physical screen to refresh and reload latest code"
+                        onClick={() => handleRemoteCommand(device.showroomDevice!.id, device.showroomDevice!.deviceName, "reload")}
+                        style={{ borderColor: "rgba(59, 130, 246, 0.4)", color: "#2563eb" }}
+                      >
+                        🔄 Remote Reload
+                      </button>
+                      <button
+                        className="button secondary button--sm"
+                        type="button"
+                        title="Clear local drafts and cache on physical screen"
+                        onClick={() => handleRemoteCommand(device.showroomDevice!.id, device.showroomDevice!.deviceName, "clear_cache")}
+                        style={{ borderColor: "rgba(245, 158, 11, 0.4)", color: "#d97706" }}
+                      >
+                        🧹 Clear Cache
+                      </button>
+                      <button
+                        className="button secondary button--sm"
+                        type="button"
+                        onClick={() => heartbeatDevice(device.id)}
+                        disabled={heartbeatBusyId === device.id}
+                      >
+                        {heartbeatBusyId === device.id ? "Pinging…" : "Heartbeat now"}
+                      </button>
+                    </>
                   ) : null}
                   {device.status !== "DEACTIVATED" ? (
                     <button className="button secondary button--sm" type="button" onClick={() => deactivateDevice(device.id)}>

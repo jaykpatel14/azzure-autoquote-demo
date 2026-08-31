@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthenticatedCompanyContext } from "@/lib/company";
+import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getCompanyPlanFeatures } from "@/src/stripe/plans";
 import { prisma } from "@/lib/prisma";
 import {
@@ -27,13 +28,18 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const context = await getAuthenticatedCompanyContext();
-    if (!context) {
+    const adminContext = await getInternalAdminContext();
+    const companyContext = await getAuthenticatedCompanyContext();
+
+    if (!adminContext && !companyContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const { features } = await getCompanyPlanFeatures(context.company.id);
-    if (!features.canUseShowroomMode) {
-      return NextResponse.json({ error: "Showroom Mode plan upgrade required." }, { status: 403 });
+
+    if (!adminContext && companyContext) {
+      const { features } = await getCompanyPlanFeatures(companyContext.company.id);
+      if (!features.canUseShowroomMode) {
+        return NextResponse.json({ error: "Showroom Mode plan upgrade required." }, { status: 403 });
+      }
     }
 
     const { id } = await params;
@@ -50,7 +56,7 @@ export async function POST(
     const device = await prisma.showroomDevice.findFirst({
       where: {
         id,
-        companyId: context.company.id,
+        ...(adminContext ? {} : { companyId: companyContext?.company.id }),
         isActive: true
       },
       select: {
