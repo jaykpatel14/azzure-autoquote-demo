@@ -365,9 +365,9 @@ export async function POST(request: Request) {
       renderingStatus = rendering.status;
 
       if (rendering.status === "COMPLETED") {
-        renderingImageUrl = rendering.storageKey
-          ? await loadQuoteRenderingDataUrlFromS3(rendering.storageKey)
-          : rendering.imageUrl;
+        renderingImageUrl =
+          rendering.imageUrl ||
+          (rendering.storageKey ? await loadQuoteRenderingDataUrlFromS3(rendering.storageKey) : null);
       }
     }
 

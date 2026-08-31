@@ -117,9 +117,16 @@ async function requestRenderingBase64(params: {
     n: 1
   });
 
-  const base64 = response.data?.[0]?.b64_json;
-  if (!base64) throw new Error("The image model returned no rendering data.");
-  return base64;
+  const dataItem = response.data?.[0];
+  if (dataItem?.b64_json) {
+    return dataItem.b64_json;
+  }
+  if (dataItem?.url) {
+    const fetched = await fetch(dataItem.url);
+    const arrayBuffer = await fetched.arrayBuffer();
+    return Buffer.from(arrayBuffer).toString("base64");
+  }
+  throw new Error("The image model returned no rendering data.");
 }
 
 /** Helper to safely extract accentColorStones from a stored analysis output JSON blob */
