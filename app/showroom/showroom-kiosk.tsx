@@ -45,6 +45,7 @@ type Analysis = {
   sideDiamondQuantity: number;
   centerShape?: string;
   centerStoneColor?: string | null;
+  centerClarity?: string;
   settingType?: string;
   hasWeddingBand?: boolean;
   isTwoTone?: boolean;
@@ -348,24 +349,67 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
         return { ...current, [targetSlot]: incomingFiles[0] };
       }
       const next = { ...current };
-      const slots: AngleSlotKey[] = ["top_face", "side_profile", "angle_view", "tag_receipt"];
-      let incomingIdx = 0;
-      for (const slot of slots) {
-        if (!next[slot] && incomingIdx < incomingFiles.length) {
-          next[slot] = incomingFiles[incomingIdx];
-          incomingIdx++;
+      const allSlots: AngleSlotKey[] = ["top_face", "side_profile", "angle_view", "tag_receipt"];
+      const remainingSlots = allSlots.filter((s) => !next[s]);
+      const unassignedFiles: File[] = [];
+
+      // Step 1: Match files with explicit name hints
+      for (const file of incomingFiles) {
+        const name = file.name.toLowerCase();
+        let matchedSlot: AngleSlotKey | null = null;
+
+        if (name.includes("tag") || name.includes("receipt") || name.includes("label") || name.includes("price") || name.includes("sku")) {
+          matchedSlot = "tag_receipt";
+        } else if (name.includes("top") || name.includes("face") || name.includes("front") || name.includes("main") || name.includes("primary")) {
+          matchedSlot = "top_face";
+        } else if (name.includes("side") || name.includes("profile") || name.includes("gallery") || name.includes("shank")) {
+          matchedSlot = "side_profile";
+        } else if (name.includes("angle") || name.includes("34") || name.includes("persp") || name.includes("tilt")) {
+          matchedSlot = "angle_view";
+        }
+
+        if (matchedSlot && !next[matchedSlot]) {
+          next[matchedSlot] = file;
+          const idx = remainingSlots.indexOf(matchedSlot);
+          if (idx !== -1) remainingSlots.splice(idx, 1);
+        } else {
+          unassignedFiles.push(file);
         }
       }
-      if (incomingIdx === 0 && incomingFiles.length > 0) {
+
+      // Step 2: Fill remaining empty slots in order
+      for (const file of unassignedFiles) {
+        if (remainingSlots.length > 0) {
+          const slot = remainingSlots.shift()!;
+          next[slot] = file;
+        }
+      }
+
+      // Step 3: If all slots were already full, overwrite starting from top_face
+      if (incomingFiles.length > 0 && remainingSlots.length === 0 && unassignedFiles.length === incomingFiles.length) {
         incomingFiles.slice(0, 4).forEach((file, idx) => {
-          if (slots[idx]) next[slots[idx]] = file;
+          if (allSlots[idx]) next[allSlots[idx]] = file;
         });
       }
+
       return next;
     });
     setAnalysis(null);
     setRenderingImageUrl(null);
     setError("");
+  }, []);
+
+  const swapSlots = useCallback((slotA: AngleSlotKey, slotB: AngleSlotKey) => {
+    if (slotA === slotB) return;
+    setSlotFiles((current) => {
+      const next = { ...current };
+      const temp = next[slotA];
+      next[slotA] = next[slotB];
+      next[slotB] = temp;
+      return next;
+    });
+    setAnalysis(null);
+    setRenderingImageUrl(null);
   }, []);
 
   const removeSlotFile = useCallback((slot: AngleSlotKey) => {
@@ -774,6 +818,9 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       setAnalysis(body);
       if (body.renderingImageUrl) {
         setRenderingImageUrl(body.renderingImageUrl);
+      } else {
+        // Automatically trigger 3D studio render in background if initial analyze omitted it
+        triggerRender3D(body);
       }
     } catch (e: any) {
       if (e?.name === "AbortError") {
@@ -785,6 +832,45 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       window.clearInterval(pulser);
       setAnalyzing(false);
       analysisAbortControllerRef.current = null;
+    }
+  }
+
+  async function triggerRender3D(overrideAnalysis?: Analysis | null) {
+    const target = overrideAnalysis ?? analysis;
+    if (generatingConcept) return;
+
+    setGeneratingConcept(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/showroom/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...showroomHeaders },
+        body: JSON.stringify({
+          token,
+          jewelryType: target?.jewelryType || "Ring",
+          metalType: target?.selectedMetal || "14K",
+          metalColor: target?.metalColor || null,
+          metalWeightGrams: target?.metalWeightGrams || 5,
+          centerShape: target?.centerShape || "Pear",
+          centerCarats: target?.centerDiamondCarats || 1.0,
+          sideDiamondQuantity: target?.sideDiamondQuantity || 0,
+          sideDiamondCarats: target?.sideDiamondCarats || 0,
+          settingType: target?.settingType || null,
+          centerClarity: target?.centerClarity || "VS1",
+          description: description.trim()
+        })
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.error || "Failed to generate 3D render.");
+      if (data?.renderingImageUrl) {
+        setRenderingImageUrl(data.renderingImageUrl);
+      }
+    } catch (err) {
+      console.warn("[triggerRender3D] Rendering warning:", err);
+    } finally {
+      setGeneratingConcept(false);
     }
   }
 
@@ -1839,34 +1925,38 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
 
                     <div style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(135px, 1fr))",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
                       gap: 12,
                       marginBottom: 16
                     }}>
-                      {ANGLE_SLOTS.map((slot) => {
+                      {ANGLE_SLOTS.map((slot, slotIndex) => {
                         const previewSrc = slotPreviews[slot.id];
+                        const prevSlot = slotIndex > 0 ? ANGLE_SLOTS[slotIndex - 1].id : null;
+                        const nextSlot = slotIndex < ANGLE_SLOTS.length - 1 ? ANGLE_SLOTS[slotIndex + 1].id : null;
+
                         return (
                           <div
                             key={slot.id}
                             style={{
-                              background: previewSrc ? "rgba(201, 168, 76, 0.08)" : "rgba(100, 116, 139, 0.05)",
-                              border: previewSrc ? "1.5px solid rgba(201, 168, 76, 0.6)" : "1.5px dashed rgba(100, 116, 139, 0.3)",
-                              borderRadius: 12,
+                              background: previewSrc ? "rgba(201, 168, 76, 0.1)" : "rgba(100, 116, 139, 0.05)",
+                              border: previewSrc ? "2px solid rgba(201, 168, 76, 0.7)" : "1.5px dashed rgba(100, 116, 139, 0.35)",
+                              borderRadius: 14,
                               padding: "12px 10px",
                               display: "flex",
                               flexDirection: "column",
                               justifyContent: "space-between",
-                              minHeight: 160,
+                              minHeight: 185,
                               position: "relative",
                               transition: "all 0.2s ease"
                             }}
                           >
+                            {/* Card Header: High contrast text & badges */}
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 4, marginBottom: 8 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--color-brand, #c9a84c)" }}>
                                   {slot.icon}
                                 </span>
-                                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "inherit" }}>
+                                <span style={{ fontSize: "0.78125rem", fontWeight: 800, color: "var(--showroom-heading, #0f172a)" }}>
                                   {slot.title}
                                 </span>
                               </div>
@@ -1875,10 +1965,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                                   fontSize: "0.625rem",
                                   padding: "2px 6px",
                                   borderRadius: 6,
-                                  background: slot.id === "top_face" ? "rgba(201, 168, 76, 0.2)" : "rgba(100, 116, 139, 0.12)",
-                                  color: slot.id === "top_face" ? "#b8933b" : "#64748b",
-                                  border: slot.id === "top_face" ? "1px solid rgba(201, 168, 76, 0.35)" : "1px solid rgba(100, 116, 139, 0.2)",
-                                  fontWeight: 700,
+                                  background: slot.id === "top_face" ? "rgba(201, 168, 76, 0.25)" : "rgba(15, 23, 42, 0.12)",
+                                  color: slot.id === "top_face" ? "#855d0f" : "#1e293b",
+                                  border: slot.id === "top_face" ? "1.5px solid rgba(201, 168, 76, 0.6)" : "1px solid rgba(15, 23, 42, 0.25)",
+                                  fontWeight: 800,
                                   whiteSpace: "nowrap"
                                 }}
                               >
@@ -1887,36 +1977,105 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                             </div>
 
                             {previewSrc ? (
-                              <div style={{ position: "relative", width: "100%", height: 84, borderRadius: 8, overflow: "hidden", marginTop: "auto" }}>
-                                <img
-                                  src={previewSrc}
-                                  alt={slot.title}
-                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                  onLoad={handleImageLoad(previewSrc)}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => removeSlotFile(slot.id)}
-                                  style={{
-                                    position: "absolute",
-                                    top: 4,
-                                    right: 4,
-                                    width: 22,
-                                    height: 22,
-                                    borderRadius: "50%",
-                                    background: "rgba(0, 0, 0, 0.8)",
-                                    border: "none",
-                                    color: "#ffffff",
-                                    fontSize: 12,
-                                    cursor: "pointer",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center"
-                                  }}
-                                  title="Remove photo"
-                                >
-                                  ✕
-                                </button>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: "auto" }}>
+                                <div style={{ position: "relative", width: "100%", height: 80, borderRadius: 8, overflow: "hidden" }}>
+                                  <img
+                                    src={previewSrc}
+                                    alt={slot.title}
+                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                    onLoad={handleImageLoad(previewSrc)}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeSlotFile(slot.id)}
+                                    style={{
+                                      position: "absolute",
+                                      top: 4,
+                                      right: 4,
+                                      width: 22,
+                                      height: 22,
+                                      borderRadius: "50%",
+                                      background: "rgba(0, 0, 0, 0.8)",
+                                      border: "none",
+                                      color: "#ffffff",
+                                      fontSize: 12,
+                                      cursor: "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      zIndex: 2
+                                    }}
+                                    title="Remove photo"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+
+                                {/* Slot Controls: Quick Move Dropdown & Nudge Arrows */}
+                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                  {prevSlot ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => swapSlots(slot.id, prevSlot)}
+                                      title="Move Left"
+                                      style={{
+                                        padding: "3px 6px",
+                                        borderRadius: 6,
+                                        border: "1px solid rgba(100, 116, 139, 0.3)",
+                                        background: "rgba(255, 255, 255, 0.9)",
+                                        color: "#0f172a",
+                                        fontSize: "0.7rem",
+                                        fontWeight: 800,
+                                        cursor: "pointer"
+                                      }}
+                                    >
+                                      ◀
+                                    </button>
+                                  ) : null}
+
+                                  <select
+                                    value={slot.id}
+                                    onChange={(e) => swapSlots(slot.id, e.target.value as AngleSlotKey)}
+                                    title="Move this photo to another angle slot"
+                                    style={{
+                                      flex: 1,
+                                      padding: "4px 4px",
+                                      borderRadius: 6,
+                                      border: "1px solid rgba(201, 168, 76, 0.4)",
+                                      background: "rgba(255, 255, 255, 0.95)",
+                                      color: "#0f172a",
+                                      fontSize: "0.6875rem",
+                                      fontWeight: 700,
+                                      cursor: "pointer"
+                                    }}
+                                  >
+                                    {ANGLE_SLOTS.map((s) => (
+                                      <option key={s.id} value={s.id}>
+                                        {s.title}
+                                      </option>
+                                    ))}
+                                  </select>
+
+                                  {nextSlot ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => swapSlots(slot.id, nextSlot)}
+                                      title="Move Right"
+                                      style={{
+                                        padding: "3px 6px",
+                                        borderRadius: 6,
+                                        border: "1px solid rgba(100, 116, 139, 0.3)",
+                                        background: "rgba(255, 255, 255, 0.9)",
+                                        color: "#0f172a",
+                                        fontSize: "0.7rem",
+                                        fontWeight: 800,
+                                        cursor: "pointer"
+                                      }}
+                                    >
+                                      ▶
+                                    </button>
+                                  ) : null}
+                                </div>
                               </div>
                             ) : (
                               <div style={{ textAlign: "center", marginTop: "auto" }}>
@@ -1930,12 +2089,12 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                                     justifyContent: "center",
                                     gap: 4,
                                     padding: "6px 8px",
-                                    background: "rgba(201, 168, 76, 0.12)",
-                                    border: "1px solid rgba(201, 168, 76, 0.3)",
+                                    background: "rgba(201, 168, 76, 0.15)",
+                                    border: "1.5px solid rgba(201, 168, 76, 0.45)",
                                     borderRadius: 6,
                                     color: "var(--color-brand, #c9a84c)",
                                     fontSize: "0.75rem",
-                                    fontWeight: 700,
+                                    fontWeight: 800,
                                     cursor: "pointer",
                                     width: "100%"
                                   }}
@@ -2187,7 +2346,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                   </div>
                 </div>
 
-                <div className="quotePreviewImageFrame">
+                <div className="quotePreviewImageFrame" style={{ position: "relative" }}>
                   {activeImage ? (
                     <img
                       src={activeImage}
@@ -2202,6 +2361,82 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                       <p className="muted small" style={{ margin: "8px 0 0", textAlign: "center" }}>Upload a photo or choose a design</p>
                     </div>
                   )}
+
+                  {/* Render Type Status Badge */}
+                  {activeImage ? (
+                    <div style={{ position: "absolute", top: 10, left: 10, zIndex: 2, display: "flex", gap: 6 }}>
+                      {renderingImageUrl ? (
+                        <span
+                          style={{
+                            background: "rgba(0, 0, 0, 0.75)",
+                            backdropFilter: "blur(8px)",
+                            color: "#f6e09e",
+                            border: "1px solid rgba(201, 168, 76, 0.5)",
+                            padding: "4px 8px",
+                            borderRadius: 6,
+                            fontSize: "0.75rem",
+                            fontWeight: 700,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4
+                          }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 14 }}>auto_awesome</span>
+                          3D AI Studio Render
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            background: "rgba(0, 0, 0, 0.7)",
+                            backdropFilter: "blur(8px)",
+                            color: "#ffffff",
+                            padding: "4px 8px",
+                            borderRadius: 6,
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4
+                          }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 14 }}>photo_camera</span>
+                          Reference Photo
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {/* Manual Generate/Regenerate 3D Render Button */}
+                  {analysis && !generatingConcept ? (
+                    <button
+                      type="button"
+                      onClick={() => triggerRender3D()}
+                      style={{
+                        position: "absolute",
+                        bottom: 10,
+                        right: 10,
+                        zIndex: 2,
+                        background: "rgba(0, 0, 0, 0.8)",
+                        backdropFilter: "blur(10px)",
+                        color: "#f6e09e",
+                        border: "1px solid rgba(201, 168, 76, 0.6)",
+                        padding: "6px 12px",
+                        borderRadius: 8,
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 16 }}>auto_awesome</span>
+                      {renderingImageUrl ? "Regenerate 3D Render" : "Generate 3D AI Render"}
+                    </button>
+                  ) : null}
+
                   {generatingConcept ? (
                     <div className="quotePreviewProcessingOverlay">
                       <span className="material-symbols-outlined ai-pulse" style={{ fontSize: 32, color: "white" }}>auto_awesome</span>
