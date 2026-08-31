@@ -163,16 +163,31 @@ export async function POST(request: Request) {
           "This is a customer-facing showroom visualization."
         ].filter(Boolean).join(" ");
 
-        const imgResponse = await client.images.generate({
-          model: "dall-e-3",
-          prompt: imagePrompt.slice(0, 4000),
-          size: "1024x1024",
-          quality: "standard",
-          response_format: "b64_json",
-          n: 1
-        });
+        const candidateModels = ["dall-e-3", "gpt-image-2", "dall-e-2"];
+        for (const model of candidateModels) {
+          try {
+            const imgResponse = await client.images.generate({
+              model,
+              prompt: imagePrompt.slice(0, 4000),
+              size: "1024x1024",
+              n: 1
+            });
 
-        generatedBase64 = imgResponse.data?.[0]?.b64_json ?? null;
+            const dataItem = imgResponse.data?.[0];
+            if (dataItem?.b64_json) {
+              generatedBase64 = dataItem.b64_json;
+              break;
+            }
+            if (dataItem?.url) {
+              const fetched = await fetch(dataItem.url);
+              const arrayBuffer = await fetched.arrayBuffer();
+              generatedBase64 = Buffer.from(arrayBuffer).toString("base64");
+              break;
+            }
+          } catch (modelErr) {
+            console.warn(`[concept/generate] Model ${model} failed, trying fallback:`, modelErr);
+          }
+        }
       } catch (err) {
         console.warn("[concept/generate] OpenAI image generation warning:", err);
       }

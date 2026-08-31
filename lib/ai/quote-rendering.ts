@@ -116,8 +116,6 @@ async function requestRenderingBase64(params: {
         model,
         prompt: params.prompt.slice(0, 4000),
         size: "1024x1024",
-        quality: "standard",
-        response_format: "b64_json",
         n: 1
       });
 

@@ -68,8 +68,6 @@ export async function POST(request: Request) {
           model,
           prompt: prompt.slice(0, 4000),
           size: "1024x1024",
-          quality: "standard",
-          response_format: "b64_json",
           n: 1
         });
 
