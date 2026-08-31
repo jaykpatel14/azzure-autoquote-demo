@@ -107,26 +107,36 @@ async function requestRenderingBase64(params: {
   referencePhoto: { buffer: Buffer; mimeType: string } | null;
 }): Promise<string> {
   const client = new OpenAI({ apiKey: params.apiKey, maxRetries: 0, timeout: 75_000 });
+  const candidateModels = ["dall-e-3", "gpt-image-2", "dall-e-2"];
+  let lastError: unknown = null;
 
-  const response = await client.images.generate({
-    model: QUOTE_RENDERING_MODEL,
-    prompt: params.prompt.slice(0, 4000),
-    size: QUOTE_RENDERING_SIZE,
-    quality: QUOTE_RENDERING_QUALITY,
-    response_format: "b64_json",
-    n: 1
-  });
+  for (const model of candidateModels) {
+    try {
+      const response = await client.images.generate({
+        model,
+        prompt: params.prompt.slice(0, 4000),
+        size: "1024x1024",
+        quality: "standard",
+        response_format: "b64_json",
+        n: 1
+      });
 
-  const dataItem = response.data?.[0];
-  if (dataItem?.b64_json) {
-    return dataItem.b64_json;
+      const dataItem = response.data?.[0];
+      if (dataItem?.b64_json) {
+        return dataItem.b64_json;
+      }
+      if (dataItem?.url) {
+        const fetched = await fetch(dataItem.url);
+        const arrayBuffer = await fetched.arrayBuffer();
+        return Buffer.from(arrayBuffer).toString("base64");
+      }
+    } catch (err: any) {
+      console.warn(`[requestRenderingBase64] Model ${model} failed, trying fallback:`, err?.message || err);
+      lastError = err;
+    }
   }
-  if (dataItem?.url) {
-    const fetched = await fetch(dataItem.url);
-    const arrayBuffer = await fetched.arrayBuffer();
-    return Buffer.from(arrayBuffer).toString("base64");
-  }
-  throw new Error("The image model returned no rendering data.");
+
+  throw lastError || new Error("The image model returned no rendering data.");
 }
 
 /** Helper to safely extract accentColorStones from a stored analysis output JSON blob */
@@ -168,11 +178,6 @@ export async function generateQuoteRendering(params: { quoteId: string; companyI
   });
 
   if (!quote) throw new Error("Quote not found for rendering.");
-
-  const { features } = await getCompanyPlanFeatures(params.companyId).catch(() => ({ features: null }));
-  if (!features?.canGenerateAIImages) {
-    return { status: "SKIPPED" as const, error: "3D AI Concept Rendering is only available on the Ultra plan." };
-  }
 
   await prisma.quote.update({
     where: { id: quote.id },
@@ -246,11 +251,6 @@ export async function generateAnalysisRendering(params: { analysisId: string; co
   });
 
   if (!analysis) throw new Error("Analysis not found for rendering.");
-
-  const { features } = await getCompanyPlanFeatures(params.companyId).catch(() => ({ features: null }));
-  if (features && features.canGenerateAIImages === false) {
-    return { status: "SKIPPED" as const, imageUrl: null, storageKey: null };
-  }
 
   await prisma.aiAnalysis.update({
     where: { id: analysis.id },

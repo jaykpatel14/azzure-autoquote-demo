@@ -58,25 +58,40 @@ export async function POST(request: Request) {
     ].filter(Boolean).join(" ");
 
     const client = new OpenAI({ apiKey, maxRetries: 0, timeout: 75_000 });
-    const response = await client.images.generate({
-      model: "dall-e-3",
-      prompt: prompt.slice(0, 4000),
-      size: "1024x1024",
-      quality: "standard",
-      response_format: "b64_json",
-      n: 1
-    });
+    const candidateModels = ["dall-e-3", "gpt-image-2", "dall-e-2"];
+    let base64: string | null = null;
+    let lastError: unknown = null;
 
-    const dataItem = response.data?.[0];
-    let base64 = dataItem?.b64_json;
-    if (!base64 && dataItem?.url) {
-      const fetched = await fetch(dataItem.url);
-      const arrayBuffer = await fetched.arrayBuffer();
-      base64 = Buffer.from(arrayBuffer).toString("base64");
+    for (const model of candidateModels) {
+      try {
+        const response = await client.images.generate({
+          model,
+          prompt: prompt.slice(0, 4000),
+          size: "1024x1024",
+          quality: "standard",
+          response_format: "b64_json",
+          n: 1
+        });
+
+        const dataItem = response.data?.[0];
+        if (dataItem?.b64_json) {
+          base64 = dataItem.b64_json;
+          break;
+        }
+        if (dataItem?.url) {
+          const fetched = await fetch(dataItem.url);
+          const arrayBuffer = await fetched.arrayBuffer();
+          base64 = Buffer.from(arrayBuffer).toString("base64");
+          break;
+        }
+      } catch (err) {
+        console.warn(`[api/showroom/render] Model ${model} failed, trying fallback:`, err);
+        lastError = err;
+      }
     }
 
     if (!base64) {
-      return NextResponse.json({ error: "Failed to generate image data." }, { status: 500 });
+      throw lastError || new Error("Failed to generate image data.");
     }
 
     return NextResponse.json({
