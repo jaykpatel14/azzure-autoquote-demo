@@ -1731,7 +1731,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                   <div style={{ marginTop: 20 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                       <div>
-                        <strong style={{ fontSize: "0.95rem", color: "#ffffff", display: "block" }}>
+                        <strong style={{ fontSize: "0.95rem", color: "inherit", display: "block" }}>
                           Multi-Angle Reference Photos (Up to 4 Slots)
                         </strong>
                         <span className="muted small" style={{ fontSize: "0.8rem" }}>
@@ -1761,14 +1761,14 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                           <div
                             key={slot.id}
                             style={{
-                              background: previewSrc ? "rgba(201, 168, 76, 0.08)" : "rgba(255, 255, 255, 0.03)",
-                              border: previewSrc ? "1px solid rgba(201, 168, 76, 0.5)" : "1px dashed rgba(255, 255, 255, 0.15)",
+                              background: previewSrc ? "rgba(201, 168, 76, 0.08)" : "rgba(100, 116, 139, 0.05)",
+                              border: previewSrc ? "1.5px solid rgba(201, 168, 76, 0.6)" : "1.5px dashed rgba(100, 116, 139, 0.3)",
                               borderRadius: 12,
-                              padding: 10,
+                              padding: "12px 10px",
                               display: "flex",
                               flexDirection: "column",
                               justifyContent: "space-between",
-                              minHeight: 155,
+                              minHeight: 160,
                               position: "relative",
                               transition: "all 0.2s ease"
                             }}
@@ -1778,7 +1778,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                                 <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--color-brand, #c9a84c)" }}>
                                   {slot.icon}
                                 </span>
-                                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#ffffff" }}>
+                                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "inherit" }}>
                                   {slot.title}
                                 </span>
                               </div>
@@ -1787,9 +1787,10 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                                   fontSize: "0.625rem",
                                   padding: "2px 6px",
                                   borderRadius: 6,
-                                  background: slot.id === "top_face" ? "rgba(201, 168, 76, 0.25)" : "rgba(255, 255, 255, 0.08)",
-                                  color: slot.id === "top_face" ? "#d9b85f" : "#94a3b8",
-                                  fontWeight: 600,
+                                  background: slot.id === "top_face" ? "rgba(201, 168, 76, 0.2)" : "rgba(100, 116, 139, 0.12)",
+                                  color: slot.id === "top_face" ? "#b8933b" : "#64748b",
+                                  border: slot.id === "top_face" ? "1px solid rgba(201, 168, 76, 0.35)" : "1px solid rgba(100, 116, 139, 0.2)",
+                                  fontWeight: 700,
                                   whiteSpace: "nowrap"
                                 }}
                               >
@@ -1798,7 +1799,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                             </div>
 
                             {previewSrc ? (
-                              <div style={{ position: "relative", width: "100%", height: 80, borderRadius: 8, overflow: "hidden", marginTop: "auto" }}>
+                              <div style={{ position: "relative", width: "100%", height: 84, borderRadius: 8, overflow: "hidden", marginTop: "auto" }}>
                                 <img
                                   src={previewSrc}
                                   alt={slot.title}
@@ -1831,7 +1832,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                               </div>
                             ) : (
                               <div style={{ textAlign: "center", marginTop: "auto" }}>
-                                <p style={{ fontSize: "0.6875rem", color: "#94a3b8", margin: "0 0 8px", lineHeight: 1.3 }}>
+                                <p style={{ fontSize: "0.71875rem", color: "#64748b", margin: "0 0 8px", lineHeight: 1.3 }}>
                                   {slot.desc}
                                 </p>
                                 <label
@@ -1840,12 +1841,13 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                                     alignItems: "center",
                                     justifyContent: "center",
                                     gap: 4,
-                                    padding: "4px 8px",
-                                    background: "rgba(255, 255, 255, 0.08)",
+                                    padding: "6px 8px",
+                                    background: "rgba(201, 168, 76, 0.12)",
+                                    border: "1px solid rgba(201, 168, 76, 0.3)",
                                     borderRadius: 6,
-                                    color: "#e2e8f0",
-                                    fontSize: "0.6875rem",
-                                    fontWeight: 600,
+                                    color: "var(--color-brand, #c9a84c)",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 700,
                                     cursor: "pointer",
                                     width: "100%"
                                   }}
@@ -1860,7 +1862,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                                       e.currentTarget.value = "";
                                     }}
                                   />
-                                  <span className="material-symbols-outlined" style={{ fontSize: 14 }}>add_a_photo</span>
+                                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>add_a_photo</span>
                                   Add Angle
                                 </label>
                               </div>

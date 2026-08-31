@@ -190,21 +190,31 @@ export async function createOpenAIJewelryAnalysisProvider(
       const images = (imageDataUrls?.length ? imageDataUrls : imageDataUrl ? [imageDataUrl] : []).filter(Boolean);
 
       if (images.length > 0) {
-        const response = await openai.moderations.create({
-          model: "omni-moderation-latest",
-          input: images.map((url) => ({
-            type: "image_url" as const,
-            image_url: { url }
-          }))
-        });
+        // OpenAI omni-moderation-latest supports at most 1 image per request.
+        // Send all images in parallel to check each one.
+        const responses = await Promise.all(
+          images.map((url) =>
+            openai.moderations.create({
+              model: "omni-moderation-latest",
+              input: [
+                {
+                  type: "image_url" as const,
+                  image_url: { url }
+                }
+              ]
+            })
+          )
+        );
 
+        const flagged = responses.some((res) => res.results.some((result) => result.flagged));
+        const firstModel = responses[0]?.model || "omni-moderation-latest";
         return {
-          model: response.model,
-          flagged: response.results.some((result) => result.flagged),
+          model: firstModel,
+          flagged,
           rawResponse: {
-            id: response.id,
-            model: response.model,
-            results: response.results
+            ids: responses.map((r) => r.id),
+            model: firstModel,
+            results: responses.flatMap((r) => r.results)
           }
         };
       }
