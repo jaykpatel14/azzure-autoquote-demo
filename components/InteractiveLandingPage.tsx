@@ -8,7 +8,7 @@ import React, { useEffect, useState } from "react";
 // ============================================================================
 const PRESETS = {
   "oval-solitaire": {
-    label: "Oval Solitaire",
+    label: "Oval Solitaire Ring",
     category: "Ring",
     metal: "18k Yellow Gold",
     centerShape: "Oval",
@@ -46,8 +46,8 @@ const PRESETS = {
     renderImage: "/images/catalog/pear_halo.jpg",
     promptText: "A dramatic 1.8ct pear-cut diamond in 18k rose gold with a celestial halo and cathedral shoulders..."
   },
-  "tennis-bracelet": {
-    label: "Emerald 3-Stone",
+  "emerald-3stone": {
+    label: "Emerald 3-Stone Ring",
     category: "Ring",
     metal: "Platinum",
     centerShape: "Emerald",
@@ -64,26 +64,65 @@ const PRESETS = {
     category: "Pendant",
     metal: "14k Yellow Gold",
     centerShape: "Round",
-    centerCarats: 0.8,
-    sideShape: "Round",
+    centerCarats: 1.2,
+    sideShape: "Baguette",
     sideCount: 84,
-    sideCarats: 0.02,
-    demoPrice: 4200,
-    renderImage: "/images/catalog/oval_solitaire.jpg",
-    promptText: "A multi-layered 3D custom monogram pendant in 14k gold flooded with VVS round brilliant diamonds..."
+    sideCarats: 0.03,
+    demoPrice: 4850,
+    renderImage: "/images/catalog/pendant.jpg",
+    promptText: "A multi-layered 3D custom medallion pendant in 14k gold flooded with VVS round brilliant and baguette diamonds..."
+  },
+  bracelet: {
+    label: "Diamond Tennis Bracelet",
+    category: "Bracelet",
+    metal: "Platinum",
+    centerShape: "Round",
+    centerCarats: 0.15,
+    sideShape: "Round",
+    sideCount: 45,
+    sideCarats: 0.15,
+    demoPrice: 7850,
+    renderImage: "/images/catalog/tennis_bracelet.jpg",
+    promptText: "A classic 4-prong diamond tennis bracelet in platinum with 45 round brilliant VVS diamonds totaling 6.75ct..."
+  },
+  necklace: {
+    label: "Diamond Rivière Necklace",
+    category: "Necklace",
+    metal: "18k White Gold",
+    centerShape: "Round",
+    centerCarats: 1.0,
+    sideShape: "Round",
+    sideCount: 65,
+    sideCarats: 0.12,
+    demoPrice: 12400,
+    renderImage: "/images/catalog/diamond_necklace.jpg",
+    promptText: "A luxury graduated diamond riviere necklace in 18k white gold featuring 65 round brilliant cut diamonds..."
   },
   earrings: {
-    label: "Drop Earrings",
+    label: "Chandelier Drop Earrings",
     category: "Earrings",
     metal: "18k White Gold",
     centerShape: "Pear",
-    centerCarats: 1.2,
+    centerCarats: 1.5,
     sideShape: "Round",
-    sideCount: 36,
-    sideCarats: 0.02,
-    demoPrice: 3100,
-    renderImage: "/images/catalog/pear_halo.jpg",
-    promptText: "Cascading pear-cut diamond drop earrings in 18k white gold with articulating chandelier links..."
+    sideCount: 48,
+    sideCarats: 0.04,
+    demoPrice: 5600,
+    renderImage: "/images/catalog/drop_earrings.jpg",
+    promptText: "Cascading chandelier diamond drop earrings in 18k white gold with articulating pear and brilliant round clusters..."
+  },
+  grillz: {
+    label: "Custom 8-Tooth Diamond Grillz",
+    category: "Grillz",
+    metal: "18k Yellow Gold",
+    centerShape: "Round",
+    centerCarats: 0.05,
+    sideShape: "Baguette",
+    sideCount: 160,
+    sideCarats: 0.03,
+    demoPrice: 6200,
+    renderImage: "/images/catalog/custom_grillz.jpg",
+    promptText: "Custom 8-tooth solid 18k yellow gold grillz encrusted with VVS round pave and baguette diamonds..."
   }
 } as const;
 
@@ -456,7 +495,7 @@ export function InteractiveLandingPage() {
                   ✓ 14-Day Free Trial
                 </span>
                 <span>·</span>
-                <span>No Credit Card Required</span>
+                <span>$0 Due Today (Card Required)</span>
                 <span>·</span>
                 <span style={{ color: "#f5d061" }}>Live Bullion Spot Rates</span>
               </div>
@@ -1438,8 +1477,8 @@ export function InteractiveLandingPage() {
                 a: "Absolutely. You can set custom dollar-per-gram labor rates, stone setting fees by diamond shape and size, and percentage retail profit markups."
               },
               {
-                q: "Is there a free trial?",
-                a: "Yes! Every account includes a risk-free 14-day trial with full feature access so you can test live custom quoting with your actual customers before committing."
+                q: "Is there a free trial? Do I need a credit card?",
+                a: "Yes! Every account starts with a risk-free 14-day trial with full feature access. A valid credit card is entered at signup to verify your workspace, but $0 will be charged during your 14-day trial. You can cancel anytime before day 14 at no cost."
               }
             ].map((item, idx) => {
               const isOpen = openFaq === idx;
@@ -1482,7 +1521,7 @@ export function InteractiveLandingPage() {
             <span>•</span>
             <span>⭐ Cancel Anytime</span>
             <span>•</span>
-            <span>💳 No Credit Card Required</span>
+            <span>💳 14-Day Trial ($0 Deducted Today)</span>
           </div>
         </div>
       </section>
