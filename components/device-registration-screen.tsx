@@ -20,8 +20,19 @@ export default function DeviceRegistrationScreen({
   onRegistered
 }: DeviceRegistrationScreenProps) {
   const [deviceName, setDeviceName] = useState(defaultDeviceName || "Kiosk 1");
+  const [serialNumber, setSerialNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const serial = params.get("serial");
+      if (serial) {
+        setSerialNumber(serial.trim().toUpperCase());
+      }
+    }
+  }, []);
 
   const brandColor = branding?.primaryColor || "#c9a84c";
 
@@ -46,6 +57,7 @@ export default function DeviceRegistrationScreen({
         body: JSON.stringify({
           showroomToken,
           deviceName: trimmed,
+          serialNumber: serialNumber.trim() || undefined,
           platform,
           userAgent: navigator.userAgent
         })
@@ -147,10 +159,45 @@ export default function DeviceRegistrationScreen({
               disabled={submitting}
               style={{
                 width: "100%",
-                minHeight: 72,
-                fontSize: "1.25rem",
+                minHeight: 64,
+                fontSize: "1.15rem",
                 fontWeight: 500,
                 color: "#ffffff",
+                background: "rgba(0, 0, 0, 0.4)",
+                border: "2px solid rgba(255, 255, 255, 0.15)",
+                borderRadius: 14,
+                padding: "0 20px",
+                outline: "none",
+                transition: "border-color 0.2s ease",
+                boxSizing: "border-box"
+              }}
+              onFocus={(e) => (e.target.style.borderColor = brandColor)}
+              onBlur={(e) => (e.target.style.borderColor = "rgba(255, 255, 255, 0.15)")}
+            />
+          </div>
+
+          <div style={{ textAlign: "left" }}>
+            <label
+              htmlFor="serialInput"
+              style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, color: "#cbd5e1", marginBottom: 8 }}
+            >
+              Hardware Serial Number (Optional)
+            </label>
+            <input
+              id="serialInput"
+              type="text"
+              value={serialNumber}
+              onChange={(e) => setSerialNumber(e.target.value.toUpperCase())}
+              placeholder='e.g. "AZQ-2026-00002"'
+              maxLength={20}
+              disabled={submitting}
+              style={{
+                width: "100%",
+                minHeight: 56,
+                fontSize: "1rem",
+                fontWeight: 600,
+                fontFamily: "ui-monospace, SFMono-Regular, monospace",
+                color: "#f8fafc",
                 background: "rgba(0, 0, 0, 0.4)",
                 border: "2px solid rgba(255, 255, 255, 0.15)",
                 borderRadius: 14,

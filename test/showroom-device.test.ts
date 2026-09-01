@@ -122,3 +122,17 @@ describe("Staff PIN Security & Format Validation", () => {
     expect(attempt4.remaining).toBe(0);
   });
 });
+
+describe("Azzure Hardware Serial Normalization", () => {
+  it("normalizes and validates AZQ serial formats", async () => {
+    const { normalizeAzzureSerial, AZZURE_SERIAL_PATTERN } = await import("@/lib/azzure-devices");
+    expect(normalizeAzzureSerial("AZQ-2026-00002")).toBe("AZQ-2026-00002");
+    expect(normalizeAzzureSerial(" azq-2026-00002 ")).toBe("AZQ-2026-00002");
+    expect(normalizeAzzureSerial("AZQ-2026-00147")).toBe("AZQ-2026-00147");
+
+    expect(normalizeAzzureSerial("INVALID")).toBeNull();
+    expect(normalizeAzzureSerial("AZQ-26-0002")).toBeNull();
+    expect(AZZURE_SERIAL_PATTERN.test("AZQ-2026-00002")).toBe(true);
+  });
+});
+

@@ -67,10 +67,17 @@ export default function ShowroomDeviceProvider({
 
     const performHeartbeat = async () => {
       try {
+        const screenResolution = typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : undefined;
         const res = await fetch("/api/showroom/devices/heartbeat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deviceToken, showroomToken })
+          body: JSON.stringify({
+            deviceToken,
+            showroomToken,
+            screenResolution,
+            appVersion: "2.4.0",
+            currentMode: "quoting"
+          })
         });
 
         if (res.status === 401) {
@@ -104,7 +111,7 @@ export default function ShowroomDeviceProvider({
     const timer = setTimeout(() => {
       void performHeartbeat();
     }, 0);
-    const interval = setInterval(performHeartbeat, 2 * 60 * 1000); // every 2 minutes
+    const interval = setInterval(performHeartbeat, 60 * 1000); // every 60 seconds
     return () => {
       clearTimeout(timer);
       clearInterval(interval);

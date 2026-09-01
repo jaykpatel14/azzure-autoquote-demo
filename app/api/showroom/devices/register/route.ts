@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { showroomToken, deviceName, platform, userAgent } = body;
+    const { showroomToken, deviceName, platform, userAgent, serialNumber } = body;
 
     if (!showroomToken || typeof showroomToken !== "string") {
       return NextResponse.json({ error: "Showroom token is required." }, { status: 400 });
@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
       deviceName: typeof deviceName === "string" ? deviceName : undefined,
       platform: typeof platform === "string" ? platform : undefined,
       userAgent: typeof userAgent === "string" ? userAgent : req.headers.get("user-agent"),
-      ip
+      ip,
+      serialNumber: typeof serialNumber === "string" && serialNumber.trim() ? serialNumber.trim() : undefined
     });
 
     if ("error" in result) {

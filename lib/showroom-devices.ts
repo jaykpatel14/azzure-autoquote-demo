@@ -41,6 +41,7 @@ export type RegisterShowroomDeviceInput = {
   platform?: string | null;
   userAgent?: string | null;
   ip?: string | null;
+  serialNumber?: string | null;
 };
 
 export async function registerShowroomDevice(input: RegisterShowroomDeviceInput) {
@@ -76,6 +77,22 @@ export async function registerShowroomDevice(input: RegisterShowroomDeviceInput)
   }
 
   const sanitizedDeviceName = (input.deviceName || "Kiosk").trim().slice(0, 64) || "Kiosk";
+  let azzureSerial = input.serialNumber ? input.serialNumber.trim().toUpperCase() : null;
+
+  // If no serial specified, check if there is an unlinked pre-provisioned AzzureDevice for this company
+  if (!azzureSerial) {
+    const preProvisioned = await prisma.azzureDevice.findFirst({
+      where: {
+        companyId: session.companyId,
+        status: "PRE_PROVISIONED",
+        showroomDeviceId: null
+      },
+      orderBy: { createdAt: "asc" }
+    });
+    if (preProvisioned) {
+      azzureSerial = preProvisioned.serialNumber;
+    }
+  }
 
   const device = await prisma.showroomDevice.create({
     data: {
@@ -85,15 +102,32 @@ export async function registerShowroomDevice(input: RegisterShowroomDeviceInput)
       platform: input.platform || "web",
       userAgent: input.userAgent ? input.userAgent.slice(0, 500) : null,
       lastSeenIp: input.ip || null,
-      isActive: true
+      isActive: true,
+      azzureSerial: azzureSerial || null
     }
   });
+
+  if (azzureSerial) {
+    await prisma.azzureDevice.updateMany({
+      where: {
+        serialNumber: azzureSerial,
+        status: { not: "DEACTIVATED" }
+      },
+      data: {
+        showroomDeviceId: device.id,
+        status: "ACTIVATED",
+        activatedAt: new Date(),
+        companyId: session.companyId
+      }
+    });
+  }
 
   return {
     data: {
       deviceToken: device.deviceToken,
       deviceId: device.id,
-      deviceName: device.deviceName
+      deviceName: device.deviceName,
+      serialNumber: azzureSerial
     },
     status: 200 as const
   };

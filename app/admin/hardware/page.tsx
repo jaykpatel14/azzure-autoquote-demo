@@ -20,7 +20,14 @@ export default async function AdminHardwarePage() {
     listAzzureDevices(),
     prisma.company.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true, slug: true }
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        showroomSession: {
+          select: { token: true, isActive: true }
+        }
+      }
     })
   ]);
 
@@ -41,6 +48,12 @@ export default async function AdminHardwarePage() {
                 lastSeenAt: device.showroomDevice.lastSeenAt.toISOString()
               }
             : null,
+          candidateScreens: device.candidateScreens
+            ? device.candidateScreens.map((s) => ({
+                ...s,
+                lastSeenAt: s.lastSeenAt.toISOString()
+              }))
+            : [],
           createdAt: device.createdAt.toISOString(),
           shippedAt: device.shippedAt ? device.shippedAt.toISOString() : null,
           activatedAt: device.activatedAt ? device.activatedAt.toISOString() : null,

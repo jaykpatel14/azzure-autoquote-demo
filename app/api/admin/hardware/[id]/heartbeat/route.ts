@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getInternalAdminContext } from "@/lib/internal-admin";
-import { prisma } from "@/lib/prisma";
+import { forceHeartbeatAzzureDevice } from "@/lib/azzure-devices";
 
 export const runtime = "nodejs";
 
@@ -12,50 +12,15 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
   try {
     const { id } = await params;
-    const device = await prisma.azzureDevice.findUnique({
-      where: { id },
-      include: {
-        showroomDevice: true
-      }
-    });
-
-    if (!device) {
-      return NextResponse.json({ error: "Device not found." }, { status: 404 });
-    }
-
-    if (!device.showroomDevice) {
-      return NextResponse.json({ error: "No linked showroom screen found." }, { status: 400 });
-    }
-
-    const now = new Date();
-    await prisma.showroomDevice.update({
-      where: { id: device.showroomDevice.id },
-      data: {
-        lastSeenAt: now,
-        isActive: true
-      }
-    });
-
-    if (device.showroomDevice.azzureSerial) {
-      await prisma.azzureDevice.updateMany({
-        where: {
-          serialNumber: device.showroomDevice.azzureSerial,
-          status: { not: "DEACTIVATED" }
-        },
-        data: {
-          status: "ACTIVATED",
-          activatedAt: now,
-          showroomDeviceId: device.showroomDevice.id,
-          companyId: device.companyId
-        }
-      });
-    }
+    const result = await forceHeartbeatAzzureDevice(id);
 
     return NextResponse.json(
       {
         ok: true,
-        lastSeenAt: now.toISOString(),
-        lastSeenIp: device.showroomDevice.lastSeenIp
+        lastSeenAt: result.lastSeenAt,
+        lastSeenIp: result.lastSeenIp,
+        deviceName: result.deviceName,
+        status: result.status
       },
       { status: 200 }
     );

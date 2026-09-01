@@ -212,12 +212,250 @@ export async function deactivateAzzureDevice(deviceId: string) {
   return { ok: true };
 }
 
+export async function linkAzzureDeviceToShowroom(input: {
+  azzureDeviceId: string;
+  showroomDeviceId: string;
+}) {
+  const azzureDevice = await prisma.azzureDevice.findUnique({
+    where: { id: input.azzureDeviceId }
+  });
+  if (!azzureDevice) {
+    throw new Error("Hardware device not found.");
+  }
+
+  const showroomDevice = await prisma.showroomDevice.findUnique({
+    where: { id: input.showroomDeviceId }
+  });
+  if (!showroomDevice) {
+    throw new Error("Showroom screen not found.");
+  }
+
+  const now = new Date();
+  await prisma.$transaction([
+    prisma.showroomDevice.update({
+      where: { id: showroomDevice.id },
+      data: {
+        azzureSerial: azzureDevice.serialNumber,
+        isActive: true,
+        lastSeenAt: now
+      }
+    }),
+    prisma.azzureDevice.update({
+      where: { id: azzureDevice.id },
+      data: {
+        showroomDeviceId: showroomDevice.id,
+        status: "ACTIVATED",
+        activatedAt: azzureDevice.activatedAt || now,
+        companyId: azzureDevice.companyId || showroomDevice.companyId
+      }
+    })
+  ]);
+
+  return { ok: true, serialNumber: azzureDevice.serialNumber, deviceName: showroomDevice.deviceName };
+}
+
+export async function forceHeartbeatAzzureDevice(azzureDeviceId: string) {
+  const device = await prisma.azzureDevice.findUnique({
+    where: { id: azzureDeviceId },
+    include: {
+      showroomDevice: true,
+      company: {
+        include: {
+          showroomSession: true
+        }
+      }
+    }
+  });
+
+  if (!device) {
+    throw new Error("Hardware device not found.");
+  }
+
+  const now = new Date();
+
+  // If already linked to a showroomDevice, refresh it
+  if (device.showroomDevice) {
+    await prisma.showroomDevice.update({
+      where: { id: device.showroomDevice.id },
+      data: {
+        lastSeenAt: now,
+        isActive: true
+      }
+    });
+
+    if (device.status !== "ACTIVATED") {
+      await prisma.azzureDevice.update({
+        where: { id: device.id },
+        data: {
+          status: "ACTIVATED",
+          activatedAt: device.activatedAt || now
+        }
+      });
+    }
+
+    return {
+      ok: true,
+      lastSeenAt: now.toISOString(),
+      lastSeenIp: device.showroomDevice.lastSeenIp,
+      deviceName: device.showroomDevice.deviceName,
+      status: "ACTIVATED"
+    };
+  }
+
+  // If not linked yet, check if there's a showroomDevice with matching serialNumber
+  const matchingBySerial = await prisma.showroomDevice.findFirst({
+    where: {
+      azzureSerial: device.serialNumber
+    }
+  });
+
+  if (matchingBySerial) {
+    await prisma.$transaction([
+      prisma.showroomDevice.update({
+        where: { id: matchingBySerial.id },
+        data: { lastSeenAt: now, isActive: true }
+      }),
+      prisma.azzureDevice.update({
+        where: { id: device.id },
+        data: {
+          showroomDeviceId: matchingBySerial.id,
+          status: "ACTIVATED",
+          activatedAt: device.activatedAt || now,
+          companyId: device.companyId || matchingBySerial.companyId
+        }
+      })
+    ]);
+
+    return {
+      ok: true,
+      lastSeenAt: now.toISOString(),
+      lastSeenIp: matchingBySerial.lastSeenIp,
+      deviceName: matchingBySerial.deviceName,
+      status: "ACTIVATED"
+    };
+  }
+
+  // Check if company has an active unlinked showroomDevice
+  if (device.companyId) {
+    const companyScreen = await prisma.showroomDevice.findFirst({
+      where: {
+        companyId: device.companyId,
+        isActive: true
+      },
+      orderBy: { lastSeenAt: "desc" }
+    });
+
+    if (companyScreen) {
+      await prisma.$transaction([
+        prisma.showroomDevice.update({
+          where: { id: companyScreen.id },
+          data: {
+            azzureSerial: device.serialNumber,
+            lastSeenAt: now,
+            isActive: true
+          }
+        }),
+        prisma.azzureDevice.update({
+          where: { id: device.id },
+          data: {
+            showroomDeviceId: companyScreen.id,
+            status: "ACTIVATED",
+            activatedAt: device.activatedAt || now
+          }
+        })
+      ]);
+
+      return {
+        ok: true,
+        lastSeenAt: now.toISOString(),
+        lastSeenIp: companyScreen.lastSeenIp,
+        deviceName: companyScreen.deviceName,
+        status: "ACTIVATED"
+      };
+    }
+
+    // Auto-create and link a showroom screen record for this pre-provisioned device
+    const session = await getOrCreateShowroomSession(device.companyId);
+    const newScreen = await prisma.showroomDevice.create({
+      data: {
+        companyId: device.companyId,
+        sessionId: session.id,
+        deviceName: device.notes || "Kiosk Screen",
+        platform: "android",
+        azzureSerial: device.serialNumber,
+        lastSeenAt: now,
+        isActive: true
+      }
+    });
+
+    await prisma.azzureDevice.update({
+      where: { id: device.id },
+      data: {
+        showroomDeviceId: newScreen.id,
+        status: "ACTIVATED",
+        activatedAt: now
+      }
+    });
+
+    return {
+      ok: true,
+      lastSeenAt: now.toISOString(),
+      lastSeenIp: null,
+      deviceName: newScreen.deviceName,
+      status: "ACTIVATED"
+    };
+  }
+
+  return {
+    ok: true,
+    lastSeenAt: now.toISOString(),
+    lastSeenIp: null,
+    deviceName: "Unassigned Kiosk",
+    status: device.status
+  };
+}
+
 export async function listAzzureDevices() {
-  return prisma.azzureDevice.findMany({
+  // First, auto-reconcile any AzzureDevice where showroomDeviceId is null but a ShowroomDevice exists with matching azzureSerial
+  try {
+    const unlinkedWithSerial = await prisma.showroomDevice.findMany({
+      where: {
+        azzureSerial: { not: null },
+        azzureDevice: null
+      }
+    });
+
+    for (const sdev of unlinkedWithSerial) {
+      if (sdev.azzureSerial) {
+        await prisma.azzureDevice.updateMany({
+          where: {
+            serialNumber: sdev.azzureSerial,
+            showroomDeviceId: null
+          },
+          data: {
+            showroomDeviceId: sdev.id,
+            status: "ACTIVATED",
+            activatedAt: new Date()
+          }
+        });
+      }
+    }
+  } catch {
+    // Non-blocking auto-reconciliation
+  }
+
+  const devices = await prisma.azzureDevice.findMany({
     orderBy: { createdAt: "desc" },
     include: {
       company: {
-        select: { id: true, name: true, slug: true }
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          showroomSession: {
+            select: { token: true, isActive: true }
+          }
+        }
       },
       showroomDevice: {
         select: {
@@ -225,13 +463,43 @@ export async function listAzzureDevices() {
           deviceName: true,
           lastSeenAt: true,
           lastSeenIp: true,
-          isActive: true
+          isActive: true,
+          deviceToken: true,
+          azzureSerial: true
         }
       }
     }
+  });
+
+  // Fetch unlinked active showroom screens for candidate pairing
+  const unlinkedCandidateScreens = await prisma.showroomDevice.findMany({
+    where: {
+      isActive: true,
+      azzureDevice: null
+    },
+    select: {
+      id: true,
+      companyId: true,
+      deviceName: true,
+      lastSeenAt: true,
+      lastSeenIp: true,
+      platform: true
+    },
+    orderBy: { lastSeenAt: "desc" }
+  });
+
+  return devices.map((dev) => {
+    const candidateScreens = unlinkedCandidateScreens.filter(
+      (s) => s.companyId === dev.companyId
+    );
+    return {
+      ...dev,
+      candidateScreens
+    };
   });
 }
 
 export function buildKioskConfigHash(input: unknown) {
   return createHash("md5").update(JSON.stringify(input)).digest("hex").slice(0, 16);
 }
+

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { prisma } from "@/lib/prisma";
-import { deactivateAzzureDevice } from "@/lib/azzure-devices";
+import { deactivateAzzureDevice, linkAzzureDeviceToShowroom } from "@/lib/azzure-devices";
 
 export const runtime = "nodejs";
 
@@ -44,8 +44,23 @@ export async function PATCH(
       updates.kioskDestination = body.kioskDestination.trim().toUpperCase() || "AI_QUOTE";
     }
 
+    if (typeof body.linkShowroomDeviceId === "string" && body.linkShowroomDeviceId.trim()) {
+      const linkResult = await linkAzzureDeviceToShowroom({
+        azzureDeviceId: id,
+        showroomDeviceId: body.linkShowroomDeviceId.trim()
+      });
+      return NextResponse.json({ ok: true, linked: linkResult }, { status: 200 });
+    }
+
     if (body.deviceType === "KIOSK" || body.deviceType === "PRINTER") {
       updates.deviceType = body.deviceType;
+    }
+
+    if (body.status === "ACTIVATED" || body.status === "PRE_PROVISIONED" || body.status === "DEACTIVATED") {
+      updates.status = body.status;
+      if (body.status === "ACTIVATED") {
+        updates.activatedAt = new Date();
+      }
     }
 
     const device = await prisma.azzureDevice.update({
