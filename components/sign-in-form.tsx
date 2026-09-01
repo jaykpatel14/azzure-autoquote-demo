@@ -191,7 +191,22 @@ export default function SignInForm({
 
         {/* Right Form */}
         <div className="js-signin-panel" style={{ padding: "48px 40px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-          <div style={{ marginBottom: "28px" }}>
+          <div style={{ marginBottom: "20px" }}>
+            <Link
+              href="/"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                color: "#94a3b8",
+                fontSize: "13px",
+                textDecoration: "none",
+                marginBottom: "16px",
+                transition: "color 0.2s"
+              }}
+            >
+              ← Back to Home
+            </Link>
             <span className="js-eyebrow" style={{ display: "block", marginBottom: "6px" }}>Secure Sign In</span>
             <h2 className="js-display" style={{ fontSize: "28px", margin: "0 0 6px", color: "#f8fafc" }}>
               Welcome back

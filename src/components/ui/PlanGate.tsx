@@ -10,7 +10,8 @@ const GATE_COPY: Partial<Record<PlanFeature, { eyebrow: string; title: string; d
   canUseCustomPricingProfile: { eyebrow: "Professional pricing", title: "Use custom markups tailored to your business", description: "Professional lets your company configure custom pricing profiles across every quote.", cta: "Upgrade to Professional" },
   canGenerateAIImages: { eyebrow: "Enterprise 3D rendering", title: "Photorealistic 3D Concept Generation", description: "Enterprise generates studio-grade 3D visual jewelry renders from confirmed specifications.", cta: "Upgrade to Enterprise" },
   canUseShowroomMode: { eyebrow: "Enterprise in-store tablet", title: "In-Store Tablet Kiosk Mode", description: "Enterprise unlocks a branded customer-facing kiosk touchscreen for walk-in consultations.", cta: "Upgrade to Enterprise" },
-  canCustomizeShowroomBranding: { eyebrow: "Enterprise tablet branding", title: "Store logo & custom showroom branding", description: "Enterprise lets you add your custom logo and branding assets across all tablet consultations.", cta: "Upgrade to Enterprise" }
+  canCustomizeShowroomBranding: { eyebrow: "Enterprise tablet branding", title: "Store logo & custom showroom branding", description: "Enterprise lets you add your custom logo and branding assets across all tablet consultations.", cta: "Upgrade to Enterprise" },
+  canAccessLeads: { eyebrow: "Professional & Enterprise CRM", title: "Customer Leads & Inquiries Dashboard", description: "Professional and Enterprise plans include a dedicated Leads CRM with customer contact details, jewelry types, and conversion tracking.", cta: "Upgrade to Professional" }
 };
 
 export async function PlanGate({

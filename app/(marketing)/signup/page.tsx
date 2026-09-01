@@ -199,12 +199,40 @@ function SignUpContent() {
         style={{
           maxWidth: "580px",
           width: "100%",
-          padding: "44px 36px",
+          padding: "36px 36px 44px",
           position: "relative",
           zIndex: 10
         }}
       >
         <div className="js-accent-line" />
+
+        {/* Back Link */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <Link
+            href="/#pricing"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              color: "#94a3b8",
+              fontSize: "13px",
+              textDecoration: "none",
+              transition: "color 0.2s"
+            }}
+          >
+            ← Back to Pricing
+          </Link>
+          <Link
+            href="/"
+            style={{
+              color: "#64748b",
+              fontSize: "12px",
+              textDecoration: "none"
+            }}
+          >
+            Home
+          </Link>
+        </div>
 
         {/* Brand Header */}
         <div style={{ textAlign: "center", marginBottom: "28px" }}>

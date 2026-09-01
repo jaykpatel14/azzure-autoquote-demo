@@ -28,6 +28,7 @@ const PLAN_META = {
     highlights: [
       "1,200 quotes / month",
       "Everything in Starter",
+      "Customer Leads CRM (Phone, Email, Jewelry Type)",
       "Unlimited seats + role-based access",
       "Shareable branded quote links",
       "Custom domain for links (Coming Soon)",
@@ -45,6 +46,7 @@ const PLAN_META = {
     highlights: [
       "2,500 quotes / month",
       "Everything in Professional",
+      "Customer Leads CRM + Showroom capture",
       "Photorealistic 3D concept render",
       "In-store tablet mode (kiosk touchscreen)",
       "Full auto-push to Custom King",
@@ -90,6 +92,15 @@ const FEATURE_CATEGORIES: FeatureCategory[] = [
       { feature: "Real-time spot metal pricing", starter: true, professional: true, enterprise: true },
       { feature: "Branded PDF proposals", starter: "Logo + brand name", professional: "Logo + brand name", enterprise: "Logo + brand name" },
       { feature: "Complete quote history", starter: true, professional: true, enterprise: true }
+    ]
+  },
+  {
+    category: "CRM & Leads Management",
+    items: [
+      { feature: "Customer Leads CRM Dashboard", starter: false, professional: "Full Access", enterprise: "Full Access + Showroom" },
+      { feature: "Customer Contact Capture (Name, Phone, Email)", starter: false, professional: true, enterprise: true },
+      { feature: "Jewelry Type & Spec Tracking", starter: false, professional: true, enterprise: true },
+      { feature: "Showroom Kiosk Lead Capture", starter: false, professional: false, enterprise: true }
     ]
   },
   {

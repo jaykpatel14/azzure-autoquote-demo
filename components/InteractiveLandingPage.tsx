@@ -1371,6 +1371,7 @@ export function InteractiveLandingPage() {
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#94a3b8", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "18px" }}>
                   <li style={{ color: "#f8fafc" }}>✓ <strong>1,200 quotes / month</strong></li>
                   <li style={{ color: "#f8fafc" }}>✓ Everything in Starter</li>
+                  <li style={{ color: "#38bdf8", fontWeight: 600 }}>✓ Customer Leads CRM (Phone, Email, Types)</li>
                   <li>✓ Unlimited staff seats + role access</li>
                   <li>✓ Shareable branded quote links &amp; QR codes</li>
                   <li>✓ Custom pricing markups &amp; formulas</li>
@@ -1379,6 +1380,7 @@ export function InteractiveLandingPage() {
 
                 {expandedCards["pro"] && (
                   <ul style={{ listStyle: "none", padding: 0, marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#94a3b8" }}>
+                    <li>✓ Customer inquiry tracking &amp; history</li>
                     <li>✓ Priority 24/7 support response</li>
                     <li>✓ Multi-photo merge analysis</li>
                   </ul>
@@ -1411,6 +1413,7 @@ export function InteractiveLandingPage() {
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#94a3b8", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "18px" }}>
                   <li style={{ color: "#f8fafc" }}>✓ <strong>2,500 quotes / month</strong></li>
                   <li style={{ color: "#f8fafc" }}>✓ Everything in Professional</li>
+                  <li style={{ color: "#f5d061", fontWeight: "bold" }}>★ Customer Leads CRM + Showroom Capture</li>
                   <li style={{ color: "#f5d061", fontWeight: "bold" }}>★ Photorealistic 3D Concept Renders</li>
                   <li style={{ color: "#f5d061", fontWeight: "bold" }}>★ In-Store Tablet (Kiosk Mode)</li>
                   <li>✓ Full Auto-Push to Custom King / CAD</li>
