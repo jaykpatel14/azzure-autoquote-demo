@@ -7,6 +7,10 @@ import { normalizeShowroomCode } from "@/lib/showroom";
 
 const prismaShowroomQuoteFindManyMock = vi.hoisted(() => vi.fn());
 const prismaShowroomQuoteFindUniqueMock = vi.hoisted(() => vi.fn());
+const prismaShowroomQuoteUpdateMock = vi.hoisted(() => vi.fn());
+const prismaQuoteUpdateMock = vi.hoisted(() => vi.fn());
+const prismaAiAnalysisUpdateMock = vi.hoisted(() => vi.fn());
+const prismaCompanyFindUniqueMock = vi.hoisted(() => vi.fn());
 const loadAnalysisImageDataUrlFromS3Mock = vi.hoisted(() => vi.fn());
 const loadQuoteRenderingDataUrlFromS3Mock = vi.hoisted(() => vi.fn());
 
@@ -14,7 +18,20 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     showroomQuote: {
       findMany: prismaShowroomQuoteFindManyMock,
-      findUnique: prismaShowroomQuoteFindUniqueMock
+      findUnique: prismaShowroomQuoteFindUniqueMock,
+      update: prismaShowroomQuoteUpdateMock
+    },
+    quote: {
+      update: prismaQuoteUpdateMock
+    },
+    aiAnalysis: {
+      update: prismaAiAnalysisUpdateMock
+    },
+    company: {
+      findUnique: prismaCompanyFindUniqueMock
+    },
+    appSetting: {
+      findUnique: vi.fn().mockResolvedValue(null)
     }
   }
 }));
@@ -23,6 +40,32 @@ vi.mock("@/lib/quote-pdf-s3", () => ({
   loadAnalysisImageDataUrlFromS3: loadAnalysisImageDataUrlFromS3Mock,
   loadQuoteRenderingDataUrlFromS3: loadQuoteRenderingDataUrlFromS3Mock
 }));
+
+vi.mock("@/lib/metal-pricing", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/metal-pricing")>();
+  return {
+    ...actual,
+    resolveMetalPricing: vi.fn().mockResolvedValue({
+      source: "company_custom",
+      pricingProfile: {
+        goldSpotPerOz: 4500,
+        platinumSpotPerOz: 2000,
+        silverSpotPerOz: 300,
+        cadCharge: 25,
+        centerSettingPerCarat: 20,
+        sideSettingPerStone: 3,
+        sellingMarginDivisor: 0.7,
+        finalMultiplier: 2,
+        platinumLaborPct: 40,
+        goldWastagePct: 25,
+        roundSideSettingPerStone: 1.25,
+        fancySideSettingPerStone: 5,
+        waxPerPiece: 10,
+        polishingPerPiece: 15
+      }
+    })
+  };
+});
 
 describe("Showroom Code Normalization", () => {
   it("formats short and unformatted codes to canonical QT-XXXX", () => {
@@ -170,4 +213,40 @@ describe("Staff Quote Lookup & Data Sanitization", () => {
     const foreignQuote = await getStaffQuoteDetail("other_comp", "QT-4821");
     expect(foreignQuote).toBeNull();
   });
+
+  it("recalculates making price breakdown and updates quote when staff updates specs", async () => {
+    const { updateStaffQuote } = await import("@/lib/showroom-staff");
+    prismaCompanyFindUniqueMock.mockResolvedValue({
+      accountStatus: "ACTIVE",
+      pricingTier: "TIER_2",
+      subscription: {
+        status: "ACTIVE",
+        plan: { id: "plan_enterprise", code: "enterprise" }
+      }
+    });
+    prismaQuoteUpdateMock.mockResolvedValue({ id: "q_1" });
+    prismaAiAnalysisUpdateMock.mockResolvedValue({ id: "analysis_1" });
+    prismaShowroomQuoteUpdateMock.mockResolvedValue({ id: "sq_1" });
+
+    await updateStaffQuote("comp_123", "QT-4821", {
+      metalType: "Platinum",
+      metalWeightGrams: 6.0,
+      centerCarats: 2.0,
+      centerShape: "Round",
+      sideCarats: 0.5,
+      sideDiamondQuantity: 10,
+      customerNotes: "Customer requested platinum upgrade"
+    });
+
+    expect(prismaQuoteUpdateMock).toHaveBeenCalled();
+    const updateArgs = prismaQuoteUpdateMock.mock.calls[0][0];
+    expect(updateArgs.data.metalType).toBe("Platinum");
+    expect(updateArgs.data.metalWeightGrams).toBe(6.0);
+    expect(updateArgs.data.centerDiamondCarats).toBe(2.0);
+    expect(updateArgs.data.makingPriceBreakdown).toBeDefined();
+    expect(updateArgs.data.makingPriceBreakdown.subtotal).toBeGreaterThan(0);
+    expect(updateArgs.data.makingPriceBreakdown.makingPrice).toBeGreaterThan(0);
+    expect(updateArgs.data.makingPriceBreakdown.metalCost).toBeGreaterThan(0);
+  });
 });
+

@@ -140,6 +140,19 @@ function getLifecycleLabel(device: HardwareDevice) {
   return "Pre-provisioned";
 }
 
+function computeNextSerial(deviceList: HardwareDevice[]) {
+  const year = new Date().getFullYear();
+  const prefix = `AZQ-${year}-`;
+  const serialNumbers = deviceList
+    .map((d) => d.serialNumber)
+    .filter((s) => s.startsWith(prefix))
+    .map((s) => Number.parseInt(s.split("-")[2] || "0", 10))
+    .filter((n) => !Number.isNaN(n));
+
+  const maxNum = serialNumbers.length > 0 ? Math.max(...serialNumbers) : 0;
+  return `${prefix}${String(maxNum + 1).padStart(5, "0")}`;
+}
+
 export default function AdminHardwarePanel({
   initialDevices,
   companies
@@ -148,7 +161,7 @@ export default function AdminHardwarePanel({
   companies: HardwareCompany[];
 }) {
   const [devices, setDevices] = useState(initialDevices);
-  const [serialNumber, setSerialNumber] = useState("");
+  const [serialNumber, setSerialNumber] = useState(() => computeNextSerial(initialDevices));
   const [deviceType, setDeviceType] = useState<"KIOSK" | "PRINTER">("KIOSK");
   const [companyId, setCompanyId] = useState("");
   const [orderId, setOrderId] = useState("");
@@ -167,20 +180,6 @@ export default function AdminHardwarePanel({
   const companyLabel = useMemo(() => {
     return (id: string | null) => (id ? companyMap.get(id)?.name || "Unassigned" : "Unassigned");
   }, [companyMap]);
-
-  // Suggest next serial on initial load
-  useEffect(() => {
-    const year = new Date().getFullYear();
-    const prefix = `AZQ-${year}-`;
-    const serialNumbers = devices
-      .map((d) => d.serialNumber)
-      .filter((s) => s.startsWith(prefix))
-      .map((s) => Number.parseInt(s.split("-")[2] || "0", 10))
-      .filter((n) => !Number.isNaN(n));
-
-    const maxNum = serialNumbers.length > 0 ? Math.max(...serialNumbers) : 0;
-    setSerialNumber(`${prefix}${String(maxNum + 1).padStart(5, "0")}`);
-  }, [devices]);
 
   async function refreshDevices() {
     try {
@@ -233,7 +232,11 @@ export default function AdminHardwarePanel({
         throw new Error(data?.error || "Unable to register device.");
       }
 
-      setDevices((current) => [data.device, ...current]);
+      setDevices((current) => {
+        const nextList = [data.device, ...current];
+        setSerialNumber(computeNextSerial(nextList));
+        return nextList;
+      });
       setCompanyId("");
       setOrderId("");
       setNotes("");

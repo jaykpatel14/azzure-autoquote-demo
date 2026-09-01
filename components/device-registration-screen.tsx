@@ -20,19 +20,18 @@ export default function DeviceRegistrationScreen({
   onRegistered
 }: DeviceRegistrationScreenProps) {
   const [deviceName, setDeviceName] = useState(defaultDeviceName || "Kiosk 1");
-  const [serialNumber, setSerialNumber] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
+  const [serialNumber, setSerialNumber] = useState<string>(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const serial = params.get("serial");
       if (serial) {
-        setSerialNumber(serial.trim().toUpperCase());
+        return serial.trim().toUpperCase();
       }
     }
-  }, []);
+    return "";
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const brandColor = branding?.primaryColor || "#c9a84c";
 

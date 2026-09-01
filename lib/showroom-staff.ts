@@ -1,9 +1,13 @@
 import { randomUUID } from "node:crypto";
+import type { Prisma, PricingTier } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { checkRateLimit, clearRateLimitState } from "@/lib/rate-limit";
 import { normalizeShowroomCode } from "@/lib/showroom";
-import { toPricingProfileInput } from "@/lib/metal-pricing";
+import { resolveMetalPricing, normalizePricingProfile, toPricingProfileInput } from "@/lib/metal-pricing";
+import { calculateMakingPrice, calculateTierPrice, DEFAULT_COLOR_CLARITY } from "@/src/services/pricing";
+import { getSettingValue } from "@/lib/app-settings";
+import { getCompanyPlanFeatures } from "@/src/stripe/plans";
 import {
   loadAnalysisImageDataUrlFromS3,
   loadQuoteRenderingDataUrlFromS3
@@ -342,7 +346,12 @@ export async function updateStaffQuote(
     include: {
       quote: {
         include: {
-          analysis: true
+          analysis: true,
+          company: {
+            include: {
+              pricingProfile: true
+            }
+          }
         }
       }
     }
@@ -350,37 +359,132 @@ export async function updateStaffQuote(
 
   if (!showroomQuote) return null;
 
-  const quoteId = showroomQuote.quoteId;
+  const quote = showroomQuote.quote;
+  const company = quote.company;
+  const analysis = quote.analysis;
+  const quoteId = quote.id;
 
-  // Update Quote record
-  const quoteData: any = {};
-  if (updates.customerName !== undefined) quoteData.customerName = updates.customerName || null;
-  if (updates.customerEmail !== undefined) quoteData.customerEmail = updates.customerEmail || null;
-  if (updates.customerPhone !== undefined) quoteData.customerPhone = updates.customerPhone || null;
-  if (updates.metalType !== undefined) quoteData.metalType = updates.metalType;
-  if (updates.metalWeightGrams !== undefined) quoteData.metalWeightGrams = updates.metalWeightGrams;
-  if (updates.centerCarats !== undefined) quoteData.centerDiamondCarats = updates.centerCarats;
-  if (updates.sideCarats !== undefined) quoteData.sideDiamondCarats = updates.sideCarats;
-  if (updates.sideDiamondQuantity !== undefined) quoteData.sideDiamondQuantity = updates.sideDiamondQuantity;
-  if (updates.centerClarity !== undefined) quoteData.colorClarity = updates.centerClarity;
-  if (updates.estimatedPrice !== undefined) {
-    quoteData.estimatedPrice = updates.estimatedPrice;
-    quoteData.estimatedSellingPrice = updates.estimatedPrice;
-  }
-  if (updates.customerNotes !== undefined) quoteData.notes = updates.customerNotes || null;
+  // Resolve updated specifications with fallbacks to current quote
+  const resolvedCustomerName = updates.customerName !== undefined ? updates.customerName || null : quote.customerName;
+  const resolvedCustomerEmail = updates.customerEmail !== undefined ? updates.customerEmail || null : quote.customerEmail;
+  const resolvedCustomerPhone = updates.customerPhone !== undefined ? updates.customerPhone || null : quote.customerPhone;
+  const resolvedMetalType = updates.metalType !== undefined ? updates.metalType : quote.metalType;
+  const resolvedMetalWeightGrams = updates.metalWeightGrams !== undefined ? updates.metalWeightGrams : Number(quote.metalWeightGrams);
+  const resolvedCenterCarats = updates.centerCarats !== undefined ? updates.centerCarats : Number(quote.centerDiamondCarats);
+  const resolvedSideCarats = updates.sideCarats !== undefined ? updates.sideCarats : Number(quote.sideDiamondCarats);
+  const resolvedSideDiamondQuantity = updates.sideDiamondQuantity !== undefined ? updates.sideDiamondQuantity : quote.sideDiamondQuantity;
+  const resolvedCenterClarity = updates.centerClarity !== undefined ? updates.centerClarity : quote.colorClarity;
+  const resolvedCenterShape = updates.centerShape !== undefined ? updates.centerShape : analysis?.centerShape || "Round";
+  const resolvedSettingType = updates.settingType !== undefined ? updates.settingType : analysis?.settingType || "Prong";
+  const resolvedNotes = updates.customerNotes !== undefined ? updates.customerNotes || null : quote.notes;
 
-  await prisma.quote.update({
-    where: { id: quoteId },
-    data: quoteData
+  // Resolve company plan features & live pricing profile
+  const { features } = await getCompanyPlanFeatures(companyId);
+  const baseProfile = company?.pricingProfile
+    ? normalizePricingProfile({
+        goldSpotPerOz: Number(company.pricingProfile.goldSpotPerOz),
+        platinumSpotPerOz: Number(company.pricingProfile.platinumSpotPerOz),
+        silverSpotPerOz: Number(company.pricingProfile.silverSpotPerOz),
+        cadCharge: Number(company.pricingProfile.cadCharge),
+        centerSettingPerCarat: Number(company.pricingProfile.centerSettingPerCarat),
+        sideSettingPerStone: Number(company.pricingProfile.sideSettingPerStone),
+        sellingMarginDivisor: Number(company.pricingProfile.sellingMarginDivisor),
+        finalMultiplier: Number(company.pricingProfile.finalMultiplier)
+      })
+    : undefined;
+  const livePricing = await resolveMetalPricing(features.canUseCustomPricingProfile ? baseProfile : null);
+
+  const rawCadCost = await getSettingValue("cad_cost_per_quote");
+  const cadCost = rawCadCost !== undefined && rawCadCost !== null && Number(rawCadCost) > 0
+    ? Number(rawCadCost)
+    : Number(livePricing.pricingProfile.cadCharge ?? 20);
+
+  const customerMarginPct = Number(company?.customerMarginPct ?? 0);
+  const pricingTier = (quote.pricingTierSnapshot as PricingTier) || company?.pricingTier || "TIER_2";
+
+  const detectedSideShape = (resolvedCenterShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(resolvedCenterShape.toLowerCase()) && resolvedSideDiamondQuantity <= 4)
+    ? "fancy"
+    : "round";
+
+  const sideStones = resolvedSideDiamondQuantity > 0 && resolvedSideCarats > 0
+    ? [{
+        shape: detectedSideShape,
+        caratWeightEach: resolvedSideCarats / resolvedSideDiamondQuantity,
+        count: resolvedSideDiamondQuantity,
+        settingType: resolvedSettingType
+      }]
+    : [];
+
+  const making = calculateMakingPrice({
+    pricingProfile: livePricing.pricingProfile,
+    metalType: resolvedMetalType,
+    metalWeightGrams: resolvedMetalWeightGrams,
+    goldSpotPerOz: Number(livePricing.pricingProfile.goldSpotPerOz),
+    platinumSpotPerOz: Number(livePricing.pricingProfile.platinumSpotPerOz),
+    silverSpotPerOz: Number(livePricing.pricingProfile.silverSpotPerOz),
+    centerStone: {
+      shape: (resolvedCenterShape && resolvedCenterShape.toLowerCase() !== "none") ? resolvedCenterShape : "Round",
+      caratWeight: Math.max(resolvedCenterCarats, 0)
+    },
+    sideStones,
+    hasWeddingBand: false,
+    isTwoTone: false,
+    colorClarity: resolvedCenterClarity,
+    cadCost,
+    pricingTier,
+    customerMarginPct
   });
 
-  // Update Analysis if centerShape or settingType changed
-  if (showroomQuote.quote.analysisId && (updates.centerShape !== undefined || updates.settingType !== undefined)) {
+  const tier = calculateTierPrice(making.subtotal, pricingTier, customerMarginPct);
+  const calculatedEstimatedPrice = tier.estimatedSellingPrice;
+  const finalPrice = updates.estimatedPrice !== undefined && updates.estimatedPrice > 0
+    ? updates.estimatedPrice
+    : calculatedEstimatedPrice;
+
+  // If manual price override was specified, update makingPriceBreakdown to match
+  if (updates.estimatedPrice !== undefined && updates.estimatedPrice > 0) {
+    making.estimatedSellingPrice = updates.estimatedPrice;
+  }
+
+  // Update Quote record with fresh specifications, recalculation, and breakdown
+  await prisma.quote.update({
+    where: { id: quoteId },
+    data: {
+      customerName: resolvedCustomerName,
+      customerEmail: resolvedCustomerEmail,
+      customerPhone: resolvedCustomerPhone,
+      metalType: resolvedMetalType,
+      metalWeightGrams: resolvedMetalWeightGrams,
+      centerDiamondCarats: resolvedCenterCarats,
+      sideDiamondCarats: resolvedSideCarats,
+      sideDiamondQuantity: resolvedSideDiamondQuantity,
+      colorClarity: resolvedCenterClarity,
+      notes: resolvedNotes,
+      estimatedPrice: finalPrice,
+      estimatedSellingPrice: finalPrice,
+      makingPrice: making.makingPrice,
+      makingPriceBreakdown: making as unknown as Prisma.InputJsonValue,
+      customerMarginPct: making.customerMarginPct,
+      customerMarginAmount: making.customerMarginAmount,
+      cadCost: making.cadCost,
+      pricingTierSnapshot: tier.tier,
+      tierDivisorSnapshot: tier.divisor
+    }
+  });
+
+  // Update Analysis if attached
+  if (quote.analysisId) {
     await prisma.aiAnalysis.update({
-      where: { id: showroomQuote.quote.analysisId },
+      where: { id: quote.analysisId },
       data: {
-        ...(updates.centerShape !== undefined ? { centerShape: updates.centerShape } : {}),
-        ...(updates.settingType !== undefined ? { settingType: updates.settingType } : {})
+        selectedMetal: resolvedMetalType,
+        metalWeightGrams: resolvedMetalWeightGrams,
+        centerDiamondCarats: resolvedCenterCarats,
+        sideDiamondCarats: resolvedSideCarats,
+        sideDiamondQuantity: resolvedSideDiamondQuantity,
+        centerShape: resolvedCenterShape,
+        centerClarity: resolvedCenterClarity,
+        settingType: resolvedSettingType
       }
     }).catch(() => null);
   }
@@ -391,10 +495,24 @@ export async function updateStaffQuote(
   if (updates.jewelerNotes !== undefined) showroomData.jewelerNotes = updates.jewelerNotes || null;
   if (updates.status !== undefined) showroomData.status = updates.status;
 
-  await prisma.showroomQuote.update({
-    where: { id: showroomQuote.id },
-    data: showroomData
-  });
+  if (Object.keys(showroomData).length > 0) {
+    await prisma.showroomQuote.update({
+      where: { id: showroomQuote.id },
+      data: showroomData
+    });
+  }
+
+  // Regenerate stored PDF proposal in the background
+  try {
+    const { generateAndStoreQuotePdf } = await import("@/src/services/quote-pdf");
+    await generateAndStoreQuotePdf({
+      quoteId,
+      companyId,
+      customerNameFallback: resolvedCustomerName
+    });
+  } catch {
+    // Non-fatal
+  }
 
   return getStaffQuoteDetail(companyId, normalizedCode);
 }

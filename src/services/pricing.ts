@@ -241,11 +241,13 @@ export function calculateMetalCost(
 export function calculateMakingPrice(
   input: MakingPriceInput
 ): MakingPriceBreakdown {
-  const cadCost = input.cadCost !== undefined && input.cadCost !== null && !isNaN(input.cadCost) && input.cadCost > 0 ? input.cadCost : 20;
+  const pricing = { ...DEFAULT_PRICING_PROFILE, ...(input.pricingProfile ?? {}) };
+  const cadCost = input.cadCost !== undefined && input.cadCost !== null && !isNaN(input.cadCost)
+    ? input.cadCost
+    : (input.pricingProfile?.cadCharge !== undefined ? Number(input.pricingProfile.cadCharge) : 20);
   const customerMarginPct = input.customerMarginPct ?? 0;
   const pricingTier = input.pricingTier ?? "TIER_2";
   const tierDivisor = TIER_DIVISORS[pricingTier] ?? 0.7;
-  const pricing = { ...DEFAULT_PRICING_PROFILE, ...(input.pricingProfile ?? {}) };
 
   // Validate inputs
   if (input.centerStone.caratWeight < 0) {

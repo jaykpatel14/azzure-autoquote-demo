@@ -69,10 +69,18 @@ export async function POST(request: Request) {
     const rawCadCost = await getSettingValue("cad_cost_per_quote");
     const cadCost = rawCadCost !== undefined && rawCadCost !== null && Number(rawCadCost) > 0 ? Number(rawCadCost) : 20;
     const margin = session.company.customerMarginPct ?? 0;
-    const detectedSideShape = (input.centerShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(input.centerShape.toLowerCase()) && input.sideDiamondQuantity <= 4)
+    const resolvedCenterShape = (input.centerShape && input.centerShape.toLowerCase() !== "none") ? input.centerShape : "round";
+    const detectedSideShape = (resolvedCenterShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(resolvedCenterShape.toLowerCase()) && input.sideDiamondQuantity <= 4)
       ? "fancy"
       : "round";
-    const sideStones = input.sideDiamondQuantity ? [{ shape: detectedSideShape, caratWeightEach: resolvedSideCarats / input.sideDiamondQuantity, count: input.sideDiamondQuantity, settingType: input.settingType || "prong" }] : [];
+    const sideStones = (input.sideDiamondQuantity > 0 && resolvedSideCarats > 0)
+      ? [{
+          shape: detectedSideShape,
+          caratWeightEach: resolvedSideCarats / input.sideDiamondQuantity,
+          count: input.sideDiamondQuantity,
+          settingType: input.settingType || "prong"
+        }]
+      : [];
     if (!session.company.pricingTier) throw new Error("Pricing is not configured.");
 
     const { features } = await getCompanyPlanFeatures(session.companyId);
@@ -91,17 +99,21 @@ export async function POST(request: Request) {
     const livePricing = await resolveMetalPricing(features.canUseCustomPricingProfile ? baseProfile : null);
 
     const making = calculateMakingPrice({
+      pricingProfile: livePricing.pricingProfile,
       metalType: resolvedMetal,
       metalWeightGrams: input.metalWeightGrams,
       goldSpotPerOz: Number(livePricing.pricingProfile.goldSpotPerOz),
       platinumSpotPerOz: Number(livePricing.pricingProfile.platinumSpotPerOz),
       silverSpotPerOz: Number(livePricing.pricingProfile.silverSpotPerOz),
-      centerStone: { shape: input.centerShape || "round", caratWeight: Math.max(resolvedCenterCarats, 0.0001) },
+      centerStone: {
+        shape: resolvedCenterShape,
+        caratWeight: Math.max(resolvedCenterCarats, 0)
+      },
       sideStones,
       hasWeddingBand: Boolean(input.hasWeddingBand),
       isTwoTone: Boolean(input.isTwoTone),
       colorClarity: "E VS1",
-      cadCost,
+      cadCost: cadCost && cadCost > 0 ? cadCost : Number(livePricing.pricingProfile.cadCharge ?? 20),
       pricingTier: session.company.pricingTier,
       customerMarginPct: margin
     });
