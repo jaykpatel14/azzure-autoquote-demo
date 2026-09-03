@@ -90,6 +90,7 @@ export default async function NewQuotePage({ searchParams }: NewQuotePageProps) 
         canEdit={canEdit}
         companyName={context.company.name}
         companyLogoUrl={context.company.logoUrl}
+        defaultCurrency={(context.company.currency as "USD" | "CAD") ?? "USD"}
         pricingTier={context.company.pricingTier ?? "TIER_2"}
         customerMarginPct={context.company.customerMarginPct ?? 0}
         cadCost={(await getSettingValue("cad_cost_per_quote")) ?? 0}

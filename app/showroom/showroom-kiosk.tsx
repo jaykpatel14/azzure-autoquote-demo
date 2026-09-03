@@ -19,7 +19,7 @@ import { CurrencySelector } from "@/components/currency-selector";
 import { formatMoneyWithFx, type SupportedCurrency } from "@/lib/currency";
 
 type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; backgroundColor: string | null; backgroundMediaUrl: string | null; backgroundMediaType: string | null; overlayColor: string | null; overlayOpacity: number | null; textColor: string | null; backgroundFit: string | null; backgroundPosition: string | null; panelOpacity: number | null; aboutUs: string | null; marketingImages: string[] };
-type Pricing = { cadCost: number; customerMarginPct: number; pricingTier: PricingTier | null; pricingProfile: PricingProfileInput };
+type Pricing = { cadCost: number; customerMarginPct: number; pricingTier: PricingTier | null; pricingProfile: PricingProfileInput; defaultCurrency?: SupportedCurrency };
 type AccentStoneEstimate = {
   tier: "commercial";
   caratWeightEach: number;
@@ -228,7 +228,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     } as CSSProperties;
   }, [branding]);
 
-  const [currency, setCurrency] = useState<SupportedCurrency>("USD");
+  const [currency, setCurrency] = useState<SupportedCurrency>(pricing.defaultCurrency || "USD");
   const [started, setStarted] = useState(false);
   const [slotFiles, setSlotFiles] = useState<Record<AngleSlotKey, File | null>>({
     top_face: null,

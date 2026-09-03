@@ -65,6 +65,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                   company: {
                     select: {
                       name: true,
+                      currency: true,
                       accountStatus: true,
                       pricingTier: true,
                       ckCustomerVerified: true,
@@ -134,6 +135,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           planId: user.memberships[0]?.company.subscription?.planId ?? "plan_starter",
           accountStatus: user.memberships[0]?.company.accountStatus ?? (isAdmin ? "APPROVED" : "PENDING_APPROVAL"),
           pricingTier: user.memberships[0]?.company.pricingTier ?? null,
+          currency: (user.memberships[0]?.company.currency as "USD" | "CAD") ?? "USD",
           ckCustomerVerified: user.memberships[0]?.company.ckCustomerVerified ?? false
         };
       }
@@ -153,6 +155,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           : (isAdmin ? "SUPER_ADMIN" : null);
         token.companyId = isAdmin ? "" : ("companyId" in user && typeof user.companyId === "string" ? user.companyId : "");
         token.companyName = isAdmin ? "" : ("companyName" in user && typeof user.companyName === "string" ? user.companyName : "");
+        token.currency = "currency" in user && typeof user.currency === "string" ? (user.currency as "USD" | "CAD") : "USD";
         token.planId =
           "planId" in user && typeof user.planId === "string"
             ? (user.planId as "plan_starter" | "plan_professional" | "plan_enterprise" | "plan_ultra")
@@ -186,6 +189,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.adminRole = (token.adminRole as "SUPER_ADMIN" | "OPERATIONS_MANAGER" | "ESTIMATOR_ADMIN" | "SUPPORT_ADMIN" | "SALESMAN" | null) ?? null;
         session.user.companyId = typeof token.companyId === "string" ? token.companyId : "";
         session.user.companyName = typeof token.companyName === "string" ? token.companyName : "";
+        session.user.currency = (token.currency as "USD" | "CAD") ?? "USD";
         session.user.planId =
           typeof token.planId === "string"
             ? (token.planId as "plan_starter" | "plan_professional" | "plan_enterprise" | "plan_ultra")

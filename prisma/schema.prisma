@@ -85,6 +85,7 @@ model Company {
   logoUrl                     String?
   websiteUrl                  String?
   aboutUs                     String?
+  currency                    String           @default("USD")
   primaryColor                String?
   showroomBackgroundColor     String?
   showroomBackgroundMediaKey  String?

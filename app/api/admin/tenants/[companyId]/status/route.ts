@@ -15,6 +15,7 @@ const paramsSchema = z.object({
 const bodySchema = z.object({
   accountStatus: z.enum(["APPROVED", "SUSPENDED"]),
   pricingTier: z.enum(["TIER_1", "TIER_2", "TIER_3"]).optional(),
+  currency: z.enum(["USD", "CAD"]).optional(),
   ckCustomerVerified: z.enum(["true", "false"]).optional(),
   ckCustomerNotes: z.string().trim().max(500).optional(),
   adminNotes: z.string().trim().max(1000).optional(),
@@ -41,6 +42,7 @@ export async function POST(request: Request, context: RouteContext) {
     const parsedBody = bodySchema.safeParse({
       accountStatus: String(formData.get("accountStatus") || ""),
       pricingTier: String(formData.get("pricingTier") || "") || undefined,
+      currency: String(formData.get("currency") || "") || undefined,
       ckCustomerVerified: String(formData.get("ckCustomerVerified") || "") || undefined,
       ckCustomerNotes: String(formData.get("ckCustomerNotes") || "") || undefined,
       adminNotes: String(formData.get("adminNotes") || "") || undefined,
@@ -99,6 +101,7 @@ export async function POST(request: Request, context: RouteContext) {
       data: {
         accountStatus: parsedBody.data.accountStatus,
         pricingTier: nextTier,
+        currency: parsedBody.data.currency ?? company.currency,
         approvedAt: parsedBody.data.accountStatus === "APPROVED" ? now : company.approvedAt,
         approvedBy: parsedBody.data.accountStatus === "APPROVED" ? admin.user.id : company.approvedBy,
         tierChangedAt: previousTier !== nextTier ? now : company.tierChangedAt,
@@ -134,7 +137,8 @@ export async function POST(request: Request, context: RouteContext) {
         targetId: company.id,
         metadata: {
           companyName: company.name,
-          pricingTier: approvedTier
+          pricingTier: approvedTier,
+          currency: updated.currency
         }
       });
 

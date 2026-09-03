@@ -156,7 +156,8 @@ export default async function ShowroomPage({ searchParams }: { searchParams: Pro
           cadCost,
           customerMarginPct: session.company.customerMarginPct ?? 0,
           pricingTier: session.company.pricingTier,
-          pricingProfile: livePricing.pricingProfile
+          pricingProfile: livePricing.pricingProfile,
+          defaultCurrency: (session.company.currency as "USD" | "CAD") ?? "USD"
         }}
       />
     </ShowroomDeviceProvider>

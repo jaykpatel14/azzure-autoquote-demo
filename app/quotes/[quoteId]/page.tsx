@@ -195,6 +195,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
             price={Number(quote.estimatedSellingPrice ?? quote.estimatedPrice)}
             costBreakdown={costBreakdown}
             canSeeFullPricing={canSeeFullPricing(context.membership?.role)}
+            defaultCurrency={(context.company.currency as "USD" | "CAD") ?? "USD"}
           />
 
           <div className="quoteDetailActions">

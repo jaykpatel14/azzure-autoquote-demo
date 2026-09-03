@@ -103,6 +103,7 @@ type QuoteCalculatorProps = {
   assignedCompanyId?: string | null;
   showAllTiers?: boolean;
   companyLogoUrl?: string | null;
+  defaultCurrency?: SupportedCurrency;
   canShareQuoteLink?: boolean;
   canPlaceManufacturingOrder?: boolean;
   canDownloadPdf?: boolean;
@@ -298,13 +299,14 @@ export default function QuoteCalculator({
   companyName,
   companyLogoUrl,
   assignedCompanyId,
+  defaultCurrency = "USD",
   showAllTiers = false,
   canShareQuoteLink = false,
   canPlaceManufacturingOrder = false,
   canDownloadPdf = false
 }: QuoteCalculatorProps) {
 
-  const [currency, setCurrency] = useState<SupportedCurrency>("USD");
+  const [currency, setCurrency] = useState<SupportedCurrency>(defaultCurrency);
   const [metalType, setMetalType] = useState<MetalType>(initialQuote?.metalType ?? "14K");
   const [quoteMode, setQuoteMode] = useState<QuoteMode>("normal");
   const [customerName, setCustomerName] = useState(initialQuote?.customerName ?? "");

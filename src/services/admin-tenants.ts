@@ -14,6 +14,7 @@ type AdminTenantListCompany = {
   id: string;
   name: string;
   slug: string;
+  currency: string;
   accountStatus: string;
   pricingTier: string | null;
   ckCustomerVerified: boolean;

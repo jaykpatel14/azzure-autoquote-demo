@@ -10,14 +10,16 @@ type QuoteDetailPriceViewProps = {
   price: number;
   costBreakdown: MakingPriceBreakdown | null;
   canSeeFullPricing: boolean;
+  defaultCurrency?: SupportedCurrency;
 };
 
 export function QuoteDetailPriceView({
   price,
   costBreakdown,
-  canSeeFullPricing: allowFullPricing
+  canSeeFullPricing: allowFullPricing,
+  defaultCurrency = "USD"
 }: QuoteDetailPriceViewProps) {
-  const [currency, setCurrency] = useState<SupportedCurrency>("USD");
+  const [currency, setCurrency] = useState<SupportedCurrency>(defaultCurrency);
 
   return (
     <div>

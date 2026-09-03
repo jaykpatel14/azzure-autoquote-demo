@@ -31,6 +31,7 @@ type AdminMemberInput = {
 type AdminCompanyInput = AdminMemberInput & {
   companyName: string;
   companySlug?: string | null;
+  currency?: "USD" | "CAD";
   accountStatus?: "PENDING_APPROVAL" | "APPROVED" | "SUSPENDED";
   pricingTier?: "TIER_1" | "TIER_2" | "TIER_3" | null;
   planCode?: "starter" | "professional" | "enterprise";
@@ -163,6 +164,7 @@ export async function createAdminCompanyWithMember(
     data: {
       name: input.companyName.trim(),
       slug: companySlug,
+      currency: input.currency ?? "USD",
       quoteSequence: 0,
       quotePrefix,
       accountStatus,

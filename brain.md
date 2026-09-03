@@ -392,3 +392,8 @@ This document logs every key architectural, design, and calculation decision mad
   4. `proxy.ts` lacked an `AZZURE_ADMIN` bypass in `applyAccountAccessControl`.
   Fixing these ensures platform admins always receive the `AZZURE_ADMIN` role and are routed directly to the admin dashboard (`/admin`) upon sign-in.
 
+## Admin Currency Assignment on Customer Approval (2026-09-03)
+
+- **Decision 53**: Store the operating & display currency (`USD` or `CAD`) directly on the `Company` record in Prisma, allow administrators to assign it during approval (`/admin/tenants/pending`) or tenant edit (`/admin/tenants/[companyId]` & `/admin/companies/new`), and propagate it to all jeweler workspace surfaces (`QuoteCalculator.tsx`, `app/quotes/[quoteId]/page.tsx`, `app/showroom/showroom-kiosk.tsx`, `app/q/[token]/page.tsx`).
+- **Why**: Canadian jewelers and international clients need their workspace, quote calculators, showroom consultation kiosks, and customer-facing public quotes to default to their home currency (`CAD`) without having to manually switch on every page load. Storing this per tenant and having admins assign it upon approving new signups guarantees seamless tenant isolation and accurate local pricing.
+

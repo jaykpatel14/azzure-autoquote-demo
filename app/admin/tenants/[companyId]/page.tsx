@@ -204,26 +204,35 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
       <section className="card">
         <div className="sectionHeader">
           <div>
-            <h2>Pricing tier</h2>
-            <p className="muted">Changes apply to future quotes only. Existing quote snapshots remain unchanged.</p>
+            <h2>Pricing tier & Currency</h2>
+            <p className="muted">Configure the pricing tier and store operating currency for this tenant.</p>
           </div>
         </div>
         <form className="stack" action={`/api/admin/tenants/${company.id}/status`} method="post">
           <input type="hidden" name="accountStatus" value="APPROVED" />
           <input type="hidden" name="next" value={`/admin/tenants/${company.id}`} />
+          <div className="grid twoUp">
+            <label className="field">
+              <span>Pricing tier</span>
+              <select name="pricingTier" defaultValue={company.pricingTier ?? ""} required>
+                <option value="TIER_1">Tier 1 - Premium (divide by 0.6)</option>
+                <option value="TIER_2">Tier 2 - Standard (divide by 0.7)</option>
+                <option value="TIER_3">Tier 3 - Basic (divide by 0.8)</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>Operating & display currency</span>
+              <select name="currency" defaultValue={(company as any).currency || "USD"} required>
+                <option value="USD">USD ($) - United States Dollar</option>
+                <option value="CAD">CAD (CA$) - Canadian Dollar</option>
+              </select>
+            </label>
+          </div>
           <label className="field">
-            <span>New pricing tier</span>
-            <select name="pricingTier" defaultValue={company.pricingTier ?? ""} required>
-              <option value="TIER_1" disabled={company.pricingTier === "TIER_1"}>Tier 1 - Premium (divide by 0.6)</option>
-              <option value="TIER_2" disabled={company.pricingTier === "TIER_2"}>Tier 2 - Standard (divide by 0.7)</option>
-              <option value="TIER_3" disabled={company.pricingTier === "TIER_3"}>Tier 3 - Basic (divide by 0.8)</option>
-            </select>
+            <span>Reason for tier/currency change (internal)</span>
+            <textarea name="tierChangeReason" rows={2} placeholder="Optional note for change history." />
           </label>
-          <label className="field">
-            <span>Reason (internal, required)</span>
-            <textarea name="tierChangeReason" required rows={2} />
-          </label>
-          <button className="button primary" type="submit">Save tier change</button>
+          <button className="button primary" type="submit">Save changes</button>
         </form>
       </section>
 

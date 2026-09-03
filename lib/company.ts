@@ -75,6 +75,7 @@ const COMPANY_SELECT = {
   logoUrl: true,
   websiteUrl: true,
   aboutUs: true,
+  currency: true,
   primaryColor: true,
   showroomBackgroundColor: true,
   showroomBackgroundMediaKey: true,

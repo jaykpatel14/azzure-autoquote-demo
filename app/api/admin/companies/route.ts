@@ -10,6 +10,7 @@ export const runtime = "nodejs";
 const schema = z.object({
   companyName: z.string().trim().min(1, "Company name is required."),
   companySlug: z.string().optional(),
+  currency: z.enum(["USD", "CAD"]).optional(),
   memberEmail: z.string().trim().email("A valid email address is required."),
   memberName: z.string().optional(),
   memberPassword: z.string().optional(),
@@ -30,6 +31,7 @@ async function parseInput(request: Request) {
   return schema.parse({
     companyName: String(formData.get("companyName") || ""),
     companySlug: String(formData.get("companySlug") || ""),
+    currency: (formData.get("currency") as "USD" | "CAD") || undefined,
     memberEmail: String(formData.get("memberEmail") || ""),
     memberName: String(formData.get("memberName") || ""),
     memberPassword: String(formData.get("memberPassword") || ""),
@@ -50,6 +52,7 @@ export async function POST(request: Request) {
       return createAdminCompanyWithMember(client, admin.user.id, {
         companyName: input.companyName,
         companySlug: input.companySlug,
+        currency: input.currency,
         email: input.memberEmail,
         name: input.memberName,
         password: input.memberPassword,

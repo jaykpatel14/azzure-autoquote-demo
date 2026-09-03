@@ -86,6 +86,16 @@ export default async function AdminCreateCompanyPage() {
             </label>
 
             <label className="field">
+              <span>Operating &amp; display currency</span>
+              <select name="currency" defaultValue="USD" required>
+                <option value="USD">USD ($) - United States Dollar</option>
+                <option value="CAD">CAD (CA$) - Canadian Dollar</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="grid twoUp">
+            <label className="field">
               <span>Subscription plan</span>
               <select name="planCode" defaultValue="starter" required>
                 <option value="starter">Starter Plan (300 quotes/mo)</option>
@@ -93,9 +103,7 @@ export default async function AdminCreateCompanyPage() {
                 <option value="enterprise">Enterprise Plan (2,500 quotes/mo)</option>
               </select>
             </label>
-          </div>
 
-          <div className="grid twoUp">
             <label className="field">
               <span>Account status</span>
               <select name="accountStatus" defaultValue="APPROVED" required>
@@ -104,7 +112,9 @@ export default async function AdminCreateCompanyPage() {
                 <option value="SUSPENDED">Suspended</option>
               </select>
             </label>
+          </div>
 
+          <div className="grid twoUp">
             <label className="field">
               <span>Subscription billing status</span>
               <select name="subscriptionStatus" defaultValue="ACTIVE" required>

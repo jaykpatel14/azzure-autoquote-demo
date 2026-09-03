@@ -49,6 +49,7 @@ export default async function PublicQuotePage({
           name: true,
           logoUrl: true,
           websiteUrl: true,
+          currency: true,
           slug: true
         }
       },
@@ -140,6 +141,7 @@ export default async function PublicQuotePage({
             sideDiamondQuantity={quote.sideDiamondQuantity}
             quoteCreatedAt={quote.createdAt.toLocaleDateString()}
             validUntil={expiresAt.toLocaleDateString()}
+            defaultCurrency={(quote.company.currency as "USD" | "CAD") ?? "USD"}
           />
 
           {quote.company.websiteUrl ? <a className="publicQuoteCta" href={quote.company.websiteUrl}>Visit {quote.company.name}</a> : null}

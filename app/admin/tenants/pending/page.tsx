@@ -80,6 +80,13 @@ export default async function PendingApprovalsPage() {
                       <option value="TIER_3">Tier 3 - Basic</option>
                     </select>
                   </label>
+                  <label className="field">
+                    <span>Operating & display currency</span>
+                    <select name="currency" defaultValue={(company as any).currency || "USD"} required>
+                      <option value="USD">USD ($) - United States Dollar</option>
+                      <option value="CAD">CAD (CA$) - Canadian Dollar</option>
+                    </select>
+                  </label>
                   <fieldset className="detailCard">
                     <legend>Custom King verification</legend>
                     <label><input type="radio" name="ckCustomerVerified" value="false" defaultChecked /> Not a CK customer</label>

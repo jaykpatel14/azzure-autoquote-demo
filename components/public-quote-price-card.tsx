@@ -13,6 +13,7 @@ type PublicQuotePriceCardProps = {
   sideDiamondQuantity: number;
   quoteCreatedAt: string;
   validUntil: string;
+  defaultCurrency?: SupportedCurrency;
 };
 
 export function PublicQuotePriceCard({
@@ -23,9 +24,10 @@ export function PublicQuotePriceCard({
   centerDiamondCarats,
   sideDiamondQuantity,
   quoteCreatedAt,
-  validUntil
+  validUntil,
+  defaultCurrency = "USD"
 }: PublicQuotePriceCardProps) {
-  const [currency, setCurrency] = useState<SupportedCurrency>("USD");
+  const [currency, setCurrency] = useState<SupportedCurrency>(defaultCurrency);
 
   return (
     <div className="quotePreview publicQuotePreview">
