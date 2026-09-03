@@ -11,6 +11,7 @@ import { deriveQuoteStatus, getBrandedQuotePublicUrl, getQuotePublicUrl, getQuot
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 import { loadAnalysisImageDataUrlFromS3, loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
 import { QuoteCostBreakdown, RestrictedQuoteCostBreakdown } from "@/components/quote-cost-breakdown";
+import { QuoteDetailPriceView } from "@/components/quote-detail-price-view";
 import type { MakingPriceBreakdown } from "@/src/services/pricing";
 
 function formatCurrency(value: number) {
@@ -184,17 +185,17 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
               <span>Metal</span>
               <strong>{quote.metalType}</strong>
             </div>
-            <div className="quotePreview">
-              <span className="muted small">Quote price</span>
-              <strong className="quotePrice">
-                {formatCurrency(Number(quote.estimatedSellingPrice ?? quote.estimatedPrice))}
-              </strong>
-            </div>
             <div className="detailRow">
               <span>Created</span>
               <strong title={quote.createdAt.toLocaleString()}>{formatRelativeTime(quote.createdAt)}</strong>
             </div>
           </div>
+
+          <QuoteDetailPriceView
+            price={Number(quote.estimatedSellingPrice ?? quote.estimatedPrice)}
+            costBreakdown={costBreakdown}
+            canSeeFullPricing={canSeeFullPricing(context.membership?.role)}
+          />
 
           <div className="quoteDetailActions">
             {status === "draft" ? (
@@ -283,11 +284,6 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
           ) : null}
         </article>
       </section>
-      {costBreakdown ? (canSeeFullPricing(context.membership?.role) ? <QuoteCostBreakdown breakdown={costBreakdown} /> : <RestrictedQuoteCostBreakdown breakdown={costBreakdown} />) : (
-        <section className="card" style={{ marginTop: 20 }}>
-          <p className="muted">A detailed cost breakdown is not available for this legacy quote.</p>
-        </section>
-      )}
     </WorkspaceShell>
   );
 }

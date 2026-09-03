@@ -22,7 +22,7 @@ export async function sendSignupApprovalAlert(input: {
   websiteUrl?: string | null;
   signedUpAt: Date;
 }) {
-  const to = "admin@azzuresolutions.com";
+  const to = process.env.APPROVAL_ALERT_EMAIL?.trim() || process.env.APPROVALS_EMAIL?.trim() || "approvals@azzuresolutions.com";
 
   const websiteLine = input.websiteUrl?.trim() || "Not provided";
   const text = [

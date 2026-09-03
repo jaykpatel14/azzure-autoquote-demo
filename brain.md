@@ -7,6 +7,14 @@ This document logs every key architectural, design, and calculation decision mad
 
 ## Key Decisions Log
 
+### 50. Approval Alert Email Routing to approvals@azzuresolutions.com
+- **Decision**: Configured `sendSignupApprovalAlert` in [`lib/account-workflow.ts`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/lib/account-workflow.ts) to send all incoming jeweler signup and account approval alerts to `approvals@azzuresolutions.com` (with fallback to `process.env.APPROVAL_ALERT_EMAIL`).
+- **Rationale**: Routes onboarding and verification notifications to the dedicated approval inbox managed by the administrative review team rather than generic admin addresses.
+
+### 51. Canadian Dollar (CAD) Currency Display & Conversion Across All Quoting Surfaces
+- **Decision**: Implemented a comprehensive CAD currency engine in [`lib/currency.ts`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/lib/currency.ts) and added interactive currency toggles across the Jeweler Quote Calculator ([`components/QuoteCalculator.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/components/QuoteCalculator.tsx)), Customer Public Quote Page ([`app/q/[token]/page.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/q/%5Btoken%5D/page.tsx)), Quote Detail & Cost Breakdown ([`app/quotes/[quoteId]/page.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/app/quotes/%5BquoteId%5D/page.tsx), [`components/quote-cost-breakdown.tsx`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/components/quote-cost-breakdown.tsx)), and Quote PDF Generator ([`lib/pdf/quote.ts`](file:///d:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/lib/pdf/quote.ts)).
+- **Rationale**: Canadian retail jewelers and their walk-in customers need transparent, real-time pricing presented in Canadian Dollars (CAD) without mental conversion or currency ambiguity, while preserving USD pricing capability for US and international clientele.
+
 ### 1. Frontend Design System & Migration to Azzure Light Mode
 - **Decision**: Replaced dark baseline theme with Azzure AutoQuote luxury light-mode palette, custom glassmorphism components, and Google Inter + Playfair Display typography.
 - **Rationale**: Retail jewelry store owners and sales associates operate in bright showroom environments where light-mode luxury surfaces provide maximum legibility, high perceived value, and client trust.

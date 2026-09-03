@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit/js/pdfkit.standalone";
+import { formatMoneyWithFx, type SupportedCurrency } from "@/lib/currency";
 
 export type QuotePdfInput = {
   companyName: string;
@@ -27,13 +28,12 @@ export type QuotePdfInput = {
   settingType?: string | null;
   branding?: "azzure_watermark" | "custom_logo" | "white_label";
   hasPdfImages?: boolean;
+  currency?: SupportedCurrency;
+  exchangeRate?: number;
 };
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD"
-  }).format(value);
+function formatCurrency(value: number, currency: SupportedCurrency = "USD", fxRate?: number) {
+  return formatMoneyWithFx(value, currency, fxRate);
 }
 
 function formatDate(value: Date) {
@@ -146,8 +146,13 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
     // ── PAGE 1 ──
     drawPdfHeader(doc, input);
 
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#64748b").text("APPROVED ESTIMATE", 48, 120, { characterSpacing: 1.2 });
-    doc.font("Helvetica-Bold").fontSize(32).fillColor("#0f172a").text(formatCurrency(sellingPrice), 48, 138);
+    doc.font("Helvetica-Bold").fontSize(10).fillColor("#64748b").text(
+      input.currency === "CAD" ? "APPROVED ESTIMATE (CAD)" : "APPROVED ESTIMATE",
+      48,
+      120,
+      { characterSpacing: 1.2 }
+    );
+    doc.font("Helvetica-Bold").fontSize(32).fillColor("#0f172a").text(formatCurrency(sellingPrice, input.currency, input.exchangeRate), 48, 138);
 
     const customerDetails = [
       input.customerName?.trim() ? `Customer: ${input.customerName.trim()}` : null,
@@ -312,8 +317,12 @@ export async function generateQuotePdfBuffer(input: QuotePdfInput) {
         width: proTermsWidth,
         lineGap: 2
       });
-      doc.font("Helvetica-Bold").fontSize(14).fillColor("#0f172a").text("Final estimate", 48, detailY + proTermsBoxHeight + 24);
-      doc.font("Helvetica-Bold").fontSize(24).fillColor("#0f172a").text(formatCurrency(sellingPrice), 48, detailY + proTermsBoxHeight + 44);
+      doc.font("Helvetica-Bold").fontSize(14).fillColor("#0f172a").text(
+        input.currency === "CAD" ? "Final estimate (CAD)" : "Final estimate",
+        48,
+        detailY + proTermsBoxHeight + 24
+      );
+      doc.font("Helvetica-Bold").fontSize(24).fillColor("#0f172a").text(formatCurrency(sellingPrice, input.currency, input.exchangeRate), 48, detailY + proTermsBoxHeight + 44);
 
       const additionalReferences = references.slice(1);
       for (let pageStart = 0; pageStart < additionalReferences.length; pageStart += 4) {

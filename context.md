@@ -209,14 +209,18 @@ azzure-autoquote-mvp/
 ## 8. Current Goals & Progress Summary
 
 ### Project Goals
-1. **Frontend Redesign**: Full migration to Azzure AutoQuote luxury light-mode design system with responsive workspace sidebar and topbar navigation.
-2. **Quote Dashboard Automation**: Auto-trigger AI analysis on photo/prompt input, hide AI notes by default with expandable toggle, and position Save/Download PDF actions on the right preview panel.
-3. **Precious Metal Pricing Accuracy**: Include exact gold weight, 25%–28.5% casting wastage allowance, and live gold spot rates in all quote calculations.
-4. **Showroom Kiosk WOW Experience**: Full luxury dark obsidian & gold theme with 4 1-tap end-customer try-it presets, camera support, auto-session resolution, and golden claim cards.
-5. **Admin Operations Console Clean-Up**: Add Material Symbol navigation icons, soft status badges for platform health, financial market spot tickers, and quick shortcuts.
-6. **CustomKing Manufacturing Order Studio**: Provide jewelers with an interactive manufacturing studio on approved quotes to review AI-detected specifications and customize production details (ring size, polish level, stone origin, engraving, delivery dates, provider) matching the CustomKing NYC integration schema.
+1. **Approval Request Email Routing**: Send all new jeweler signup and account approval alert emails to `approvals@azzuresolutions.com` (configurable via `APPROVAL_ALERT_EMAIL`).
+2. **CAD Currency Support for Canadian Customers & Jewelers**: Enable complete Canadian Dollar (CAD) currency display, conversion, and formatting options across quote calculators, public customer quote pages, cost breakdowns, and PDF exports so customers in Canada can view quotes and pricing in CAD.
+3. **Frontend Redesign**: Full migration to Azzure AutoQuote luxury light-mode design system with responsive workspace sidebar and topbar navigation.
+4. **Quote Dashboard Automation**: Auto-trigger AI analysis on photo/prompt input, hide AI notes by default with expandable toggle, and position Save/Download PDF actions on the right preview panel.
+5. **Precious Metal Pricing Accuracy**: Include exact gold weight, 25%–28.5% casting wastage allowance, and live gold spot rates in all quote calculations.
+6. **Showroom Kiosk WOW Experience**: Full luxury dark obsidian & gold theme with 4 1-tap end-customer try-it presets, camera support, auto-session resolution, and golden claim cards.
+7. **Admin Operations Console Clean-Up**: Add Material Symbol navigation icons, soft status badges for platform health, financial market spot tickers, and quick shortcuts.
+8. **CustomKing Manufacturing Order Studio**: Provide jewelers with an interactive manufacturing studio on approved quotes to review AI-detected specifications and customize production details (ring size, polish level, stone origin, engraving, delivery dates, provider) matching the CustomKing NYC integration schema.
 
 ### Progress Accomplished Till Now
+- ✅ **Approval Request Email Routing**: Configured `sendSignupApprovalAlert` in `lib/account-workflow.ts` to route all incoming signup and account approval alert emails directly to `approvals@azzuresolutions.com` (with `APPROVAL_ALERT_EMAIL` override support).
+- ✅ **Complete CAD Currency Support**: Built centralized `lib/currency.ts` conversion & formatting engine and integrated interactive USD/CAD currency selectors across the Jeweler Quote Calculator (`components/QuoteCalculator.tsx`), Customer Public Quote Page (`app/q/[token]/page.tsx`), Quote Detail & Breakdown views (`app/quotes/[quoteId]/page.tsx`, `components/quote-cost-breakdown.tsx`), Quote PDF Generator (`lib/pdf/quote.ts`), and Showroom Kiosk (`app/showroom/showroom-kiosk.tsx`).
 - ✅ **Redesigned Quote Calculator Dashboard**: Built 3-step left panel with automated analysis and real-time live preview panel.
 - ✅ **Fixed Pricing Engine**: Added gold metal weight calculation, 25% casting loss factor, and standard lab diamond pricing ($125/ct center stone) in `src/services/pricing.ts`.
 - ✅ **Fixed Metals.dev API 401 & Health Checks**: Sanitized API key quotes, added browser headers, and updated default offline fallback spot rate to $4,500/oz.

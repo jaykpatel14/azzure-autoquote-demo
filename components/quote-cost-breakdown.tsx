@@ -1,7 +1,8 @@
 import type { MakingPriceBreakdown } from "@/src/services/pricing";
+import { formatMoneyWithFx, type SupportedCurrency } from "@/lib/currency";
 
-function money(value: unknown) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value ?? 0));
+function money(value: unknown, currency: SupportedCurrency = "USD", fxRate?: number) {
+  return formatMoneyWithFx(Number(value ?? 0), currency, fxRate);
 }
 
 // Jewelers should see what each category actually costs them to have made —
@@ -14,7 +15,15 @@ function tierAdjusted(value: unknown, tierDivisor: number) {
   return Number(value ?? 0) / (tierDivisor || 1);
 }
 
-export function QuoteCostBreakdown({ breakdown }: { breakdown: MakingPriceBreakdown }) {
+export function QuoteCostBreakdown({
+  breakdown,
+  currency = "USD",
+  fxRate
+}: {
+  breakdown: MakingPriceBreakdown;
+  currency?: SupportedCurrency;
+  fxRate?: number;
+}) {
   const rows = [
     ["Metal", tierAdjusted(breakdown.metalCost, breakdown.tierDivisor)],
     ["Center stone", tierAdjusted(breakdown.centerStoneCost, breakdown.tierDivisor)],
@@ -30,32 +39,43 @@ export function QuoteCostBreakdown({ breakdown }: { breakdown: MakingPriceBreakd
     <section className="card" style={{ marginTop: 20 }}>
       <div className="sectionHeader">
         <div>
-          <p className="eyebrow">Cost breakdown</p>
+          <p className="eyebrow">Cost breakdown {currency === "CAD" ? "(CAD)" : "(USD)"}</p>
           <h2>What&apos;s In This Piece</h2>
-          <p className="muted small">Pricing values were snapshotted when this quote was created.</p>
+          <p className="muted small">
+            Pricing values were snapshotted when this quote was created
+            {currency === "CAD" ? " and converted to Canadian Dollars (CAD)" : ""}.
+          </p>
         </div>
       </div>
       <div className="detailStack">
         {rows.map(([label, value]) => (
           <div className="detailRow" key={label}>
             <span>{label}</span>
-            <strong>{money(value)}</strong>
+            <strong>{money(value, currency, fxRate)}</strong>
           </div>
         ))}
         <div className="detailRow" style={{ borderTop: "2px solid var(--color-outline-variant, #e2e8f0)", paddingTop: 12 }}>
           <span>Manufacturing cost</span>
-          <strong>{money(breakdown.makingPrice)}</strong>
+          <strong>{money(breakdown.makingPrice, currency, fxRate)}</strong>
         </div>
         <div className="quotePreview">
-          <span className="muted small">Final customer price</span>
-          <strong className="quotePrice">{money(breakdown.estimatedSellingPrice)}</strong>
+          <span className="muted small">Final customer price ({currency})</span>
+          <strong className="quotePrice">{money(breakdown.estimatedSellingPrice, currency, fxRate)}</strong>
         </div>
       </div>
     </section>
   );
 }
 
-export function CompactQuoteCostBreakdown({ breakdown }: { breakdown: MakingPriceBreakdown }) {
+export function CompactQuoteCostBreakdown({
+  breakdown,
+  currency = "USD",
+  fxRate
+}: {
+  breakdown: MakingPriceBreakdown;
+  currency?: SupportedCurrency;
+  fxRate?: number;
+}) {
   const labor = tierAdjusted(
     Number(breakdown.centerStoneSettingCost) + Number(breakdown.sideStoneSettingCost) + Number(breakdown.waxCost) + Number(breakdown.polishingCost) + Number(breakdown.cadCost),
     breakdown.tierDivisor
@@ -64,30 +84,38 @@ export function CompactQuoteCostBreakdown({ breakdown }: { breakdown: MakingPric
   const metal = tierAdjusted(breakdown.metalCost, breakdown.tierDivisor);
   return (
     <div className="muted small" style={{ display: "grid", gap: 2, minWidth: 145 }}>
-      <span>Metal: <strong>{money(metal)}</strong></span>
-      <span>Stones: <strong>{money(diamonds)}</strong></span>
-      <span>Labor + CAD: <strong>{money(labor)}</strong></span>
+      <span>Metal: <strong>{money(metal, currency, fxRate)}</strong></span>
+      <span>Stones: <strong>{money(diamonds, currency, fxRate)}</strong></span>
+      <span>Labor + CAD: <strong>{money(labor, currency, fxRate)}</strong></span>
     </div>
   );
 }
 
-export function RestrictedQuoteCostBreakdown({ breakdown }: { breakdown: MakingPriceBreakdown }) {
+export function RestrictedQuoteCostBreakdown({
+  breakdown,
+  currency = "USD",
+  fxRate
+}: {
+  breakdown: MakingPriceBreakdown;
+  currency?: SupportedCurrency;
+  fxRate?: number;
+}) {
   return (
     <section className="card" style={{ marginTop: 20 }}>
       <div className="sectionHeader">
         <div>
-          <p className="eyebrow">Cost overview</p>
+          <p className="eyebrow">Cost overview {currency === "CAD" ? "(CAD)" : "(USD)"}</p>
           <h2>Pricing</h2>
         </div>
       </div>
       <div className="detailStack">
         <div className="detailRow">
           <span>Manufacturing cost</span>
-          <strong>{money(breakdown.makingPrice)}</strong>
+          <strong>{money(breakdown.makingPrice, currency, fxRate)}</strong>
         </div>
         <div className="quotePreview">
-          <span className="muted small">Final customer price</span>
-          <strong className="quotePrice">{money(breakdown.estimatedSellingPrice)}</strong>
+          <span className="muted small">Final customer price ({currency})</span>
+          <strong className="quotePrice">{money(breakdown.estimatedSellingPrice, currency, fxRate)}</strong>
         </div>
       </div>
     </section>

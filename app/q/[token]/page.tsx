@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
+import { PublicQuotePriceCard } from "@/components/public-quote-price-card";
 
 export const dynamic = "force-dynamic";
 
@@ -130,32 +131,16 @@ export default async function PublicQuotePage({
             />
           ) : null}
 
-          <div className="quotePreview publicQuotePreview">
-            <p className="eyebrow">Estimated price</p>
-            <p className="publicQuotePrice">{formatCurrency(Number(quote.estimatedSellingPrice ?? quote.estimatedPrice))}</p>
-            <div className="quoteMeta publicQuoteMeta">
-              <div>
-                <span>Customer</span>
-                <strong>{quote.customerName || "Unassigned"}</strong>
-              </div>
-              <div>
-                <span>Metal</span>
-                <strong>{displayMetal}</strong>
-              </div>
-              <div>
-                <span>Stone layout</span>
-                <strong>
-                  {displayCenterColor ? `${displayCenterColor} ` : ""}
-                  {Number(quote.centerDiamondCarats).toFixed(2)} ct center, {quote.sideDiamondQuantity} side stones
-                </strong>
-              </div>
-              <div>
-                <span>Quote date</span>
-                <strong>{quote.createdAt.toLocaleDateString()}</strong>
-              </div>
-              <div><span>Valid until</span><strong>{expiresAt.toLocaleDateString()}</strong></div>
-            </div>
-          </div>
+          <PublicQuotePriceCard
+            price={Number(quote.estimatedSellingPrice ?? quote.estimatedPrice)}
+            customerName={quote.customerName || "Unassigned"}
+            displayMetal={displayMetal}
+            displayCenterColor={displayCenterColor}
+            centerDiamondCarats={Number(quote.centerDiamondCarats)}
+            sideDiamondQuantity={quote.sideDiamondQuantity}
+            quoteCreatedAt={quote.createdAt.toLocaleDateString()}
+            validUntil={expiresAt.toLocaleDateString()}
+          />
 
           {quote.company.websiteUrl ? <a className="publicQuoteCta" href={quote.company.websiteUrl}>Visit {quote.company.name}</a> : null}
 

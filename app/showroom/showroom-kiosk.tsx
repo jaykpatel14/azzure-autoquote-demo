@@ -15,6 +15,8 @@ import KioskStaffPinModal from "@/components/kiosk-staff-pin-modal";
 import KioskStaffView from "@/components/kiosk-staff-view";
 import LiveCameraModal from "@/components/live-camera-modal";
 import { useShowroomDevice } from "@/components/showroom-device-provider";
+import { CurrencySelector } from "@/components/currency-selector";
+import { formatMoneyWithFx, type SupportedCurrency } from "@/lib/currency";
 
 type Branding = { companyName: string; logoUrl: string | null; primaryColor: string | null; backgroundColor: string | null; backgroundMediaUrl: string | null; backgroundMediaType: string | null; overlayColor: string | null; overlayOpacity: number | null; textColor: string | null; backgroundFit: string | null; backgroundPosition: string | null; panelOpacity: number | null; aboutUs: string | null; marketingImages: string[] };
 type Pricing = { cadCost: number; customerMarginPct: number; pricingTier: PricingTier | null; pricingProfile: PricingProfileInput };
@@ -226,6 +228,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     } as CSSProperties;
   }, [branding]);
 
+  const [currency, setCurrency] = useState<SupportedCurrency>("USD");
   const [started, setStarted] = useState(false);
   const [slotFiles, setSlotFiles] = useState<Record<AngleSlotKey, File | null>>({
     top_face: null,
@@ -2514,25 +2517,27 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                 </div>
 
                 <div className="quotePreviewPriceBlock">
-                  <p className="eyebrow" style={{ marginBottom: 4 }}>Live Estimate</p>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <p className="eyebrow" style={{ margin: 0 }}>Live Estimate</p>
+                    <CurrencySelector currency={currency} onChange={setCurrency} size="sm" />
+                  </div>
                   <div className="quotePrice" style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}>
                     {analysis
-                      ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(estimatedSellingPrice)
+                      ? formatMoneyWithFx(estimatedSellingPrice, currency)
                       : "—"}
+                    {currency === "CAD" && analysis ? (
+                      <span style={{ fontSize: "0.875rem", fontWeight: 600, marginLeft: 8, color: "var(--color-primary, #005ab7)" }}>
+                        CAD
+                      </span>
+                    ) : null}
                   </div>
                   {analysis && analysis.accentStonePriceEstimate ? (
                     <>
                       <p className="muted small" style={{ marginTop: 4, fontSize: "0.875rem" }}>
                         Accent stones (est.):{" "}
                         <span className="badge" style={{ background: "rgba(201, 168, 76, 0.15)", color: "#e6cb78" }}>
-                          {new Intl.NumberFormat("en-US", {
-                            style: "currency",
-                            currency: "USD"
-                          }).format(analysis.accentStonePriceEstimate.lowTotal)}–
-                          {new Intl.NumberFormat("en-US", {
-                            style: "currency",
-                            currency: "USD"
-                          }).format(analysis.accentStonePriceEstimate.highTotal)}
+                          {formatMoneyWithFx(analysis.accentStonePriceEstimate.lowTotal, currency)}–
+                          {formatMoneyWithFx(analysis.accentStonePriceEstimate.highTotal, currency)}
                         </span>
                       </p>
                     </>

@@ -15,6 +15,8 @@ import {
 import { getCenterStonePricePerCarat } from "@/src/services/diamond-pricing";
 import type { PricingTier } from "@prisma/client";
 import LiveCameraModal from "@/components/live-camera-modal";
+import { CurrencySelector } from "@/components/currency-selector";
+import { formatMoneyWithFx, type SupportedCurrency } from "@/lib/currency";
 
 type QuoteMode = "normal" | "without-center" | "without-center-and-side";
 type FacetStatus = "pending" | "processing" | "done" | "error";
@@ -276,11 +278,8 @@ function applyQuoteMode(input: FacetOutput, quoteMode: QuoteMode): FacetOutput {
   return input;
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD"
-  }).format(value);
+function formatCurrency(value: number, currency: SupportedCurrency = "USD") {
+  return formatMoneyWithFx(value, currency);
 }
 
 function mergeAssumptions(outputs: FacetOutput[]) {
@@ -305,6 +304,7 @@ export default function QuoteCalculator({
   canDownloadPdf = false
 }: QuoteCalculatorProps) {
 
+  const [currency, setCurrency] = useState<SupportedCurrency>("USD");
   const [metalType, setMetalType] = useState<MetalType>(initialQuote?.metalType ?? "14K");
   const [quoteMode, setQuoteMode] = useState<QuoteMode>("normal");
   const [customerName, setCustomerName] = useState(initialQuote?.customerName ?? "");
@@ -2382,7 +2382,10 @@ export default function QuoteCalculator({
 
             {/* Live Quote Price */}
             <div className="quotePreviewPriceBlock">
-              <p className="eyebrow" style={{ marginBottom: 4 }}>Live Estimate</p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <p className="eyebrow" style={{ margin: 0 }}>Live Estimate</p>
+                <CurrencySelector currency={currency} onChange={setCurrency} size="sm" />
+              </div>
               {showAllTiers && costBreakdown && costBreakdown.subtotal ? (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginTop: "12px", marginBottom: "16px" }}>
                   {(["TIER_1", "TIER_2", "TIER_3"] as const).map(tier => {
@@ -2393,7 +2396,7 @@ export default function QuoteCalculator({
                           {tier.replace('_', ' ')}
                         </div>
                         <div style={{ fontSize: "clamp(1rem, 2.5vw, 1.25rem)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {formatCurrency(tierResult.estimatedSellingPrice)}
+                          {formatCurrency(tierResult.estimatedSellingPrice, currency)}
                         </div>
                       </div>
                     );
@@ -2401,7 +2404,12 @@ export default function QuoteCalculator({
                 </div>
               ) : (
                 <div className="quotePrice" style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}>
-                  {formatCurrency(estimatedSellingPrice)}
+                  {formatCurrency(estimatedSellingPrice, currency)}
+                  {currency === "CAD" ? (
+                    <span style={{ fontSize: "0.875rem", fontWeight: 600, marginLeft: 8, color: "var(--color-primary)" }}>
+                      CAD
+                    </span>
+                  ) : null}
                 </div>
               )}
               
