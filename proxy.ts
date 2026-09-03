@@ -98,6 +98,10 @@ async function applyAccountAccessControl(request: NextRequest) {
     return null;
   }
 
+  if (session.user.role === "AZZURE_ADMIN") {
+    return null;
+  }
+
   try {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },

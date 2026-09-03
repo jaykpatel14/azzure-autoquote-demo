@@ -28,7 +28,8 @@ export default function SignInForm({
     setStatus("");
     setShowVerifyLink(false);
 
-    const targetUrl = next || "/";
+    const isKnownAdmin = ["admin@azzure.com", "admin@azzuresolutions.com", "approvals@azzuresolutions.com"].includes(email.trim().toLowerCase());
+    const targetUrl = next || (isKnownAdmin ? "/admin" : "/");
 
     const result = await signIn("credentials", {
       email,
@@ -49,7 +50,7 @@ export default function SignInForm({
     }
 
     // Force a new document request after Auth.js writes the session cookie
-    window.location.assign(next || result?.url || "/");
+    window.location.assign(next || (isKnownAdmin ? "/admin" : (result?.url || "/")));
   }
 
   return (

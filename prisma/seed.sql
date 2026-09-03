@@ -97,6 +97,8 @@ INSERT INTO "User" (
   "passwordHash",
   "emailVerifiedAt",
   "sessionVersion",
+  "isInternalAdmin",
+  "adminRole",
   "updatedAt"
 ) VALUES
   (
@@ -106,6 +108,8 @@ INSERT INTO "User" (
     '7dd34c8cd885790b56c89a4d4eda22dd:f4b1ded26c019d2a327c084e13437ec8041f6e6ddfbf67c88f9b4739ebbbfd7327e768e666b3a25a31d4d8f761af3688e8db7b021e525b6ce2b4904b4dabbd83',
     TIMESTAMP '2026-07-01 00:00:00+00',
     0,
+    false,
+    NULL,
     CURRENT_TIMESTAMP
   ),
   (
@@ -115,6 +119,8 @@ INSERT INTO "User" (
     'e670f7a82b393545024525be3c5ec092:09c6f41bf0be0ab16576dd40fc454565ab2600d759323aa9663767d0cbe85837bd6d4dfd0b6ff7e03c8295c0cec35d1f5fb646264fa85d5701d7074296cd109d',
     TIMESTAMP '2026-07-01 00:00:00+00',
     0,
+    false,
+    NULL,
     CURRENT_TIMESTAMP
   ),
   (
@@ -124,6 +130,8 @@ INSERT INTO "User" (
     '7603d10c39caf55e3d04af208ac5ea9b:cfd932f709951629734f03cffa662d523baf420851b82b5486a3acb09f848def7a3b12ad19280d6252dc3611125505388288c50c363b07ed8a484d0fa6527ded',
     TIMESTAMP '2026-07-01 00:00:00+00',
     0,
+    true,
+    'SUPER_ADMIN',
     CURRENT_TIMESTAMP
   )
 ON CONFLICT ("id") DO UPDATE SET
@@ -132,6 +140,8 @@ ON CONFLICT ("id") DO UPDATE SET
   "passwordHash" = EXCLUDED."passwordHash",
   "emailVerifiedAt" = EXCLUDED."emailVerifiedAt",
   "sessionVersion" = EXCLUDED."sessionVersion",
+  "isInternalAdmin" = EXCLUDED."isInternalAdmin",
+  "adminRole" = EXCLUDED."adminRole",
   "updatedAt" = CURRENT_TIMESTAMP;
 
 INSERT INTO "Membership" (
@@ -141,8 +151,7 @@ INSERT INTO "Membership" (
   "userId"
 ) VALUES
   ('membership_demo_owner', 'CUSTOMER', 'company_demo_jewelry', 'user_demo_owner'),
-  ('membership_demo_acme', 'CUSTOMER', 'company_demo_jewelry', 'user_demo_acme'),
-  ('membership_internal_admin', 'OWNER', 'company_demo_jewelry', 'user_internal_admin')
+  ('membership_demo_acme', 'CUSTOMER', 'company_demo_jewelry', 'user_demo_acme')
 ON CONFLICT ("companyId","userId") DO UPDATE SET
   "role" = EXCLUDED."role";
 

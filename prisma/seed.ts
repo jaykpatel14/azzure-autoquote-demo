@@ -112,11 +112,15 @@ async function main() {
       id: "user_internal_admin",
       email: "admin@azzure.com",
       name: "Azzure Admin",
+      isInternalAdmin: true,
+      adminRole: "SUPER_ADMIN",
       passwordHash: hashPassword("password123"),
       emailVerifiedAt: new Date("2026-07-01T00:00:00.000Z")
     },
     update: {
       name: "Azzure Admin",
+      isInternalAdmin: true,
+      adminRole: "SUPER_ADMIN",
       passwordHash: hashPassword("password123"),
       emailVerifiedAt: new Date("2026-07-01T00:00:00.000Z")
     }

@@ -382,3 +382,13 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision**: Add comprehensive optional chaining and fallback defaults to `/admin/tenants/[companyId]` and `/admin/tenants` for subscriptions, plans, pricing profiles, and statistics, while placing the `AdminDeleteCompanyButton` in the top header action row as well as the bottom Danger Zone.
 - **Why**: If a company's subscription is missing an active plan or has legacy/unassigned records, dereferencing `subscription.plan.name` or `subscription.plan.code` caused Next.js server crashes (500 error) on Proxmox/Docker. Placing the modal-backed delete button prominently in the top header and bottom danger zone allows administrators to immediately locate and safely delete any tenant account with exact-name confirmation.
 
+## Admin Authentication & Role Isolation (2026-09-03)
+
+- **Decision 52**: Standardize internal admin email recognition in `lib/internal-admin.ts`, prevent default tenant company binding in `auth.ts`, unbind admin users from `company_demo_jewelry` in seed data, bypass customer approval redirects for `AZZURE_ADMIN` in `proxy.ts`, and automatically redirect admin logins to `/admin` in `components/sign-in-form.tsx`.
+- **Why**: Previously, when signing in with `admin@azzure.com`, three compounding issues caused the user to be treated as a regular demo jeweler instead of a platform admin:
+  1. `lib/internal-admin.ts` restricted `admin@azzure.com` recognition behind `NODE_ENV !== "production"`, causing production/develop builds to treat the user as a standard customer if `AZZURE_ADMIN_EMAILS` wasn't explicitly set.
+  2. `prisma/seed.sql` created a `Membership` for `user_internal_admin` in `company_demo_jewelry`, and `auth.ts` assigned the first membership (`company_demo_jewelry`) to `user.companyId` and `user.companyName`, defaulting the session into Demo Jewelry.
+  3. `components/sign-in-form.tsx` defaulted the post-login redirect to `/` instead of `/admin` for admin users.
+  4. `proxy.ts` lacked an `AZZURE_ADMIN` bypass in `applyAccountAccessControl`.
+  Fixing these ensures platform admins always receive the `AZZURE_ADMIN` role and are routed directly to the admin dashboard (`/admin`) upon sign-in.
+

@@ -120,17 +120,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             .catch(() => {});
         }
 
+        const isAdmin = isInternalAdminEmail(user.email) || Boolean(user.isInternalAdmin);
+
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           sessionVersion: user.sessionVersion,
-          isInternalAdmin: user.isInternalAdmin,
-          adminRole: user.adminRole,
-          companyId: user.memberships[0]?.companyId ?? "",
-          companyName: user.memberships[0]?.company.name ?? "",
+          isInternalAdmin: isAdmin,
+          adminRole: user.adminRole || (isAdmin ? "SUPER_ADMIN" : null),
+          companyId: isAdmin ? "" : (user.memberships[0]?.companyId ?? ""),
+          companyName: isAdmin ? "" : (user.memberships[0]?.company.name ?? ""),
           planId: user.memberships[0]?.company.subscription?.planId ?? "plan_starter",
-          accountStatus: user.memberships[0]?.company.accountStatus ?? "PENDING_APPROVAL",
+          accountStatus: user.memberships[0]?.company.accountStatus ?? (isAdmin ? "APPROVED" : "PENDING_APPROVAL"),
           pricingTier: user.memberships[0]?.company.pricingTier ?? null,
           ckCustomerVerified: user.memberships[0]?.company.ckCustomerVerified ?? false
         };
@@ -144,10 +146,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.email = user.email;
         token.name = user.name;
         token.sessionVersion = "sessionVersion" in user ? user.sessionVersion ?? 0 : 0;
-        token.role = (isInternalAdminEmail(user.email) || ("isInternalAdmin" in user && Boolean(user.isInternalAdmin))) ? "AZZURE_ADMIN" : "CUSTOMER";
-        token.adminRole = "adminRole" in user && typeof user.adminRole === "string" ? (user.adminRole as "SUPER_ADMIN" | "OPERATIONS_MANAGER" | "ESTIMATOR_ADMIN" | "SUPPORT_ADMIN" | "SALESMAN") : null;
-        token.companyId = "companyId" in user && typeof user.companyId === "string" ? user.companyId : "";
-        token.companyName = "companyName" in user && typeof user.companyName === "string" ? user.companyName : "";
+        const isAdmin = isInternalAdminEmail(user.email) || ("isInternalAdmin" in user && Boolean(user.isInternalAdmin));
+        token.role = isAdmin ? "AZZURE_ADMIN" : "CUSTOMER";
+        token.adminRole = "adminRole" in user && typeof user.adminRole === "string"
+          ? (user.adminRole as "SUPER_ADMIN" | "OPERATIONS_MANAGER" | "ESTIMATOR_ADMIN" | "SUPPORT_ADMIN" | "SALESMAN")
+          : (isAdmin ? "SUPER_ADMIN" : null);
+        token.companyId = isAdmin ? "" : ("companyId" in user && typeof user.companyId === "string" ? user.companyId : "");
+        token.companyName = isAdmin ? "" : ("companyName" in user && typeof user.companyName === "string" ? user.companyName : "");
         token.planId =
           "planId" in user && typeof user.planId === "string"
             ? (user.planId as "plan_starter" | "plan_professional" | "plan_enterprise" | "plan_ultra")
@@ -155,13 +160,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.accountStatus =
           "accountStatus" in user && typeof user.accountStatus === "string"
             ? (user.accountStatus as "PENDING_APPROVAL" | "APPROVED" | "SUSPENDED")
-            : "PENDING_APPROVAL";
+            : (isAdmin ? "APPROVED" : "PENDING_APPROVAL");
         token.pricingTier =
           "pricingTier" in user && typeof user.pricingTier === "string"
             ? (user.pricingTier as "TIER_1" | "TIER_2" | "TIER_3")
             : null;
         token.ckCustomerVerified =
           "ckCustomerVerified" in user ? Boolean(user.ckCustomerVerified) : false;
+      }
+
+      if (token.email && isInternalAdminEmail(token.email as string)) {
+        token.role = "AZZURE_ADMIN";
+        if (!token.adminRole) {
+          token.adminRole = "SUPER_ADMIN";
+        }
       }
 
       return token;

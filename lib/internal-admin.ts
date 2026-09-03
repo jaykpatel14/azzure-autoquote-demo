@@ -10,9 +10,9 @@ function parseAdminEmails() {
       .filter(Boolean)
   );
 
-  if (process.env.NODE_ENV !== "production") {
-    allowedEmails.add("admin@azzure.com");
-  }
+  allowedEmails.add("admin@azzure.com");
+  allowedEmails.add("admin@azzuresolutions.com");
+  allowedEmails.add("approvals@azzuresolutions.com");
 
   return allowedEmails;
 }
