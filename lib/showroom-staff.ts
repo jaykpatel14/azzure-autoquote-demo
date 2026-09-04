@@ -399,7 +399,7 @@ export async function updateStaffQuote(
     ? Number(rawCadCost)
     : Number(livePricing.pricingProfile.cadCharge ?? 20);
 
-  const customerMarginPct = Number(company?.customerMarginPct ?? 0);
+  const customerMarginPct = Number(quote.customerMarginPct ?? company?.customerMarginPct ?? 0);
   const pricingTier = (quote.pricingTierSnapshot as PricingTier) || company?.pricingTier || "TIER_2";
 
   const detectedSideShape = (resolvedCenterShape && ["emerald", "radiant", "cushion", "oval", "pear", "princess"].includes(resolvedCenterShape.toLowerCase()) && resolvedSideDiamondQuantity <= 4)
@@ -435,7 +435,8 @@ export async function updateStaffQuote(
     customerMarginPct
   });
 
-  const tier = calculateTierPrice(making.subtotal, pricingTier, customerMarginPct);
+  const finalMult = Number(livePricing.pricingProfile?.finalMultiplier ?? 1);
+  const tier = calculateTierPrice(making.subtotal, pricingTier, customerMarginPct, finalMult);
   const calculatedEstimatedPrice = tier.estimatedSellingPrice;
   const finalPrice = updates.estimatedPrice !== undefined && updates.estimatedPrice > 0
     ? updates.estimatedPrice

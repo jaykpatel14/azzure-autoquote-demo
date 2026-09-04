@@ -334,8 +334,11 @@ export function calculateMakingPrice(
   const makingPrice = Math.round((subtotal / tierDivisor) * 100) / 100;
 
   // Step 3: Customer / Jeweler adds Jeweler Markup on top of Tier Formula Price -> End Customer Price
+  const finalMultiplier = input.pricingProfile?.finalMultiplier !== undefined && !isNaN(Number(input.pricingProfile.finalMultiplier)) && Number(input.pricingProfile.finalMultiplier) > 0
+    ? Number(input.pricingProfile.finalMultiplier)
+    : 1;
   const _customerMarginAmount = Math.round((makingPrice * (customerMarginPct / 100)) * 100) / 100;
-  const estimatedSellingPrice = Math.round((makingPrice + _customerMarginAmount) * 100) / 100;
+  const estimatedSellingPrice = Math.round((makingPrice + _customerMarginAmount) * finalMultiplier * 100) / 100;
 
   // Accent colored-stone estimate — computed from the GemstoneRate table
   // (commercial tier by default). Returned as a range, never merged into the
@@ -399,7 +402,8 @@ function roundMoney(value: number): number {
 export function calculateTierPrice(
   subtotal: number,
   tier: PricingTier = "TIER_2",
-  customerMarginPct = 0
+  customerMarginPct = 0,
+  finalMultiplier = 1
 ): TierPriceResult {
   if (subtotal <= 0) {
     throw new Error("Production subtotal must be greater than zero.");
@@ -411,7 +415,8 @@ export function calculateTierPrice(
   const makingPrice = roundMoney(subtotal / divisor);
   // Step 3: Customer / Jeweler adds Jeweler Markup on top of Tier Formula Price -> End Customer Price
   const customerMarginAmount = roundMoney(makingPrice * (customerMarginPct / 100));
-  const estimatedSellingPrice = roundMoney(makingPrice + customerMarginAmount);
+  const mult = finalMultiplier > 0 ? finalMultiplier : 1;
+  const estimatedSellingPrice = roundMoney((makingPrice + customerMarginAmount) * mult);
 
   return {
     subtotal: roundMoney(subtotal),
