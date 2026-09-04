@@ -325,7 +325,7 @@ export type StaffQuoteUpdateInput = {
   estimatedPrice?: number;
   customerNotes?: string;
   jewelerNotes?: string;
-  status?: "PENDING" | "CLAIMED" | "IN_REVIEW" | "COMPLETED" | "EXPIRED";
+  status?: "PENDING" | "CLAIMED" | "CONVERTED" | "EXPIRED" | "IN_REVIEW" | "COMPLETED";
 };
 
 export async function updateStaffQuote(
@@ -490,10 +490,25 @@ export async function updateStaffQuote(
   }
 
   // Update ShowroomQuote record
-  const showroomData: any = {};
+  const showroomData: Prisma.ShowroomQuoteUpdateInput = {};
   if (updates.customerNotes !== undefined) showroomData.customerNotes = updates.customerNotes || null;
   if (updates.jewelerNotes !== undefined) showroomData.jewelerNotes = updates.jewelerNotes || null;
-  if (updates.status !== undefined) showroomData.status = updates.status;
+  if (updates.status !== undefined) {
+    let resolvedStatus: "PENDING" | "CLAIMED" | "CONVERTED" | "EXPIRED" = "CLAIMED";
+    if (updates.status === "COMPLETED") {
+      resolvedStatus = "CONVERTED";
+    } else if (updates.status === "IN_REVIEW") {
+      resolvedStatus = "CLAIMED";
+    } else if (["PENDING", "CLAIMED", "CONVERTED", "EXPIRED"].includes(updates.status)) {
+      resolvedStatus = updates.status as "PENDING" | "CLAIMED" | "CONVERTED" | "EXPIRED";
+    }
+    showroomData.status = resolvedStatus;
+    if (resolvedStatus === "CONVERTED" && !showroomQuote.convertedAt) {
+      showroomData.convertedAt = new Date();
+    } else if (resolvedStatus === "CLAIMED" && !showroomQuote.claimedAt) {
+      showroomData.claimedAt = new Date();
+    }
+  }
 
   if (Object.keys(showroomData).length > 0) {
     await prisma.showroomQuote.update({
@@ -505,11 +520,11 @@ export async function updateStaffQuote(
   // Regenerate stored PDF proposal in the background
   try {
     const { generateAndStoreQuotePdf } = await import("@/src/services/quote-pdf");
-    await generateAndStoreQuotePdf({
+    void generateAndStoreQuotePdf({
       quoteId,
       companyId,
       customerNameFallback: resolvedCustomerName
-    });
+    }).catch(() => null);
   } catch {
     // Non-fatal
   }

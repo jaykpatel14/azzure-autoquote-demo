@@ -87,6 +87,10 @@ describe("Staff Quote Lookup & Data Sanitization", () => {
   beforeEach(() => {
     prismaShowroomQuoteFindManyMock.mockReset();
     prismaShowroomQuoteFindUniqueMock.mockReset();
+    prismaShowroomQuoteUpdateMock.mockReset();
+    prismaQuoteUpdateMock.mockReset();
+    prismaAiAnalysisUpdateMock.mockReset();
+    prismaCompanyFindUniqueMock.mockReset();
     loadAnalysisImageDataUrlFromS3Mock.mockReset();
     loadQuoteRenderingDataUrlFromS3Mock.mockReset();
 
@@ -247,6 +251,29 @@ describe("Staff Quote Lookup & Data Sanitization", () => {
     expect(updateArgs.data.makingPriceBreakdown.subtotal).toBeGreaterThan(0);
     expect(updateArgs.data.makingPriceBreakdown.makingPrice).toBeGreaterThan(0);
     expect(updateArgs.data.makingPriceBreakdown.metalCost).toBeGreaterThan(0);
+  });
+
+  it("normalizes legacy or input status COMPLETED to valid ShowroomQuoteStatus CONVERTED", async () => {
+    const { updateStaffQuote } = await import("@/lib/showroom-staff");
+    prismaCompanyFindUniqueMock.mockResolvedValue({
+      accountStatus: "ACTIVE",
+      pricingTier: "TIER_2",
+      subscription: {
+        status: "ACTIVE",
+        plan: { id: "plan_enterprise", code: "enterprise" }
+      }
+    });
+    prismaQuoteUpdateMock.mockResolvedValue({ id: "q_1" });
+    prismaShowroomQuoteUpdateMock.mockResolvedValue({ id: "sq_1" });
+
+    await updateStaffQuote("comp_123", "QT-4821", {
+      status: "COMPLETED" as any
+    });
+
+    expect(prismaShowroomQuoteUpdateMock).toHaveBeenCalled();
+    const sqArgs = prismaShowroomQuoteUpdateMock.mock.calls[0][0];
+    expect(sqArgs.data.status).toBe("CONVERTED");
+    expect(sqArgs.data.convertedAt).toBeInstanceOf(Date);
   });
 });
 

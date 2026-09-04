@@ -134,7 +134,7 @@ export default function KioskStaffView({
   const [editSettingType, setEditSettingType] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editJewelerNotes, setEditJewelerNotes] = useState("");
-  const [editStatus, setEditStatus] = useState<"PENDING" | "CLAIMED" | "IN_REVIEW" | "COMPLETED" | "EXPIRED">("CLAIMED");
+  const [editStatus, setEditStatus] = useState<"PENDING" | "CLAIMED" | "CONVERTED" | "EXPIRED">("CLAIMED");
   const [savingEdit, setSavingEdit] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
@@ -222,8 +222,8 @@ export default function KioskStaffView({
     setEditSettingType(q.specs.settingType || "Prong");
     setEditPrice("");
     setEditJewelerNotes(q.jewelerNotes || "");
-    const statusVal = q.status as "PENDING" | "CLAIMED" | "IN_REVIEW" | "COMPLETED" | "EXPIRED";
-    setEditStatus(["PENDING", "CLAIMED", "IN_REVIEW", "COMPLETED", "EXPIRED"].includes(statusVal) ? statusVal : "CLAIMED");
+    const statusVal = q.status as "PENDING" | "CLAIMED" | "CONVERTED" | "EXPIRED";
+    setEditStatus(["PENDING", "CLAIMED", "CONVERTED", "EXPIRED"].includes(statusVal) ? statusVal : "CLAIMED");
     setIsEditing(false);
     setSaveSuccessMessage(null);
     setSaveErrorMessage(null);
@@ -989,8 +989,7 @@ export default function KioskStaffView({
                     >
                       <option value="PENDING">PENDING</option>
                       <option value="CLAIMED">CLAIMED</option>
-                      <option value="IN_REVIEW">IN_REVIEW</option>
-                      <option value="COMPLETED">COMPLETED</option>
+                      <option value="CONVERTED">CONVERTED</option>
                       <option value="EXPIRED">EXPIRED</option>
                     </select>
                   </label>
