@@ -417,5 +417,11 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision 60**: Provide an admin-initiated Stripe Checkout link generation tool on `/admin/tenants/[companyId]` (Option C).
 - **Why**: Platform administrators troubleshooting tenants without payment details can immediately generate a checkout session link, copy it to their clipboard, or email it directly to the business owner to resolve missing billing details.
 
+## Pricing Engine Double-Markup Elimination (2026-09-08)
+
+- **Decision 61**: Remove the legacy `* finalMultiplier` factor from `calculateMakingPrice` in `src/services/pricing.ts` so that `estimatedSellingPrice = makingPrice + customerMarginAmount`.
+- **Why**: In the legacy MVP codebase, `PricingProfile.finalMultiplier` defaulted to `2` (keystone doubling). When the 3-Tier pricing system (`Production Subtotal ÷ tierDivisor = Making Price`) and explicit jeweler `customerMarginPct` were implemented, `calculateMakingPrice` still multiplied `(makingPrice + margin) * finalMultiplier`. Consequently, when a jeweler configured 0% margin, the End Customer Price doubled from $1,671.51 to $3,343.02 with 100% ROI, which contradicted the breakdown display. Removing `finalMultiplier` aligns the pricing hierarchy so that Customer Margin % is the sole controller of the jeweler's retail markup.
+
+
 
 
