@@ -330,7 +330,42 @@ describe("calculateMakingPrice", () => {
     expect(quote.customerMarginAmount).toBe(Math.round(quote.makingPrice * 3 * 100) / 100);
     expect(quote.estimatedSellingPrice).toBe(Math.round((quote.makingPrice + quote.customerMarginAmount) * 100) / 100);
   });
+
+  it("ensures 0% customer margin results in selling price equal to making price (no double multiplication with finalMultiplier)", () => {
+    const quote = calculateMakingPrice({
+      pricingProfile: {
+        goldSpotPerOz: 4500,
+        platinumSpotPerOz: 985.2,
+        silverSpotPerOz: 31.4,
+        goldWastagePct: 12,
+        platinumLaborPct: 20,
+        centerSettingPerCarat: 20,
+        roundSideSettingPerStone: 2.5,
+        fancySideSettingPerStone: 3.5,
+        waxPerPiece: 15,
+        polishingPerPiece: 20,
+        cadCharge: 20,
+        finalMultiplier: 2
+      },
+
+      metalType: "14K",
+      metalWeightGrams: 5,
+      goldSpotPerOz: 4500,
+      centerStone: { shape: "round", caratWeight: 1.0 },
+      sideStones: [],
+      hasWeddingBand: false,
+      isTwoTone: false,
+      cadCost: 20,
+      pricingTier: "TIER_2",
+      customerMarginPct: 0
+    });
+
+    expect(quote.customerMarginPct).toBe(0);
+    expect(quote.customerMarginAmount).toBe(0);
+    expect(quote.estimatedSellingPrice).toBe(quote.makingPrice);
+  });
 });
+
 
 describe("calculateTierPrice", () => {
   it("Tier 1: 600 subtotal / 0.6 = 1000 making price, with 20% margin = 1200", () => {

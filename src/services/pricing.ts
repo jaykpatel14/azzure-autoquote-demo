@@ -334,11 +334,9 @@ export function calculateMakingPrice(
   const makingPrice = Math.round((subtotal / tierDivisor) * 100) / 100;
 
   // Step 3: Customer / Jeweler adds Jeweler Markup on top of Tier Formula Price -> End Customer Price
-  const finalMultiplier = input.pricingProfile?.finalMultiplier !== undefined && !isNaN(Number(input.pricingProfile.finalMultiplier)) && Number(input.pricingProfile.finalMultiplier) > 0
-    ? Number(input.pricingProfile.finalMultiplier)
-    : 1;
   const _customerMarginAmount = Math.round((makingPrice * (customerMarginPct / 100)) * 100) / 100;
-  const estimatedSellingPrice = Math.round((makingPrice + _customerMarginAmount) * finalMultiplier * 100) / 100;
+  const estimatedSellingPrice = Math.round((makingPrice + _customerMarginAmount) * 100) / 100;
+
 
   // Accent colored-stone estimate — computed from the GemstoneRate table
   // (commercial tier by default). Returned as a range, never merged into the

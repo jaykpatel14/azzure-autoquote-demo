@@ -562,6 +562,21 @@ azzure-autoquote-mvp/
    - `npm run typecheck` passed with 0 errors.
    - 32 vitest test files passed (152/152 unit tests).
 
+## Pricing Engine Double-Markup Elimination (2026-09-08)
+
+### Goals
+1. Eliminate the legacy `* finalMultiplier` (default 2x) multiplication in `calculateMakingPrice` (`src/services/pricing.ts`).
+2. Ensure `estimatedSellingPrice = makingPrice + customerMarginAmount` so that Customer Margin % (0%, 50%, 100%) accurately and directly dictates retail prices.
+3. Fix the visual math discrepancy where 0% customer margin displayed double the making price.
+
+### What Has Been Done Till Now
+1. Updated `src/services/pricing.ts` line 337: removed extraneous `* finalMultiplier` so `estimatedSellingPrice = Math.round((makingPrice + _customerMarginAmount) * 100) / 100`.
+2. Added unit test in `src/services/pricing.test.ts` asserting that 0% customer margin yields an `estimatedSellingPrice` identical to `makingPrice` even when `pricingProfile.finalMultiplier` is 2.
+3. Verification:
+   - `npm run typecheck` passed with 0 errors.
+   - Vitest suite passed: 32 test files (153/153 tests).
+
+
 
 
 
