@@ -14,13 +14,17 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
   const params = searchParams ? await searchParams : undefined;
 
   if (params?.session_id) {
-    await syncStripeCheckoutSession(params.session_id);
+    const syncResult = await syncStripeCheckoutSession(params.session_id);
+    if (syncResult?.provisionedEmail) {
+      redirect(`/verify-email?email=${encodeURIComponent(syncResult.provisionedEmail)}`);
+    }
   }
 
   const context = await getAuthenticatedCompanyContext();
   if (context?.company.subscription?.onboardingComplete) {
     redirect("/");
   }
+
 
   if (!context) {
     return (

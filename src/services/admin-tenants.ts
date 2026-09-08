@@ -30,6 +30,8 @@ type AdminTenantListCompany = {
   subscription: {
     status: string;
     plan: { id: string; name: string; code: string; monthlyLimit: number };
+    stripeCustomerId?: string | null;
+    stripeSubscriptionId?: string | null;
     currentPeriodStart: Date;
     currentPeriodEnd: Date;
     trialQuotesUsed: number;
@@ -37,6 +39,7 @@ type AdminTenantListCompany = {
     overageEnabled: boolean;
     overagePriceCents: number | null;
   } | null;
+
   memberships: {
     id: string;
     role: string;

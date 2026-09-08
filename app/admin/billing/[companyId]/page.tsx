@@ -7,6 +7,8 @@ import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-adm
 import { prisma } from "@/lib/prisma";
 import { resolveMetalPricing, toPricingProfileInput } from "@/lib/metal-pricing";
 import { ensureBasePlans } from "@/lib/plan-bootstrap";
+import AdminStripeCheckoutLink from "@/components/admin-stripe-checkout-link";
+
 
 type CompanyBillingPageProps = {
   params: Promise<{
@@ -163,7 +165,21 @@ export default async function AdminCompanyBillingPage({ params }: CompanyBilling
                 <p className="muted">Stripe and plan values that drive billing and usage limits.</p>
               </div>
             </div>
+
+            {!subscription?.stripeCustomerId && (
+              <AdminStripeCheckoutLink
+                companyId={company.id}
+                companyName={company.name}
+                ownerEmail={
+                  company.memberships.find((m) => m.role === "OWNER")?.user.email ||
+                  company.memberships[0]?.user.email
+                }
+                planCode={subscription?.plan.code || "professional"}
+              />
+            )}
+
             <div className="grid twoUp">
+
               <label className="field">
                 <span>Plan</span>
                 <select name="planId" defaultValue={subscription?.planId ?? plans[0]?.id ?? ""}>

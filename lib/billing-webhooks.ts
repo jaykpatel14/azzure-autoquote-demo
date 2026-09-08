@@ -4,7 +4,10 @@ import type Stripe from "stripe";
 import { prisma as defaultPrisma } from "@/lib/prisma";
 import { mapStripeSubscriptionStatus } from "@/lib/billing";
 import { DEFAULT_TRIAL_QUOTE_CAP } from "@/lib/subscription-plans";
-import { getStripeClient } from "@/lib/stripe";
+import { buildAppUrl, getStripeClient } from "@/lib/stripe";
+import { onboardCompanyOwner } from "@/lib/onboarding";
+import { createEmailVerificationToken } from "@/lib/auth-tokens";
+import { sendAuthMail } from "@/lib/mailer";
 
 type Db = PrismaClient;
 type Tx = Prisma.TransactionClient;
@@ -232,6 +235,100 @@ async function syncSubscriptionRecord(
   return savedSubscription;
 }
 
+async function handlePendingRegistrationProvisioning(
+  db: Db,
+  pendingRegistrationId: string,
+  session: Stripe.Checkout.Session,
+  subscription: Stripe.Subscription
+) {
+  const pending = await db.pendingRegistration.findUnique({
+    where: { id: pendingRegistrationId }
+  });
+
+  if (!pending) {
+    return null;
+  }
+
+  const existingUser = await db.user.findUnique({
+    where: { email: pending.email }
+  });
+
+  if (existingUser) {
+    await db.pendingRegistration.delete({ where: { id: pending.id } }).catch(() => {});
+    return { email: pending.email };
+  }
+
+  const period = getSubscriptionPeriod(subscription);
+  const customerId =
+    typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
+  const { stripePriceId, stripeProductId } = getPriceSnapshot(subscription);
+  const status = mapStripeSubscriptionStatus(subscription.status);
+
+  const { user, company } = await db.$transaction(async (tx) => {
+    const { user, company } = await onboardCompanyOwner(tx, {
+      email: pending.email,
+      passwordHash: pending.passwordHash,
+      companyName: pending.companyName,
+      planCode: pending.planCode
+    });
+
+    const plan = await resolvePlan(tx, subscription, null);
+    if (plan) {
+      await tx.subscription.update({
+        where: { companyId: company.id },
+        data: {
+          planId: plan.id,
+          status,
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscription.id,
+          stripeProductId,
+          stripePriceId,
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
+          currentPeriodStart: toDateFromUnix(period.currentPeriodStart),
+          currentPeriodEnd: toDateFromUnix(period.currentPeriodEnd)
+        }
+      });
+
+      await syncUsagePeriod(
+        tx,
+        company.id,
+        status === "TRIALING" ? DEFAULT_TRIAL_QUOTE_CAP : plan.monthlyLimit,
+        subscription
+      );
+    }
+
+    await tx.pendingRegistration.delete({ where: { id: pending.id } }).catch(() => {});
+
+    return { user, company };
+  });
+
+  // Create email verification tokens and dispatch OTP verification email
+  const { token, otp } = await createEmailVerificationToken(user.id, company.id);
+  const verificationUrl = buildAppUrl(`/verify-email?token=${token}&email=${encodeURIComponent(user.email)}`);
+
+  await sendAuthMail({
+    to: user.email,
+    subject: `${otp} is your Azzure AI Quote verification code`,
+    text: `Your Azzure AI Quote verification code is: ${otp}\n\nEnter this 6-digit code on the verification screen, or click the link below to verify your email:\n${verificationUrl}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 540px; margin: 0 auto; padding: 24px; background: #080e22; color: #f8fafc; border-radius: 16px;">
+        <h2 style="color: #38bdf8; margin-top: 0;">Verify your Azzure AI Quote account</h2>
+        <p style="color: #94a3b8; font-size: 15px;">Thank you for starting your trial. Please enter the following 6-digit verification code to activate your luxury jewelry workspace:</p>
+        <div style="margin: 24px 0; padding: 18px; background: #040711; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; text-align: center;">
+          <span style="font-family: monospace; font-size: 36px; font-weight: bold; letter-spacing: 0.25em; color: #f5d061;">${otp}</span>
+        </div>
+        <p style="color: #94a3b8; font-size: 14px;">Or verify automatically with one click:</p>
+        <div style="text-align: center; margin: 20px 0;">
+          <a href="${verificationUrl}" style="background: linear-gradient(135deg, #38bdf8, #2563eb); color: #ffffff; padding: 12px 28px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block;">Verify Email Address →</a>
+        </div>
+        <p style="color: #64748b; font-size: 12px; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">This code is valid for 24 hours. If you did not sign up for Azzure AI Quote, you can safely ignore this email.</p>
+      </div>
+    `
+  }).catch(() => {});
+
+  return { email: user.email };
+}
+
 type SyncCheckoutSessionOptions = WebhookProcessorOptions & {
   expectedCompanyId?: string;
 };
@@ -249,12 +346,29 @@ export async function syncStripeCheckoutSession(
     throw new Error("Stripe checkout session is missing subscription information.");
   }
 
+  const subscription = await stripe.subscriptions.retrieve(session.subscription);
+
+  const pendingRegistrationId =
+    session.metadata?.pendingRegistrationId || subscription.metadata?.pendingRegistrationId;
+
+  let provisionedEmail: string | null = null;
+  if (pendingRegistrationId) {
+    const res = await handlePendingRegistrationProvisioning(
+      db,
+      pendingRegistrationId,
+      session,
+      subscription
+    );
+    if (res?.email) {
+      provisionedEmail = res.email;
+    }
+  }
+
   const sessionCompanyId = session.metadata?.companyId;
   if (options.expectedCompanyId && sessionCompanyId && sessionCompanyId !== options.expectedCompanyId) {
     throw new Error("Stripe checkout session does not belong to the active company.");
   }
 
-  const subscription = await stripe.subscriptions.retrieve(session.subscription);
   const subscriptionCompanyId = subscription.metadata?.companyId;
   if (
     options.expectedCompanyId &&
@@ -268,7 +382,7 @@ export async function syncStripeCheckoutSession(
     await syncSubscriptionRecord(tx, subscription, "checkout.session.completed");
   });
 
-  return { session, subscription };
+  return { session, subscription, provisionedEmail };
 }
 
 async function processWebhookEvent(event: Stripe.Event, stripe: Stripe, db: Db) {
@@ -280,11 +394,24 @@ async function processWebhookEvent(event: Stripe.Event, stripe: Stripe, db: Db) 
       }
 
       const subscription = await stripe.subscriptions.retrieve(session.subscription);
+      const pendingRegistrationId =
+        session.metadata?.pendingRegistrationId || subscription.metadata?.pendingRegistrationId;
+
+      if (pendingRegistrationId) {
+        await handlePendingRegistrationProvisioning(
+          db,
+          pendingRegistrationId,
+          session,
+          subscription
+        );
+      }
+
       await db.$transaction(async (tx) => {
         await syncSubscriptionRecord(tx, subscription, event.type);
       });
       return;
     }
+
     case "customer.subscription.created":
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {

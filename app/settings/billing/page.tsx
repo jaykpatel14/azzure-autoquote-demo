@@ -86,9 +86,11 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
             daysRemaining={trialDaysRemaining}
             quoteCap={subscription.trialQuoteCap}
             quotesRemaining={trialQuotesRemaining}
+            hasPaymentMethod={Boolean(subscription.stripeCustomerId)}
           />
         ) : null
       }
+
       sidebarExtra={
         subscription?.status === "TRIALING" &&
         trialDaysRemaining !== null &&
@@ -260,10 +262,16 @@ export default async function BillingSettingsPage({ searchParams }: BillingSetti
                     </form>
                   </div>
                   {!subscription.stripeCustomerId ? (
-                    <p className="muted small">
-                      The billing portal becomes available after the first Stripe checkout session.
-                    </p>
+                    <div style={{ marginTop: "14px", padding: "12px 16px", borderRadius: "8px", background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.35)" }}>
+                      <p style={{ margin: 0, color: "#f59e0b", fontWeight: 600, fontSize: "14px" }}>
+                        Payment Method Missing
+                      </p>
+                      <p className="muted small" style={{ margin: "4px 0 0" }}>
+                        You do not have a credit card on file with Stripe yet. Select your plan below to register your card and keep your workspace active after the trial concludes.
+                      </p>
+                    </div>
                   ) : null}
+
                 </>
               ) : (
                 <p className="muted small">
