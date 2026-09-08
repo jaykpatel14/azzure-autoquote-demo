@@ -105,7 +105,7 @@ export async function getAdminTenants() {
         select: {
           id: true,
           role: true,
-          user: { select: { email: true, name: true } }
+          user: { select: { email: true, name: true, emailVerifiedAt: true } }
         }
       },
       subscription: {
@@ -156,7 +156,10 @@ export async function getAdminTenants() {
   const activeSubscriptions = companies.filter((company) =>
     ["TRIALING", "ACTIVE", "PAST_DUE"].includes(company.subscription?.status ?? "")
   ).length;
-  const pendingApprovals = companies.filter((company) => company.accountStatus === "PENDING_APPROVAL").length;
+  const pendingApprovals = companies.filter((company) =>
+    company.accountStatus === "PENDING_APPROVAL" &&
+    company.memberships.some((m) => (m.user as any)?.emailVerifiedAt)
+  ).length;
 
   const recentActivity = companies
     .flatMap((company) =>
@@ -369,7 +372,16 @@ export function formatAdminMoney(value: unknown) {
 
 export async function getPendingApprovalCompanies() {
   const companies = await prisma.company.findMany({
-    where: { accountStatus: "PENDING_APPROVAL" },
+    where: {
+      accountStatus: "PENDING_APPROVAL",
+      memberships: {
+        some: {
+          user: {
+            emailVerifiedAt: { not: null }
+          }
+        }
+      }
+    },
     orderBy: { createdAt: "asc" },
     include: {
       memberships: {
@@ -378,7 +390,7 @@ export async function getPendingApprovalCompanies() {
         select: {
           id: true,
           role: true,
-          user: { select: { id: true, email: true, name: true } }
+          user: { select: { id: true, email: true, name: true, emailVerifiedAt: true } }
         }
       },
       subscription: {

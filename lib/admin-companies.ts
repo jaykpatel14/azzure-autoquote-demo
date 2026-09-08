@@ -570,3 +570,42 @@ export async function deleteAdminCompanyMember(
   };
 }
 
+/**
+ * Purges unverified, abandoned registrations older than a specified age (default 48 hours).
+ * Prevents spam bots from cluttering database records if they never verify their email.
+ */
+export async function cleanupStaleUnverifiedTenants(
+  client: PrismaCompanyClient,
+  olderThanHours: number = 48
+) {
+  const cutoff = new Date(Date.now() - olderThanHours * 60 * 60 * 1000);
+
+  const staleCompanies = await client.company.findMany({
+    where: {
+      accountStatus: "PENDING_APPROVAL",
+      createdAt: { lt: cutoff },
+      memberships: {
+        none: {
+          user: {
+            emailVerifiedAt: { not: null }
+          }
+        }
+      }
+    },
+    select: { id: true, name: true }
+  });
+
+  let purgedCount = 0;
+  for (const company of staleCompanies) {
+    try {
+      await deleteAdminCompany(client, "system", company.id);
+      purgedCount++;
+    } catch (err) {
+      console.error(`[cleanupStaleUnverifiedTenants] Failed to purge company ${company.id}:`, err);
+    }
+  }
+
+  return { purgedCount, foundCount: staleCompanies.length };
+}
+
+

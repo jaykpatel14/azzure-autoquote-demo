@@ -23,7 +23,18 @@ export default async function InternalAdminShell({
   adminName,
   children
 }: InternalAdminShellProps) {
-  const pendingCount = await prisma.company.count({ where: { accountStatus: "PENDING_APPROVAL" } });
+  const pendingCount = await prisma.company.count({
+    where: {
+      accountStatus: "PENDING_APPROVAL",
+      memberships: {
+        some: {
+          user: {
+            emailVerifiedAt: { not: null }
+          }
+        }
+      }
+    }
+  });
   const cookieStore = await cookies();
   const hasActiveCompanyContext = Boolean(cookieStore.get(ACTIVE_COMPANY_COOKIE)?.value);
 

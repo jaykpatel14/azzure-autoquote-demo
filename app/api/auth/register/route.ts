@@ -4,9 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { onboardCompanyOwner } from "@/lib/onboarding";
 import { createEmailVerificationToken } from "@/lib/auth-tokens";
-import { sendSignupApprovalAlert } from "@/lib/account-workflow";
 import { sendAuthMail } from "@/lib/mailer";
 import { validateEmail } from "@/lib/email-validation";
+import { validateEmailDomainMx } from "@/lib/email-mx-validation";
 
 const registerSchema = z.object({
   email: z.string().trim().superRefine((val, ctx) => {
@@ -31,12 +31,27 @@ export async function POST(request: Request) {
     const input = registerSchema.parse(await request.json());
     const email = input.email.toLowerCase();
 
+    // Verify email domain possesses active MX records and is not a disposable exchanger
+    const mxCheck = await validateEmailDomainMx(email);
+    if (!mxCheck.valid) {
+      return NextResponse.json(
+        { error: mxCheck.error || "Please enter a valid, active email address." },
+        { status: 400 }
+      );
+    }
+
     const existing = await prisma.user.findUnique({
       where: { email },
-      select: { id: true }
+      select: { id: true, emailVerifiedAt: true }
     });
 
     if (existing) {
+      if (!existing.emailVerifiedAt) {
+        return NextResponse.json(
+          { error: "An unverified account already exists for this email. Please check your inbox or visit the verification screen to enter your code." },
+          { status: 409 }
+        );
+      }
       return NextResponse.json({ error: "An account already exists for that email." }, { status: 409 });
     }
 
@@ -77,13 +92,6 @@ export async function POST(request: Request) {
             <p style="color: #64748b; font-size: 12px; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">This code is valid for 24 hours. If you did not sign up for Azzure AI Quote, you can safely ignore this email.</p>
           </div>
         `
-      });
-
-      await sendSignupApprovalAlert({
-        companyName: company.name,
-        ownerName: user.email,
-        ownerEmail: user.email,
-        signedUpAt: company.createdAt
       });
 
       return NextResponse.json({ ok: true, email: user.email });

@@ -102,6 +102,10 @@ describe("Admin Company and Member Deletion", () => {
 });
 
 describe("Resend Email Integration (lib/mailer)", () => {
+  beforeEach(() => {
+    vi.spyOn(prisma.appSetting, "findUnique").mockResolvedValue(null as any);
+  });
+
   it("gracefully sends mock email in test/dev environment without crashing", async () => {
     const res = await sendEmail({
       to: "customer@luxuryjeweler.com",

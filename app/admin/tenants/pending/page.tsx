@@ -4,6 +4,7 @@ import InternalAdminShell from "@/components/internal-admin-shell";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { getPendingApprovalCompanies } from "@/src/services/admin-tenants";
+import { AdminDeclineTenantButton } from "@/components/admin-decline-tenant-button";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,11 @@ function formatDate(date: Date) {
   }).format(date);
 }
 
-export default async function PendingApprovalsPage() {
+type PendingPageProps = {
+  searchParams?: Promise<{ declined?: string }>;
+};
+
+export default async function PendingApprovalsPage({ searchParams }: PendingPageProps) {
   const context = await getInternalAdminContext();
   if (!context) {
     redirect("/signin");
@@ -22,6 +27,8 @@ export default async function PendingApprovalsPage() {
 
   requireAdminRouteAccess("/admin/tenants/pending", context.user.adminRole );
 
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const wasDeclined = resolvedSearchParams?.declined === "1";
   const companies = await getPendingApprovalCompanies();
 
   return (
@@ -36,9 +43,27 @@ export default async function PendingApprovalsPage() {
         </Link>
       }
     >
+      {wasDeclined && (
+        <section
+          style={{
+            marginBottom: 16,
+            padding: "14px 18px",
+            background: "rgba(16, 185, 129, 0.12)",
+            border: "1px solid rgba(16, 185, 129, 0.4)",
+            borderRadius: 8,
+            color: "#34d399",
+            display: "flex",
+            alignItems: "center",
+            gap: 10
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 20 }}>check_circle</span>
+          <strong>Tenant application successfully declined and permanently deleted from the database.</strong>
+        </section>
+      )}
       <section className="warningBanner">
         <strong>{companies.length} account{companies.length === 1 ? "" : "s"} waiting for approval</strong>
-        <p>Waiting longest first. A tier must be selected before approval.</p>
+        <p>Waiting longest first. Only genuine applicants who completed email verification appear here.</p>
       </section>
       <section className="card">
         <div className="sectionHeader">
@@ -112,9 +137,7 @@ export default async function PendingApprovalsPage() {
                     <button className="button primary" type="submit" name="accountStatus" value="APPROVED">
                       Approve company with selected tier
                     </button>
-                    <button className="button secondary" type="submit" name="accountStatus" value="SUSPENDED" formNoValidate>
-                      Decline company
-                    </button>
+                    <AdminDeclineTenantButton companyName={company.name} />
                   </div>
                 </form>
               </div>

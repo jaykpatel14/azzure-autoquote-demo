@@ -44,7 +44,9 @@ export async function consumeEmailVerificationToken(tokenOrOtp: string) {
     return null;
   }
 
-  await prisma.$transaction(async (tx) => {
+  const wasAlreadyVerified = !!record.user.emailVerifiedAt;
+
+  const { notifyAdminCompany } = await prisma.$transaction(async (tx) => {
     await tx.emailVerificationToken.updateMany({
       where: { userId: record.userId },
       data: { consumedAt: new Date() }
@@ -53,22 +55,48 @@ export async function consumeEmailVerificationToken(tokenOrOtp: string) {
       where: { id: record.userId },
       data: { emailVerifiedAt: new Date() }
     });
-    const company = await tx.membership.findFirst({
+    const companyMembership = await tx.membership.findFirst({
       where: { userId: record.userId },
-      select: { companyId: true }
+      include: { company: true }
     });
-    if (company) {
+
+    let pendingCompanyToAlert: { name: string; createdAt: Date; websiteUrl: string | null } | null = null;
+
+    if (companyMembership?.company) {
       await tx.auditLog.create({
         data: {
           action: "EMAIL_VERIFIED",
-          companyId: company.companyId,
+          companyId: companyMembership.company.id,
           actorUserId: record.userId,
           targetType: "User",
           targetId: record.userId
         }
       });
+
+      if (!wasAlreadyVerified && companyMembership.company.accountStatus === "PENDING_APPROVAL") {
+        pendingCompanyToAlert = {
+          name: companyMembership.company.name,
+          createdAt: companyMembership.company.createdAt,
+          websiteUrl: companyMembership.company.websiteUrl
+        };
+      }
     }
+
+    return { notifyAdminCompany: pendingCompanyToAlert };
   });
+
+  if (notifyAdminCompany) {
+    const { sendSignupApprovalAlert } = await import("@/lib/account-workflow");
+    await sendSignupApprovalAlert({
+      companyName: notifyAdminCompany.name,
+      ownerName: record.user.name || record.user.email,
+      ownerEmail: record.user.email,
+      websiteUrl: notifyAdminCompany.websiteUrl,
+      signedUpAt: notifyAdminCompany.createdAt
+    }).catch((err) => {
+      console.error("[auth-tokens] Failed to send signup approval alert:", err);
+    });
+  }
 
   return record.user;
 }
