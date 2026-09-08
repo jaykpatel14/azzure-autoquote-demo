@@ -408,4 +408,14 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision 57**: Make declining an approval permanently delete the company, its cascading relations, and orphan user records from PostgreSQL via `deleteAdminCompany`.
 - **Why**: Previously, declining an application merely updated `accountStatus = "SUSPENDED"`, leaving spam tenants in the database and requiring manual database deletion. Invoking `deleteAdminCompany` on decline immediately purges the rejected application, eliminating manual cleanup.
 
+## Upfront Stripe Checkout Gating & Existing Tenant Remediation (2026-09-08)
+
+- **Decision 58**: Defer account provisioning in PostgreSQL until after successful Stripe Checkout card submission (Option 1).
+- **Why**: Previously, `/api/checkout` pre-created `Company`, `User`, and `Subscription` records in PostgreSQL before redirecting to Stripe. If prospects abandoned checkout, phantom tenants remained in the database with null Stripe customer IDs. Storing a temporary `PendingRegistration` record and only creating the real tenant upon receiving `checkout.session.completed` ensures 100% of provisioned tenants possess a validated payment method and Stripe customer record.
+- **Decision 59**: Display an attention billing banner in the customer workspace when `stripeCustomerId` is null (Option A).
+- **Why**: Existing trialing tenants created prior to upfront gating should not be abruptly locked out of their 14-day trial, but need clear and continuous prompting to register their payment method before their trial expires.
+- **Decision 60**: Provide an admin-initiated Stripe Checkout link generation tool on `/admin/tenants/[companyId]` (Option C).
+- **Why**: Platform administrators troubleshooting tenants without payment details can immediately generate a checkout session link, copy it to their clipboard, or email it directly to the business owner to resolve missing billing details.
+
+
 

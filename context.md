@@ -534,5 +534,35 @@ azzure-autoquote-mvp/
    - `npm run typecheck` (`tsc --noEmit`) passed with 0 errors.
    - Full vitest suite passed 30 test files (148/148 tests).
 
+## Upfront Stripe Checkout Gating & Existing Tenant Remediation (2026-09-08)
+
+### Goals
+1. Implement upfront Stripe Checkout card collection (Option 1) for all new registrations so accounts are only created in PostgreSQL after successful Stripe card authorization, preventing ghost accounts and fake signups.
+2. Provide an in-app billing attention banner (Option A) in the workspace for existing trialing tenants without payment methods (e.g., *Premier Trading Corp* and *Diamond Tradex*).
+3. Provide an admin-initiated Stripe Checkout session link generator (Option C) on `/admin/tenants/[companyId]` to copy or email checkout links to tenant owners.
+
+### What Has Been Done Till Now
+1. **PendingRegistration Model & Upfront Stripe Gate (Option 1)**:
+   - Added `PendingRegistration` model in `prisma/schema.prisma` and created migration `prisma/migrations/20260908120000_add_pending_registration/migration.sql`.
+   - Updated `app/api/checkout/route.ts` to perform MX DNS validation and store signup inputs in `PendingRegistration` with a 2-hour TTL. It initiates the Stripe Checkout Session with `pendingRegistrationId` and redirects to Stripe without creating `User`, `Company`, or `Subscription` records upfront.
+   - Updated `lib/billing-webhooks.ts` (`handlePendingRegistrationProvisioning` in `syncStripeCheckoutSession` and webhook `checkout.session.completed`) to atomically provision the company, user, and subscription in PostgreSQL only after Stripe confirms valid card authorization.
+   - Updated `app/onboarding/page.tsx` to automatically redirect newly provisioned users to `/verify-email?email=...` for OTP verification.
+   - Sealed direct registration bypass in `app/api/auth/register/route.ts`.
+2. **In-App Billing Attention Banner (Option A)**:
+   - Updated `components/trial-banner.tsx` with `hasPaymentMethod?: boolean`. When false, it renders an attention banner: *"Action Required · Payment Method Needed"* with a direct *"Add payment details →"* button linking to `/settings/billing?upgrade=1`.
+   - Propagated `hasPaymentMethod={Boolean(subscription?.stripeCustomerId)}` across `app/page.tsx`, `app/quotes/page.tsx`, `app/quotes/new/page.tsx`, and `app/settings/billing/page.tsx`.
+   - Added an attention notice in `/settings/billing` informing the jeweler that a payment method is required to keep their workspace active after their trial.
+3. **Admin Stripe Checkout Link Generator (Option C)**:
+   - Created admin API endpoint `POST /api/admin/tenants/[companyId]/checkout-link` in `app/api/admin/tenants/[companyId]/checkout-link/route.ts` to generate a Stripe Checkout Session for any tenant missing payment details and optionally email it to the owner.
+   - Created `AdminStripeCheckoutLink` client component in `components/admin-stripe-checkout-link.tsx` with 1-click **"Copy Link"** and **"Email Link to Owner"** capabilities.
+   - Embedded `AdminStripeCheckoutLink` into `/admin/tenants/[companyId]` and `/admin/billing/[companyId]` whenever `subscription.stripeCustomerId` is missing.
+4. **Verification**:
+   - Added `test/admin-checkout-link.test.ts` (2 tests passing).
+   - Added `test/checkout-gating.test.ts` (2 tests passing).
+   - `npm run typecheck` passed with 0 errors.
+   - 32 vitest test files passed (152/152 unit tests).
+
+
+
 
 

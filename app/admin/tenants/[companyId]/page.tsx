@@ -5,6 +5,8 @@ import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { formatAdminMoney, getAdminTenant } from "@/src/services/admin-tenants";
 import { AdminDeleteCompanyButton } from "@/components/admin-delete-company-button";
+import AdminStripeCheckoutLink from "@/components/admin-stripe-checkout-link";
+
 
 type TenantPageProps = {
   params: Promise<{
@@ -197,9 +199,21 @@ export default async function AdminTenantPage({ params }: TenantPageProps) {
                 {subscription?.overagePriceCents ? formatAdminMoney(subscription.overagePriceCents / 100) : "No overage price"}
               </p>
             </div>
+            {!subscription?.stripeCustomerId && (
+              <AdminStripeCheckoutLink
+                companyId={company.id}
+                companyName={company.name}
+                ownerEmail={
+                  company.memberships?.find((m) => m.role === "OWNER")?.user?.email ||
+                  company.memberships?.[0]?.user?.email
+                }
+                planCode={subscription?.plan?.code || "professional"}
+              />
+            )}
           </div>
         </article>
       </section>
+
 
       <section className="card">
         <div className="sectionHeader">

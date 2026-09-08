@@ -251,9 +251,11 @@ export default async function HomePage() {
             daysRemaining={trialDaysRemaining}
             quoteCap={subscription.trialQuoteCap}
             quotesRemaining={trialQuotesRemaining}
+            hasPaymentMethod={Boolean(subscription.stripeCustomerId)}
           />
         ) : null
       }
+
       sidebarExtra={
         subscription?.status === "TRIALING" &&
         trialDaysRemaining !== null &&

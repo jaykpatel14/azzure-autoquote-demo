@@ -559,3 +559,17 @@ model GemstoneRate {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
+
+model PendingRegistration {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  companyName     String
+  passwordHash    String
+  planCode        String   @default("professional")
+  stripeSessionId String?  @unique
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([expiresAt])
+}
+

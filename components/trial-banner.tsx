@@ -8,6 +8,7 @@ type TrialBannerProps = {
   daysRemaining: number;
   quoteCap: number;
   quotesRemaining: number;
+  hasPaymentMethod?: boolean;
 };
 
 const STORAGE_PREFIX = "azzure-trial-banner-dismissed";
@@ -17,7 +18,8 @@ export default function TrialBanner({
   companyId,
   daysRemaining,
   quoteCap,
-  quotesRemaining
+  quotesRemaining,
+  hasPaymentMethod = true
 }: TrialBannerProps) {
   const subscribe = useCallback((notify: () => void) => {
     window.addEventListener(STORAGE_EVENT, notify);
@@ -37,7 +39,8 @@ export default function TrialBanner({
     return null;
   }
 
-  const isUrgent = daysRemaining <= 3;
+  const isMissingPayment = !hasPaymentMethod;
+  const isUrgent = daysRemaining <= 3 || isMissingPayment;
   const daysLabel = `${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`;
 
   function dismiss() {
@@ -49,15 +52,27 @@ export default function TrialBanner({
   return (
     <section className={isUrgent ? "trialBannerCard trialBannerCard--urgent" : "trialBannerCard"}>
       <div>
-        <p className="trialBannerLabel">Trial active</p>
-        <strong>Your free trial ends in {daysLabel}</strong>
+        <p className="trialBannerLabel">
+          {isMissingPayment ? "Action Required · Payment Method Needed" : "Trial active"}
+        </p>
+        <strong>
+          {isMissingPayment
+            ? `Trial active (${daysLabel} left) — Add a payment method to ensure uninterrupted access`
+            : `Your free trial ends in ${daysLabel}`}
+        </strong>
         <p className="muted small">
-          You have {quotesRemaining} of {quoteCap} trial quotes remaining.
+          {isMissingPayment
+            ? `You have ${quotesRemaining} of ${quoteCap} trial quotes remaining. Add your payment details before your trial period concludes.`
+            : `You have ${quotesRemaining} of ${quoteCap} trial quotes remaining.`}
         </p>
       </div>
       <div className="trialBannerActions">
-        <Link className="button primary button--sm" href="/settings/billing?upgrade=1">
-          Upgrade now
+        <Link
+          className="button primary button--sm"
+          href="/settings/billing?upgrade=1"
+          style={isMissingPayment ? { background: "linear-gradient(135deg, #f59e0b, #d97706)", borderColor: "#f59e0b" } : undefined}
+        >
+          {isMissingPayment ? "Add payment details →" : "Upgrade now"}
         </Link>
         <button className="button secondary button--sm" type="button" onClick={dismiss}>
           Dismiss
@@ -66,3 +81,4 @@ export default function TrialBanner({
     </section>
   );
 }
+

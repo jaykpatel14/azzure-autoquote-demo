@@ -144,9 +144,11 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
             daysRemaining={trialDaysRemaining}
             quoteCap={subscription.trialQuoteCap}
             quotesRemaining={trialQuotesRemaining}
+            hasPaymentMethod={Boolean(subscription.stripeCustomerId)}
           />
         ) : null
       }
+
       sidebarExtra={
         subscription?.status === "TRIALING" &&
         trialDaysRemaining !== null &&

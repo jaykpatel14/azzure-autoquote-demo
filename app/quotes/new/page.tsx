@@ -70,9 +70,11 @@ export default async function NewQuotePage({ searchParams }: NewQuotePageProps) 
             daysRemaining={trialDaysRemaining}
             quoteCap={context.company.subscription.trialQuoteCap}
             quotesRemaining={trialQuotesRemaining}
+            hasPaymentMethod={Boolean(context.company.subscription.stripeCustomerId)}
           />
         ) : null
       }
+
       sidebarExtra={
         context.company.subscription?.status === "TRIALING" &&
         trialDaysRemaining !== null &&
