@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { deleteAdminCompany, deleteAdminCompanyMember } from "@/lib/admin-companies";
 import { sendEmail, sendAuthMail } from "@/lib/mailer";
+import { prisma } from "@/lib/prisma";
 
 describe("Admin Company and Member Deletion", () => {
   it("deletes a company and its orphan users when user has no other company", async () => {
