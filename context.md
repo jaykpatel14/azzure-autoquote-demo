@@ -509,3 +509,30 @@ azzure-autoquote-mvp/
   3. **Companies Roster (`/admin/companies`)**: Each row has a dedicated 1-click **Delete company** modal button in the Actions column.
 - **Verification**: `npm test` passed 24 test suites (107/107 tests) and `npx tsc --noEmit` returned 0 errors.
 
+## Genuine Email Verification & Auto-Deletion on Decline (2026-09-08)
+
+### Goals
+1. Prevent fake, spam, and bot registrations from creating unverified tenant records and polluting the admin approval queue.
+2. Verify that registration emails are genuine and backed by active Mail Exchange (MX) DNS servers before creating accounts.
+3. Defer platform admin signup notifications and pending approval queue listings until after the registrant has successfully verified their email address via OTP or magic link.
+4. Ensure that declining a pending tenant approval automatically and permanently deletes the company, memberships, and orphan user from the PostgreSQL database, eliminating manual database deletion overhead.
+
+### What Has Been Done Till Now
+1. Investigated the root cause of the 14 fake tenant signups:
+   - `POST /api/auth/register` created `Company` and `User` in `PENDING_APPROVAL` status immediately upon form submission without MX validation.
+   - `sendSignupApprovalAlert` sent an admin email immediately upon registration, prior to email verification.
+   - `getPendingApprovalCompanies()` listed all companies in `PENDING_APPROVAL` without checking `user.emailVerifiedAt`.
+   - `app/api/admin/tenants/[companyId]/status/route.ts` only updated `accountStatus` to `SUSPENDED` when declining, leaving the tenant in the database.
+2. Built `lib/email-mx-validation.ts` with real-time `dns.promises.resolveMx(domain)` lookup and disposable mail exchanger detection to reject non-existent, fake, and disposable domains upfront during registration (`POST /api/auth/register`).
+3. Deferred platform admin signup alerts: removed premature `sendSignupApprovalAlert` from `POST /api/auth/register` and relocated it to `consumeEmailVerificationToken` in `lib/auth-tokens.ts` so admins are only alerted after the applicant verifies their email via OTP or magic link.
+4. Gated the admin pending review queue: updated `getPendingApprovalCompanies()` in `src/services/admin-tenants.ts`, the pending badge count in `components/internal-admin-shell.tsx`, and `src/services/admin-overview.ts` to only include companies where the owner's email is verified (`emailVerifiedAt !== null`).
+5. Implemented automatic database deletion on decline: updated `app/api/admin/tenants/[companyId]/status/route.ts` to handle `accountStatus: "DECLINED"` (and declining from pending status) by calling `deleteAdminCompany` to permanently purge the company, its cascading relations, and orphan user from PostgreSQL. Added `AdminDeclineTenantButton` with client confirmation prompt in `app/admin/tenants/pending/page.tsx` and added `?declined=1` success banner.
+6. Added `cleanupStaleUnverifiedTenants` helper in `lib/admin-companies.ts` to automatically purge abandoned registrations older than 48 hours.
+7. Verification:
+   - Added `test/email-mx-validation.test.ts` (5 tests passing).
+   - Added `test/admin-decline-tenant.test.ts` (3 tests passing).
+   - `npm run typecheck` (`tsc --noEmit`) passed with 0 errors.
+   - Full vitest suite passed 30 test files (148/148 tests).
+
+
+

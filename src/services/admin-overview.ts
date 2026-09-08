@@ -161,6 +161,15 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
           select: {
             status: true
           }
+        },
+        memberships: {
+          select: {
+            user: {
+              select: {
+                emailVerifiedAt: true
+              }
+            }
+          }
         }
       }
     }),
@@ -273,7 +282,11 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
   const activeTenantCount = companies.filter((company) =>
     ["ACTIVE", "TRIALING", "PAST_DUE"].includes(company.subscription?.status ?? "")
   ).length;
-  const pendingApprovals = companies.filter((company) => company.accountStatus === "PENDING_APPROVAL").length;
+  const pendingApprovals = companies.filter(
+    (company) =>
+      company.accountStatus === "PENDING_APPROVAL" &&
+      company.memberships.some((m) => m.user?.emailVerifiedAt)
+  ).length;
   const ordersNeedingCkId = await prisma.order.count({
     where: { status: "SUBMITTED", ckOrderId: null }
   });

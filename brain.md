@@ -399,3 +399,13 @@ This document logs every key architectural, design, and calculation decision mad
 - **Decision 54**: Create dedicated Prisma migration `prisma/migrations/20260903000000_add_company_currency/migration.sql` (`ALTER TABLE "Company" ADD COLUMN "currency" TEXT NOT NULL DEFAULT 'USD';`).
 - **Why**: CI test pipelines and production deployments execute `prisma migrate deploy`, which relies on committed migration SQL files rather than schema introspection or development push. Adding this migration ensures CI test databases automatically create the `currency` column on `Company` prior to running integration tests.
 
+## Genuine Email Verification & Auto-Deletion on Decline (2026-09-08)
+
+- **Decision 55**: Validate domain Mail Exchange (MX) records using Node.js `dns.promises.resolveMx` during account registration before creating database records.
+- **Why**: Static email regex and domain blocklists fail to detect randomly generated or non-existent domains. Performing an asynchronous DNS MX lookup upfront guarantees that the domain actually exists and has configured mail servers capable of receiving verification emails.
+- **Decision 56**: Defer admin approval alert emails and pending review queue visibility until the tenant owner successfully verifies their email address via OTP or magic link.
+- **Why**: Fake signups and spam bots that register without verifying their email should never clutter the administrator's review queue or trigger alert emails. Restricting `/admin/tenants/pending` to verified accounts (`emailVerifiedAt !== null`) guarantees administrators only spend time evaluating genuine, responsive applicants.
+- **Decision 57**: Make declining an approval permanently delete the company, its cascading relations, and orphan user records from PostgreSQL via `deleteAdminCompany`.
+- **Why**: Previously, declining an application merely updated `accountStatus = "SUSPENDED"`, leaving spam tenants in the database and requiring manual database deletion. Invoking `deleteAdminCompany` on decline immediately purges the rejected application, eliminating manual cleanup.
+
+
