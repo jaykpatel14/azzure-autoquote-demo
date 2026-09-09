@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { METAL_TYPES } from "@/lib/pricing";
 
-export const AI_ANALYSIS_PROMPT_VERSION = "jewelry-analysis-v2";
+export const AI_ANALYSIS_PROMPT_VERSION = "jewelry-analysis-v3";
 
 export const centerStoneSchema = z.object({
   shape: z.string().trim().min(1).max(120),
