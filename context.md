@@ -1,5 +1,12 @@
 # Azzure AIQuote — Complete System Context & Documentation
 
+## Admin Sales AI Analysis Authentication Fix (2026-09-16)
+
+- `/admin/sales` supplies `QuoteCalculator` with an `assignedCompanyId`: `INTERNAL` for a global estimate or a tenant ID for an assigned quote.
+- `/api/analyze` uses this field to select the authorized admin-sales company context. Without it, the route falls back to tenant membership authentication.
+- Internal administrators usually do not have a tenant membership, so a missing field caused a valid admin session to receive the misleading `Please sign in to continue.` error.
+- Every photo-analysis request path now sends `assignedCompanyId`, whether or not an optional description is present.
+
 ## 1. Executive Summary & Vision
 
 **Azzure AIQuote** is a B2B SaaS platform engineered for retail jewelry stores, luxury showrooms, and custom bridal boutiques. It is designed to run on showroom tablets and **WOW (Workstation on Wheels)** kiosks to transform the custom jewelry sales process from a 2–3 day waiting period into an **instant, high-converting 30-second in-store consultation**.

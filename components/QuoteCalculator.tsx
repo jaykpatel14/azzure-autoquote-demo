@@ -829,8 +829,8 @@ export default function QuoteCalculator({
     formData.append("metalType", metal);
     if (description) {
       formData.append("description", description);
-      if (assignedCompanyId) formData.append("assignedCompanyId", assignedCompanyId);
     }
+    if (assignedCompanyId) formData.append("assignedCompanyId", assignedCompanyId);
 
     const response = await fetch("/api/analyze", {
       method: "POST",
@@ -1051,6 +1051,7 @@ export default function QuoteCalculator({
         formData.append("images", file);
         formData.append("angles", angleDefaults[index] || "general");
       });
+      if (assignedCompanyId) formData.append("assignedCompanyId", assignedCompanyId);
 
       const response = await fetch("/api/analyze", { method: "POST", body: formData });
       const responseText = await response.text();
