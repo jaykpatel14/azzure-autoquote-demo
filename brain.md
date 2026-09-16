@@ -1,5 +1,11 @@
 # Azzure AutoQuote — Architectural Decisions & Rationales (`brain.md`)
 
+## Preserve Admin Company Context on Every Analysis Request (2026-09-16)
+
+- **Decision 62**: Append `assignedCompanyId` to analysis `FormData` whenever the calculator has that prop, independently of optional customer descriptions, including the unified multi-photo flow.
+- **Why**: Authentication and target-company context are independent of quote content. The previous coupling made photo-only admin analyses lose their admin-sales context and fall into tenant authentication.
+- **Why this is better**: Server-side `requireAdminSalesContext` remains the authorization authority; the client reliably supplies the routing context the API already requires, without weakening access control.
+
 ## Overview
 This document logs every key architectural, design, and calculation decision made during the development of Azzure AutoQuote MVP.
 
