@@ -1,5 +1,15 @@
 # Azzure AIQuote — Complete System Context & Documentation
 
+## Admin Quote Audit Reference Match (2026-09-24)
+
+- The supplied desktop reference is the design target for `/admin/quotes/[quoteId]`: dark operations rail, compact console header, five financial KPI cards, a live what-if pricing sandbox, a detailed cost ledger, tenant/specification context, imagery, and current market rates.
+- The existing route remains data-driven and admin-only; the sandbox recalculates locally and never persists hypothetical edits.
+- The audit layout now protects narrow-screen usability with single-column KPI/rate/image grids, wrapping notices, readable cost rows, and horizontally safe formulas.
+- Interactive status messages use explicit live-region semantics, and motion honors the operating system reduced-motion preference.
+- Pricing visibility is role-gated: public recipients, salespeople, viewers, and manufacturing users receive only the final selling price; owners, tenant admins, estimators, and legacy tenant customers may inspect the tier-adjusted jeweler cost breakdown.
+- Restricted quote detail requests are sanitized at the server-component boundary so the making-price breakdown is not serialized into the client component tree.
+- Admin audit KPIs now call the tier-adjusted value `Azzure Making Price` rather than the misleading `Production Cost`; the raw production subtotal remains internal to the admin ledger.
+
 ## Admin Sales AI Analysis Authentication Fix (2026-09-16)
 
 - `/admin/sales` supplies `QuoteCalculator` with an `assignedCompanyId`: `INTERNAL` for a global estimate or a tenant ID for an assigned quote.

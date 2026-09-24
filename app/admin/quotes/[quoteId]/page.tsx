@@ -130,7 +130,7 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
       }
     >
       {/* ── Admin-only banner ── */}
-      <div className="adminAuditBanner">
+      <div className="adminAuditBanner" role="note" aria-label="Internal audit notice">
         <span className="adminAuditBannerIcon">🔒</span>
         <span>
           <strong>Internal Audit View</strong> — This pricing breakdown is never exposed to the jeweler or customer. Contains Azzure cost structure and margin data.
@@ -151,9 +151,9 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
       ) : (
         <section className="adminKpiGrid">
           <div className="adminKpi adminKpi--production">
-            <span className="adminKpiLabel">Production Cost</span>
+            <span className="adminKpiLabel">Azzure Making Price</span>
             <strong className="adminKpiValue">{money(makingPrice)}</strong>
-            <span className="adminKpiSub">Azzure making price</span>
+            <span className="adminKpiSub">Invoice price to jeweler</span>
           </div>
           <div className="adminKpi adminKpi--selling">
             <span className="adminKpiLabel">Customer Selling Price</span>
@@ -248,7 +248,7 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
           )}
 
           {/* Spot prices card */}
-          <div className="card" style={{ marginTop: "1.25rem" }}>
+          <div className="card adminMarketRatesCard">
             <p className="eyebrow">Current Live Market Rates</p>
             <h3 style={{ margin: "0.25rem 0 1rem" }}>Metal Spot Pricing (Today)</h3>
             <p className="muted small" style={{ marginTop: -8, marginBottom: 12 }}>

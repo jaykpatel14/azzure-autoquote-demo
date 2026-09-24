@@ -7,7 +7,7 @@ import WorkspaceShell from "@/components/workspace-shell";
 import { UsageBar } from "@/src/components/ui/UsageBar";
 import { StatusBadge } from "@/src/components/ui/StatusBadge";
 import { getTrialDaysRemaining, getTrialQuotesRemaining } from "@/lib/billing";
-import { getAuthenticatedCompanyContext } from "@/lib/company";
+import { canSeeFullPricing, getAuthenticatedCompanyContext } from "@/lib/company";
 import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { getQuoteHistoryPage, type QuoteHistoryFilter } from "@/src/services/quotes";
 import { getUsageSummary } from "@/src/services/usage";
@@ -126,6 +126,7 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
   const trialDaysRemaining = getTrialDaysRemaining(subscription);
   const trialQuotesRemaining = getTrialQuotesRemaining(subscription);
   const canShare = Boolean(subscription && getFeaturesForPlan(resolvePlanId(subscription.plan, subscription.status)).canShareQuoteLink);
+  const allowFullPricing = canSeeFullPricing(context.membership?.role);
   const emptyFilterState = history.totalQuotes === 0;
   const isFilteredEmpty = history.totalQuotes === 0 && (query.length > 0 || status !== "all");
   const currentListHref = buildHref({ query, status, page: history.currentPage });
@@ -255,7 +256,7 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
                   <th scope="col" className="alignRight">
                     Quote price
                   </th>
-                  <th scope="col">Cost breakdown</th>
+                  {allowFullPricing ? <th scope="col">Cost breakdown</th> : null}
                   <th scope="col">Status</th>
                   <th scope="col">Created</th>
                   <th scope="col">Actions</th>
@@ -293,7 +294,9 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
                     <td className="alignRight quoteValue">
                       {quote.estimatedPrice === null ? "Not generated" : formatCurrency(quote.estimatedPrice)}
                     </td>
-                    <td>{quote.costBreakdown ? <CompactQuoteCostBreakdown breakdown={quote.costBreakdown} /> : <span className="muted small">Legacy quote</span>}</td>
+                    {allowFullPricing ? (
+                      <td>{quote.costBreakdown ? <CompactQuoteCostBreakdown breakdown={quote.costBreakdown} /> : <span className="muted small">Legacy quote</span>}</td>
+                    ) : null}
                     <td>
                       <StatusBadge status={quote.displayStatus} />
                     </td>

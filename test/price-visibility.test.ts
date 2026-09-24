@@ -24,6 +24,17 @@ describe("jeweler price visibility", () => {
   test("admin quote detail retains the internal financial view", () => {
     expect(readFileSync("app/admin/quotes/[quoteId]/page.tsx", "utf8")).toContain("quote.makingPrice");
   });
+
+  test("tenant quote detail strips the cost snapshot before rendering for restricted roles", () => {
+    const source = readFileSync("app/quotes/[quoteId]/page.tsx", "utf8");
+    expect(source).toContain("costBreakdown={allowFullPricing ? costBreakdown : null}");
+  });
+
+  test("restricted quote detail renders no manufacturing-cost panel", () => {
+    const source = readFileSync("components/quote-detail-price-view.tsx", "utf8");
+    expect(source).not.toContain("RestrictedQuoteCostBreakdown");
+    expect(source).not.toContain("Manufacturing cost");
+  });
 });
 
 describe("selling-price backfill", () => {

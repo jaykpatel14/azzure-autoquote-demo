@@ -1,5 +1,18 @@
 # Azzure AutoQuote — Architectural Decisions & Rationales (`brain.md`)
 
+## Admin Quote Audit UI Decisions (2026-09-24)
+
+- **Decision:** Refine the existing data-backed quote audit route instead of creating a screenshot-only duplicate.
+- **Why:** The current route already contains the correct pricing engine, tenant boundaries, quote history data, and manufacturing workflow; preserving it keeps the visual match functional and production-safe.
+- **Decision:** Keep the desktop information density shown in the reference while adding targeted mobile collapse rules below 768px and 560px.
+- **Why:** Audit users benefit from side-by-side financial context on workstations, but formulas and dense rows must remain legible on tablets and phones.
+- **Decision:** Add semantic status/alert roles and reduced-motion behavior without changing pricing calculations.
+- **Why:** Accessibility and feedback improve while leaving the sensitive pricing logic and saved quote snapshot untouched.
+- **Decision:** Sanitize unauthorized quote-detail props on the server and omit cost-breakdown table columns for restricted tenant roles.
+- **Why:** CSS hiding or conditional client rendering could still serialize sensitive making-price data to the browser. The server boundary prevents that disclosure.
+- **Decision:** Rename the internal KPI from `Production Cost` to `Azzure Making Price`.
+- **Why:** The displayed number is `subtotal / tierDivisor`, not the raw production subtotal. Precise labeling prevents operators from comparing unlike figures.
+
 ## Preserve Admin Company Context on Every Analysis Request (2026-09-16)
 
 - **Decision 62**: Append `assignedCompanyId` to analysis `FormData` whenever the calculator has that prop, independently of optional customer descriptions, including the unified multi-photo flow.
