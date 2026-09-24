@@ -113,7 +113,7 @@ export function PricingAuditor({ initial }: { initial: PricingAuditorInitialValu
         )}
       </div>
 
-      <div className="adminAuditorGrid">
+      <div className="adminAuditorGrid" aria-label="Hypothetical quote pricing inputs">
         <label className="field" style={{ margin: 0 }}>
           <span>Metal type</span>
           <select
@@ -266,8 +266,8 @@ export function PricingAuditor({ initial }: { initial: PricingAuditorInitialValu
           />
         </label>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <div className="adminAuditorChecks">
+          <label className="adminAuditorCheck">
             <input
               type="checkbox"
               checked={values.hasWeddingBand}
@@ -275,7 +275,7 @@ export function PricingAuditor({ initial }: { initial: PricingAuditorInitialValu
             />
             Wedding band (2 pieces)
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+          <label className="adminAuditorCheck">
             <input
               type="checkbox"
               checked={values.isTwoTone}
@@ -287,13 +287,13 @@ export function PricingAuditor({ initial }: { initial: PricingAuditorInitialValu
       </div>
 
       {isDirty && !error && (
-        <p className="muted small" style={{ marginTop: 12, color: "#b45309" }}>
+        <p className="adminAuditorStatus adminAuditorStatus--changed" role="status">
           ✎ Showing a hypothetical price based on your edits above, not the original saved values.
         </p>
       )}
 
       {error && (
-        <p className="muted small" style={{ color: "#ef4444", marginTop: 12 }}>
+        <p className="adminAuditorStatus adminAuditorStatus--error" role="alert">
           {error}
         </p>
       )}

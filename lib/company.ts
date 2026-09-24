@@ -334,7 +334,7 @@ export function canAccessShowroomRole(role: CompanyRole | null | undefined) {
 }
 
 export function canSeeFullPricing(role: CompanyRole | null | undefined) {
-  return role !== "SALESMAN" && hasCompanyRole(role, "ESTIMATOR");
+  return role === "OWNER" || role === "ADMIN" || role === "ESTIMATOR" || role === "CUSTOMER";
 }
 
 

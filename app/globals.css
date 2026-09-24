@@ -3476,6 +3476,16 @@ input[type="checkbox"] {
   flex-shrink: 0;
 }
 
+.adminAuditBanner > :nth-child(2) {
+  min-width: 0;
+  flex: 1;
+  line-height: 1.5;
+}
+
+.adminAuditBanner .badge {
+  flex: 0 0 auto;
+}
+
 /* ── KPI Grid ── */
 .adminKpiGrid {
   display: grid;
@@ -3500,6 +3510,14 @@ input[type="checkbox"] {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.025);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.adminKpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
 }
 
 .adminKpi--selling { border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.04); }
@@ -3522,6 +3540,60 @@ input[type="checkbox"] {
   gap: 1rem;
   margin-top: 1rem;
   align-items: end;
+}
+
+.adminAuditorGrid .field > span {
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--color-on-surface);
+}
+
+.adminAuditorGrid input,
+.adminAuditorGrid select {
+  min-width: 0;
+  background: var(--color-surface-container-lowest);
+}
+
+.adminAuditorChecks {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-height: 44px;
+}
+
+.adminAuditorCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--color-on-surface);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.adminAuditorCheck input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-primary);
+}
+
+.adminAuditorStatus {
+  margin: 0.75rem 0 0;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.adminAuditorStatus--changed {
+  color: #8a5200;
+  background: rgba(245, 158, 11, 0.09);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+}
+
+.adminAuditorStatus--error {
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.07);
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 @media (max-width: 1024px) {
@@ -3552,9 +3624,17 @@ input[type="checkbox"] {
 /* ── Detail Grid ── */
 .adminQuoteDetailGrid {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
   gap: 1.5rem;
   align-items: flex-start;
+}
+
+.adminQuoteDetailGrid > section {
+  min-width: 0;
+}
+
+.adminMarketRatesCard {
+  margin-top: 1.25rem;
 }
 
 @media (max-width: 1100px) {
@@ -3755,6 +3835,71 @@ input[type="checkbox"] {
   object-fit: cover;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-outline-variant);
+}
+
+@media (max-width: 768px) {
+  .adminAuditBanner {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 0.875rem 1rem;
+  }
+
+  .adminAuditBanner .badge {
+    margin-left: 1.875rem;
+  }
+
+  .adminBreakdownRow,
+  .adminProfitabilityRow {
+    align-items: flex-start;
+  }
+
+  .adminBreakdownFormula {
+    max-width: 52%;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .adminKpiGrid,
+  .adminSpotGrid,
+  .adminImageGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .adminAuditorChecks {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-block: 0.25rem;
+  }
+
+  .adminBreakdownRow,
+  .adminProfitabilityRow {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .adminBreakdownRow strong,
+  .adminBreakdownFormula {
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .adminBreakdownRow--final,
+  .adminBreakdownRow--making {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adminKpi {
+    transition: none;
+  }
+
+  .adminKpi:hover {
+    transform: none;
+  }
 }
 
 /* ── Quote List Page ── */

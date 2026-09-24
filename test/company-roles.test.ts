@@ -17,6 +17,7 @@ import {
   canDeleteQuotes,
   canManageBilling,
   canManageTeam,
+  canSeeFullPricing,
   canViewQuotes,
   getCompanyRoleRank
 } from "@/lib/company";
@@ -37,5 +38,14 @@ describe("company roles", () => {
     expect(canManageBilling("ESTIMATOR")).toBe(false);
     expect(canManageTeam("ESTIMATOR")).toBe(false);
     expect(canDeleteQuotes("ESTIMATOR")).toBe(false);
+  });
+
+  test("keeps Azzure making prices away from sales and viewer roles", () => {
+    expect(canSeeFullPricing("OWNER")).toBe(true);
+    expect(canSeeFullPricing("ADMIN")).toBe(true);
+    expect(canSeeFullPricing("ESTIMATOR")).toBe(true);
+    expect(canSeeFullPricing("SALESMAN")).toBe(false);
+    expect(canSeeFullPricing("VIEWER")).toBe(false);
+    expect(canSeeFullPricing("MANUFACTURING")).toBe(false);
   });
 });

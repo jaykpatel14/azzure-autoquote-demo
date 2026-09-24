@@ -10,7 +10,6 @@ import { getWorkspaceNav } from "@/lib/workspace-nav";
 import { deriveQuoteStatus, getBrandedQuotePublicUrl, getQuotePublicUrl, getQuote } from "@/src/services/quotes";
 import { getFeaturesForPlan, resolvePlanId } from "@/src/stripe/plans";
 import { loadAnalysisImageDataUrlFromS3, loadQuoteRenderingDataUrlFromS3 } from "@/lib/quote-pdf-s3";
-import { QuoteCostBreakdown, RestrictedQuoteCostBreakdown } from "@/components/quote-cost-breakdown";
 import { QuoteDetailPriceView } from "@/components/quote-detail-price-view";
 import type { MakingPriceBreakdown } from "@/src/services/pricing";
 
@@ -67,6 +66,7 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
   const costBreakdown = quote.makingPriceBreakdown && typeof quote.makingPriceBreakdown === "object"
     ? quote.makingPriceBreakdown as unknown as MakingPriceBreakdown
     : null;
+  const allowFullPricing = canSeeFullPricing(context.membership?.role);
   const renderingDataUrl = quote.renderingStorageKey
     ? await loadQuoteRenderingDataUrlFromS3(quote.renderingStorageKey)
     : quote.renderingDataUrl;
@@ -193,8 +193,8 @@ export default async function QuoteDetailPage({ params }: QuoteDetailPageProps) 
 
           <QuoteDetailPriceView
             price={Number(quote.estimatedSellingPrice ?? quote.estimatedPrice)}
-            costBreakdown={costBreakdown}
-            canSeeFullPricing={canSeeFullPricing(context.membership?.role)}
+            costBreakdown={allowFullPricing ? costBreakdown : null}
+            canSeeFullPricing={allowFullPricing}
             defaultCurrency={(context.company.currency as "USD" | "CAD") ?? "USD"}
           />
 

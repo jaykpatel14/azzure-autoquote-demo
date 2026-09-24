@@ -90,34 +90,3 @@ export function CompactQuoteCostBreakdown({
     </div>
   );
 }
-
-export function RestrictedQuoteCostBreakdown({
-  breakdown,
-  currency = "USD",
-  fxRate
-}: {
-  breakdown: MakingPriceBreakdown;
-  currency?: SupportedCurrency;
-  fxRate?: number;
-}) {
-  return (
-    <section className="card" style={{ marginTop: 20 }}>
-      <div className="sectionHeader">
-        <div>
-          <p className="eyebrow">Cost overview {currency === "CAD" ? "(CAD)" : "(USD)"}</p>
-          <h2>Pricing</h2>
-        </div>
-      </div>
-      <div className="detailStack">
-        <div className="detailRow">
-          <span>Manufacturing cost</span>
-          <strong>{money(breakdown.makingPrice, currency, fxRate)}</strong>
-        </div>
-        <div className="quotePreview">
-          <span className="muted small">Final customer price ({currency})</span>
-          <strong className="quotePrice">{money(breakdown.estimatedSellingPrice, currency, fxRate)}</strong>
-        </div>
-      </div>
-    </section>
-  );
-}

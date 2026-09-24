@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import type { MakingPriceBreakdown } from "@/src/services/pricing";
 import { CurrencySelector } from "@/components/currency-selector";
 import { formatMoneyWithFx, type SupportedCurrency } from "@/lib/currency";
-import { QuoteCostBreakdown, RestrictedQuoteCostBreakdown } from "@/components/quote-cost-breakdown";
+import { QuoteCostBreakdown } from "@/components/quote-cost-breakdown";
 
 type QuoteDetailPriceViewProps = {
   price: number;
@@ -34,17 +34,13 @@ export function QuoteDetailPriceView({
         </strong>
       </div>
 
-      {costBreakdown ? (
-        allowFullPricing ? (
-          <QuoteCostBreakdown breakdown={costBreakdown} currency={currency} />
-        ) : (
-          <RestrictedQuoteCostBreakdown breakdown={costBreakdown} currency={currency} />
-        )
-      ) : (
+      {allowFullPricing && costBreakdown ? (
+        <QuoteCostBreakdown breakdown={costBreakdown} currency={currency} />
+      ) : allowFullPricing ? (
         <section className="card" style={{ marginTop: 20 }}>
           <p className="muted">A detailed cost breakdown is not available for this legacy quote.</p>
         </section>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -45,9 +45,9 @@ export function QuotePricingKpis({
   return (
     <section className="adminKpiGrid">
       <div className="adminKpi adminKpi--production">
-        <span className="adminKpiLabel">Production Cost</span>
+        <span className="adminKpiLabel">Azzure Making Price</span>
         <strong className="adminKpiValue">{money(makingPrice)}</strong>
-        <span className="adminKpiSub">Azzure making price</span>
+        <span className="adminKpiSub">Invoice price to jeweler</span>
       </div>
       <div className="adminKpi adminKpi--selling">
         <span className="adminKpiLabel">Customer Selling Price</span>
