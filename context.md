@@ -1,5 +1,16 @@
 # Azzure AIQuote — Complete System Context & Documentation
 
+## Quote Audit List/Detail Pricing Consistency (2026-09-28)
+
+### User Evidence
+- Screenshots showed unsaved analysis `VGM04E` with `$1,085.04` making price and `$1,808.40` selling price on `/admin/quotes`, while `/admin/quotes/unsaved/[analysisId]` showed `$1,265.88` for both values at a 0% jeweler margin.
+
+### Root Cause and Fix
+- The list calculation omitted the tenant's `pricingTier`, so `calculateMakingPrice` first applied its default Tier 2 divisor (`0.7`).
+- The list then passed that already-tiered making price into `calculateTierPrice` using Tier 1 (`0.6`), applying the tier formula a second time and producing the incorrect `$1,808.40` selling value.
+- The list now passes the tenant pricing tier directly to `calculateMakingPrice` and uses its returned `makingPrice`, `estimatedSellingPrice`, and `tierDivisor` without a second calculation.
+- Renamed the list column from `Making Cost` to `Making Price` so it matches the actual tier-adjusted value and the detail audit terminology.
+
 ## Admin Activity Logging and IP Blocking (2026-09-28)
 
 ### Runtime Follow-up
