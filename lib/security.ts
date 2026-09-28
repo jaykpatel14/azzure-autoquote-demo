@@ -156,6 +156,11 @@ export function hasAllowedShowroomMediaSignature(bytes: Uint8Array, mimeType: st
 }
 
 export function getClientIp(request: Request | NextRequest) {
+  const cloudflareIp = request.headers.get("cf-connecting-ip");
+  if (cloudflareIp) {
+    return cloudflareIp.trim() || "unknown";
+  }
+
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
     return forwardedFor.split(",")[0]?.trim() || "unknown";

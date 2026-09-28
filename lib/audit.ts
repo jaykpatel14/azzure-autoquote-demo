@@ -5,6 +5,10 @@ export type AuditAction =
   | "SIGN_UP"
   | "SIGN_IN"
   | "SIGN_OUT"
+  | "PAGE_VIEW"
+  | "IP_BLOCKED"
+  | "IP_UNBLOCKED"
+  | "BLOCKED_IP_ATTEMPT"
   | "PASSWORD_RESET_REQUESTED"
   | "PASSWORD_RESET_COMPLETED"
   | "EMAIL_VERIFICATION_REQUESTED"
@@ -26,7 +30,7 @@ export type AuditAction =
 
 export type AuditContext = {
   action: AuditAction;
-  companyId: string;
+  companyId?: string | null;
   actorUserId?: string | null;
   targetType?: string | null;
   targetId?: string | null;
@@ -39,7 +43,7 @@ export async function logAuditEvent(context: AuditContext) {
   await prisma.auditLog.create({
     data: {
       action: context.action,
-      companyId: context.companyId,
+      companyId: context.companyId ?? null,
       actorUserId: context.actorUserId ?? null,
       targetType: context.targetType ?? null,
       targetId: context.targetId ?? null,
