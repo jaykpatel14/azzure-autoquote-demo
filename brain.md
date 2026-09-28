@@ -1,5 +1,12 @@
 # Azzure AutoQuote — Architectural Decisions & Rationales (`brain.md`)
 
+## Quote Audit List/Detail Pricing Consistency (2026-09-28)
+
+- **Decision 73**: Treat `calculateMakingPrice` as the single pricing authority for unsaved rows by supplying the tenant tier and consuming its complete result.
+- **Why**: `calculateMakingPrice` already performs the production subtotal, tier division, and customer-margin steps. Passing its `makingPrice` through `calculateTierPrice` applies the tier twice and makes a 0% margin row visibly contradict its detail audit.
+- **Decision 74**: Label the list value `Making Price`, not `Making Cost`.
+- **Why**: The displayed value is the production subtotal divided by the tenant tier divisor. Calling it cost obscures the distinction that the detailed audit intentionally exposes.
+
 ## Admin Activity Logging and IP Blocking (2026-09-28)
 
 - **Decision 72**: Resolve the `prisma.blockedIp` undefined runtime error by regenerating Prisma Client after stopping the stale Next.js process, then rely on the workspace process manager to restart the app.

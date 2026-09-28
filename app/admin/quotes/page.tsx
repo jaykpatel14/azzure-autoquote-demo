@@ -5,7 +5,7 @@ import { AdminThumbImage } from "@/components/admin-thumb-image";
 import { getInternalAdminContext } from "@/lib/internal-admin";
 import { getInternalAdminNav, requireAdminRouteAccess } from "@/lib/internal-admin-nav";
 import { prisma } from "@/lib/prisma";
-import { calculateMakingPrice, calculateTierPrice } from "@/src/services/pricing";
+import { calculateMakingPrice } from "@/src/services/pricing";
 import { getSettingValue } from "@/lib/app-settings";
 import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricing";
 import type { MakingPriceBreakdown } from "@/src/services/pricing";
@@ -191,6 +191,7 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
 
     let makingPrice: number | null = null;
     let sellingPrice: number | null = null;
+    let tierDivisor = "";
     let statusNote = "";
 
     if (hasSpec) {
@@ -242,11 +243,12 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
           isTwoTone: false,
           colorClarity: "E VS1",
           cadCost: cadCost,
+          pricingTier: pricingTier!,
           customerMarginPct: companyMarginPct
         });
-        const tierResult = calculateTierPrice(breakdown.makingPrice, pricingTier!);
         makingPrice = breakdown.makingPrice;
-        sellingPrice = tierResult.estimatedSellingPrice;
+        sellingPrice = breakdown.estimatedSellingPrice;
+        tierDivisor = `÷${breakdown.tierDivisor}`;
       } catch (err) {
         console.warn(`[admin/quotes] Failed to calculate spec for analysis ${analysis.id}:`, err);
         statusNote = "Calculation error";
@@ -277,7 +279,7 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
       sellingPrice,
       marginPct: hasSpec ? companyMarginPct : null,
       tierLabel: pricingTier?.replace("TIER_", "T") ?? "—",
-      tierDivisor: "",
+      tierDivisor,
       createdAt: analysis.createdAt ? new Date(analysis.createdAt) : new Date(),
       statusNote
     };
@@ -338,7 +340,7 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams?:
             <div>Quote</div>
             <div>Company · Customer</div>
             <div>Specification</div>
-            <div>Making Cost</div>
+            <div>Making Price</div>
             <div>Selling Price</div>
             <div>Margin</div>
             <div>Tier</div>
