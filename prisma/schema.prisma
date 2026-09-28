@@ -157,6 +157,7 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
   auditLogs               AuditLog[]               @relation("AuditLogActor")
+  blockedIpAddresses      BlockedIp[]              @relation("BlockedIpBlockedBy")
   updatedAppSettings      AppSetting[]
 }
 
@@ -371,17 +372,17 @@ model ShowroomSession {
 }
 
 model ShowroomDevice {
-  id           String          @id @default(cuid())
+  id           String   @id @default(cuid())
   companyId    String
   sessionId    String
-  deviceToken  String          @unique @default(cuid())
+  deviceToken  String   @unique @default(cuid())
   deviceName   String
-  platform     String          @default("android")
+  platform     String   @default("android")
   userAgent    String?
-  lastSeenAt   DateTime        @default(now())
+  lastSeenAt   DateTime @default(now())
   lastSeenIp   String?
-  isActive     Boolean         @default(true)
-  registeredAt DateTime        @default(now())
+  isActive     Boolean  @default(true)
+  registeredAt DateTime @default(now())
   azzureSerial String?
 
   session      ShowroomSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -407,21 +408,21 @@ model AzzureDevice {
   deactivatedAt    DateTime?
   createdAt        DateTime     @default(now())
 
-  company         Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  showroomDevice  ShowroomDevice?   @relation(fields: [showroomDeviceId], references: [id], onDelete: SetNull)
+  company        Company?        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  showroomDevice ShowroomDevice? @relation(fields: [showroomDeviceId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([status])
 }
 
 model KioskStaffSession {
-  id         String   @id @default(cuid())
-  token      String   @unique @default(cuid())
-  userId     String
-  companyId  String
-  staffName  String
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  token     String   @unique @default(cuid())
+  userId    String
+  companyId String
+  staffName String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   @@index([companyId])
   @@index([token])
@@ -514,7 +515,7 @@ model PasswordResetToken {
 
 model AuditLog {
   id          String   @id @default(cuid())
-  companyId   String
+  companyId   String?
   actorUserId String?
   action      String
   targetType  String?
@@ -523,11 +524,22 @@ model AuditLog {
   ipAddress   String?
   userAgent   String?
   createdAt   DateTime @default(now())
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
   actorUser   User?    @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@index([companyId, createdAt])
   @@index([actorUserId, createdAt])
+}
+
+model BlockedIp {
+  id              String   @id @default(cuid())
+  ipAddress       String   @unique
+  reason          String?
+  blockedByUserId String?
+  createdAt       DateTime @default(now())
+  blockedBy       User?    @relation("BlockedIpBlockedBy", fields: [blockedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
 }
 
 model StripeWebhookEvent {
@@ -542,8 +554,8 @@ model StripeWebhookEvent {
 }
 
 model GemstoneRate {
-  id                  String   @id @default(cuid())
-  stone               String   @unique
+  id                  String    @id @default(cuid())
+  stone               String    @unique
   displayName         String
   commercialLowPerCt  Decimal
   commercialHighPerCt Decimal
@@ -552,12 +564,12 @@ model GemstoneRate {
   premiumLowPerCt     Decimal
   premiumHighPerCt    Decimal
   sources             String?
-  refreshedAt         DateTime @default(now())
+  refreshedAt         DateTime  @default(now())
   reviewedAt          DateTime?
   reviewedBy          String?
-  isActive            Boolean  @default(true)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
 model PendingRegistration {
@@ -572,4 +584,3 @@ model PendingRegistration {
 
   @@index([expiresAt])
 }
-

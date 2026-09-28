@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { clearRateLimitState, checkRateLimit } from "@/lib/rate-limit";
+import { normalizeIpAddress } from "@/lib/ip-access";
 import { buildPublicUrl, hasAllowedImageSignature, isSameOriginRequest } from "@/lib/security";
 import { requireEnv } from "@/lib/env";
 
@@ -9,6 +10,14 @@ afterEach(() => {
 });
 
 describe("security helpers", () => {
+  test("normalizes valid client IP addresses", () => {
+    expect(normalizeIpAddress("203.0.113.42:443")).toBe("203.0.113.42");
+    expect(normalizeIpAddress("::ffff:203.0.113.42")).toBe("203.0.113.42");
+    expect(normalizeIpAddress("[2001:db8::1]:443")).toBe("2001:db8::1");
+    expect(normalizeIpAddress("203.0.113.42, 10.0.0.1")).toBe("203.0.113.42");
+    expect(normalizeIpAddress("not-an-ip")).toBeNull();
+  });
+
   test("recognizes valid image signatures", () => {
     const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0x00]);
     const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);

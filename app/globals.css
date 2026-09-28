@@ -4354,3 +4354,220 @@ input[type="checkbox"] {
     animation-duration: 22s;
   }
 }
+
+/* Admin security logs */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.statCard--security { border-top: 3px solid #dc2626; }
+
+.logsViewTabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-outline-variant);
+}
+
+.logsViewTabs > a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 16px;
+  color: var(--color-on-surface-variant);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.logsViewTabs > a::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  bottom: -1px;
+  left: 12px;
+  height: 3px;
+  background: transparent;
+}
+
+.logsViewTabs > a:hover,
+.logsViewTabs > a.active { color: var(--color-primary); }
+.logsViewTabs > a.active::after { background: var(--color-primary); }
+
+.logsViewTabs .material-symbols-outlined,
+.logsIconButton .material-symbols-outlined,
+.logsBlockForm .material-symbols-outlined,
+.logsActionCell .material-symbols-outlined { font-size: 18px; }
+
+.logsTabCount {
+  display: inline-grid;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  place-items: center;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.logsPanel { padding: 22px; }
+.logsSectionHeader { align-items: flex-end; }
+
+.logsSectionHeader .muted,
+.logsPanel .sectionHeader .muted { margin: 6px 0 0; }
+
+.logsResultCount {
+  color: var(--color-on-surface-variant);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.logsSearchForm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.logsSearchField {
+  display: flex;
+  flex: 1;
+  min-width: 220px;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-container-lowest);
+}
+
+.logsSearchField:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+.logsSearchField .material-symbols-outlined {
+  color: var(--color-on-surface-variant);
+  font-size: 19px;
+}
+
+.logsSearchField input {
+  width: 100%;
+  min-height: 38px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-on-surface);
+  font-size: 14px;
+}
+
+.logsTable { min-width: 1120px; }
+
+.logsTable code {
+  color: #075985;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.logsBadge {
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.logsBadge--neutral { border-color: #cbd5e1; background: #f1f5f9; color: #334155; }
+.logsBadge--info { border-color: #bae6fd; background: #f0f9ff; color: #075985; }
+.logsBadge--success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+.logsBadge--danger { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+
+.logsEventType {
+  margin: 5px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.logsTargetCell { max-width: 240px; }
+
+.logsTargetCell > strong,
+.logsTargetCell > a {
+  display: block;
+  overflow: hidden;
+  color: var(--color-on-surface);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logsClientCell { max-width: 280px; }
+
+.logsClientCell > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logsTimeCell {
+  min-width: 150px;
+  white-space: nowrap;
+}
+
+.logsActionCell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.logsInlineStatus {
+  display: block;
+  margin-top: 4px;
+  color: #b91c1c;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.logsBlockLayout {
+  display: grid;
+  gap: 22px;
+}
+
+.logsBlockForm {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(280px, 1.4fr) auto;
+  gap: 14px;
+  align-items: end;
+  padding: 18px;
+  border: 1px solid var(--color-outline-variant);
+  border-left: 4px solid #dc2626;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-container-low);
+}
+
+.logsBlockForm .button { margin-bottom: 1px; }
+
+@media (max-width: 900px) {
+  .logsBlockForm { grid-template-columns: 1fr; }
+  .logsBlockForm .button { justify-self: start; }
+}
+
+@media (max-width: 640px) {
+  .logsPanel { padding: 16px; }
+  .logsSearchForm { align-items: stretch; flex-wrap: wrap; }
+  .logsSearchField { flex-basis: 100%; }
+}

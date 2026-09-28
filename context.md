@@ -1,5 +1,42 @@
 # Azzure AIQuote — Complete System Context & Documentation
 
+## Admin Activity Logging and IP Blocking (2026-09-28)
+
+### Runtime Follow-up
+- The first browser load failed with `Cannot read properties of undefined (reading 'findMany')` at `prisma.blockedIp.findMany` because the running Next.js process still held the Prisma client generated before `BlockedIp` was added.
+- Stopped the stale Node process, regenerated Prisma Client successfully, confirmed both migrations were applied, and allowed the workspace process manager to restart Next.js on port 3000.
+- Verified the exact runtime path directly: `prisma.blockedIp.findMany()` and `prisma.auditLog.count()` both completed successfully against the local PostgreSQL database.
+
+### User Request
+Extend the admin Logs dashboard with an option to block IP addresses and record broader activity, including which application pages users accessed.
+
+### What Was Implemented
+1. Expanded `/admin/logs` into three operational views: Activity, Sign-ins, and Blocked IPs.
+   - Activity shows the latest 250 audit events, including user, action, accessed route/resource, tenant, IP, user-agent, and timestamp.
+   - Sign-ins filters the same detailed table to successful `SIGN_IN` events.
+   - Both tables are searchable by user name, email, event, IP, tenant, or route.
+2. Added persistent IP access control.
+   - Added Prisma model `BlockedIp` and migration `prisma/migrations/20260928001000_add_blocked_ip/migration.sql`.
+   - Added `POST` and `DELETE` handlers at `/api/admin/logs/blocked-ips`.
+   - Admins can block an address directly from an event row or enter an IPv4/IPv6 address with a reason in the Blocked IPs view.
+   - The API rejects invalid addresses, duplicate blocks, and attempts to block the administrator's current IP.
+3. Added request enforcement in `proxy.ts`.
+   - Blocked addresses receive HTTP 403 for application pages and APIs.
+   - Health checks, cron endpoints, and the Stripe billing webhook are exempt so infrastructure traffic cannot be disrupted by a user-facing block.
+   - Blocked page/auth attempts are recorded as `BLOCKED_IP_ATTEMPT` events.
+4. Added activity capture in `proxy.ts`.
+   - Authenticated document and React Server Component navigations are recorded as `PAGE_VIEW` audit events.
+   - Prefetch traffic, static assets, anonymous traffic, and API chatter are excluded to keep the trail useful and limit write volume.
+   - Stored details include route, referrer path, application area, actor, tenant, IP, user-agent, and timestamp.
+5. Added normalized IP handling in `lib/ip-access.ts` and Cloudflare header support in `lib/security.ts`.
+6. Added `IP_BLOCKED`, `IP_UNBLOCKED`, `BLOCKED_IP_ATTEMPT`, and `PAGE_VIEW` audit actions.
+7. Added focused IP-normalization coverage to `test/security.test.ts`.
+
+### Operational Notes
+- Run `prisma migrate deploy` before deploying the application code so `AuditLog.companyId` is nullable and the `BlockedIp` table exists.
+- IP blocking is application-level. Network perimeter controls such as a CDN or firewall remain appropriate for high-volume abuse.
+- Existing audit records remain visible; page-access records begin after this version is deployed.
+
 ## Admin Quote Audit Reference Match (2026-09-24)
 
 - The supplied desktop reference is the design target for `/admin/quotes/[quoteId]`: dark operations rail, compact console header, five financial KPI cards, a live what-if pricing sandbox, a detailed cost ledger, tenant/specification context, imagery, and current market rates.
@@ -595,6 +632,42 @@ azzure-autoquote-mvp/
 
 
 
+## Admin Login Logs Dashboard (2026-09-28)
+
+### User Request
+Create a new admin-side dashboard called "Logs" that shows all user login details, including which user logged in, which user-agent was used, and what IP address was used.
+
+### Application Context
+- The app is a Next.js 16 / React 19 app using NextAuth credentials authentication and Prisma/PostgreSQL.
+- Admin pages live under `app/admin/*` and use `components/internal-admin-shell.tsx`.
+- Admin navigation is centralized in `lib/internal-admin-nav.ts`.
+- Existing audit storage is `AuditLog` in `prisma/schema.prisma`, with `action`, `actorUserId`, `companyId`, `metadata`, `ipAddress`, `userAgent`, and `createdAt`.
+- Existing sign-in auditing was in `auth.ts` under the NextAuth `events.signIn` handler, but it only wrote rows when a tenant `companyId` existed and did not persist IP/user-agent request metadata.
+
+### What Was Implemented
+1. Added `/admin/logs` page at `app/admin/logs/page.tsx`.
+   - Uses `InternalAdminShell`.
+   - Requires admin route access for `/admin/logs`.
+   - Shows summary cards for captured sign-ins, last-24-hour sign-ins, unique users, and unique IPs.
+   - Shows a login activity table with user/name/email, access role, tenant or internal-admin context, IP address, user-agent, and timestamp.
+2. Added "Logs" to admin navigation in `lib/internal-admin-nav.ts`.
+   - Uses Material Symbols icon `manage_search`.
+   - Allows `SUPER_ADMIN`, `SUPPORT_ADMIN`, and `OPERATIONS_MANAGER`.
+3. Updated `auth.ts` sign-in auditing.
+   - Reads IP from `cf-connecting-ip`, `x-forwarded-for`, `x-real-ip`, or `x-client-ip`.
+   - Reads user-agent from the incoming credentials auth `Request`.
+   - Truncates IP and user-agent values before storage.
+   - Records successful `SIGN_IN` audit rows for tenant users and internal admins.
+4. Updated `AuditLog` to allow system/admin auth events without a tenant.
+   - `companyId` is now nullable in `prisma/schema.prisma`.
+   - Added migration `prisma/migrations/20260928000000_make_audit_log_company_nullable/migration.sql`.
+   - Updated `lib/audit.ts` so `companyId` can be omitted/null.
+5. Updated `next-auth.d.ts`.
+   - Added app-specific `User` fields used by auth callbacks and sign-in event logging, including `loginIpAddress` and `loginUserAgent`.
+
+### Notes
+- The dashboard shows successful sign-ins only. Failed login attempts are not captured by this change.
+- New IP/user-agent details are populated for future sign-ins after deployment/migration. Existing `SIGN_IN` audit rows may show `Unknown` for those fields.
 
 
 

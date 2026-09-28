@@ -1,5 +1,23 @@
 # Azzure AutoQuote — Architectural Decisions & Rationales (`brain.md`)
 
+## Admin Activity Logging and IP Blocking (2026-09-28)
+
+- **Decision 72**: Resolve the `prisma.blockedIp` undefined runtime error by regenerating Prisma Client after stopping the stale Next.js process, then rely on the workspace process manager to restart the app.
+- **Why**: The schema, generated type declarations, and database migration were correct; only the in-memory Prisma runtime predated the new model. Restarting after generation updates the delegate without adding defensive code that would hide a deployment-order problem.
+
+- **Decision 66**: Store blocked addresses in a dedicated `BlockedIp` model instead of embedding a flag in audit metadata.
+- **Why**: Enforcement needs a unique, queryable current-state record. Audit rows are append-only history and cannot reliably answer whether an address is blocked now.
+- **Decision 67**: Enforce blocks centrally in `proxy.ts` and repeat the check in credentials authorization.
+- **Why**: The proxy stops both existing sessions and new unauthenticated requests, while the authorization check provides defense in depth for the most sensitive entry point.
+- **Decision 68**: Reject attempts to block the administrator's current IP.
+- **Why**: A shared-NAT block is inherently powerful; preventing self-blocking removes the most immediate accidental lockout path while keeping deliberate blocks available to other authorized admins.
+- **Decision 69**: Record authenticated page navigations as `PAGE_VIEW`, excluding prefetches, anonymous traffic, static assets, and routine API requests.
+- **Why**: This captures what users actually opened without turning every browser request into noisy, expensive audit data. Existing domain audit events continue to describe important write actions.
+- **Decision 70**: Exempt health checks, cron routes, and Stripe webhooks from application-level IP blocks.
+- **Why**: These are infrastructure and server-to-server endpoints. A user-facing security action should not break monitoring, scheduled jobs, or payment synchronization.
+- **Decision 71**: Present Activity, Sign-ins, and Blocked IPs as separate tabs inside the same admin dashboard.
+- **Why**: Security investigation, authentication review, and access control are related but distinct workflows; separating them keeps each table scannable while preserving a single administrative destination.
+
 ## Admin Quote Audit UI Decisions (2026-09-24)
 
 - **Decision:** Refine the existing data-backed quote audit route instead of creating a screenshot-only duplicate.
@@ -343,6 +361,19 @@ This document logs every key architectural, design, and calculation decision mad
 
 
 
+## Admin Login Logs Dashboard (2026-09-28)
+
+- **Decision 62**: Reuse the existing `AuditLog` table for successful login history instead of creating a separate `LoginLog` table.
+- **Why**: `AuditLog` already contains the exact security-observability columns needed (`actorUserId`, `ipAddress`, `userAgent`, `metadata`, `createdAt`) and is already written by the auth flow. Reusing it keeps the feature aligned with the app's existing audit model and avoids duplicating login-event storage.
+
+- **Decision 63**: Make `AuditLog.companyId` nullable.
+- **Why**: Internal admin sign-ins are platform-level events and do not naturally belong to a customer tenant. Previously sign-in logs could only be written for tenant users because `companyId` was required. Making the relation optional lets the platform capture all successful login activity, including admin sessions, while preserving tenant links when they exist.
+
+- **Decision 64**: Capture IP and user-agent inside the Credentials provider `authorize(credentials, request)` callback and pass them through the returned `User` object to the sign-in audit event.
+- **Why**: The installed NextAuth v5 beta event payload does not expose the original request, but the Credentials provider does. Attaching the request metadata during authorization keeps the audit write in the existing `events.signIn` location while still recording the client IP/user-agent from the actual login request.
+
+- **Decision 65**: Restrict `/admin/logs` to `SUPER_ADMIN`, `SUPPORT_ADMIN`, and `OPERATIONS_MANAGER`.
+- **Why**: Login logs are operational/security data. These roles are the most appropriate existing admin personas for platform monitoring and support investigations, while estimator/sales-focused roles do not need broad login telemetry by default.
 
 
 

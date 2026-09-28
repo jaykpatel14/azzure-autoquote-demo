@@ -6,11 +6,18 @@ import { verifyPassword } from "@/lib/password";
 import { logAuditEvent } from "@/lib/audit";
 import { isPrismaConnectionError } from "@/lib/prisma-errors";
 import { isInternalAdminEmail } from "@/lib/internal-admin";
+import { normalizeIpAddress } from "@/lib/ip-access";
+import { getClientIp } from "@/lib/security";
 
 const credentialsSchema = z.object({
   email: z.string().email().transform((value) => value.toLowerCase()),
   password: z.string().min(8).max(200)
 });
+
+function truncateRequestValue(value: string | null, maxLength: number) {
+  if (!value) return null;
+  return value.length > maxLength ? value.slice(0, maxLength) : value;
+}
 
 function getAuthSecret() {
   const value = process.env.AUTH_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim();
@@ -42,9 +49,38 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(rawCredentials) {
+      async authorize(rawCredentials, request) {
         const parsed = credentialsSchema.safeParse(rawCredentials);
         if (!parsed.success) return null;
+
+        const loginIpAddress = normalizeIpAddress(getClientIp(request));
+        if (loginIpAddress) {
+          try {
+            const blockedIp = await prisma.blockedIp.findUnique({
+              where: { ipAddress: loginIpAddress },
+              select: { id: true }
+            });
+
+            if (blockedIp) {
+              await logAuditEvent({
+                action: "BLOCKED_IP_ATTEMPT",
+                companyId: null,
+                targetType: "BlockedIp",
+                targetId: blockedIp.id,
+                ipAddress: loginIpAddress,
+                userAgent: truncateRequestValue(request.headers.get("user-agent"), 500),
+                metadata: {
+                  path: "/api/auth/callback/credentials",
+                  method: "POST",
+                  email: parsed.data.email
+                }
+              }).catch(() => undefined);
+              return null;
+            }
+          } catch (error) {
+            console.warn("Unable to verify IP access policy during sign-in.", error);
+          }
+        }
 
         let user;
         try {
@@ -129,14 +165,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name,
           sessionVersion: user.sessionVersion,
           isInternalAdmin: isAdmin,
-          adminRole: user.adminRole || (isAdmin ? "SUPER_ADMIN" : null),
+          adminRole: (user.adminRole || (isAdmin ? "SUPER_ADMIN" : null)) as
+            | "SUPER_ADMIN"
+            | "OPERATIONS_MANAGER"
+            | "ESTIMATOR_ADMIN"
+            | "SUPPORT_ADMIN"
+            | "SALESMAN"
+            | null,
           companyId: isAdmin ? "" : (user.memberships[0]?.companyId ?? ""),
           companyName: isAdmin ? "" : (user.memberships[0]?.company.name ?? ""),
-          planId: user.memberships[0]?.company.subscription?.planId ?? "plan_starter",
+          planId: (user.memberships[0]?.company.subscription?.planId ?? "plan_starter") as
+            | "plan_starter"
+            | "plan_professional"
+            | "plan_enterprise"
+            | "plan_ultra",
           accountStatus: user.memberships[0]?.company.accountStatus ?? (isAdmin ? "APPROVED" : "PENDING_APPROVAL"),
           pricingTier: user.memberships[0]?.company.pricingTier ?? null,
           currency: (user.memberships[0]?.company.currency as "USD" | "CAD") ?? "USD",
-          ckCustomerVerified: user.memberships[0]?.company.ckCustomerVerified ?? false
+          ckCustomerVerified: user.memberships[0]?.company.ckCustomerVerified ?? false,
+          loginIpAddress,
+          loginUserAgent: truncateRequestValue(request.headers.get("user-agent"), 500)
         };
       }
     })
@@ -214,22 +262,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return;
       }
 
-      const role = isInternalAdminEmail(user.email) ? "AZZURE_ADMIN" : "CUSTOMER";
+      const userIsInternalAdmin =
+        isInternalAdminEmail(user.email) || ("isInternalAdmin" in user && Boolean(user.isInternalAdmin));
+      const role = userIsInternalAdmin ? "AZZURE_ADMIN" : "CUSTOMER";
       const companyId = "companyId" in user && typeof user.companyId === "string" && user.companyId ? user.companyId : "";
+      const isAdmin = role === "AZZURE_ADMIN";
 
-      if (companyId) {
-        await logAuditEvent({
-          action: "SIGN_IN",
-          actorUserId: user.id,
-          targetType: "User",
-          targetId: user.id,
-          companyId,
-          metadata: {
-            email: user.email,
-            role
-          }
-        }).catch(() => undefined);
-      }
+      await logAuditEvent({
+        action: "SIGN_IN",
+        actorUserId: user.id,
+        targetType: "User",
+        targetId: user.id,
+        companyId: companyId || null,
+        ipAddress: user.loginIpAddress ?? null,
+        userAgent: user.loginUserAgent ?? null,
+        metadata: {
+          email: user.email,
+          role,
+          admin: isAdmin
+        }
+      }).catch(() => undefined);
     }
   }
 });

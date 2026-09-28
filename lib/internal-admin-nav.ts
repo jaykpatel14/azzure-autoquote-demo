@@ -18,6 +18,7 @@ export const NAV_ITEMS = [
   { href: "/admin/tenants", label: "Tenants", icon: "store", priority: "primary", roles: ["SUPER_ADMIN", "SUPPORT_ADMIN", "OPERATIONS_MANAGER"] },
   { href: "/admin/tenants/pending", label: "Approvals", icon: "how_to_reg", priority: "primary", roles: ["SUPER_ADMIN"] },
   { href: "/admin/team", label: "Admin Team", icon: "badge", priority: "primary", roles: ["SUPER_ADMIN"] },
+  { href: "/admin/logs", label: "Logs", icon: "manage_search", priority: "primary", roles: ["SUPER_ADMIN", "SUPPORT_ADMIN", "OPERATIONS_MANAGER"] },
   { href: "/admin/tenants/subscriptions", label: "Subscriptions", icon: "credit_card", priority: "secondary", roles: ["SUPER_ADMIN"] },
   { href: "/admin/analytics", label: "Analytics", icon: "analytics", priority: "secondary", roles: ["SUPER_ADMIN"] },
   { href: "/admin/hardware", label: "Hardware", icon: "manufacturing", priority: "secondary", roles: ["SUPER_ADMIN", "SUPPORT_ADMIN", "OPERATIONS_MANAGER"] },
