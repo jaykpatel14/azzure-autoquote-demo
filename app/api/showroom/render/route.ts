@@ -3,6 +3,7 @@ import { z } from "zod";
 import OpenAI from "openai";
 import { getActiveShowroom } from "@/lib/showroom";
 import { resolveRuntimeSetting } from "@/lib/app-settings";
+import { applyRenderRefinements } from "@/lib/ai/render-refinement";
 
 const schema = z.object({
   token: z.string().min(20),
@@ -16,7 +17,8 @@ const schema = z.object({
   sideDiamondCarats: z.number().optional(),
   settingType: z.string().nullable().optional(),
   centerClarity: z.string().optional(),
-  description: z.string().optional()
+  description: z.string().optional(),
+  refinementPrompt: z.string().trim().max(1000).optional()
 });
 
 export async function POST(request: Request) {
@@ -34,15 +36,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "OPENAI_API_KEY is not configured." }, { status: 500 });
     }
 
+    const revisedSpecs = applyRenderRefinements({
+      centerShape: input.centerShape,
+      centerDiamondCarats: input.centerCarats || 1,
+      sideDiamondQuantity: input.sideDiamondQuantity || 0,
+      sideDiamondCarats: input.sideDiamondCarats || 0,
+      settingType: input.settingType
+    }, input.refinementPrompt);
     const jewelryType = input.jewelryType || "fine jewelry piece";
     const metalLabel = input.metalColor ? `${input.metalType || "14K"} ${input.metalColor} gold` : (input.metalType || "14K Gold");
-    const centerShape = input.centerShape || "brilliant diamond";
-    const centerCarats = input.centerCarats ? `${input.centerCarats} carats` : "proportionate center stone";
-    const sideDiamonds = input.sideDiamondQuantity && input.sideDiamondQuantity > 0
-      ? `Include ${input.sideDiamondQuantity} accent side diamonds totaling approximately ${input.sideDiamondCarats || 0.5} carats.`
+    const centerShape = revisedSpecs.centerShape || "brilliant diamond";
+    const centerCarats = revisedSpecs.centerDiamondCarats ? `${revisedSpecs.centerDiamondCarats} carats` : "proportionate center stone";
+    const sideDiamonds = revisedSpecs.sideDiamondQuantity > 0
+      ? `Include ${revisedSpecs.sideDiamondQuantity} accent side diamonds totaling approximately ${revisedSpecs.sideDiamondCarats || 0.5} carats.`
       : "";
-    const setting = input.settingType ? `Set in a ${input.settingType} setting.` : "";
+    const setting = revisedSpecs.settingType ? `Set in a ${revisedSpecs.settingType} setting.` : "";
     const customNotes = input.description ? `Customer design details: ${input.description}.` : "";
+    const refinement = input.refinementPrompt
+      ? `MANDATORY REVISION TO THE PREVIOUS RENDER: ${input.refinementPrompt}. This instruction overrides conflicting design details above.`
+      : "";
 
     const prompt = [
       `Create one photorealistic luxury studio product presentation rendering of this ${jewelryType}.`,
@@ -51,6 +63,7 @@ export async function POST(request: Request) {
       setting,
       sideDiamonds,
       customNotes,
+      refinement,
       "Show only one complete jewelry piece in a refined three-quarter product view.",
       "Realistic precious-metal reflections, physically believable gemstone refraction, crisp edges, premium jewelry studio lighting. Plain, seamless, evenly lit solid white studio background — no props, no gradients, no scenery, no surface texture. Subtle natural shadow directly beneath the piece, centered composition.",
       "No hands, no person, no packaging, no text, no logo, no watermark, no dimensions, no duplicate jewelry, no exploded view.",
@@ -93,7 +106,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      renderingImageUrl: `data:image/jpeg;base64,${base64}`
+      renderingImageUrl: `data:image/jpeg;base64,${base64}`,
+      revisedSpecs
     });
   } catch (error) {
     console.error("[api/showroom/render] Error:", error);

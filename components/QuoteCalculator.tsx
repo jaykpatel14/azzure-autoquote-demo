@@ -389,6 +389,8 @@ export default function QuoteCalculator({
   const [renderingImageUrl, setRenderingImageUrl] = useState<string | null>(null);
   const [draftIsFresh, setDraftIsFresh] = useState(!initialQuote);
   const [generatingConcept, setGeneratingConcept] = useState(false);
+  const [renderFeedback, setRenderFeedback] = useState("");
+  const [appliedRenderFeedback, setAppliedRenderFeedback] = useState<string[]>([]);
   const [showroomMode, setShowroomMode] = useState(false);
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
 
@@ -474,7 +476,7 @@ export default function QuoteCalculator({
     };
   }, []);
 
-  async function generateConcept(customText?: string) {
+  async function generateConcept(customText?: string, refinementPrompt?: string, feedbackEntry?: string) {
     const textToUse = customText || customerNotes;
     if (!textToUse.trim()) {
       showToast({
@@ -497,6 +499,7 @@ export default function QuoteCalculator({
         body: JSON.stringify({
         assignedCompanyId,
           prompt: textToUse,
+          refinementPrompt,
           metalType,
           customerNotes: customerNotes || undefined
         })
@@ -540,9 +543,17 @@ export default function QuoteCalculator({
       setFacets([newFacet]);
       setActiveFacetId(newFacet.id);
       setDraftIsFresh(false);
-      setStatus("AI concept visualization and dynamic quote generated!");
+      if (refinementPrompt) {
+        setAppliedRenderFeedback((current) => [...current, feedbackEntry || refinementPrompt]);
+        setRenderFeedback("");
+      } else {
+        setAppliedRenderFeedback([]);
+      }
+      setStatus(refinementPrompt
+        ? `Revision ${appliedRenderFeedback.length + 1} applied. Visualization and quote recalculated.`
+        : "AI concept visualization and dynamic quote generated!");
       showToast({
-        message: "AI concept synthesized and dynamic quote calculated!",
+        message: refinementPrompt ? "Revision applied and quote recalculated." : "AI concept synthesized and dynamic quote calculated!",
         variant: "success",
         autoDismiss: true
       });
@@ -1340,6 +1351,20 @@ export default function QuoteCalculator({
   const activeFacet = facets.find((facet) => facet.id === activeFacetId) ?? facets[0] ?? null;
   // Prefer the saved-quote rendering once saved; otherwise show the AI rendering generated during analysis.
   const displayRenderingImageUrl = renderingImageUrl ?? activeFacet?.output?.renderingImageUrl ?? null;
+  const feedbackSourcePrompt = activeFacet?.description || customerNotes || [
+    aggregateQuote?.centerDiamondCarats ? `${aggregateQuote.centerDiamondCarats}ct` : "",
+    aggregateQuote?.centerShape,
+    aggregateQuote?.jewelryType || "jewelry piece",
+    aggregateQuote?.settingType ? `${aggregateQuote.settingType} setting` : "",
+    `${metalType} metal`
+  ].filter(Boolean).join(" ");
+
+  function submitRenderFeedback() {
+    const correction = renderFeedback.trim();
+    if (!correction || generatingConcept) return;
+    const cumulativeCorrection = [...appliedRenderFeedback, correction].join(". ").slice(-1000);
+    void generateConcept(feedbackSourcePrompt, cumulativeCorrection, correction);
+  }
 
   return (
     <div className={`estimateWorkspace${showroomMode ? " showroomUnifiedWorkspace" : ""}`}>
@@ -2382,6 +2407,41 @@ export default function QuoteCalculator({
                 </div>
               ) : null}
             </div>
+
+            {creationMode === "ai" && (displayRenderingImageUrl || activeFacet?.previewUrl) ? (
+              <form
+                className="renderRefinement"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  submitRenderFeedback();
+                }}
+              >
+                <div className="renderRefinement__heading">
+                  <span className="material-symbols-outlined" aria-hidden="true">tune</span>
+                  <div>
+                    <strong>Refine this render{appliedRenderFeedback.length ? ` Â· Revision ${appliedRenderFeedback.length + 1}` : ""}</strong>
+                    <span>Describe only what should change.</span>
+                  </div>
+                </div>
+                <div className="renderRefinement__controls">
+                  <input
+                    aria-label="Render correction"
+                    value={renderFeedback}
+                    onChange={(event) => setRenderFeedback(event.target.value)}
+                    maxLength={1000}
+                    placeholder="e.g. Remove the side diamonds"
+                    disabled={!canEdit || generatingConcept}
+                  />
+                  <button className="button secondary button--sm" type="submit" disabled={!canEdit || generatingConcept || renderFeedback.trim().length < 3}>
+                    <span className="material-symbols-outlined" aria-hidden="true">refresh</span>
+                    {generatingConcept ? "Refiningâ€¦" : "Apply changes"}
+                  </button>
+                </div>
+                {appliedRenderFeedback.length ? (
+                  <p className="renderRefinement__history">Quote recalculated after each revision Â· {appliedRenderFeedback.join(" â†’ ")}</p>
+                ) : null}
+              </form>
+            ) : null}
 
             {/* Live Quote Price */}
             <div className="quotePreviewPriceBlock">

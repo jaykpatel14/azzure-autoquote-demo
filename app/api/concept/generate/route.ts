@@ -21,19 +21,21 @@ import {
   storeAnalysisImageInS3
 } from "@/lib/quote-pdf-s3";
 import { assertPlanFeature, PlanError } from "@/src/stripe/plans";
+import { applyRenderRefinements } from "@/lib/ai/render-refinement";
 
 export const runtime = "nodejs";
 
 const conceptRequestSchema = z.object({
   assignedCompanyId: z.string().nullable().optional(),
   prompt: z.string().trim().min(3).max(2000),
+  refinementPrompt: z.string().trim().min(3).max(1000).optional(),
   metalType: z.enum(METAL_TYPES).default("14K"),
   customerNotes: z.string().trim().max(1000).optional()
 });
 
 const DEFAULT_COLOR_CLARITY = "E VS1";
 
-function extractSpecsFromPromptText(prompt: string, metalType: string) {
+export function extractSpecsFromPromptText(prompt: string, metalType: string, refinementPrompt?: string) {
   const lower = prompt.toLowerCase();
   
   // Detect Shape
@@ -96,7 +98,7 @@ function extractSpecsFromPromptText(prompt: string, metalType: string) {
   if (hasSideStones) metalWeight += 1.0;
   if (hasWeddingBand) metalWeight += 3.0;
 
-  return {
+  return applyRenderRefinements({
     jewelryType: "Ring",
     centerShape: shape,
     centerDiamondCarats: centerCarats,
@@ -106,7 +108,7 @@ function extractSpecsFromPromptText(prompt: string, metalType: string) {
     metalWeightGrams: metalWeight,
     hasWeddingBand,
     isTwoTone
-  };
+  }, refinementPrompt);
 }
 
 export async function POST(request: Request) {
@@ -114,7 +116,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { assignedCompanyId, prompt, metalType, customerNotes } = conceptRequestSchema.parse(body);
+    const { assignedCompanyId, prompt, refinementPrompt, metalType, customerNotes } = conceptRequestSchema.parse(body);
 
     let companyContext;
     if (assignedCompanyId) {
@@ -141,7 +143,7 @@ export async function POST(request: Request) {
     const apiKey = (await resolveRuntimeSetting("OPENAI_API_KEY", process.env.OPENAI_API_KEY)) || null;
     
     // 1. Initial heuristic spec parsing
-    const extractedSpecs = extractSpecsFromPromptText(prompt, metalType);
+    const extractedSpecs = extractSpecsFromPromptText(prompt, metalType, refinementPrompt);
 
     let generatedBase64: string | null = null;
     let imageStorageKey: string | null = null;
@@ -155,6 +157,7 @@ export async function POST(request: Request) {
         const imagePrompt = [
           `Create one photorealistic presentation rendering of a ${extractedSpecs.jewelryType}.`,
           `Design concept: ${prompt}.`,
+          refinementPrompt ? `MANDATORY REVISION TO THE PREVIOUS DESIGN: ${refinementPrompt}. The revision overrides any conflicting original detail.` : "",
           `Crafted in authentic ${metalType} metal with a ${extractedSpecs.centerShape} center diamond in a ${extractedSpecs.settingType}.`,
           extractedSpecs.sideDiamondQuantity > 0 ? `Features ${extractedSpecs.sideDiamondQuantity} accent side diamonds.` : "",
           "Show only one complete jewelry piece in a refined three-quarter product view.",
@@ -224,7 +227,7 @@ export async function POST(request: Request) {
         sideDiamondCarats: extractedSpecs.sideDiamondCarats,
         sideDiamondQuantity: extractedSpecs.sideDiamondQuantity,
         confidence: "high",
-        notes: `Customer Concept: ${prompt}${customerNotes ? `\nNotes: ${customerNotes}` : ""}`,
+        notes: `Customer Concept: ${prompt}${refinementPrompt ? `\nRevision: ${refinementPrompt}` : ""}${customerNotes ? `\nNotes: ${customerNotes}` : ""}`,
         sourceImageStorageKey: imageStorageKey,
         sourceImageMimeType: "image/jpeg",
         imageDataUrl: imageDataUrl,

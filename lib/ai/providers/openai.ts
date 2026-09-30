@@ -58,6 +58,9 @@ function buildPrompt(
     // Karat accuracy
     "IMPORTANT — Karat accuracy: If the customer description or jewelry tag explicitly states a karat (e.g. '18k', '18 karat', '18-karat', '18K', 'Platinum'), you MUST set selected_metal to that exact karat (e.g. '18K'). Do NOT downgrade or change the karat. The currently selected metal above is your fallback only when not specified.",
     "Evaluate the piece from the reference images and customer description with highest precision for production casting and gem pricing.",
+    "MULTIMODAL EVIDENCE CONTRACT: First identify the exact design identity shared across the reference views: subject or motif, outer silhouette, negative spaces, major components, stone-map pattern, and attachment geometry. Do not reduce a figurative or novelty piece (animal, initial, emblem, flower, medallion, etc.) to a generic pendant or ring.",
+    "Customer text overrides a visible reference attribute only when it explicitly requests that change. Otherwise the reference images are authoritative for design identity and geometry. Text is authoritative for non-visible specifications such as metal karat, dimensions, stone quality, and requested modifications.",
+    "Before returning values, perform a conflict check across every supplied image and the text. Treat labeled views as observations of one design, not separate design options. Never let a side view replace the primary face-view identity.",
     // Multi-angle evaluation hierarchy
     "MULTI-ANGLE PHOTO HIERARCHY & CANONICAL FACE-VIEW ANCHORING RULES:",
     "1. PRIMARY FACE/TOP VIEW ANCHOR: The top/face-on view is the CANONICAL ANCHOR for center diamond shape (Round, Oval, Emerald, Radiant, Cushion, Pear, Marquise, Princess, Asscher, Heart) and carat weight proportion. The center stone observed in the face view is the primary focus of the piece.",

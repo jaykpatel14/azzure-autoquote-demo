@@ -9,7 +9,7 @@ import {
   loadAnalysisImageFromS3
 } from "@/lib/quote-pdf-s3";
 
-export const QUOTE_RENDERING_MODEL = "dall-e-3";
+export const QUOTE_RENDERING_MODEL = "gpt-image-2";
 export const QUOTE_RENDERING_SIZE = "1024x1024";
 export const QUOTE_RENDERING_QUALITY = "standard";
 
@@ -29,6 +29,7 @@ type RenderingSubject = {
   sideDiamondQuantity: number | null;
   centerStoneColor: string | null;
   accentColorStones?: Array<{ stone: string; shape: string; count: number }> | null;
+  customerDescription?: string | null;
 };
 
 function buildRenderingPrompt(subject: RenderingSubject, hasReferencePhoto: boolean) {
@@ -55,15 +56,20 @@ function buildRenderingPrompt(subject: RenderingSubject, hasReferencePhoto: bool
 
   return [
     hasReferencePhoto
-      ? `Using the design specifications from the customer's reference piece, create one photorealistic studio product presentation rendering of this ${jewelryType}.`
+      ? `REFERENCE-LOCKED TASK: Create one photorealistic studio presentation of the exact jewelry design shown in the supplied reference image(s). Preserve the subject identity, recognizable motif, silhouette, proportions, stone layout, bail or shank geometry, and orientation. Do not replace it with a generic ${jewelryType} or a different design.`
       : `Create one photorealistic studio product presentation rendering of a ${jewelryType}.`,
+    subject.customerDescription
+      ? `CUSTOMER TEXT (authoritative for explicitly requested changes): ${subject.customerDescription}. Apply only the changes stated here; preserve every other visible reference detail.`
+      : "No textual design changes were requested; match the visible reference design closely.",
     `Crafted in authentic ${metalLabel}, approximately ${Number(subject.metalWeightGrams ?? 0).toFixed(2)} grams.`,
     `Features a ${centerStoneLabel} center diamond of approximately ${Number(subject.centerDiamondCarats ?? 0).toFixed(2)} carats.`,
     settingType ? `Set in a ${settingType} setting.` : "",
     sideStoneInstruction,
     accentStonesInstruction,
     subject.centerClarity ? `Center diamond clarity: ${subject.centerClarity}.` : "",
-    "Show only one complete jewelry piece in a refined three-quarter product view.",
+    hasReferencePhoto
+      ? "If multiple views are supplied, reconcile them as views of the same piece. Render one complete piece from the clearest presentation angle; never combine them into multiple products."
+      : "Show only one complete jewelry piece in a refined three-quarter product view.",
     `Realistic precious-metal reflections, physically believable gemstone refraction, crisp edges, premium jewelry studio lighting. ${PLAIN_BACKGROUND_INSTRUCTION}`,
     "Subtle natural shadow directly beneath the piece, centered composition.",
     "No hands, no person, no packaging, no text, no logo, no watermark, no dimensions, no duplicate jewelry, no exploded view.",
@@ -104,13 +110,39 @@ async function loadReferencePhoto(analysis: {
 async function requestRenderingBase64(params: {
   apiKey: string;
   prompt: string;
-  referencePhoto: { buffer: Buffer; mimeType: string } | null;
+  referencePhotos: Array<{ buffer: Buffer; mimeType: string }>;
 }): Promise<string> {
   const client = new OpenAI({ apiKey: params.apiKey, maxRetries: 0, timeout: 75_000 });
-  const candidateModels = ["dall-e-3", "gpt-image-2", "dall-e-2"];
   let lastError: unknown = null;
 
-  for (const model of candidateModels) {
+  // Reference-aware editing is the primary path. The previous implementation
+  // loaded the photo but accidentally used text-only generation, allowing the
+  // model to substitute an unrelated generic jewelry design.
+  if (params.referencePhotos.length > 0) {
+    try {
+      const files = await Promise.all(params.referencePhotos.slice(0, 4).map((photo, index) =>
+        toFile(photo.buffer, `reference-${index + 1}.${extensionForMimeType(photo.mimeType)}`, { type: photo.mimeType })
+      ));
+      const response = await client.images.edit({
+        model: "gpt-image-2",
+        image: files,
+        prompt: params.prompt.slice(0, 4000),
+        size: "1024x1024",
+        n: 1
+      });
+      const dataItem = response.data?.[0];
+      if (dataItem?.b64_json) return dataItem.b64_json;
+      if (dataItem?.url) {
+        const fetched = await fetch(dataItem.url);
+        return Buffer.from(await fetched.arrayBuffer()).toString("base64");
+      }
+    } catch (err: any) {
+      console.warn("[requestRenderingBase64] Reference-guided edit failed, trying generation fallback:", err?.message || err);
+      lastError = err;
+    }
+  }
+
+  for (const model of ["gpt-image-2", "dall-e-3", "dall-e-2"]) {
     try {
       const response = await client.images.generate({
         model,
@@ -204,12 +236,16 @@ export async function generateQuoteRendering(params: { quoteId: string; companyI
           typeof analysisOutput?.centerStone === "object" && analysisOutput.centerStone !== null && typeof (analysisOutput.centerStone as Record<string, unknown>).color === "string"
             ? String((analysisOutput.centerStone as Record<string, unknown>).color)
             : null,
-        accentColorStones: extractAccentColorStones(analysisOutput)
+        accentColorStones: extractAccentColorStones(analysisOutput),
+        customerDescription:
+          typeof analysisOutput?.customerDescription === "string"
+            ? analysisOutput.customerDescription
+            : quote.notes
       },
       Boolean(referencePhoto)
     );
 
-    const base64 = await requestRenderingBase64({ apiKey, prompt, referencePhoto });
+    const base64 = await requestRenderingBase64({ apiKey, prompt, referencePhotos: referencePhoto ? [referencePhoto] : [] });
 
     const buffer = Buffer.from(base64, "base64");
     const storageKey = buildQuoteRenderingStorageKey(quote.companyId, quote.id);
@@ -243,7 +279,11 @@ export async function generateQuoteRendering(params: { quoteId: string; companyI
   }
 }
 
-export async function generateAnalysisRendering(params: { analysisId: string; companyId: string }) {
+export async function generateAnalysisRendering(params: {
+  analysisId: string;
+  companyId: string;
+  referenceImageDataUrls?: string[];
+}) {
   const analysis = await prisma.aiAnalysis.findFirst({
     where: { id: params.analysisId, companyId: params.companyId }
   });
@@ -259,7 +299,14 @@ export async function generateAnalysisRendering(params: { analysisId: string; co
     const apiKey = (await resolveRuntimeSetting("OPENAI_API_KEY", process.env.OPENAI_API_KEY)) || null;
     if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
 
-    const referencePhoto = await loadReferencePhoto(analysis);
+    const storedReferencePhoto = await loadReferencePhoto(analysis);
+    const suppliedReferencePhotos = (params.referenceImageDataUrls || []).flatMap((dataUrl) => {
+      const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+      return match ? [{ buffer: Buffer.from(match[2], "base64"), mimeType: match[1] }] : [];
+    });
+    const referencePhotos = suppliedReferencePhotos.length
+      ? suppliedReferencePhotos
+      : storedReferencePhoto ? [storedReferencePhoto] : [];
     const analysisOutput = analysis.output as Record<string, unknown> | null;
     const prompt = buildRenderingPrompt(
       {
@@ -277,12 +324,13 @@ export async function generateAnalysisRendering(params: { analysisId: string; co
           typeof analysisOutput?.centerStone === "object" && analysisOutput.centerStone !== null && typeof (analysisOutput.centerStone as Record<string, unknown>).color === "string"
             ? String((analysisOutput.centerStone as Record<string, unknown>).color)
             : null,
-        accentColorStones: extractAccentColorStones(analysisOutput)
+        accentColorStones: extractAccentColorStones(analysisOutput),
+        customerDescription: typeof analysisOutput?.customerDescription === "string" ? analysisOutput.customerDescription : null
       },
-      Boolean(referencePhoto)
+      referencePhotos.length > 0
     );
 
-    const base64 = await requestRenderingBase64({ apiKey, prompt, referencePhoto });
+    const base64 = await requestRenderingBase64({ apiKey, prompt, referencePhotos });
 
     const buffer = Buffer.from(base64, "base64");
     const storageKey = buildAnalysisRenderingStorageKey(analysis.companyId, analysis.id);

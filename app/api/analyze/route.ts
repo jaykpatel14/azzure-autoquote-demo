@@ -338,7 +338,7 @@ export async function POST(request: Request) {
           settingType: merged.settingType ? stripNullBytes(merged.settingType) : null,
           assumptions: stripNullBytes(merged.assumptions) as Prisma.InputJsonValue,
           notes: stripNullBytes(merged.notes),
-          output: stripNullBytes(merged) as unknown as Prisma.InputJsonValue
+          output: stripNullBytes({ ...merged, customerDescription: customerDescription || null }) as unknown as Prisma.InputJsonValue
         }
       });
       await tx.usagePeriod.update({
@@ -360,7 +360,10 @@ export async function POST(request: Request) {
     if (features.canGenerateAIImages) {
       const rendering = await generateAnalysisRendering({
         analysisId: analysis.id,
-        companyId: companyContext.company.id
+        companyId: companyContext.company.id,
+        referenceImageDataUrls: taggedImages
+          .filter((image) => image.angle !== "tag_receipt")
+          .map((image) => image.dataUrl)
       });
       renderingStatus = rendering.status;
 

@@ -255,6 +255,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
   const [savingProgress, setSavingProgress] = useState(0);
   const [renderingImageUrl, setRenderingImageUrl] = useState<string | null>(null);
   const [generatingConcept, setGeneratingConcept] = useState(false);
+  const [renderFeedback, setRenderFeedback] = useState("");
+  const [appliedRenderFeedback, setAppliedRenderFeedback] = useState<string[]>([]);
   const [code, setCode] = useState("");
   const [shareToken, setShareToken] = useState("");
   const [price, setPrice] = useState<number | null>(null);
@@ -332,6 +334,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setSavingProgress(0);
     setRenderingImageUrl(null);
     setGeneratingConcept(false);
+    setRenderFeedback("");
+    setAppliedRenderFeedback([]);
     setCode("");
     setPrice(null);
     setError("");
@@ -399,6 +403,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     });
     setAnalysis(null);
     setRenderingImageUrl(null);
+    setRenderFeedback("");
+    setAppliedRenderFeedback([]);
     setError("");
   }, []);
 
@@ -413,12 +419,16 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     });
     setAnalysis(null);
     setRenderingImageUrl(null);
+    setRenderFeedback("");
+    setAppliedRenderFeedback([]);
   }, []);
 
   const removeSlotFile = useCallback((slot: AngleSlotKey) => {
     setSlotFiles((current) => ({ ...current, [slot]: null }));
     setAnalysis(null);
     setRenderingImageUrl(null);
+    setRenderFeedback("");
+    setAppliedRenderFeedback([]);
   }, []);
 
   const registerImageAspectRatio = useCallback((src: string, width: number, height: number) => {
@@ -837,6 +847,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     setError("");
     setAnalysis(null);
     setRenderingImageUrl(null);
+    setRenderFeedback("");
+    setAppliedRenderFeedback([]);
 
     const controller = new AbortController();
     analysisAbortControllerRef.current = controller;
@@ -896,7 +908,7 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
     }
   }
 
-  async function triggerRender3D(overrideAnalysis?: Analysis | null) {
+  async function triggerRender3D(overrideAnalysis?: Analysis | null, refinementPrompt?: string, feedbackEntry?: string) {
     const target = overrideAnalysis ?? analysis;
     if (generatingConcept) return;
 
@@ -919,7 +931,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
           sideDiamondCarats: target?.sideDiamondCarats || 0,
           settingType: target?.settingType || null,
           centerClarity: target?.centerClarity || "VS1",
-          description: description.trim()
+          description: description.trim(),
+          refinementPrompt
         })
       });
 
@@ -927,6 +940,13 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
       if (!response.ok) throw new Error(data?.error || "Failed to generate 3D render.");
       if (data?.renderingImageUrl) {
         setRenderingImageUrl(data.renderingImageUrl);
+        if (data.revisedSpecs) {
+          setAnalysis((current) => current ? { ...current, ...data.revisedSpecs } : current);
+        }
+        if (refinementPrompt) {
+          setAppliedRenderFeedback((current) => [...current, feedbackEntry || refinementPrompt]);
+          setRenderFeedback("");
+        }
       }
     } catch (err) {
       console.warn("[triggerRender3D] Rendering warning:", err);
@@ -2219,6 +2239,8 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                             setSlotFiles({ top_face: null, side_profile: null, angle_view: null, tag_receipt: null });
                             setAnalysis(null);
                             setRenderingImageUrl(null);
+                            setRenderFeedback("");
+                            setAppliedRenderFeedback([]);
                           }}
                           style={{ marginLeft: "auto" }}
                         >
@@ -2515,6 +2537,41 @@ export default function ShowroomKiosk({ token, branding, pricing }: { token: str
                     </div>
                   ) : null}
                 </div>
+
+                {renderingImageUrl ? (
+                  <form
+                    className="renderRefinement"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      const correction = renderFeedback.trim();
+                      if (!correction || generatingConcept) return;
+                      void triggerRender3D(null, [...appliedRenderFeedback, correction].join(". ").slice(-1000), correction);
+                    }}
+                  >
+                    <div className="renderRefinement__heading">
+                      <span className="material-symbols-outlined" aria-hidden="true">tune</span>
+                      <div>
+                        <strong>Refine this render{appliedRenderFeedback.length ? ` Â· Revision ${appliedRenderFeedback.length + 1}` : ""}</strong>
+                        <span>Tell the studio AI exactly what to change.</span>
+                      </div>
+                    </div>
+                    <div className="renderRefinement__controls">
+                      <input
+                        aria-label="Render correction"
+                        value={renderFeedback}
+                        onChange={(event) => setRenderFeedback(event.target.value)}
+                        maxLength={1000}
+                        placeholder="e.g. Remove the side diamonds"
+                        disabled={generatingConcept}
+                      />
+                      <button className="button secondary button--sm" type="submit" disabled={generatingConcept || renderFeedback.trim().length < 3}>
+                        <span className="material-symbols-outlined" aria-hidden="true">refresh</span>
+                        Apply changes
+                      </button>
+                    </div>
+                    {appliedRenderFeedback.length ? <p className="renderRefinement__history">Quote recalculated after each revision Â· {appliedRenderFeedback.join(" â†’ ")}</p> : null}
+                  </form>
+                ) : null}
 
                 <div className="quotePreviewPriceBlock">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>

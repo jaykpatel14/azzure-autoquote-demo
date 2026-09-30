@@ -137,6 +137,17 @@
 .quotePreviewImagePlaceholder { height: 100%; display: grid; place-content: center; justify-items: center; padding: 28px; color: var(--color-on-surface-variant); }
 .quotePreviewProcessingOverlay { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; background: rgb(15 23 42 / 75%); color: #ffffff; }
 .quotePreviewPriceBlock, .quotePreviewActions { padding: 24px; }
+.renderRefinement { display: grid; gap: 12px; padding: 18px 20px; border-top: 1px solid var(--color-outline-variant); border-bottom: 1px solid var(--color-outline-variant); background: color-mix(in srgb, var(--color-primary-container) 24%, var(--color-surface) 76%); }
+.renderRefinement__heading { display: flex; align-items: center; gap: 10px; }
+.renderRefinement__heading > span { color: var(--color-primary); font-size: 20px; }
+.renderRefinement__heading div { display: grid; gap: 1px; }
+.renderRefinement__heading strong { font-size: var(--text-sm); }
+.renderRefinement__heading div > span { color: var(--color-on-surface-variant); font-size: var(--text-xs); }
+.renderRefinement__controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.renderRefinement__controls input { min-width: 0; }
+.renderRefinement__controls .button { white-space: nowrap; }
+.renderRefinement__history { margin: 0; color: var(--color-on-surface-variant); font-size: var(--text-xs); line-height: 1.45; }
+@media (max-width: 520px) { .renderRefinement__controls { grid-template-columns: 1fr; } }
 .quotePreviewActions { display: grid; gap: 12px; padding-top: 0; }
 .conceptAutoHint { margin: 10px 0 0; color: var(--color-on-surface-variant); font-size: 13px; }
 .showroomUnifiedWorkspace .quoteBuilderLayout { grid-template-columns: minmax(0, 1.3fr) minmax(400px, 1fr); }

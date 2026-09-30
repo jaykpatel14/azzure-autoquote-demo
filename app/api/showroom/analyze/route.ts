@@ -231,7 +231,7 @@ export async function POST(request: Request) {
         settingType: merged.settingType ? stripNullBytes(merged.settingType) : null,
         assumptions: stripNullBytes(merged.assumptions) as Prisma.InputJsonValue,
         notes: stripNullBytes(merged.notes),
-        output: stripNullBytes(merged) as unknown as Prisma.InputJsonValue
+        output: stripNullBytes({ ...merged, customerDescription: description || null }) as unknown as Prisma.InputJsonValue
       }
     });
 
@@ -241,7 +241,10 @@ export async function POST(request: Request) {
     try {
       const rendering = await generateAnalysisRendering({
         analysisId: record.id,
-        companyId: session.companyId
+        companyId: session.companyId,
+        referenceImageDataUrls: taggedImages
+          .filter((image) => image.angle !== "tag_receipt")
+          .map((image) => image.dataUrl)
       });
       renderingStatus = rendering.status;
       if (rendering.status === "COMPLETED") {

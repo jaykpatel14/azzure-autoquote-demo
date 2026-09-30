@@ -83,6 +83,11 @@ describe("openai jewelry analysis provider", () => {
         ])
       })
     );
+    const request = parseMock.mock.calls[0][0];
+    const userMessage = request.input.find((item: { role: string }) => item.role === "user");
+    const promptText = userMessage.content.find((item: { type: string }) => item.type === "input_text").text;
+    expect(promptText).toContain("MULTIMODAL EVIDENCE CONTRACT");
+    expect(promptText).toContain("Customer text overrides a visible reference attribute only when it explicitly requests that change");
     expect(result.responseId).toBe("resp_123");
     expect(result.output.jewelry_type).toBe("ring");
     expect(result.output.centerStone.caratWeight).toBe(1.1);

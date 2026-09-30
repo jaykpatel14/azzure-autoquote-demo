@@ -49,9 +49,39 @@ vi.mock("@/src/stripe/plans", async (importOriginal) => {
   };
 });
 
-import { POST as generateConcept } from "@/app/api/concept/generate/route";
+import { POST as generateConcept, extractSpecsFromPromptText } from "@/app/api/concept/generate/route";
+import { applyRenderRefinements } from "@/lib/ai/render-refinement";
 
 describe("POST /api/concept/generate", () => {
+  test("corrective removal overrides side stones from the original prompt", () => {
+    const specs = extractSpecsFromPromptText(
+      "1.5ct oval ring with a halo and pave side diamonds",
+      "18K",
+      "Remove the side diamonds and omit the halo"
+    );
+
+    expect(specs.sideDiamondQuantity).toBe(0);
+    expect(specs.sideDiamondCarats).toBe(0);
+  });
+
+  test("applies iterative revisions in order and allows later revisions to reverse earlier ones", () => {
+    const specs = applyRenderRefinements({
+      centerShape: "oval",
+      centerDiamondCarats: 1.5,
+      sideDiamondQuantity: 16,
+      sideDiamondCarats: 0.4,
+      settingType: "halo"
+    }, "Remove the side diamonds. Change the center to 2ct pear. Then add 2 side diamonds");
+
+    expect(specs).toMatchObject({
+      centerShape: "pear",
+      centerDiamondCarats: 2,
+      sideDiamondQuantity: 2,
+      sideDiamondCarats: 0.25,
+      settingType: "prong"
+    });
+  });
+
   beforeEach(() => {
     companyContextMock.mockReset();
     reserveUsageMock.mockReset();
