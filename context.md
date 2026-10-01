@@ -1,5 +1,17 @@
 # Azzure AIQuote — Complete System Context & Documentation
 
+## Realistic Jewelry Image Rendering from 3-Pass AI Analysis (2026-09-30)
+
+### User Request
+Tell AI to analyze the uploaded image three times, and then after make a new image. The new generated image should not feel like AI generated but should feel realistic.
+
+### What Was Done
+1. Confirmed and enforced the 3-pass AI analysis pipeline in `app/api/analyze/route.ts` and `app/api/showroom/analyze/route.ts`, which runs 3 independent AI review attempts (`attemptNumber` 1, 2, 3) on the uploaded reference photo, aggregates consensus specs (metal weight, center stone carats, shape, clarity, setting style, side stones, accent gems), and passes the aggregated parameters to image rendering.
+2. Enhanced `buildRenderingPrompt` in `lib/ai/quote-rendering.ts` to instruct the image generation engine (`gpt-image-2` / DALL-E) to produce photorealistic fine jewelry photography:
+   - Enforced high-end macro photography optics (100mm f/2.8 lens simulation, physically accurate optical refraction, internal diamond dispersion/fire, authentic specular reflections on gold/platinum surfaces, soft studio lighting, natural depth of field).
+   - Explicitly banned AI artifacts (oversaturated plastic sheen, fake synthetic glow, floating geometry, melted prongs, cartoonish highlights, distorted symmetry).
+   - Ensured the output looks like a tangible commercial photograph for a luxury retail jewelry catalog.
+
 ## Quote Audit List/Detail Pricing Consistency (2026-09-28)
 
 ### User Evidence

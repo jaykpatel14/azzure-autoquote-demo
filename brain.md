@@ -1,5 +1,12 @@
 # Azzure AutoQuote — Architectural Decisions & Rationales (`brain.md`)
 
+## Realistic Jewelry Image Rendering from 3-Pass AI Analysis (2026-09-30)
+
+- **Decision 75**: Enforce a strict 3-pass independent AI analysis pipeline (`reviewCount = 3`) in `app/api/analyze/route.ts` and `app/api/showroom/analyze/route.ts`.
+- **Why**: Running 3 independent AI reviews and aggregating their output via statistical medians and modes establishes a reliable consensus for gemstone carats, metal weight, color, setting style, and accent stones before rendering the new image.
+- **Decision 76**: Enhance the prompt in `lib/ai/quote-rendering.ts` with explicit physical macro camera lens optics (100mm f/2.8 lens, natural gemstone fire/dispersion, real precious metal specular highlights) and anti-AI-artifact constraints.
+- **Why**: Default AI image prompts generate synthetic, plastic, CGI-like renders. Injecting specific optical physics, authentic material reflections, and explicit rules against plastic gloss ensures generated images look like photorealistic commercial catalog photos of real jewelry.
+
 ## Quote Audit List/Detail Pricing Consistency (2026-09-28)
 
 - **Decision 73**: Treat `calculateMakingPrice` as the single pricing authority for unsaved rows by supplying the tenant tier and consuming its complete result.

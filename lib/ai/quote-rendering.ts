@@ -70,10 +70,13 @@ function buildRenderingPrompt(subject: RenderingSubject, hasReferencePhoto: bool
     hasReferencePhoto
       ? "If multiple views are supplied, reconcile them as views of the same piece. Render one complete piece from the clearest presentation angle; never combine them into multiple products."
       : "Show only one complete jewelry piece in a refined three-quarter product view.",
-    `Realistic precious-metal reflections, physically believable gemstone refraction, crisp edges, premium jewelry studio lighting. ${PLAIN_BACKGROUND_INSTRUCTION}`,
+    "PHOTOREALISTIC FINE JEWELRY PHOTOGRAPHY REQUIREMENT: Must look like an authentic, tangible studio photograph taken with a 100mm f/2.8 macro camera lens in a professional luxury jewelry studio, NOT an AI render, CGI animation, or plastic 3D model.",
+    "REAL-WORLD OPTICS & METALS: Physically accurate optical refraction, internal facet dispersion (fire), authentic specular highlights on real precious metal surfaces, crisp metal bevels, real micro-reflections, and natural micro-depth-of-field focus.",
+    "EXCLUDE AI ARTIFACTS: Avoid any oversaturated plastic sheen, fake synthetic glow, floating geometry, melted prongs, cartoonish highlights, or distorted symmetry.",
+    `Seamless, evenly lit solid white studio background with soft contact shadow directly beneath the piece. ${PLAIN_BACKGROUND_INSTRUCTION}`,
     "Subtle natural shadow directly beneath the piece, centered composition.",
     "No hands, no person, no packaging, no text, no logo, no watermark, no dimensions, no duplicate jewelry, no exploded view.",
-    "This is a customer-facing visualization, not a technical CAD drawing."
+    "This is a premium commercial jewelry photograph for a luxury retail catalog, not an AI model or CAD drawing."
   ].filter(Boolean).join(" ");
 }
 
