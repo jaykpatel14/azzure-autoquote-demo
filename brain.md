@@ -12,6 +12,8 @@
 - **Why**: Provides 100% isolation between the production codebase and the personal portfolio showcase repo.
 - **Decision 81**: Resolve Git 403 Forbidden error (`Permission denied to adminazzsol`) by setting the remote URL explicitly with `jaykpatel14@github.com` or SSH `git@github.com:jaykpatel14/...`.
 - **Why**: Windows Git Credential Manager caches the `adminazzsol` identity for generic `github.com` URLs. Qualifying the URL forces Git to request or use credentials for `jaykpatel14`.
+- **Decision 82**: Perform automated regex scan across tracked files and enforce strict `.gitignore` rules for `.env*`, `.data/`, `.tmp/`, `.agents/`, and `.claude/`.
+- **Why**: Ensures 100% data privacy and security before public repository release. Zero API keys, passwords, database URLs, or confidential environment variables are committed.
 
 ## Realistic Jewelry Image Rendering from 3-Pass AI Analysis (2026-09-30)
 

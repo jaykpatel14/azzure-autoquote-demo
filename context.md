@@ -10,8 +10,10 @@ Create a new public repository for this application to publish on personal GitHu
    - Kept `origin` pointing to the production repository (`https://github.com/adminazzsol/azzure-autoquote-mvp.git`) completely untouched.
    - Recommended adding a secondary git remote (e.g., `personal-showcase`) so pushing to the personal demo repository is an isolated action that cannot pollute or break production CI/CD or production branches.
 2. **Security & Credential Scrub Audit**:
-   - Audited the entire codebase for secrets or sensitive live environment variables.
+   - Audited the entire codebase with regex pattern matching for live API keys, database connection strings, bearer tokens, AWS credentials, and client secrets.
+   - Verified that zero live credentials exist in tracked files.
    - Sanitized `.env.example` by replacing mock/live API key tokens (`METALS_DEV_API_KEY`, `CUSTOMKING_API_KEY`) with explicit placeholder tokens (`your-metals-dev-api-key`, `your-customking-api-key`).
+   - Verified `.env.aws.example` and `.env.proxmox.example` use explicit placeholder strings.
 3. **Repository Hygiene & `.gitignore` Hardening**:
    - Expanded `.gitignore` to strictly exclude `.env*` files (except `.env.example`, `.env.aws.example`, `.env.proxmox.example`), temporary caches (`.data/`, `.tmp/`, `.tmp-pdf-review/`, `stitch_output/`), build artifacts, log files, and IDE metadata (`.agents/`, `.claude/`, `.vscode/`, `.idea/`).
 4. **Showcase README.md Redesign**:
