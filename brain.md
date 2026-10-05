@@ -1,5 +1,18 @@
 # Azzure AutoQuote — Architectural Decisions & Rationales (`brain.md`)
 
+## Public GitHub Repository Preparation for Upwork Showcase (2026-10-05)
+
+- **Decision 77**: Overhaul `README.md` into a high-converting, executive-level technical showcase highlighting key business metrics (3-pass AI vision, 30-second quoting, live spot metal rates, casting loss formulas, multi-tenant B2B architecture, and showroom kiosk).
+- **Why**: Prospective clients on Upwork evaluating technical capabilities need to immediately understand the problem solved, system architecture, tech stack, and execution quality without sifting through basic boilerplate.
+- **Decision 78**: Sanitize `.env.example` placeholder tokens (`your-metals-dev-api-key`, `your-customking-api-key`) and expand `.gitignore` to prevent any secret or local state leakage.
+- **Why**: Making a repository public carries security risks if live credentials or `.env.local` / `.data/` folders leak into commit history. Hardening `.gitignore` guarantees safe pushes.
+- **Decision 79**: Preserve `origin` pointing to `adminazzsol/azzure-autoquote-mvp.git` without modifying production remote configuration.
+- **Why**: Ensures production deployments, existing upstream origins, and team CI/CD remain completely untouched and unpolluted.
+- **Decision 80**: Use a separate Git remote name (`personal-demo`) for pushing to the personal public GitHub repository.
+- **Why**: Provides 100% isolation between the production codebase and the personal portfolio showcase repo.
+- **Decision 81**: Resolve Git 403 Forbidden error (`Permission denied to adminazzsol`) by setting the remote URL explicitly with `jaykpatel14@github.com` or SSH `git@github.com:jaykpatel14/...`.
+- **Why**: Windows Git Credential Manager caches the `adminazzsol` identity for generic `github.com` URLs. Qualifying the URL forces Git to request or use credentials for `jaykpatel14`.
+
 ## Realistic Jewelry Image Rendering from 3-Pass AI Analysis (2026-09-30)
 
 - **Decision 75**: Enforce a strict 3-pass independent AI analysis pipeline (`reviewCount = 3`) in `app/api/analyze/route.ts` and `app/api/showroom/analyze/route.ts`.

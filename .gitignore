@@ -1,12 +1,34 @@
-node_modules
-.next
-.env
-.env.local
-.env.proxmox
-.env.aws
+# Node & Build Outputs
+node_modules/
+.next/
+out/
+build/
+dist/
 *.tsbuildinfo
-coverage
-dist
+coverage/
 *.log
-.DS_Store
+
+# Environment & Secret Files
+.env
+.env*
+!.env.example
+!.env.aws.example
+!.env.proxmox.example
+
+# Local Data & Temporary Caches
 .data/
+.tmp/
+.tmp-pdf-review/
+stitch_output/
+*.sqlite
+*.db
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# IDE & AI Assistant Local Directories
+.agents/
+.claude/
+.vscode/
+.idea/

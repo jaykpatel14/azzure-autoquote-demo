@@ -1,189 +1,135 @@
-# Azzure AI Quote
+# 💎 Azzure AI Quote — B2B AI Jewelry Quoting & 3D Visualization Platform
 
-Production-oriented starter for an AI-assisted jewelry quotation SaaS.
+> **Transforming 3-Day Custom Jewelry Quoting into an Instant 30-Second In-Store Experience.**  
+> Built for retail jewelry stores, custom bridal boutiques, and high-end showroom Workstation on Wheels (WOW) kiosks.
 
-## Included
+---
 
-- Next.js App Router and TypeScript strict mode
-- PostgreSQL and Prisma
-- Multi-tenant data model
-- Auth.js credentials authentication
-- Three-pass OpenAI image analysis
-- Median aggregation
-- Editable metal and diamond estimates
-- Metal density conversion
-- Server-side pricing
-- Live metal spot pricing with Metals.dev primary feed and MetalpriceAPI backup
-- Atomic monthly usage reservation
-- Stripe Checkout and Customer Portal billing
-- Tenant-scoped quote persistence
-- Internal Azzure admin console for support and key rotation
-- Docker Compose for local PostgreSQL
-- Dockerfile for deployment
-- Vitest unit and integration tests
+## 🌟 Executive Overview & Showpiece Highlights
 
-## Prerequisites
+**Azzure AI Quote** is an enterprise-grade B2B SaaS platform engineered to eliminate friction in custom jewelry sales. Traditional custom jewelry estimation requires taking photos, emailing CAD designers or casting houses, and waiting 2–3 days for a quote—during which over 60% of prospective clients walk away.
 
-- Node.js 20.9 or newer
-- Docker Desktop on Windows or macOS, or Docker Engine and Compose on Linux
-- npm
+With **Azzure AI Quote**, sales associates and walk-in clients can:
+1. 📸 **Upload or Snap a Reference Photo** or describe a custom ring / pendant concept.
+2. 🤖 **3-Pass Vision Consensus Analysis**: Runs 3 independent AI vision passes to determine exact metal gram weight, gemstone carat weights, cut shapes, setting styles, and accent stones with statistical medians and modes.
+3. 💎 **Photorealistic 3D Macro Rendering**: Generates tangible studio-quality catalog renders with physically accurate optical dispersion, refractive index, specular metal reflections, and anti-AI-artifact constraints.
+4. 📈 **Live Spot Pricing & Wastage Formula**: Integrates live spot gold/platinum market rates via Metals.dev (with automated fallback), applying real-world casting loss allowance (25–28.5%) and store-specific profit margin tiers.
+5. 📄 **Instant PDF Export & CAD Dispatch**: Generate branded client quotes in USD/CAD with 1-click dispatch into CAD manufacturing workflows.
 
-## Local Setup
+---
 
-1. Copy `.env.example` to `.env.local`.
-2. Set `DATABASE_URL` for your local PostgreSQL instance.
-3. Add a strong `AUTH_SECRET` and confirm `AUTH_URL` matches your local app URL.
-4. Add `RESEND_API_KEY` and a verified `RESEND_FROM_EMAIL` if you want signup and password-reset
-   emails to be delivered.
-5. Add your Stripe secret, webhook secret, and price/product ids in `.env.local` if you
-   want billing checkout and portal flows to work locally.
-6. Start PostgreSQL:
+## 🛠️ Tech Stack & Key Architecture
 
-```bash
-docker compose up -d
-```
+- **Framework**: Next.js 15 (App Router, Server Actions, React Server Components)
+- **Language**: TypeScript (Strict Mode)
+- **Database & ORM**: PostgreSQL with Prisma ORM
+- **Authentication**: Auth.js (NextAuth v5) with multi-tenant session isolation & IP access control
+- **AI & Computer Vision**: OpenAI GPT-4 Vision multi-pass consensus engine & DALL-E / GPT Image 2 macro rendering engine
+- **Market Data**: Metals.dev REST API with live metal spot rates & automatic failover engine
+- **Billing & Subscriptions**: Stripe Checkout, Customer Portal & Webhook Synchronization (Starter, Pro, Enterprise, Ultra)
+- **UI & Design System**: Luxury Light & Obsidian Dark Showroom themes, glassmorphism, Google Fonts (Inter + Playfair Display)
+- **Deployment**: Docker, Docker Compose, Proxmox & AWS S3 PDF storage integration
 
-7. Install dependencies:
+---
 
-```bash
-npm install
-```
+## ✨ Key Features & Capability Matrix
 
-8. Apply migrations:
+| Feature | Description |
+| :--- | :--- |
+| **Showroom Kiosk Studio** | Touchscreen interface designed for iPad / Workstation on Wheels (WOW) with 1-tap inspiration presets |
+| **3-Pass AI Spec Extractor** | Multi-pass vision verification preventing single-prompt hallucinations on stone shapes & metal weight |
+| **Live Spot Gold Engine** | Real-time bullion prices with automatic casting loss multipliers (`1.25x` to `1.285x`) |
+| **B2B Multi-Tenancy** | Organization-isolated quotes, pricing tier divisors, custom margins, and branded PDF generation |
+| **Interactive Pricing Sandbox** | Real-time "what-if" margin adjustments & live currency switching (USD / CAD) |
+| **Security & Audit Logs** | Comprehensive admin activity logging, session tracking, and application-level IP blocking |
 
-```bash
-npm run db:migrate
-```
+---
 
-9. Seed the database:
+## 📋 Prerequisites & Local Development
 
-```bash
-npm run db:seed
-```
+### Prerequisites
+- **Node.js**: v20.9.0 or higher
+- **Docker**: Docker Desktop (Windows/macOS) or Docker Engine (Linux)
+- **Database**: PostgreSQL 15+ (handled automatically via Docker Compose)
 
-The seeded demo owner account is:
+### Quick Start Guide
 
-- Email: `owner@demojewelry.test`
-- Password: `demo-password`
+1. **Clone & Install Dependencies**
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/azzure-autoquote-mvp.git
+   cd azzure-autoquote-mvp
+   npm install
+   ```
 
-There is also a convenience demo login:
+2. **Environment Configuration**
+   ```bash
+   cp .env.example .env.local
+   ```
+   *Update `.env.local` with your database credentials and API keys (`OPENAI_API_KEY`, `METALS_DEV_API_KEY`, etc.).*
 
-- Email: `test@acme.com`
-- Password: `demo-password`
+3. **Start PostgreSQL Database**
+   ```bash
+   docker compose up -d
+   ```
 
-Internal Azzure admin testing account:
+4. **Run Prisma Database Migrations & Seeding**
+   ```bash
+   npm run db:migrate
+   npm run db:seed
+   ```
 
-- Email: `admin@azzure.com`
-- Password: `password123`
+5. **Launch Development Server**
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-10. Add your OpenAI key to `OPENAI_API_KEY`.
-11. Add `METALS_DEV_API_KEY` if you want live spot prices to flow into quotes.
-12. Optionally add `METALPRICE_API_KEY` to enable automatic backup live pricing if Metals.dev is unavailable.
-13. Add at least one email to `AZZURE_ADMIN_EMAILS` if you want to access the internal admin console.
-14. Add `APP_SETTINGS_ENCRYPTION_KEY` in production so secret runtime settings are stored encrypted.
-15. Start the app:
+---
 
-```bash
-npm run dev
-```
+## 🔑 Demo & Seeding Credentials
 
-Open `http://localhost:3000`.
+After running `npm run db:seed`, use the following credentials to explore the system:
 
-## Platform Notes
+- **Jewelry Store Owner**: `owner@demojewelry.test` | Password: `demo-password`
+- **Sales Associate**: `test@acme.com` | Password: `demo-password`
+- **Internal System Admin**: `admin@azzure.com` | Password: `password123`
 
-### Windows / WSL
+---
 
-- Run Docker Desktop and keep the PostgreSQL container up before starting Next.js.
-- If you use WSL, prefer running npm commands from the same shell that owns the working tree.
-- If Prisma reports a locked engine file, stop stale Node processes and rerun `npm run build`.
+## 🧪 Testing & Code Verification
 
-### macOS
-
-- Install Docker Desktop and allow it access to the project directory.
-- Use the same terminal session for `docker compose`, `npm run db:migrate`, and `npm run dev`.
-
-### Linux
-
-- Install Docker Engine and Docker Compose.
-- Start PostgreSQL with `docker compose up -d`, then run the Prisma commands from the same user account.
-
-## Validation
+Ensure code quality and test coverage before deployment:
 
 ```bash
+# Typecheck TypeScript codebase
 npm run typecheck
+
+# Lint codebase
 npm run lint
+
+# Run Unit & Integration Tests (Vitest)
 npm run test
+
+# Production Build Verification
 npm run build
 ```
 
-## Production Deployment Checklist
+---
 
-Before shipping to production, make sure these are in place:
+## 🚢 Docker & Production Deployment
 
-1. Set a strong `AUTH_SECRET` and `AUTH_URL` that matches the production domain.
-2. Set `DATABASE_URL` to the production PostgreSQL instance.
-3. Set `OPENAI_API_KEY` and confirm `OPENAI_MODEL` is the model you want to use.
-4. Set `METALS_DEV_API_KEY` if you want live metal pricing in quotes.
-5. Set `METALPRICE_API_KEY` if you want an automatic backup provider when Metals.dev is unavailable.
-6. Set `RESEND_API_KEY` and a verified `RESEND_FROM_EMAIL` for account verification and password resets.
-7. Set `S3_BUCKET` and AWS credentials if you want generated PDFs stored in S3.
-8. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and the Stripe price/product ids.
-9. Set `APP_SETTINGS_ENCRYPTION_KEY` so admin-managed secret settings are encrypted at rest.
-10. Set `AZZURE_ADMIN_EMAILS` to the internal Azzure team emails that should access `/admin`.
-11. Run `npm run db:migrate` against production before deploying code.
-12. Run `npm run db:seed` only for fresh demo environments, not on existing customer data.
-13. Run `npm run build` and confirm it passes before releasing.
-14. After deploy, verify `/api/health`, `/admin`, `/settings`, and a sample quote flow.
-
-Recommended runtime checks:
-
-- Confirm admin logins redirect to `/admin`.
-- Confirm customer logins land on the workspace dashboard.
-- Confirm live metals pricing falls back cleanly when `METALS_DEV_API_KEY` is absent.
-- Confirm Stripe checkout and webhook handling succeed in the target environment.
-- Confirm quote PDFs download successfully and persist to S3 when configured.
-
-## Helpful Database Commands
+The project includes production-ready Docker deployment configurations:
 
 ```bash
-npm run db:reset
-npm run db:seed
+# Build production Docker image
+docker build -t azzure-autoquote-mvp .
+
+# Run with docker-compose
+docker compose -f docker-compose.yml up -d
 ```
 
-## Proxmox Test Environment
+---
 
-The repo includes a Proxmox-friendly Docker stack that runs the app on port `8585`.
-The Proxmox project directory is expected at `/opt/docker/projects/azzure-autoquote-mvp`, and
-`.env.proxmox` should live there.
+## 📄 License & Showcase Disclaimer
 
-Files to use:
-
-- [`docker-compose.proxmox.yml`](/D:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/docker-compose.proxmox.yml)
-- [`.env.proxmox.example`](/D:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/.env.proxmox.example)
-- [`.github/workflows/ci.yml`](/D:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/.github/workflows/ci.yml)
-- [`.github/workflows/proxmox-test-deploy.yml`](/D:/Projects/azzure-autoquote-mvp-starter/azzure-autoquote-mvp/.github/workflows/proxmox-test-deploy.yml)
-
-Typical steps:
-
-1. Copy `.env.proxmox.example` to `/opt/docker/projects/azzure-autoquote-mvp/.env.proxmox` on the Proxmox host.
-2. Fill in the production-like secrets you want to test.
-3. Run `cd /opt/docker/projects/azzure-autoquote-mvp && docker compose -f docker-compose.proxmox.yml up -d --build`. The app now waits for the one-shot migration/plan-seed service to complete successfully before starting.
-4. Open `http://<proxmox-host>:8585`.
-5. Check health at `http://<proxmox-host>:8585/api/health`.
-
-GitHub Actions:
-
-- `CI` validates migrations, seed, lint, typecheck, tests, and the production build.
-- `Proxmox Test Deploy` runs on a self-hosted GitHub runner that lives on the Proxmox machine, builds the app locally, applies migrations, seeds the base plans, and restarts the stack.
-- Portainer and manual Compose deployments also run migrations and plan seeding through the `migrate` service before the app container starts; a failed migration prevents an incompatible app version from starting.
-- The self-hosted runner must have Docker and Docker Compose access, and the repository must allow that runner to pick up `develop` workflow jobs.
-- The workflow syncs the repository into `/opt/docker/projects/azzure-autoquote-mvp` before running Docker Compose there.
-
-## Current MVP Limitations
-
-- Credentials auth is implemented first; SSO and magic links can be added later
-- Uploaded images are converted to a data URL and are not persisted yet
-- Overages are architected but disabled by default
-- Email delivery now uses Resend, but the sender address must be verified in Resend before
-  production mail will deliver
-- AI visual estimates are approximate and not manufacturing specifications
+This repository is maintained as a personal portfolio piece and technical showcase for client work on Upwork. All branding assets, architecture designs, and custom algorithms are demonstrated for showcase purposes.

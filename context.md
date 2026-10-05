@@ -1,5 +1,25 @@
 # Azzure AIQuote — Complete System Context & Documentation
 
+## Public GitHub Repository Preparation for Upwork Showcase (2026-10-05)
+
+### User Request
+Create a new public repository for this application to publish on personal GitHub for demo and portfolio/showcase purposes without affecting or disrupting normal production repositories/environments.
+
+### Goals & Actions Completed
+1. **Production Isolation Strategy (Dual-Remote Setup)**:
+   - Kept `origin` pointing to the production repository (`https://github.com/adminazzsol/azzure-autoquote-mvp.git`) completely untouched.
+   - Recommended adding a secondary git remote (e.g., `personal-showcase`) so pushing to the personal demo repository is an isolated action that cannot pollute or break production CI/CD or production branches.
+2. **Security & Credential Scrub Audit**:
+   - Audited the entire codebase for secrets or sensitive live environment variables.
+   - Sanitized `.env.example` by replacing mock/live API key tokens (`METALS_DEV_API_KEY`, `CUSTOMKING_API_KEY`) with explicit placeholder tokens (`your-metals-dev-api-key`, `your-customking-api-key`).
+3. **Repository Hygiene & `.gitignore` Hardening**:
+   - Expanded `.gitignore` to strictly exclude `.env*` files (except `.env.example`, `.env.aws.example`, `.env.proxmox.example`), temporary caches (`.data/`, `.tmp/`, `.tmp-pdf-review/`, `stitch_output/`), build artifacts, log files, and IDE metadata (`.agents/`, `.claude/`, `.vscode/`, `.idea/`).
+4. **Showcase README.md Redesign**:
+   - Transformed `README.md` into a high-impact, professional B2B portfolio document tailored for potential clients on Upwork.
+   - Highlighted core architecture, 3-pass AI vision consensus, photorealistic 3D macro rendering, live spot metal pricing engine with casting loss calculations, multi-tenancy, touchscreen showroom kiosk, and docker deployment instructions.
+5. **Git 403 Credential Resolution**:
+   - Resolved HTTP 403 permission error (`Permission denied to adminazzsol`) when pushing to `jaykpatel14/azzure-autoquote-demo.git` by targeting explicit account credentials for `jaykpatel14` via SSH or HTTPS account-qualified remote URL.
+
 ## Realistic Jewelry Image Rendering from 3-Pass AI Analysis (2026-09-30)
 
 ### User Request
