@@ -1,5 +1,16 @@
 # Azzure AutoQuote — Architectural Decisions & Rationales (`brain.md`)
 
+## OpenAI Render to 3D File Conversion via Meshy AI (2026-10-07)
+
+- **Decision 83**: Use Meshy AI's V2 Image-to-3D REST API (`POST https://api.meshy.ai/v2/image-to-3d`) with `surface_mode: 'hard_surface'` and `enable_pbr: true` for converting OpenAI jewelry renders to 3D models.
+- **Why**: Hard-surface reconstruction yields crisp metal shanks, prongs, bevels, and sharp gemstone facets required for luxury jewelry CAD interchange, avoiding the rounded organic blobs of soft-surface 3D generators.
+- **Decision 84**: Implement asynchronous background polling (`POST /api/3d/generate` -> task ID -> `GET /api/3d/status/[taskId]`) with state synchronization stored in Prisma (`Quote3DModel`).
+- **Why**: Meshy AI Image-to-3D generation takes ~45 to 90 seconds. Holding an HTTP request open causes gateway timeouts. Asynchronous task polling with UI progress indicators provides a smooth responsive UX.
+- **Decision 85**: Store generated GLB/USDZ/OBJ 3D model files in S3 under `3d-models/{companyId}/{quoteId}/` with signed/public URLs.
+- **Why**: Meshy AI output URLs expire over time. Saving model assets to AWS S3 guarantees permanent availability for quotes, customer shares, and manufacturing orders.
+- **Decision 86**: Build a dual WebGL viewer strategy using Google `<model-viewer>` for lightweight interactive 360° product previews & AR QuickLook, paired with a multi-format export menu (`GLB`, `USDZ`, `OBJ`, `STL`).
+- **Why**: `<model-viewer>` provides native WebGL camera controls, studio HDR environment maps, and instant iOS/Android Augmented Reality support, while format options cater to both sales presentations (USDZ/GLB) and CAD/3D printing workflows (OBJ/STL).
+
 ## Public GitHub Repository Preparation for Upwork Showcase (2026-10-05)
 
 - **Decision 77**: Overhaul `README.md` into a high-converting, executive-level technical showcase highlighting key business metrics (3-pass AI vision, 30-second quoting, live spot metal rates, casting loss formulas, multi-tenant B2B architecture, and showroom kiosk).

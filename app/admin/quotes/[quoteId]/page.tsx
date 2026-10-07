@@ -10,6 +10,7 @@ import { resolveMetalPricing, normalizePricingProfile } from "@/lib/metal-pricin
 import { QuotePricingKpis, money, num } from "@/components/admin/quote-pricing-breakdown";
 import { PricingAuditor } from "@/components/admin/pricing-auditor";
 import ManufacturingOrderModal from "@/components/manufacturing-order-modal";
+import { Jewelry3DViewer } from "@/components/jewelry-3d-viewer";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
       },
       order: true,
       analysis: true,
+      threeDModels: { orderBy: { createdAt: "desc" }, take: 1 },
     },
   });
   if (!quote) notFound();
@@ -401,6 +403,15 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ quo
               </div>
             </div>
           )}
+
+          {/* Interactive 3D Model Viewer */}
+          <div style={{ marginTop: "1.25rem" }}>
+            <Jewelry3DViewer
+              quoteId={quote.id}
+              imageUrl={renderingDataUrl || undefined}
+              initialModel={quote.threeDModels?.[0] || null}
+            />
+          </div>
         </section>
       </div>
     </InternalAdminShell>

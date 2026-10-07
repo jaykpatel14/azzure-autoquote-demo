@@ -280,6 +280,7 @@ model AiAnalysis {
   company               Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   attempts              AiAttempt[]
   quote                 Quote?
+  threeDModels          Quote3DModel[]
 }
 
 model AiAttempt {
@@ -356,8 +357,33 @@ model Quote {
   company               Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   analysis              AiAnalysis?     @relation(fields: [analysisId], references: [id])
   showroomQuote         ShowroomQuote?
+  threeDModels          Quote3DModel[]
 
   @@unique([companyId, quoteNumber])
+}
+
+model Quote3DModel {
+  id             String      @id @default(cuid())
+  companyId      String
+  quoteId        String?
+  analysisId     String?
+  meshyTaskId    String      @unique
+  status         String      @default("PENDING")
+  progress       Int         @default(0)
+  sourceImageUrl String?
+  glbStorageKey  String?
+  usdzStorageKey String?
+  objStorageKey  String?
+  glbUrl         String?
+  usdzUrl        String?
+  objUrl         String?
+  fbxUrl         String?
+  thumbnailUrl   String?
+  errorMessage   String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  quote          Quote?      @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  analysis       AiAnalysis? @relation(fields: [analysisId], references: [id], onDelete: Cascade)
 }
 
 model ShowroomSession {
